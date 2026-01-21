@@ -175,9 +175,9 @@ import type { AssetDetail } from '@/api/types/asset'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
-  ASSET_STATUS,
-  getAssetTypeLabel,
-  getProviderLabel,
+    ASSET_STATUS,
+    getAssetTypeLabel,
+    getProviderLabel,
 } from '@/utils/constants'
 import { formatCost, formatJSON, formatTime } from '@/utils/formatters'
 import { Delete, Edit } from '@element-plus/icons-vue'
@@ -277,7 +277,7 @@ const handleDelete = async () => {
 
     await deleteAssetApi(asset.value.id)
     ElMessage.success('删除成功')
-    router.push('/assets')
+    router.push('/cam/assets')
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败')

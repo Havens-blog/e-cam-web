@@ -3,9 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import routes from './routes'
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: createWebHistory(import.meta.env.BASE_URL), // 使用 vite.config.ts 中的 base 配置
     routes,
-    scrollBehavior(to, from, savedPosition) {
+    scrollBehavior(to, _from, savedPosition) {
         // 如果有保存的位置(浏览器前进/后退),则恢复到该位置
         if (savedPosition) {
             return savedPosition
@@ -29,7 +29,7 @@ const router = createRouter({
 router.beforeEach(
     (
         to: RouteLocationNormalized,
-        from: RouteLocationNormalized,
+        _from: RouteLocationNormalized,
         next: NavigationGuardNext
     ) => {
         // 设置页面标题

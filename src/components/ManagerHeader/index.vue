@@ -78,25 +78,24 @@ defineEmits<{
 
 <style scoped lang="scss">
 .manager-header {
-  background: white;
-  border-radius: calc(0.6rem + 0.1vw);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: calc(0.9rem + 0.3vw) calc(1.1rem + 0.4vw);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-base);
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
-  min-height: calc(3.2rem + 0.5vw);
-  margin-bottom: calc(0.9rem + 0.2vw);
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+  min-height: 64px;
+  margin-bottom: 20px;
+  transition: all 200ms ease;
 
   &:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background: var(--glass-bg-hover);
+    border-color: var(--border-strong);
   }
 
   &.sticky-header {
@@ -114,29 +113,29 @@ defineEmits<{
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: calc(0.2rem + 0.05vw);
+  gap: 4px;
 
   .title-section {
     display: flex;
     align-items: center;
-    gap: calc(0.6rem + 0.2vw);
+    gap: 12px;
 
     .back-button {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: calc(1.6rem + 0.3vw);
-      height: calc(1.6rem + 0.3vw);
-      border: 1px solid #d1d5db;
-      border-radius: calc(0.3rem + 0.05vw);
-      background: white;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-base);
+      border-radius: 8px;
+      background: transparent;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 200ms ease;
       flex-shrink: 0;
 
       &:hover {
-        border-color: #9ca3af;
-        background: #f9fafb;
+        border-color: var(--border-strong);
+        background: var(--bg-hover);
       }
 
       &:active {
@@ -144,9 +143,9 @@ defineEmits<{
       }
 
       .back-icon {
-        font-size: calc(0.8rem + 0.1vw);
+        font-size: 14px;
         font-weight: 600;
-        color: #374151;
+        color: var(--text-primary);
         line-height: 1;
       }
     }
@@ -154,30 +153,31 @@ defineEmits<{
     .title-content {
       display: flex;
       flex-direction: column;
-      gap: calc(0.2rem + 0.05vw);
+      gap: 4px;
     }
   }
 
   .details-section {
-    margin-top: calc(0.6rem + 0.1vw);
+    margin-top: 12px;
   }
 
   .extra-section {
-    margin-top: calc(0.4rem + 0.1vw);
+    margin-top: 8px;
   }
 }
 
 .manager-title {
-  font-size: calc(1rem + 0.3vw);
+  font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .manager-subtitle {
-  font-size: calc(0.7rem + 0.15vw);
-  color: #6b7280;
+  font-size: 13px;
+  color: var(--text-tertiary);
   margin: 0;
   line-height: 1.4;
 }
@@ -185,40 +185,25 @@ defineEmits<{
 .header-right {
   display: flex;
   align-items: center;
-  gap: calc(0.6rem + 0.2vw);
+  gap: 12px;
 }
 
 :deep(.action-btn) {
-  height: calc(1.8rem + 0.3vw);
-  padding: 0 calc(0.8rem + 0.2vw);
-  font-size: calc(0.7rem + 0.15vw);
+  height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
   font-weight: 500;
-  border-radius: calc(0.4rem + 0.05vw);
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  transition: all 200ms ease;
   display: inline-flex;
   align-items: center;
-  gap: calc(0.3rem + 0.05vw);
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  &.danger {
-    background: #ef4444;
-    border-color: #ef4444;
-
-    &:hover {
-      background: #dc2626;
-      border-color: #dc2626;
-    }
-  }
+  gap: 6px;
 }
 
 :deep(.refresh-btn) {
-  width: calc(1.8rem + 0.3vw);
-  height: calc(1.8rem + 0.3vw);
-  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  transition: all 200ms ease;
 
   &:hover {
     transform: rotate(180deg);

@@ -1,5 +1,3 @@
-import type { RouteMeta as VueRouteMeta } from 'vue-router'
-
 /**
  * 扩展路由元信息类型
  */

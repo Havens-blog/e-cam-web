@@ -379,3 +379,74 @@ export function deleteFieldGroupApi(id: number) {
         interceptorsToOnce: createCamApiInterceptor()
     })
 }
+
+// ==================== CMDB 管理 API ====================
+
+export {
+    createBatchInstanceRelationApi,
+    createCmdbInstanceApi,
+    createCmdbInstanceBatchApi,
+    createCmdbModelApi,
+    createInstanceRelationApi,
+    createModelGroupApi,
+    createModelRelationApi,
+    deleteCmdbInstanceApi,
+    deleteCmdbModelApi,
+    deleteInstanceRelationApi,
+    deleteModelGroupApi,
+    deleteModelRelationApi,
+    getCmdbInstanceApi,
+    getCmdbModelApi,
+    getInstanceTopologyApi,
+    getModelGroupApi,
+    getModelRelationApi,
+    getModelTopologyApi,
+    getRelatedInstancesApi,
+    initBuiltinModelGroupsApi,
+    listCmdbInstancesApi,
+    listCmdbModelsApi,
+    listInstanceRelationsApi,
+    listModelGroupsApi,
+    listModelGroupsWithModelsApi,
+    listModelRelationsApi,
+    updateCmdbInstanceApi,
+    updateCmdbModelApi,
+    updateModelGroupApi,
+    updateModelRelationApi,
+    upsertCmdbInstanceApi,
+    upsertCmdbInstanceBatchApi
+} from './cmdb'
+
+// ==================== IAM 用户管理 API ====================
+
+export {
+    batchAssignGroupsApi, createUserApi, deleteUserApi, getUserDetailApi, listUsersApi, syncUsersApi, updateUserApi
+} from './iam'
+
+// ==================== IAM 权限组管理 API ====================
+
+export {
+    createGroupApi, deleteGroupApi, getGroupDetailApi, getGroupMembersApi, listGroupsApi, syncGroupsApi, updateGroupApi, updateGroupPoliciesApi
+} from './iam'
+
+// ==================== IAM 策略模板管理 API ====================
+
+export {
+    createTemplateApi,
+    createTemplateFromGroupApi, deleteTemplateApi, getTemplateDetailApi, listTemplatesApi, updateTemplateApi
+} from './iam'
+
+// ==================== IAM 审计日志 API ====================
+
+export {
+    exportAuditLogsApi,
+    generateAuditReportApi, listAuditLogsApi
+} from './iam'
+
+// ==================== IAM 同步任务管理 API ====================
+
+export {
+    createSyncTaskApi,
+    getSyncTaskStatusApi, listSyncTasksApi, retrySyncTaskApi
+} from './iam'
+

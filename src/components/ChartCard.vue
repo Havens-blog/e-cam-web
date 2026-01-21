@@ -116,6 +116,17 @@ defineExpose({
 <style scoped lang="scss">
 .chart-card {
   height: 100%;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  :deep(.el-card__header) {
+    display: none;
+  }
+
+  :deep(.el-card__body) {
+    padding: 0;
+  }
 
   .card-header {
     display: flex;
@@ -123,9 +134,9 @@ defineExpose({
     align-items: center;
 
     .card-title {
-      font-size: calc(0.9rem + 0.2vw);
+      font-size: 16px;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--text-primary);
     }
   }
 
@@ -140,11 +151,11 @@ defineExpose({
       align-items: center;
       justify-content: center;
       height: 100%;
-      color: #9ca3af;
+      color: var(--text-tertiary);
 
       p {
-        margin-top: calc(0.5rem + 0.1vw);
-        font-size: calc(0.7rem + 0.1vw);
+        margin-top: 8px;
+        font-size: 13px;
       }
     }
 

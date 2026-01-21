@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # CAM Web 前端服务（生产环境）
+  cam-web:
+    image: ${REGISTRY:-}cam-web:${TAG:-latest}
+    container_name: cam-web-prod
+    restart: always
+    ports:
+      - "${WEB_PORT:-80}:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - NODE_ENV=production
+      # API 后端地址（通过环境变量配置）
+      - API_BASE_URL=${API_BASE_URL:-http://backend-service:8080}
+    volumes:
+      # 挂载 nginx 日志到宿主机
+      - ./logs/nginx:/var/log/nginx
+      # 如果需要自定义 nginx 配置
+      # - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - cam-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    labels:
+      - "com.cam.service=web"
+      - "com.cam.environment=production"
+      - "com.cam.description=CAM Web Frontend Production"
+
+networks:
+  cam-network:
+    external: true
+    name: cam-network

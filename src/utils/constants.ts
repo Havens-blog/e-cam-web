@@ -293,6 +293,7 @@ export function getErrorMessage(code: number): string {
 // ==================== 工具函数 ====================
 
 export function getProviderConfig(value: string): ProviderConfig | undefined {
+    if (!value) return undefined
     return PROVIDER_CONFIGS[value as CloudProvider]
 }
 
@@ -365,4 +366,200 @@ export function isValidEnvironment(value: string): boolean {
 
 export function getAccountStatus(value: string) {
     return ACCOUNT_STATUS.find((s) => s.value === value) || ACCOUNT_STATUS[ACCOUNT_STATUS.length - 1]
+}
+
+// ==================== 租户状态常量 ====================
+
+export const TENANT_STATUS = [
+    { value: 'active', label: '活跃', color: 'success' },
+    { value: 'inactive', label: '非活跃', color: 'info' },
+    { value: 'suspended', label: '暂停', color: 'warning' },
+    { value: 'deleted', label: '已删除', color: 'danger' }
+]
+
+export function getTenantStatus(value: string) {
+    return TENANT_STATUS.find((s) => s.value === value) || TENANT_STATUS[0]
+}
+
+// ==================== 行业类型常量 ====================
+
+export const INDUSTRIES = [
+    { value: 'technology', label: '科技' },
+    { value: 'finance', label: '金融' },
+    { value: 'healthcare', label: '医疗' },
+    { value: 'education', label: '教育' },
+    { value: 'retail', label: '零售' },
+    { value: 'manufacturing', label: '制造' },
+    { value: 'other', label: '其他' }
+]
+
+export function getIndustryLabel(value: string): string {
+    const industry = INDUSTRIES.find((i) => i.value === value)
+    return industry?.label || value
+}
+
+// ==================== 地区类型常量 ====================
+
+export const REGIONS = [
+    { value: 'cn-north', label: '华北' },
+    { value: 'cn-east', label: '华东' },
+    { value: 'cn-south', label: '华南' },
+    { value: 'cn-west', label: '华西' },
+    { value: 'cn-central', label: '华中' },
+    { value: 'overseas', label: '海外' }
+]
+
+export function getRegionLabel(value: string): string {
+    const region = REGIONS.find((r) => r.value === value)
+    return region?.label || value
+}
+
+// ==================== IAM 用户类型常量 ====================
+
+export const USER_TYPES = [
+    { value: 'api_key', label: 'API Key' },
+    { value: 'access_key', label: 'Access Key' },
+    { value: 'ram_user', label: 'RAM 用户' },
+    { value: 'iam_user', label: 'IAM 用户' }
+]
+
+export function getUserTypeLabel(value: string): string {
+    const userType = USER_TYPES.find((t) => t.value === value)
+    return userType?.label || value
+}
+
+// ==================== IAM 用户状态常量 ====================
+
+export const USER_STATUS = [
+    { value: 'active', label: '活跃', color: 'success' },
+    { value: 'inactive', label: '未激活', color: 'info' },
+    { value: 'deleted', label: '已删除', color: 'danger' }
+]
+
+export function getUserStatus(value: string) {
+    return USER_STATUS.find((s) => s.value === value) || USER_STATUS[USER_STATUS.length - 1]
+}
+
+// ==================== 策略模板分类常量 ====================
+
+export const TEMPLATE_CATEGORIES = [
+    { value: 'read_only', label: '只读权限', description: '仅允许查看资源，不能进行修改操作' },
+    { value: 'admin', label: '管理员权限', description: '拥有完整的管理权限，可以进行所有操作' },
+    { value: 'developer', label: '开发者权限', description: '适合开发人员的权限配置' },
+    { value: 'custom', label: '自定义', description: '根据需求自定义的权限配置' }
+]
+
+export function getTemplateCategoryLabel(value: string): string {
+    const category = TEMPLATE_CATEGORIES.find((c) => c.value === value)
+    return category?.label || value
+}
+
+export function getTemplateCategoryDescription(value: string): string {
+    const category = TEMPLATE_CATEGORIES.find((c) => c.value === value)
+    return category?.description || ''
+}
+
+// ==================== 同步任务类型常量 ====================
+
+export const SYNC_TASK_TYPES = [
+    { value: 'user_sync', label: '用户同步', icon: 'User' },
+    { value: 'permission_sync', label: '权限同步', icon: 'Lock' },
+    { value: 'group_sync', label: '用户组同步', icon: 'UserFilled' }
+]
+
+export function getSyncTaskTypeLabel(value: string): string {
+    const taskType = SYNC_TASK_TYPES.find((t) => t.value === value)
+    return taskType?.label || value
+}
+
+// ==================== 同步任务状态常量 ====================
+
+export const SYNC_TASK_STATUS = [
+    { value: 'pending', label: '等待中', color: 'info' },
+    { value: 'running', label: '执行中', color: 'warning' },
+    { value: 'completed', label: '已完成', color: 'success' },
+    { value: 'failed', label: '失败', color: 'danger' }
+]
+
+export function getSyncTaskStatus(value: string) {
+    return SYNC_TASK_STATUS.find((s) => s.value === value) || SYNC_TASK_STATUS[SYNC_TASK_STATUS.length - 1]
+}
+
+export function getSyncTaskStatusLabel(value: string): string {
+    const status = getSyncTaskStatus(value)
+    return status.label
+}
+
+export function getSyncTaskStatusColor(value: string): string {
+    const status = getSyncTaskStatus(value)
+    return status.color
+}
+
+// ==================== 操作类型常量 ====================
+
+export const OPERATION_TYPES = [
+    { value: 'create', label: '创建', color: 'success' },
+    { value: 'update', label: '更新', color: 'primary' },
+    { value: 'delete', label: '删除', color: 'danger' },
+    { value: 'sync', label: '同步', color: 'warning' },
+    { value: 'assign', label: '分配', color: 'success' },
+    { value: 'revoke', label: '撤销', color: 'warning' }
+]
+
+export function getOperationTypeLabel(value: string): string {
+    const operationType = OPERATION_TYPES.find((t) => t.value === value)
+    return operationType?.label || value
+}
+
+export function getOperationTypeColor(value: string): string {
+    const operationType = OPERATION_TYPES.find((t) => t.value === value)
+    return operationType?.color || 'info'
+}
+
+// ==================== 目标类型常量 ====================
+
+export const TARGET_TYPES = [
+    { value: 'user', label: '用户' },
+    { value: 'group', label: '用户组' },
+    { value: 'template', label: '策略模板' },
+    { value: 'policy', label: '权限策略' }
+]
+
+export function getTargetTypeLabel(value: string): string {
+    const targetType = TARGET_TYPES.find((t) => t.value === value)
+    return targetType?.label || value
+}
+
+// ==================== IAM 错误码映射 ====================
+
+export const IAM_ERROR_CODES: Record<number, string> = {
+    // 用户相关错误
+    404101: '用户不存在',
+    409101: '用户名已存在',
+    400101: '用户类型无效',
+    401101: '用户认证失败',
+
+    // 用户组相关错误
+    404201: '用户组不存在',
+    409201: '用户组名称已存在',
+    400201: '权限策略无效',
+
+    // 策略模板相关错误
+    404301: '策略模板不存在',
+    409301: '模板名称已存在',
+    400301: '模板分类无效',
+    403301: '不能修改内置模板',
+
+    // 同步任务相关错误
+    404401: '同步任务不存在',
+    400401: '任务类型无效',
+    409401: '任务正在执行中',
+
+    // 审计日志相关错误
+    400501: '时间范围无效',
+    400502: '导出格式不支持'
+}
+
+export function getIAMErrorMessage(code: number): string {
+    return IAM_ERROR_CODES[code] || getErrorMessage(code)
 }

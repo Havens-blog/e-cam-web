@@ -1,0 +1,237 @@
+// ============================================
+// 页面级主题样式覆盖 - 使用 CSS 变量支持主题切换
+// ============================================
+
+// ==================== 通用筛选器容器 ====================
+.filters-container {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+
+  .filters-form {
+    margin: 0;
+
+    :deep(.el-form-item) {
+      margin-bottom: 0;
+      margin-right: 16px;
+
+      .el-form-item__label {
+        color: var(--text-secondary);
+      }
+    }
+  }
+}
+
+// ==================== 通用表格容器 ====================
+.table-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+// ==================== 通用分页容器 ====================
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  margin-top: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+// ==================== 固定分页样式 ====================
+.pagination-fixed {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  
+  .pagination-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px 16px;
+    }
+  }
+  
+  .pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    
+    .page-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .page-info {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--bg-hover);
+        padding: 6px 12px;
+        border-radius: 6px;
+        min-width: 60px;
+        text-align: center;
+      }
+    }
+    
+    .total-info {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+// ==================== 加载占位符 ====================
+.loading-placeholder {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+// ==================== 缓存警告 ====================
+.cache-warning {
+  margin-bottom: 16px;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  
+  :deep(.el-alert__title) {
+    color: var(--accent-yellow);
+  }
+}
+
+// ==================== 操作按钮组 ====================
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// ==================== 名称单元格 ====================
+.name-cell {
+  .account-name-link,
+  .asset-name-link {
+    color: var(--text-primary);
+    font-weight: 500;
+    
+    &:hover {
+      color: var(--accent-blue);
+    }
+  }
+}
+
+// ==================== 云厂商单元格 ====================
+.provider-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .provider-link {
+    color: var(--text-primary);
+    
+    &:hover {
+      color: var(--accent-blue);
+    }
+  }
+}
+
+// ==================== 区域单元格 ====================
+.regions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+// ==================== Access Key 样式 ====================
+.access-key {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// ==================== 资产数量 ====================
+.asset-count {
+  font-weight: 600;
+  color: var(--accent-blue);
+}
+
+// ==================== 列设置对话框 ====================
+.column-settings {
+  .column-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+// ==================== 用户标签页 ====================
+.users-tab {
+  .tab-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+}
+
+// ==================== 配置内容 ====================
+.config-content {
+  background: var(--bg-elevated);
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 500px;
+  border: 1px solid var(--border-subtle);
+}
+
+// ==================== 任务列表 ====================
+.tasks-list {
+  min-height: 200px;
+}
+
+// ==================== 成本分析 ====================
+.cost-analysis-content {
+  .total-cost-card {
+    margin-bottom: 20px;
+  }
+
+  .cost-chart-container {
+    margin-bottom: 20px;
+  }
+
+  .cost-breakdown-container {
+    margin-bottom: 20px;
+  }
+}

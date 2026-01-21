@@ -14,8 +14,9 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  overflow: hidden;
-  padding: calc(1rem + 0.4vw);
+  background: var(--bg-base);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
 }
 </style>

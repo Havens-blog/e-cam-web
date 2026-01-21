@@ -1,8 +1,13 @@
-// 导入变量和混入
+// ============================================
+// 全局样式 - 支持深色/浅色主题切换
+// ============================================
+
 @import './variables.scss';
 @import './mixins.scss';
+@import './theme-variables.scss';
+@import './element-theme.scss';
 
-// 全局样式重置
+// ==================== 基础重置 ====================
 * {
   margin: 0;
   padding: 0;
@@ -13,15 +18,14 @@ html,
 body {
   width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
+  font-family: $font-sans;
   font-size: $font-size-base;
   line-height: $line-height-base;
-  color: $text-primary;
-  background-color: $bg-page;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app {
@@ -29,174 +33,144 @@ body {
   height: 100%;
 }
 
-// 链接样式
+// ==================== 链接样式 ====================
 a {
-  color: $primary-color;
+  color: var(--accent-blue);
   text-decoration: none;
-  @include transition(color);
+  transition: color $transition-base;
 
   &:hover {
-    color: lighten($primary-color, 10%);
+    color: #2563eb;
   }
 }
 
-// 列表样式
-ul,
-ol {
+// ==================== 列表样式 ====================
+ul, ol {
   list-style: none;
 }
 
-// 图片样式
+// ==================== 图片样式 ====================
 img {
   max-width: 100%;
   height: auto;
   vertical-align: middle;
 }
 
-// 表格样式
+// ==================== 表格样式 ====================
 table {
   border-collapse: collapse;
   border-spacing: 0;
 }
 
-// 按钮样式重置
+// ==================== 按钮重置 ====================
 button {
   border: none;
   outline: none;
   background: none;
   cursor: pointer;
+  font-family: inherit;
 }
 
-// 输入框样式重置
-input,
-textarea {
+// ==================== 输入框重置 ====================
+input, textarea {
   outline: none;
   border: none;
+  font-family: inherit;
 }
 
-// 滚动条样式
+// ==================== 滚动条样式 ====================
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(144, 147, 153, 0.3);
-  border-radius: 4px;
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: rgba(144, 147, 153, 0.5);
+    background-color: var(--scrollbar-thumb-hover);
   }
 }
 
 ::-webkit-scrollbar-track {
-  background-color: transparent;
+  background-color: var(--scrollbar-track);
 }
 
-// 工具类
-.text-center {
-  text-align: center;
-}
+// ==================== 工具类 ====================
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
 
-.text-left {
-  text-align: left;
-}
+.flex-center { @include flex-center; }
+.flex-between { @include flex-between; }
+.flex-start { @include flex-start; }
+.flex-end { @include flex-end; }
 
-.text-right {
-  text-align: right;
-}
+.ellipsis { @include ellipsis; }
 
-.flex-center {
-  @include flex-center;
-}
-
-.flex-between {
-  @include flex-between;
-}
-
-.flex-start {
-  @include flex-start;
-}
-
-.flex-end {
-  @include flex-end;
-}
-
-.ellipsis {
-  @include ellipsis;
-}
-
-// 间距工具类
+// ==================== 间距工具类 ====================
 @each $size in (xs, sm, md, lg, xl) {
-  .m-#{$size} {
-    margin: var(--spacing-#{$size});
-  }
-  .mt-#{$size} {
-    margin-top: var(--spacing-#{$size});
-  }
-  .mr-#{$size} {
-    margin-right: var(--spacing-#{$size});
-  }
-  .mb-#{$size} {
-    margin-bottom: var(--spacing-#{$size});
-  }
-  .ml-#{$size} {
-    margin-left: var(--spacing-#{$size});
-  }
-  .p-#{$size} {
-    padding: var(--spacing-#{$size});
-  }
-  .pt-#{$size} {
-    padding-top: var(--spacing-#{$size});
-  }
-  .pr-#{$size} {
-    padding-right: var(--spacing-#{$size});
-  }
-  .pb-#{$size} {
-    padding-bottom: var(--spacing-#{$size});
-  }
-  .pl-#{$size} {
-    padding-left: var(--spacing-#{$size});
-  }
+  .m-#{$size} { margin: var(--spacing-#{$size}); }
+  .mt-#{$size} { margin-top: var(--spacing-#{$size}); }
+  .mr-#{$size} { margin-right: var(--spacing-#{$size}); }
+  .mb-#{$size} { margin-bottom: var(--spacing-#{$size}); }
+  .ml-#{$size} { margin-left: var(--spacing-#{$size}); }
+  .p-#{$size} { padding: var(--spacing-#{$size}); }
+  .pt-#{$size} { padding-top: var(--spacing-#{$size}); }
+  .pr-#{$size} { padding-right: var(--spacing-#{$size}); }
+  .pb-#{$size} { padding-bottom: var(--spacing-#{$size}); }
+  .pl-#{$size} { padding-left: var(--spacing-#{$size}); }
 }
 
-// 页面容器
+// ==================== 页面容器 ====================
 .page-container {
   padding: $spacing-lg;
-  min-height: 100vh;
+  min-height: 100%;
 }
 
-// 卡片容器
+// ==================== 玻璃卡片容器 ====================
 .card-container {
-  @include card;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: $spacing-lg;
   margin-bottom: $spacing-md;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-// 加载状态
+// ==================== 加载状态 ====================
 .loading-container {
   @include flex-center;
   min-height: 200px;
+  color: var(--text-secondary);
 }
 
-// 空状态
+// ==================== 空状态 ====================
 .empty-container {
   @include flex-center;
   flex-direction: column;
   min-height: 300px;
-  color: $text-secondary;
+  color: var(--text-tertiary);
 }
 
-// 错误状态
+// ==================== 错误状态 ====================
 .error-container {
   @include flex-center;
   flex-direction: column;
   min-height: 300px;
-  color: $danger-color;
+  color: var(--accent-red);
 }
 
-// 响应式布局
+// ==================== 响应式布局 ====================
 @include respond-to('mobile') {
   .page-container {
     padding: $spacing-md;
   }
 }
+
+// 导入页面级主题样式
+@import './pages-dark.scss';

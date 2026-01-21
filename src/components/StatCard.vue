@@ -71,33 +71,39 @@ const handleClick = () => {
 <style scoped lang="scss">
 .stat-card {
   height: 100%;
-  transition: all 0.3s ease;
+  transition: all 200ms ease;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-base) !important;
 
   &.clickable {
     cursor: pointer;
 
     &:hover {
-      box-shadow:
-        0 10px 15px -3px rgba(0, 0, 0, 0.1),
-        0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      background: var(--glass-bg-hover) !important;
+      border-color: var(--border-strong) !important;
       transform: translateY(-2px);
+      box-shadow: var(--shadow-lg) !important;
     }
   }
 
   .stat-content {
     display: flex;
-    gap: calc(1rem + 0.2vw);
+    gap: 16px;
     align-items: center;
 
     .stat-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: calc(3rem + 0.5vw);
-      height: calc(3rem + 0.5vw);
-      border-radius: calc(0.5rem + 0.1vw);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       color: white;
-      font-size: calc(1.5rem + 0.3vw);
+      font-size: 24px;
       flex-shrink: 0;
     }
 
@@ -106,30 +112,32 @@ const handleClick = () => {
       min-width: 0;
 
       .stat-title {
-        font-size: calc(0.7rem + 0.1vw);
-        color: #6b7280;
-        margin-bottom: calc(0.3rem + 0.05vw);
+        font-size: 13px;
+        color: var(--text-tertiary);
+        margin-bottom: 4px;
         font-weight: 500;
       }
 
       .stat-value {
-        font-size: calc(1.5rem + 0.4vw);
-        font-weight: 700;
-        color: #1f2937;
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--text-primary);
         line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
 
         .stat-suffix {
-          font-size: calc(0.8rem + 0.15vw);
+          font-size: 14px;
           font-weight: 400;
-          color: #6b7280;
-          margin-left: calc(0.2rem + 0.05vw);
+          color: var(--text-tertiary);
+          margin-left: 4px;
         }
       }
 
       .stat-subtitle {
-        font-size: calc(0.65rem + 0.1vw);
-        color: #9ca3af;
-        margin-top: calc(0.2rem + 0.05vw);
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
       }
     }
   }

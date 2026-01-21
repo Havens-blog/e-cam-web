@@ -1,5 +1,5 @@
 <template>
-  <el-tag :type="(statusInfo.color as any)" size="small">
+  <el-tag v-if="statusInfo" :type="(statusInfo.color as any)" size="small">
     {{ statusInfo.label }}
   </el-tag>
 </template>

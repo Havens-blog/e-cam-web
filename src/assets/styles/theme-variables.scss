@@ -1,0 +1,170 @@
+// ============================================
+// CSS 变量主题系统 - 支持深色/浅色切换
+// ============================================
+
+// ==================== 深色主题 (默认) ====================
+:root {
+  // 字体
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, 'Courier New', monospace;
+
+  // 主色调
+  --color-primary: #fafafa;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  // 强调色
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-purple: #8b5cf6;
+
+  // 背景层级
+  --bg-base: #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-surface: #171717;
+  --bg-overlay: #1a1a1a;
+  --bg-hover: #262626;
+  --bg-page: #0a0a0a;
+
+  // 文本颜色
+  --text-primary: #fafafa;
+  --text-regular: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-muted: #52525b;
+  --text-placeholder: #52525b;
+
+  // 边框颜色
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-base: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  // 玻璃拟态
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  // 阴影
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  // 滚动条
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.15);
+  --scrollbar-track: transparent;
+
+  // 输入框
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-border-focus: var(--accent-blue);
+
+  // 表格
+  --table-header-bg: rgba(255, 255, 255, 0.02);
+  --table-row-hover: rgba(255, 255, 255, 0.04);
+  --table-border: rgba(255, 255, 255, 0.06);
+
+  // 弹窗/对话框
+  --dialog-bg: #1a1a1a;
+  --dialog-border: rgba(255, 255, 255, 0.1);
+
+  // 下拉菜单
+  --dropdown-bg: #1a1a1a;
+  --dropdown-hover: rgba(255, 255, 255, 0.06);
+
+  // 标签
+  --tag-bg: rgba(255, 255, 255, 0.1);
+  --tag-text: var(--text-secondary);
+}
+
+// ==================== 浅色主题 ====================
+:root.light {
+  // 主色调
+  --color-primary: #111111;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  // 强调色 (保持不变)
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-purple: #8b5cf6;
+
+  // 背景层级 (浅色)
+  --bg-base: #f5f5f5;
+  --bg-elevated: #ffffff;
+  --bg-surface: #fafafa;
+  --bg-overlay: #ffffff;
+  --bg-hover: #f0f0f0;
+  --bg-page: #f5f5f5;
+
+  // 文本颜色 (深色文字)
+  --text-primary: #111111;
+  --text-regular: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-muted: #bbbbbb;
+  --text-placeholder: #999999;
+
+  // 边框颜色
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-base: rgba(0, 0, 0, 0.1);
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+
+  // 玻璃拟态 (浅色版本)
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-hover: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  // 阴影 (更轻的阴影)
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  // 滚动条
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --scrollbar-track: transparent;
+
+  // 输入框
+  --input-bg: #ffffff;
+  --input-border: rgba(0, 0, 0, 0.15);
+  --input-border-focus: var(--accent-blue);
+
+  // 表格
+  --table-header-bg: #fafafa;
+  --table-row-hover: #f5f5f5;
+  --table-border: rgba(0, 0, 0, 0.08);
+
+  // 弹窗/对话框
+  --dialog-bg: #ffffff;
+  --dialog-border: rgba(0, 0, 0, 0.1);
+
+  // 下拉菜单
+  --dropdown-bg: #ffffff;
+  --dropdown-hover: #f5f5f5;
+
+  // 标签
+  --tag-bg: rgba(0, 0, 0, 0.06);
+  --tag-text: var(--text-secondary);
+}
+
+// ==================== 主题过渡动画 ====================
+:root {
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html, body, #app {
+  transition: var(--theme-transition);
+}

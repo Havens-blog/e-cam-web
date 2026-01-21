@@ -25,7 +25,7 @@ export function validateApiConfig(): { valid: boolean; errors: string[] } {
  * 获取完整的 API URL
  */
 export function getFullApiUrl(endpoint: string): string {
-    const baseApi = import.meta.env.VITE_API_BASE_URL || '/api'
+    const baseApi = import.meta.env.VITE_API_BASE_URL || '/api/v1/cam'
     return `${baseApi}${endpoint}`
 }
 

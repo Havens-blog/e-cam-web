@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  # CAM Web 前端服务
+  cam-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cam-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - NODE_ENV=production
+    volumes:
+      # 挂载 nginx 日志
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - cam-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.cam.service=web"
+      - "com.cam.description=CAM Web Frontend"
+
+networks:
+  cam-network:
+    driver: bridge
+    name: cam-network
+
+volumes:
+  nginx-logs:
+    driver: local

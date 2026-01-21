@@ -5,7 +5,7 @@
       v-loading="loading"
       stripe
       style="width: 100%"
-      height="calc(100vh - 20rem)"
+      max-height="calc(100vh - 24rem)"
     >
       <el-table-column
         prop="asset_id"
@@ -19,9 +19,12 @@
         min-width="150"
         show-overflow-tooltip
       />
-      <el-table-column label="云厂商" width="100" align="center">
+      <el-table-column label="云厂商" width="140" align="center">
         <template #default="{ row }">
-          <el-tag size="small">{{ getProviderLabel(row.provider) }}</el-tag>
+          <div class="provider-cell">
+            <ProviderIcon :provider="row.provider" size="small" />
+            <span>{{ getProviderLabel(row.provider) }}</span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="资产类型" width="120" align="center">
@@ -64,14 +67,19 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
+import ProviderIcon from '@/components/ProviderIcon.vue'
 import { getAssetTypeLabel, getProviderLabel } from '@/utils/constants'
 import { formatCost, formatTime } from '@/utils/formatters'
 import AssetStatusBadge from './AssetStatusBadge.vue'
 
 interface Props {
   assets: Asset[]
-  loading?: boolean
+  loading: boolean
 }
+
+withDefaults(defineProps<Props>(), {
+  loading: false,
+})
 
 interface Emits {
   (e: 'view', asset: Asset): void
@@ -79,7 +87,6 @@ interface Emits {
   (e: 'delete', asset: Asset): void
 }
 
-defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleView = (asset: Asset) => {
@@ -97,11 +104,19 @@ const handleDelete = (asset: Asset) => {
 
 <style scoped lang="scss">
 .asset-table {
-  background: white;
-  border-radius: calc(0.4rem + 0.1vw);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  padding: calc(1rem + 0.2vw);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.provider-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 </style>

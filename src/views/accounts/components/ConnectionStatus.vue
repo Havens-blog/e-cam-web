@@ -44,7 +44,7 @@ const dialogVisible = ref(false)
 const errorMessage = ref('')
 const lastCheckTime = ref('')
 
-const apiUrl = computed(() => getFullApiUrl('/cloud-accounts'))
+const apiUrl = computed(() => getFullApiUrl('/cam/cloud-accounts'))
 
 const statusClass = computed(() => {
   if (isChecking.value) return 'checking'
@@ -101,57 +101,57 @@ onMounted(() => {
   .status-indicator {
     display: inline-flex;
     align-items: center;
-    gap: calc(0.3rem + 0.05vw);
-    padding: calc(0.3rem + 0.05vw) calc(0.6rem + 0.1vw);
-    border-radius: calc(0.8rem + 0.15vw);
-    font-size: calc(0.65rem + 0.08vw);
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s ease;
 
     &:hover {
       opacity: 0.8;
     }
 
     .status-dot {
-      width: calc(0.4rem + 0.08vw);
-      height: calc(0.4rem + 0.08vw);
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
 
     &.connected {
-      background: #f0f9ff;
-      color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
 
       .status-dot {
-        background: #10b981;
+        background: var(--accent-green);
       }
     }
 
     &.disconnected {
-      background: #fef2f2;
-      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
 
       .status-dot {
-        background: #ef4444;
+        background: var(--accent-red);
       }
     }
 
     &.checking {
-      background: #fffbeb;
-      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-yellow);
 
       .status-dot {
-        background: #f59e0b;
+        background: var(--accent-yellow);
       }
     }
 
     &.unknown {
-      background: #f3f4f6;
-      color: #6b7280;
+      background: rgba(113, 113, 122, 0.15);
+      color: var(--text-tertiary);
 
       .status-dot {
-        background: #6b7280;
+        background: var(--text-tertiary);
       }
     }
   }
@@ -168,6 +168,6 @@ onMounted(() => {
 }
 
 .connection-details {
-  padding: calc(1rem + 0.2vw);
+  padding: 16px;
 }
 </style>

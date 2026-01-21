@@ -82,9 +82,9 @@
 
 <script setup lang="ts">
 import {
-    ASSET_STATUS,
-    ASSET_TYPES,
-    CLOUD_PROVIDERS,
+  ASSET_STATUS,
+  ASSET_TYPES,
+  CLOUD_PROVIDERS,
 } from '@/utils/constants'
 import { Search } from '@element-plus/icons-vue'
 import { reactive, ref, watch } from 'vue'
@@ -153,19 +153,24 @@ const handleReset = () => {
 
 <style scoped lang="scss">
 .asset-filters {
-  padding: calc(1rem + 0.2vw);
-  background: white;
-  border-radius: calc(0.4rem + 0.1vw);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  margin-bottom: calc(1rem + 0.2vw);
+  padding: 16px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 
   .filters-form {
     margin: 0;
 
     :deep(.el-form-item) {
       margin-bottom: 0;
+      
+      .el-form-item__label {
+        color: var(--text-secondary);
+      }
     }
   }
 }

@@ -99,15 +99,15 @@ const totalRegionCost = computed(() => {
 
 <style scoped lang="scss">
 .cost-breakdown {
-  background: white;
-  border-radius: calc(0.4rem + 0.1vw);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  padding: calc(1rem + 0.2vw);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 
   .cost-value {
-    color: #10b981;
+    color: var(--accent-green);
     font-weight: 600;
   }
 }

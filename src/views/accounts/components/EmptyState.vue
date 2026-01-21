@@ -54,29 +54,31 @@ defineEmits<{
 
 <style scoped lang="scss">
 .empty-state {
-  padding: calc(2rem + 0.4vw);
-  background: white;
-  border-radius: calc(0.4rem + 0.1vw);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 32px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 
   .empty-icon {
-    color: #d1d5db;
+    color: var(--text-tertiary);
   }
 
   .empty-actions {
     display: flex;
-    gap: calc(0.5rem + 0.1vw);
+    gap: 12px;
     justify-content: center;
-    margin-top: calc(1rem + 0.2vw);
+    margin-top: 16px;
   }
 
   .empty-tips {
-    margin-top: calc(1.5rem + 0.3vw);
-    padding: calc(1rem + 0.2vw);
-    background: #f9fafb;
-    border-radius: calc(0.4rem + 0.1vw);
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
     text-align: left;
     max-width: 500px;
     margin-left: auto;
@@ -84,18 +86,18 @@ defineEmits<{
 
     p {
       font-weight: 600;
-      margin-bottom: calc(0.5rem + 0.1vw);
-      color: #374151;
+      margin-bottom: 8px;
+      color: var(--text-primary);
     }
 
     ul {
       margin: 0;
-      padding-left: calc(1.2rem + 0.2vw);
-      color: #6b7280;
-      font-size: calc(0.7rem + 0.1vw);
+      padding-left: 20px;
+      color: var(--text-secondary);
+      font-size: 13px;
 
       li {
-        margin: calc(0.3rem + 0.05vw) 0;
+        margin: 6px 0;
       }
     }
   }

@@ -129,7 +129,7 @@ const handleFilterChange = () => {
 // 初始化
 onMounted(() => {
   // 默认选择第一个云厂商
-  if (CLOUD_PROVIDERS.length > 0) {
+  if (CLOUD_PROVIDERS.length > 0 && CLOUD_PROVIDERS[0]) {
     filters.provider = CLOUD_PROVIDERS[0].value
     fetchCostAnalysis()
   }
@@ -139,13 +139,13 @@ onMounted(() => {
 <style scoped lang="scss">
 .cost-analysis-content {
   .filters-container {
-    margin-bottom: calc(1rem + 0.2vw);
-    padding: calc(1rem + 0.2vw);
-    background: white;
-    border-radius: calc(0.4rem + 0.1vw);
-    box-shadow:
-      0 1px 3px 0 rgba(0, 0, 0, 0.1),
-      0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 
     .filters-form {
       margin: 0;
@@ -157,15 +157,15 @@ onMounted(() => {
   }
 
   .total-cost-card {
-    margin-bottom: calc(1rem + 0.2vw);
+    margin-bottom: 20px;
   }
 
   .cost-chart-container {
-    margin-bottom: calc(1rem + 0.2vw);
+    margin-bottom: 20px;
   }
 
   .cost-breakdown-container {
-    margin-bottom: calc(1rem + 0.2vw);
+    margin-bottom: 20px;
   }
 }
 </style>

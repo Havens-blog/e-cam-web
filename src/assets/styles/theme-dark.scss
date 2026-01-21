@@ -1,0 +1,292 @@
+// ============================================
+// 深色主题设计系统 - Linear/Vercel 风格 + 玻璃拟态
+// ============================================
+
+// ==================== 核心色板 ====================
+// 背景层级 (由深到浅)
+$dark-bg-base: #0a0a0a;           // 最深背景
+$dark-bg-elevated: #111111;       // 提升层背景
+$dark-bg-surface: #171717;        // 表面背景
+$dark-bg-overlay: #1a1a1a;        // 覆盖层背景
+$dark-bg-hover: #262626;          // 悬停背景
+
+// 边框色
+$dark-border-subtle: rgba(255, 255, 255, 0.06);
+$dark-border-default: rgba(255, 255, 255, 0.1);
+$dark-border-strong: rgba(255, 255, 255, 0.15);
+$dark-border-glow: rgba(255, 255, 255, 0.2);
+
+// 文字色
+$dark-text-primary: #fafafa;
+$dark-text-secondary: #a1a1aa;
+$dark-text-tertiary: #71717a;
+$dark-text-muted: #52525b;
+
+// 强调色 (Vercel 风格)
+$accent-blue: #3b82f6;
+$accent-cyan: #06b6d4;
+$accent-green: #10b981;
+$accent-yellow: #f59e0b;
+$accent-red: #ef4444;
+$accent-purple: #8b5cf6;
+
+// 渐变色
+$gradient-primary: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+$gradient-surface: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+
+// ==================== 玻璃拟态 ====================
+@mixin glass-effect($opacity: 0.05, $blur: 12px) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $dark-border-default;
+}
+
+@mixin glass-card {
+  @include glass-effect(0.03, 16px);
+  border-radius: 12px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@mixin glass-card-hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: $dark-border-strong;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+// ==================== 动画 ====================
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;
+$transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+@mixin smooth-transition($properties: all) {
+  transition: $properties $transition-base;
+}
+
+@mixin hover-lift {
+  transition: transform $transition-base, box-shadow $transition-base;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+// ==================== 字体 ====================
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+
+// 字号系统
+$text-xs: 0.75rem;    // 12px
+$text-sm: 0.875rem;   // 14px
+$text-base: 1rem;     // 16px
+$text-lg: 1.125rem;   // 18px
+$text-xl: 1.25rem;    // 20px
+$text-2xl: 1.5rem;    // 24px
+$text-3xl: 1.875rem;  // 30px
+$text-4xl: 2.25rem;   // 36px
+
+// ==================== 间距 ====================
+$space-1: 0.25rem;   // 4px
+$space-2: 0.5rem;    // 8px
+$space-3: 0.75rem;   // 12px
+$space-4: 1rem;      // 16px
+$space-5: 1.25rem;   // 20px
+$space-6: 1.5rem;    // 24px
+$space-8: 2rem;      // 32px
+$space-10: 2.5rem;   // 40px
+$space-12: 3rem;     // 48px
+
+// ==================== 圆角 ====================
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-2xl: 20px;
+$radius-full: 9999px;
+
+// ==================== 阴影 ====================
+@mixin shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@mixin shadow-md {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+@mixin shadow-lg {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+@mixin shadow-glow($color: $accent-blue) {
+  box-shadow: 0 0 20px rgba($color, 0.3);
+}
+
+// ==================== 组件样式 ====================
+
+// 按钮
+@mixin btn-primary {
+  background: $dark-text-primary;
+  color: $dark-bg-base;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  @include smooth-transition;
+  
+  &:hover {
+    background: #e4e4e7;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@mixin btn-secondary {
+  background: transparent;
+  color: $dark-text-primary;
+  border: 1px solid $dark-border-default;
+  border-radius: $radius-md;
+  @include smooth-transition;
+  
+  &:hover {
+    background: $dark-bg-hover;
+    border-color: $dark-border-strong;
+  }
+}
+
+@mixin btn-ghost {
+  background: transparent;
+  color: $dark-text-secondary;
+  border: none;
+  border-radius: $radius-md;
+  @include smooth-transition;
+  
+  &:hover {
+    background: $dark-bg-hover;
+    color: $dark-text-primary;
+  }
+}
+
+// 输入框
+@mixin input-dark {
+  background: $dark-bg-elevated;
+  border: 1px solid $dark-border-default;
+  border-radius: $radius-md;
+  color: $dark-text-primary;
+  @include smooth-transition;
+  
+  &::placeholder {
+    color: $dark-text-muted;
+  }
+  
+  &:hover {
+    border-color: $dark-border-strong;
+  }
+  
+  &:focus {
+    border-color: $dark-text-primary;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+}
+
+// 表格
+@mixin table-dark {
+  background: transparent;
+  
+  th {
+    background: $dark-bg-surface;
+    color: $dark-text-secondary;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: $text-xs;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid $dark-border-default;
+  }
+  
+  td {
+    color: $dark-text-primary;
+    border-bottom: 1px solid $dark-border-subtle;
+  }
+  
+  tr:hover td {
+    background: $dark-bg-hover;
+  }
+}
+
+// 滚动条
+@mixin scrollbar-dark {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $dark-border-default;
+    border-radius: $radius-full;
+    
+    &:hover {
+      background: $dark-border-strong;
+    }
+  }
+}
+
+// ==================== 状态标签 ====================
+@mixin status-badge($color) {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  padding: $space-1 $space-2;
+  background: rgba($color, 0.15);
+  color: $color;
+  border-radius: $radius-full;
+  font-size: $text-xs;
+  font-weight: 500;
+  
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: $color;
+    border-radius: 50%;
+  }
+}
+
+// ==================== 数据展示 ====================
+@mixin stat-number {
+  font-size: $text-3xl;
+  font-weight: 600;
+  color: $dark-text-primary;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@mixin stat-label {
+  font-size: $text-sm;
+  color: $dark-text-tertiary;
+  font-weight: 500;
+}
+
+@mixin stat-trend-up {
+  color: $accent-green;
+  font-size: $text-sm;
+  font-weight: 500;
+}
+
+@mixin stat-trend-down {
+  color: $accent-red;
+  font-size: $text-sm;
+  font-weight: 500;
+}

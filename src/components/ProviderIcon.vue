@@ -1,13 +1,15 @@
 <template>
-  <div class="provider-icon" :class="sizeClass" :style="{ color: config?.color }">
-    <i v-if="config?.icon" :class="config.icon" class="iconfont" />
+  <div class="provider-icon" :class="sizeClass">
+    <IconFont v-if="iconName" :type="iconName" :size="iconSize" />
     <span v-else class="provider-text">{{ displayName.charAt(0) }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { getProviderConfig } from '@/utils/constants';
-import { computed } from 'vue';
+import IconFont from '@/components/IconFont/index.vue'
+import { getProviderConfig } from '@/utils/constants'
+import { getProviderIcon } from '@/utils/icon-mapping'
+import { computed } from 'vue'
 
 interface Props {
   provider: string
@@ -19,8 +21,24 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const config = computed(() => getProviderConfig(props.provider))
-const displayName = computed(() => config.value?.displayName || props.provider)
+const displayName = computed(() => config.value?.displayName || props.provider || '?')
 const sizeClass = computed(() => `provider-icon--${props.size}`)
+const iconName = computed(() => {
+  if (!props.provider) return ''
+  return getProviderIcon(props.provider)
+})
+const iconSize = computed(() => {
+  switch (props.size) {
+    case 'small':
+      return 16
+    case 'large':
+      return 24
+    default:
+      return 20
+  }
+})
+
+
 </script>
 
 <style scoped lang="scss">

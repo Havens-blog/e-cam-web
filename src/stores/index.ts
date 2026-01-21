@@ -5,3 +5,10 @@ const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 
 export default pinia
+
+// 导出所有 store
+export { useAccountStore } from './account'
+export { useAppStore } from './app'
+export { useAssetStore } from './asset'
+export { useUserStore } from './user'
+

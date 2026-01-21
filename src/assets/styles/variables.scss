@@ -1,26 +1,47 @@
-// 颜色变量
-$primary-color: #409eff;
-$success-color: #67c23a;
-$warning-color: #e6a23c;
-$danger-color: #f56c6c;
-$info-color: #909399;
+// ============================================
+// 深色主题变量 - Linear/Vercel 风格
+// ============================================
+
+// 主色调 (Vercel 风格 - 黑白灰为主)
+$primary-color: #fafafa;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$info-color: #3b82f6;
+
+// 强调色
+$accent-blue: #3b82f6;
+$accent-cyan: #06b6d4;
+$accent-green: #10b981;
+$accent-yellow: #f59e0b;
+$accent-red: #ef4444;
+$accent-purple: #8b5cf6;
+
+// 背景层级 (由深到浅)
+$bg-base: #0a0a0a;
+$bg-elevated: #111111;
+$bg-surface: #171717;
+$bg-overlay: #1a1a1a;
+$bg-hover: #262626;
+$bg-color: #0a0a0a;
+$bg-page: #0a0a0a;
 
 // 文本颜色
-$text-primary: #303133;
-$text-regular: #606266;
-$text-secondary: #909399;
-$text-placeholder: #c0c4cc;
+$text-primary: #fafafa;
+$text-regular: #e4e4e7;
+$text-secondary: #a1a1aa;
+$text-tertiary: #71717a;
+$text-muted: #52525b;
+$text-placeholder: #52525b;
 
 // 边框颜色
-$border-base: #dcdfe6;
-$border-light: #e4e7ed;
-$border-lighter: #ebeef5;
-$border-extra-light: #f2f6fc;
-
-// 背景颜色
-$bg-color: #ffffff;
-$bg-page: #f5f7fa;
-$bg-overlay: rgba(0, 0, 0, 0.5);
+$border-subtle: rgba(255, 255, 255, 0.06);
+$border-base: rgba(255, 255, 255, 0.1);
+$border-light: rgba(255, 255, 255, 0.1);
+$border-lighter: rgba(255, 255, 255, 0.06);
+$border-strong: rgba(255, 255, 255, 0.15);
+$border-glow: rgba(255, 255, 255, 0.2);
+$border-extra-light: rgba(255, 255, 255, 0.04);
 
 // 间距
 $spacing-xs: 4px;
@@ -29,18 +50,22 @@ $spacing-md: 16px;
 $spacing-lg: 24px;
 $spacing-xl: 32px;
 
-// 圆角
-$border-radius-base: 4px;
-$border-radius-small: 2px;
-$border-radius-large: 8px;
-$border-radius-round: 20px;
+// 圆角 (更大的圆角更现代)
+$border-radius-base: 8px;
+$border-radius-small: 6px;
+$border-radius-large: 12px;
+$border-radius-xl: 16px;
+$border-radius-round: 9999px;
 
-// 阴影
-$box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
-$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-$box-shadow-dark: 0 2px 8px rgba(0, 0, 0, 0.15);
+// 阴影 (深色主题阴影更重)
+$box-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.4);
+$box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.3);
+$box-shadow-dark: 0 8px 24px rgba(0, 0, 0, 0.5);
+$box-shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
 
 // 字体
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
 $font-size-base: 14px;
 $font-size-small: 12px;
 $font-size-large: 16px;
@@ -49,27 +74,36 @@ $font-size-extra-large: 18px;
 // 行高
 $line-height-base: 1.5;
 
-// 过渡
-$transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-$transition-fade: opacity 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+// 过渡 (更快的过渡更流畅)
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;
+$transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+$transition-fade: opacity 200ms ease;
 
-// 云厂商颜色
-$provider-aliyun: #ff6a00;
-$provider-aws: #ff9900;
-$provider-azure: #0078d4;
-$provider-tencent: #006eff;
-$provider-huawei: #c00000;
+// 云厂商颜色 (深色主题适配)
+$provider-aliyun: #ff8533;
+$provider-aws: #ffad33;
+$provider-azure: #2196f3;
+$provider-tencent: #3d8bff;
+$provider-huawei: #ff4d4d;
 
 // 环境颜色
-$env-production: #f56c6c;
-$env-staging: #e6a23c;
-$env-development: #409eff;
-$env-test: #67c23a;
+$env-production: #ef4444;
+$env-staging: #f59e0b;
+$env-development: #3b82f6;
+$env-test: #10b981;
 
 // 状态颜色
-$status-active: #67c23a;
-$status-inactive: #909399;
-$status-running: #409eff;
-$status-success: #67c23a;
-$status-failed: #f56c6c;
-$status-pending: #e6a23c;
+$status-active: #10b981;
+$status-inactive: #71717a;
+$status-running: #3b82f6;
+$status-success: #10b981;
+$status-failed: #ef4444;
+$status-pending: #f59e0b;
+
+// 玻璃拟态变量
+$glass-bg: rgba(255, 255, 255, 0.03);
+$glass-bg-hover: rgba(255, 255, 255, 0.06);
+$glass-border: rgba(255, 255, 255, 0.08);
+$glass-blur: 16px;

@@ -1,245 +1,207 @@
 <template>
-  <el-card class="account-card" :class="`status-${account.status}`">
+  <el-card class="account-card" shadow="hover">
     <div class="card-header">
-      <div class="provider-info">
-        <div class="provider-icon">
-          <ProviderIcon :provider="account.provider" size="large" />
-        </div>
-        <div class="account-info">
-          <h3 class="account-name">{{ account.name }}</h3>
-          <p class="account-meta">
-            {{ getProviderLabel(account.provider) }} - {{ account.region }}
-          </p>
-        </div>
+      <div class="account-info">
+        <div class="account-name">{{ account.name }}</div>
+        <el-tag :type="getProviderType(account.provider) as any" size="small">
+          {{ getProviderLabel(account.provider) }}
+        </el-tag>
+        <el-tag :type="getEnvironmentType(account.environment) as any" size="small">
+          {{ getEnvironmentLabel(account.environment) }}
+        </el-tag>
       </div>
-      <el-tag :type="(getAccountStatus(account.status).color as any)" size="small">
-        {{ getAccountStatus(account.status).label }}
-      </el-tag>
+      <div class="account-actions">
+        <el-button link size="small" @click="$emit('view', account)">
+          详情
+        </el-button>
+        <el-button link size="small" @click="$emit('edit', account)">
+          编辑
+        </el-button>
+        <el-button link type="danger" size="small" @click="$emit('delete', account)">
+          删除
+        </el-button>
+      </div>
     </div>
-
-    <div class="card-body">
-      <div class="info-row">
-        <span class="label">环境:</span>
-        <EnvironmentTag :environment="account.environment" size="small" />
+    
+    <div class="card-content">
+      <div class="info-item">
+        <span class="label">Access Key ID:</span>
+        <span class="value">{{ account.access_key_id }}</span>
       </div>
-      <div class="info-row">
-        <span class="label">Access Key:</span>
-        <span class="value">{{ maskAccessKey(account.access_key_id) }}</span>
+      <div class="info-item">
+        <span class="label">区域:</span>
+        <span class="value">{{ account.region || '-' }}</span>
       </div>
-      <div class="info-row">
-        <span class="label">资产数量:</span>
-        <span class="value">{{ account.asset_count }}</span>
-      </div>
-      <div class="info-row">
-        <span class="label">最后同步:</span>
-        <span class="value">{{ formatRelativeTime(account.last_sync_time) }}</span>
-      </div>
-      <div v-if="account.description" class="info-row">
+      <div v-if="account.description" class="info-item">
         <span class="label">描述:</span>
         <span class="value">{{ account.description }}</span>
       </div>
-    </div>
-
-    <div class="card-footer">
-      <el-button size="small" @click="handleTest">
-        <el-icon><Connection /></el-icon>
-        测试连接
-      </el-button>
-      <el-button size="small" type="primary" @click="handleSync">
-        <el-icon><Refresh /></el-icon>
-        同步资产
-      </el-button>
-      <el-dropdown @command="handleCommand">
-        <el-button size="small">
-          更多
-          <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+      
+      <!-- IAM 统计信息 -->
+      <div class="iam-stats">
+        <div class="stat-item">
+          <el-icon><User /></el-icon>
+          <span class="stat-label">用户:</span>
+          <span class="stat-value">{{ account.user_count || 0 }}</span>
+        </div>
+        <div class="stat-item">
+          <el-icon><UserFilled /></el-icon>
+          <span class="stat-label">权限组:</span>
+          <span class="stat-value">{{ account.group_count || 0 }}</span>
+        </div>
+        <el-button
+          link
+          type="primary"
+          size="small"
+          @click.stop="handleManageUsers"
+        >
+          <el-icon><Setting /></el-icon>
+          管理用户
         </el-button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="edit">
-              <el-icon><Edit /></el-icon>
-              编辑
-            </el-dropdown-item>
-            <el-dropdown-item command="toggle">
-              <el-icon v-if="account.status === 'active'"><Lock /></el-icon>
-              <el-icon v-else><Unlock /></el-icon>
-              {{ account.status === 'active' ? '禁用' : '启用' }}
-            </el-dropdown-item>
-            <el-dropdown-item command="delete" divided>
-              <el-icon><Delete /></el-icon>
-              删除
-            </el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+      </div>
+    </div>
+    
+    <div class="card-footer">
+      <span class="create-time">创建于 {{ account.create_time }}</span>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
-import EnvironmentTag from '@/components/EnvironmentTag.vue'
-import ProviderIcon from '@/components/ProviderIcon.vue'
-import { getAccountStatus, getProviderLabel } from '@/utils/constants'
-import { formatRelativeTime, maskAccessKey } from '@/utils/formatters'
-import {
-    ArrowDown,
-    Connection,
-    Delete,
-    Edit,
-    Lock,
-    Refresh,
-    Unlock,
-} from '@element-plus/icons-vue'
+import { getEnvironmentLabel, getProviderLabel } from '@/utils/constants'
+import { Setting, User, UserFilled } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 
 interface Props {
   account: CloudAccount
 }
 
 interface Emits {
+  (e: 'view', account: CloudAccount): void
   (e: 'edit', account: CloudAccount): void
   (e: 'delete', account: CloudAccount): void
-  (e: 'test', account: CloudAccount): void
-  (e: 'sync', account: CloudAccount): void
-  (e: 'toggle-status', account: CloudAccount): void
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+defineEmits<Emits>()
 
-const handleTest = () => {
-  emit('test', props.account)
+const router = useRouter()
+
+// 管理用户
+const handleManageUsers = () => {
+  router.push({
+    path: '/iam/users',
+    query: { cloud_account_id: props.account.id }
+  })
 }
 
-const handleSync = () => {
-  emit('sync', props.account)
-}
-
-const handleCommand = (command: string) => {
-  switch (command) {
-    case 'edit':
-      emit('edit', props.account)
-      break
-    case 'toggle':
-      emit('toggle-status', props.account)
-      break
-    case 'delete':
-      emit('delete', props.account)
-      break
+const getProviderType = (provider: string) => {
+  const typeMap: Record<string, string> = {
+    aliyun: 'warning',
+    aws: 'danger',
+    azure: 'primary',
+    tencent: 'success',
+    huawei: 'info'
   }
+  return typeMap[provider] || 'info'
+}
+
+const getEnvironmentType = (environment: string) => {
+  const typeMap: Record<string, string> = {
+    production: 'danger',
+    staging: 'warning',
+    development: 'info',
+    test: 'info'
+  }
+  return typeMap[environment] || 'info'
 }
 </script>
 
 <style scoped lang="scss">
 .account-card {
-  height: 100%;
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    transform: translateY(-2px);
-  }
-
-  &.status-error {
-    border-left: 4px solid #ef4444;
-  }
-
-  &.status-disabled {
-    opacity: 0.7;
-  }
-
+  margin-bottom: 16px;
+  
   .card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: calc(1rem + 0.2vw);
-
-    .provider-info {
+    align-items: center;
+    margin-bottom: 12px;
+    
+    .account-info {
       display: flex;
-      gap: calc(0.8rem + 0.2vw);
       align-items: center;
-      flex: 1;
-
-      .provider-icon {
+      gap: 8px;
+      
+      .account-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+    
+    .account-actions {
+      display: flex;
+      gap: 4px;
+    }
+  }
+  
+  .card-content {
+    .info-item {
+      display: flex;
+      margin-bottom: 8px;
+      font-size: 14px;
+      
+      .label {
+        color: #909399;
+        margin-right: 8px;
+        min-width: 120px;
+      }
+      
+      .value {
+        color: #606266;
+        flex: 1;
+      }
+    }
+    
+    .iam-stats {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #ebeef5;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      
+      .stat-item {
         display: flex;
         align-items: center;
-        justify-content: center;
-        width: calc(2.5rem + 0.5vw);
-        height: calc(2.5rem + 0.5vw);
-        border-radius: calc(0.4rem + 0.1vw);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-      }
-
-      .account-info {
-        flex: 1;
-        min-width: 0;
-
-        .account-name {
-          margin: 0;
-          font-size: calc(0.9rem + 0.2vw);
-          font-weight: 600;
-          color: #1f2937;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        gap: 4px;
+        font-size: 14px;
+        
+        .el-icon {
+          color: #409eff;
         }
-
-        .account-meta {
-          margin: calc(0.2rem + 0.05vw) 0 0;
-          font-size: calc(0.7rem + 0.1vw);
-          color: #6b7280;
+        
+        .stat-label {
+          color: #909399;
+        }
+        
+        .stat-value {
+          color: #303133;
+          font-weight: 500;
         }
       }
     }
   }
-
-  .card-body {
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: calc(0.4rem + 0.1vw) 0;
-      border-bottom: 1px solid #f3f4f6;
-      font-size: calc(0.7rem + 0.1vw);
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .label {
-        color: #6b7280;
-        font-weight: 500;
-      }
-
-      .value {
-        color: #1f2937;
-        font-weight: 400;
-        text-align: right;
-        max-width: 60%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-    }
-  }
-
+  
   .card-footer {
-    display: flex;
-    gap: calc(0.5rem + 0.1vw);
-    margin-top: calc(1rem + 0.2vw);
-    padding-top: calc(1rem + 0.2vw);
-    border-top: 1px solid #f3f4f6;
-
-    .el-button {
-      flex: 1;
-    }
-
-    .el-dropdown {
-      .el-button {
-        flex: initial;
-      }
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #ebeef5;
+    
+    .create-time {
+      font-size: 12px;
+      color: #909399;
     }
   }
 }

@@ -64,17 +64,11 @@ const showDetails = ref(false)
 const isDev = computed(() => import.meta.env.DEV)
 
 const getAlertType = () => {
-  switch (props.errorInfo.type) {
-    case 'auth':
-      return 'warning'
-    case 'network':
-    case 'timeout':
-      return 'error'
-    case 'server':
-      return 'error'
-    default:
-      return 'error'
+  const errorType = props.errorInfo.type
+  if (errorType === 'auth') {
+    return 'warning'
   }
+  return 'error'
 }
 
 const handleRelogin = () => {

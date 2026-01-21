@@ -48,12 +48,154 @@
   justify-content: flex-end;
 }
 
-// 卡片样式
+// ==================== 玻璃拟态卡片 ====================
+@mixin glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 200ms ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+// 简单玻璃效果
+@mixin glass-effect($opacity: 0.05, $blur: 12px) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// 旧版卡片样式 (保持兼容)
 @mixin card {
-  background: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  @include glass-card;
   padding: 20px;
+}
+
+// ==================== 深色主题按钮 ====================
+@mixin btn-primary {
+  background: #fafafa;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 200ms ease;
+  
+  &:hover {
+    background: #e4e4e7;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@mixin btn-secondary {
+  background: transparent;
+  color: #fafafa;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 200ms ease;
+  
+  &:hover {
+    background: #262626;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+@mixin btn-ghost {
+  background: transparent;
+  color: #a1a1aa;
+  border: none;
+  border-radius: 8px;
+  transition: all 200ms ease;
+  
+  &:hover {
+    background: #262626;
+    color: #fafafa;
+  }
+}
+
+// ==================== 深色主题输入框 ====================
+@mixin input-dark {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fafafa;
+  transition: all 200ms ease;
+  
+  &::placeholder {
+    color: #52525b;
+  }
+  
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  
+  &:focus {
+    border-color: #fafafa;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+}
+
+// ==================== 状态标签 ====================
+@mixin status-badge($color) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba($color, 0.15);
+  color: $color;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: $color;
+    border-radius: 50%;
+  }
+}
+
+// ==================== 数据展示 ====================
+@mixin stat-number {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #fafafa;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@mixin stat-label {
+  font-size: 0.875rem;
+  color: #71717a;
+  font-weight: 500;
+}
+
+// ==================== 悬停提升效果 ====================
+@mixin hover-lift {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 
 // 响应式断点
@@ -73,25 +215,30 @@
   }
 }
 
-// 滚动条样式
-@mixin scrollbar {
+// ==================== 深色主题滚动条 ====================
+@mixin scrollbar-dark {
   &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
-
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    
     &:hover {
-      background-color: rgba(144, 147, 153, 0.5);
+      background: rgba(255, 255, 255, 0.15);
     }
   }
+}
 
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
+// 滚动条样式 (保持兼容)
+@mixin scrollbar {
+  @include scrollbar-dark;
 }
 
 // 禁用选择
@@ -103,7 +250,7 @@
 }
 
 // 过渡动画
-@mixin transition($property: all, $duration: 0.3s, $timing: ease) {
+@mixin transition($property: all, $duration: 0.2s, $timing: ease) {
   transition: $property $duration $timing;
 }
 
@@ -132,7 +279,7 @@
   &::before {
     content: '';
     display: block;
-    padding-top: ($height / $width) * 100%;
+    padding-top: calc($height / $width * 100%);
   }
 
   > * {
