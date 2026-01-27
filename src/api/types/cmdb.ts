@@ -222,6 +222,18 @@ export interface ListInstancesParams {
     asset_name?: string
     status?: string
     region?: string
+    zone?: string
+    vpc_id?: string
+    instance_type?: string
+    os_type?: string
+    charge_type?: string
+    private_ip?: string
+    public_ip?: string
+    provider?: string
+    project_id?: string
+    has_tags?: boolean
+    tag_key?: string
+    tag_value?: string
     offset?: number
     limit?: number
 }

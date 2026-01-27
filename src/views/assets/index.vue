@@ -120,7 +120,7 @@
             style="width: 100%"
             clearable
           >
-            <el-option label="虚拟机" value="vm" />
+            <el-option label="虚拟机" value="ecs" />
             <el-option label="存储" value="storage" />
             <el-option label="网络" value="network" />
             <el-option label="数据库" value="database" />
@@ -471,7 +471,7 @@ const submitDiscover = async () => {
     ElMessage.success(`任务已提交，任务ID: ${data.task_id}`)
     discoverDialogVisible.value = false
     // 跳转到任务详情页面
-    router.push(`/cam/tasks/${data.task_id}`)
+    router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
     ElMessage.error(error.message || '提交任务失败')
   } finally {
@@ -513,7 +513,7 @@ const submitSync = async () => {
     ElMessage.success(`同步任务已提交，任务ID: ${data.task_id}`)
     syncDialogVisible.value = false
     // 跳转到任务详情页面
-    router.push(`/cam/tasks/${data.task_id}`)
+    router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
     ElMessage.error(error.message || '提交同步任务失败')
   } finally {

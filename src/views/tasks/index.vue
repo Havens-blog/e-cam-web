@@ -125,7 +125,7 @@ const handleFilterChange = () => {
 
 // 查看任务详情
 const handleView = (task: Task) => {
-  router.push(`/cam/tasks/${task.id}`)
+  router.push(`/tasks/${task.id}`)
 }
 
 // 取消任务

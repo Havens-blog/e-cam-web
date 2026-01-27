@@ -18,6 +18,7 @@ export const PROVIDER_ICONS: Record<string, string> = {
     jdcloud: 'JDCloud', // 京东云 - 彩色
     ecloud: 'ECloud', // 天翼云 - 彩色
     bytecloud: 'Bytecloud', // 火山引擎 - 彩色
+    volcengine: 'Bytecloud', // 火山引擎 - 彩色
     nutanix: 'Nutanix', // Nutanix - 彩色
     openstack: 'OpenStack', // OpenStack - 彩色
     zstack: 'ZStack', // ZStack - 彩色

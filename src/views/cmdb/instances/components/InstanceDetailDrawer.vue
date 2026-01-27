@@ -1,141 +1,249 @@
 <template>
   <el-drawer
     :model-value="visible"
-    title="实例详情"
-    size="480px"
+    :with-header="false"
+    size="860px"
     :close-on-click-modal="true"
-    class="detail-drawer"
+    class="instance-detail-drawer"
     @update:model-value="$emit('update:visible', $event)"
   >
     <template v-if="instance">
-      <div class="detail-content">
-        <!-- 基本信息 -->
-        <div class="detail-section">
-          <div class="section-header">
-            <div class="instance-avatar" :class="getStatusColorClass(instance.attributes?.status)">
-              <el-icon :size="24"><Box /></el-icon>
-            </div>
-            <div class="instance-title">
-              <h3>{{ instance.asset_name || instance.asset_id }}</h3>
-              <span class="instance-id">{{ instance.asset_id }}</span>
+      <!-- 自定义头部 -->
+      <div class="drawer-header">
+        <div class="header-left">
+          <div class="instance-icon">
+            <IconFont :type="getOsIcon(instance.attributes?.os_type)" :size="24" />
+          </div>
+          <div class="instance-info">
+            <div class="instance-type">虚拟机</div>
+            <div class="instance-name">
+              {{ instance.asset_name || instance.asset_id }}
+              <el-button text size="small" @click="handleRefresh">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
             </div>
           </div>
         </div>
-
-        <!-- 状态信息 -->
-        <div class="detail-section">
-          <h4 class="section-title">状态信息</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">状态</span>
-              <span class="info-value">
-                <span class="status-dot" :class="getStatusClass(instance.attributes?.status)"></span>
-                {{ instance.attributes?.status || '-' }}
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">模型</span>
-              <code class="info-code">{{ instance.uid }}</code>
-            </div>
-            <div class="info-item">
-              <span class="info-label">租户</span>
-              <span class="info-value">{{ instance.tenant_id }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">云账号ID</span>
-              <span class="info-value">{{ instance.account_id || '-' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 位置信息 -->
-        <div class="detail-section" v-if="instance.attributes?.region || instance.attributes?.zone">
-          <h4 class="section-title">位置信息</h4>
-          <div class="info-grid">
-            <div class="info-item" v-if="instance.attributes?.region">
-              <span class="info-label">地域</span>
-              <span class="info-value">{{ instance.attributes.region }}</span>
-            </div>
-            <div class="info-item" v-if="instance.attributes?.zone">
-              <span class="info-label">可用区</span>
-              <span class="info-value">{{ instance.attributes.zone }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 资源配置 -->
-        <div class="detail-section" v-if="hasResourceConfig">
-          <h4 class="section-title">资源配置</h4>
-          <div class="info-grid">
-            <div class="info-item" v-if="instance.attributes?.instance_type">
-              <span class="info-label">实例类型</span>
-              <span class="info-value">{{ instance.attributes.instance_type }}</span>
-            </div>
-            <div class="info-item" v-if="instance.attributes?.cpu">
-              <span class="info-label">CPU</span>
-              <span class="info-value">{{ instance.attributes.cpu }} 核</span>
-            </div>
-            <div class="info-item" v-if="instance.attributes?.memory">
-              <span class="info-label">内存</span>
-              <span class="info-value">{{ formatMemory(instance.attributes.memory) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 网络信息 -->
-        <div class="detail-section" v-if="hasNetworkInfo">
-          <h4 class="section-title">网络信息</h4>
-          <div class="info-grid">
-            <div class="info-item" v-if="instance.attributes?.private_ip">
-              <span class="info-label">内网IP</span>
-              <code class="info-code">{{ instance.attributes.private_ip }}</code>
-            </div>
-            <div class="info-item" v-if="instance.attributes?.public_ip">
-              <span class="info-label">公网IP</span>
-              <code class="info-code">{{ instance.attributes.public_ip }}</code>
-            </div>
-          </div>
-        </div>
-
-        <!-- 其他属性 -->
-        <div class="detail-section" v-if="otherAttributes.length > 0">
-          <h4 class="section-title">其他属性</h4>
-          <div class="attributes-list">
-            <div class="attr-item" v-for="attr in otherAttributes" :key="attr.key">
-              <span class="attr-key">{{ attr.key }}</span>
-              <span class="attr-value">{{ formatAttrValue(attr.value) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 时间信息 -->
-        <div class="detail-section">
-          <h4 class="section-title">时间信息</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">创建时间</span>
-              <span class="info-value">{{ formatTime(instance.create_time) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">更新时间</span>
-              <span class="info-value">{{ formatTime(instance.update_time) }}</span>
-            </div>
-          </div>
+        <div class="header-right">
+          <el-dropdown trigger="click">
+            <el-button size="small">
+              实例控制 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item>开机</el-dropdown-item>
+                <el-dropdown-item>关机</el-dropdown-item>
+                <el-dropdown-item>重启</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-dropdown trigger="click">
+            <el-button size="small">
+              更多 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="$emit('edit', instance)">编辑</el-dropdown-item>
+                <el-dropdown-item divided @click="$emit('delete', instance)">
+                  <span class="danger-text">删除</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-button text @click="$emit('update:visible', false)">
+            <el-icon :size="18"><Close /></el-icon>
+          </el-button>
         </div>
       </div>
-    </template>
 
-    <template #footer>
-      <div class="drawer-footer">
-        <el-button @click="$emit('update:visible', false)">关闭</el-button>
-        <el-button type="primary" :disabled="!instance" @click="instance && $emit('edit', instance)">
-          <el-icon><Edit /></el-icon>
-          编辑
-        </el-button>
-        <el-button type="danger" plain :disabled="!instance" @click="instance && $emit('delete', instance)">
-          <el-icon><Delete /></el-icon>
-          删除
-        </el-button>
+      <!-- 标签页 -->
+      <div class="drawer-tabs">
+        <el-tabs v-model="activeTab">
+          <el-tab-pane label="详情" name="detail" />
+          <el-tab-pane label="安全组" name="security" />
+          <el-tab-pane label="网络" name="network" />
+          <el-tab-pane label="磁盘" name="disk" />
+          <el-tab-pane label="快照" name="snapshot" />
+          <el-tab-pane label="监控" name="monitor" />
+          <el-tab-pane label="报警" name="alarm" />
+          <el-tab-pane label="任务" name="task" />
+          <el-tab-pane label="定时任务" name="schedule" />
+          <el-tab-pane label="操作日志" name="log" />
+        </el-tabs>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="drawer-content">
+        <template v-if="activeTab === 'detail'">
+          <div class="detail-columns">
+            <!-- 左列：基本信息 -->
+            <div class="detail-column">
+              <div class="column-title">基本信息</div>
+              <div class="info-list">
+                <div class="info-row">
+                  <span class="info-label">云上ID</span>
+                  <span class="info-value">{{ instance.asset_id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">ID</span>
+                  <span class="info-value">{{ instance.id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">名称</span>
+                  <span class="info-value">{{ instance.asset_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">状态</span>
+                  <span class="info-value">
+                    <span class="status-dot" :class="getStatusClass(instance.attributes?.status)"></span>
+                    {{ getStatusText(instance.attributes?.status) }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">主机名</span>
+                  <span class="info-value">{{ instance.attributes?.host_name || instance.asset_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">租户</span>
+                  <span class="info-value">{{ instance.tenant_id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">云账号</span>
+                  <span class="info-value link">{{ instance.attributes?.cloud_account_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">云平台</span>
+                  <span class="info-value">
+                    <IconFont :type="getPlatformIconType(instance.attributes?.provider)" :size="16" />
+                    {{ getProviderName(instance.attributes?.provider) }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">区域</span>
+                  <span class="info-value">{{ instance.attributes?.region || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">可用区</span>
+                  <span class="info-value">{{ instance.attributes?.zone || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">计费方式</span>
+                  <span class="info-value highlight">{{ getChargeTypeText(instance.attributes?.charge_type) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">到期时间</span>
+                  <span class="info-value">{{ formatDateTime(instance.attributes?.expired_time) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">标签</span>
+                  <span class="info-value tags">
+                    <template v-if="instance.attributes?.tags && Object.keys(instance.attributes.tags).length > 0">
+                      <span v-for="(value, key) in instance.attributes.tags" :key="key" class="tag-item">
+                        {{ key }}: {{ value }}
+                      </span>
+                    </template>
+                    <span v-else>-</span>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">创建时间</span>
+                  <span class="info-value">{{ formatDateTime(instance.attributes?.creation_time) || formatTime(instance.create_time) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">更新时间</span>
+                  <span class="info-value">{{ formatTime(instance.update_time) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右列：配置信息 -->
+            <div class="detail-column">
+              <div class="column-title">配置信息</div>
+              <div class="info-list">
+                <div class="info-row">
+                  <span class="info-label">操作系统</span>
+                  <span class="info-value">
+                    <IconFont :type="getOsIcon(instance.attributes?.os_type)" :size="16" />
+                    {{ instance.attributes?.os_name || '-' }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">规格</span>
+                  <span class="info-value">{{ instance.attributes?.instance_type || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">CPU</span>
+                  <span class="info-value">{{ instance.attributes?.cpu || '-' }} 核</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">内存</span>
+                  <span class="info-value">{{ formatMemory(instance.attributes?.memory) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">私网IP</span>
+                  <span class="info-value">{{ instance.attributes?.private_ip || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">公网IP</span>
+                  <span class="info-value">{{ instance.attributes?.public_ip || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">镜像ID</span>
+                  <span class="info-value">{{ instance.attributes?.image_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">VPC</span>
+                  <span class="info-value link">{{ instance.attributes?.vpc_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">子网</span>
+                  <span class="info-value">{{ instance.attributes?.vswitch_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">安全组</span>
+                  <span class="info-value">
+                    <template v-if="instance.attributes?.security_groups?.length">
+                      {{ instance.attributes.security_groups.length }} 个
+                    </template>
+                    <template v-else>-</template>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">网络类型</span>
+                  <span class="info-value">{{ instance.attributes?.network_type || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">密钥对</span>
+                  <span class="info-value">{{ instance.attributes?.key_pair_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">入带宽</span>
+                  <span class="info-value">{{ instance.attributes?.internet_max_bandwidth_in || 0 }} Mbps</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">出带宽</span>
+                  <span class="info-value">{{ instance.attributes?.internet_max_bandwidth_out || 0 }} Mbps</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">自动续费</span>
+                  <span class="info-value">{{ instance.attributes?.auto_renew ? '开启' : '关闭' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">描述</span>
+                  <span class="info-value">{{ instance.attributes?.description || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 其他标签页占位 -->
+        <template v-else>
+          <div class="empty-tab">
+            <el-icon :size="48"><Document /></el-icon>
+            <p>{{ activeTab }} 功能开发中...</p>
+          </div>
+        </template>
       </div>
     </template>
   </el-drawer>
@@ -143,10 +251,11 @@
 
 <script setup lang="ts">
 import type { InstanceVO } from '@/api/types/cmdb';
-import { Box, Delete, Edit } from '@element-plus/icons-vue';
-import { computed } from 'vue';
+import IconFont from '@/components/IconFont/index.vue';
+import { ArrowDown, Close, Document, Refresh } from '@element-plus/icons-vue';
+import { ref } from 'vue';
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
   instance: InstanceVO | null
 }>()
@@ -157,46 +266,110 @@ defineEmits<{
   delete: [instance: InstanceVO]
 }>()
 
-// 已知属性键
-const knownKeys = ['status', 'region', 'zone', 'instance_type', 'cpu', 'memory', 'private_ip', 'public_ip']
+const activeTab = ref('detail')
 
-// 计算属性
-const hasResourceConfig = computed(() => {
-  const attrs = props.instance?.attributes
-  return attrs?.instance_type || attrs?.cpu || attrs?.memory
-})
-
-const hasNetworkInfo = computed(() => {
-  const attrs = props.instance?.attributes
-  return attrs?.private_ip || attrs?.public_ip
-})
-
-const otherAttributes = computed(() => {
-  if (!props.instance?.attributes) return []
-  return Object.entries(props.instance.attributes)
-    .filter(([key]) => !knownKeys.includes(key))
-    .map(([key, value]) => ({ key, value }))
-})
-
-// 辅助函数
-const getStatusClass = (status: string | undefined) => {
-  if (!status) return ''
-  const map: Record<string, string> = {
-    Running: 'active',
-    Stopped: 'inactive',
-    Deleted: 'error',
-  }
-  return map[status] || ''
+const handleRefresh = () => {
+  // 刷新数据
 }
 
-const getStatusColorClass = (status: string | undefined) => {
-  if (!status) return 'blue'
+const getOsIcon = (osType: string | undefined): string => {
+  if (!osType) return 'caise-Linux'
+  const os = osType.toLowerCase()
+  if (os.includes('windows')) return 'caise-Windows'
+  if (os.includes('ubuntu')) return 'caise-Ubuntu'
+  if (os.includes('centos')) return 'caise-centos'
+  return 'caise-Linux'
+}
+
+const getStatusClass = (status: string | undefined) => {
+  if (!status) return ''
+  const s = status.toUpperCase()
   const map: Record<string, string> = {
-    Running: 'green',
-    Stopped: 'orange',
-    Deleted: 'red',
+    RUNNING: 'running',
+    STOPPED: 'stopped',
+    DELETED: 'error',
+    PENDING: 'pending',
   }
-  return map[status] || 'blue'
+  return map[s] || ''
+}
+
+const getStatusText = (status: string | undefined) => {
+  if (!status) return '-'
+  const s = status.toUpperCase()
+  const map: Record<string, string> = {
+    RUNNING: '运行中',
+    STOPPED: '已关机',
+    DELETED: '已删除',
+    PENDING: '创建中',
+  }
+  return map[s] || status
+}
+
+const getPlatformIconType = (provider: string | undefined): string => {
+  if (!provider) return 'Alibaba_Cloud'
+  const p = provider.toLowerCase()
+  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
+  if (p.includes('tencent') || p.includes('qcloud')) return 'Tencent_Cloud'
+  if (p.includes('huawei')) return 'Huawei_Cloud'
+  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
+  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
+  if (p.includes('google') || p.includes('gcp')) return 'Google_Cloud_Platform'
+  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return 'Bytecloud'
+  if (p.includes('ucloud')) return 'UCloud'
+  if (p.includes('jd') || p.includes('jdcloud')) return 'JDCloud'
+  if (p.includes('ecloud') || p.includes('ctyun')) return 'Ctyun'
+  if (p.includes('openstack')) return 'OpenStack'
+  if (p.includes('vmware') || p.includes('vsphere')) return 'caise-vmware'
+  if (p.includes('nutanix')) return 'Nutanix'
+  if (p.includes('zstack')) return 'ZStack'
+  return 'Alibaba_Cloud'
+}
+
+const getProviderName = (provider: string | undefined): string => {
+  if (!provider) return '-'
+  const p = provider.toLowerCase()
+  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
+  if (p.includes('tencent') || p.includes('qcloud')) return '腾讯云'
+  if (p.includes('huawei')) return '华为云'
+  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
+  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
+  if (p.includes('google') || p.includes('gcp')) return 'Google Cloud'
+  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return '火山引擎'
+  if (p.includes('ucloud')) return 'UCloud'
+  if (p.includes('jd') || p.includes('jdcloud')) return '京东云'
+  if (p.includes('ecloud') || p.includes('ctyun')) return '天翼云'
+  if (p.includes('openstack')) return 'OpenStack'
+  if (p.includes('vmware') || p.includes('vsphere')) return 'VMware'
+  if (p.includes('nutanix')) return 'Nutanix'
+  if (p.includes('zstack')) return 'ZStack'
+  return provider
+}
+
+const getChargeTypeText = (chargeType: string | undefined): string => {
+  if (!chargeType) return '-'
+  const map: Record<string, string> = {
+    PrePaid: '包年包月',
+    PostPaid: '按量付费',
+    prepaid: '包年包月',
+    postpaid: '按量付费',
+  }
+  return map[chargeType] || chargeType
+}
+
+const formatDateTime = (dateStr: string | undefined): string => {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return dateStr
+  }
 }
 
 const formatTime = (time: number | undefined) => {
@@ -204,156 +377,220 @@ const formatTime = (time: number | undefined) => {
   return new Date(time).toLocaleString('zh-CN')
 }
 
-const formatMemory = (memory: number) => {
+const formatMemory = (memory: number | undefined) => {
+  if (!memory) return '-'
   if (memory >= 1024) {
-    return `${(memory / 1024).toFixed(1)} GB`
+    return `${(memory / 1024).toFixed(0)}GB`
   }
-  return `${memory} MB`
-}
-
-const formatAttrValue = (value: any) => {
-  if (value === null || value === undefined) return '-'
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
+  return `${memory}MB`
 }
 </script>
 
 <style scoped lang="scss">
-.detail-content {
-  padding: 0 4px;
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
 
-.detail-section {
-  margin-bottom: 24px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  .section-header {
+  .instance-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-hover);
+    border-radius: 8px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    justify-content: center;
+    color: var(--text-tertiary);
+  }
 
-    .instance-avatar {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
+  .instance-info {
+    .instance-type {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .instance-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
-      justify-content: center;
-
-      &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-      &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-      &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
-      &.red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
-    }
-
-    .instance-title {
-      h3 {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0 0 4px 0;
-      }
-
-      .instance-id {
-        font-size: 13px;
-        color: var(--text-tertiary);
-        font-family: var(--font-mono);
-      }
+      gap: 4px;
     }
   }
+}
 
-  .section-title {
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-tabs {
+  padding: 0 20px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+
+  :deep(.el-tabs) {
+    .el-tabs__header {
+      margin: 0;
+    }
+
+    .el-tabs__nav-wrap::after {
+      display: none;
+    }
+
+    .el-tabs__item {
+      height: 36px;
+      line-height: 36px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 0 14px;
+
+      &.is-active {
+        color: var(--accent-blue);
+      }
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    .el-tabs__active-bar {
+      background-color: var(--accent-blue);
+      height: 2px;
+    }
+  }
+}
+
+.drawer-content {
+  padding: 20px 24px;
+  height: calc(100% - 110px);
+  overflow: auto;
+  background: var(--bg-base);
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.detail-column {
+  .column-title {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin: 0 0 12px 0;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.info-item {
+.info-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 7px 0;
+  font-size: 13px;
+  min-height: 32px;
 
   .info-label {
-    font-size: 12px;
+    width: 80px;
+    flex-shrink: 0;
     color: var(--text-muted);
+    line-height: 1.5;
   }
 
   .info-value {
-    font-size: 14px;
+    flex: 1;
     color: var(--text-primary);
+    word-break: break-all;
     display: flex;
     align-items: center;
     gap: 6px;
-  }
+    line-height: 1.5;
 
-  .info-code {
-    font-size: 13px;
-    font-family: var(--font-mono);
-    color: var(--text-secondary);
-    background: var(--bg-hover);
-    padding: 4px 8px;
-    border-radius: 6px;
+    &.link {
+      color: var(--accent-blue);
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    &.highlight {
+      color: var(--accent-blue);
+    }
+
+    .edit-icon {
+      color: var(--accent-blue);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .platform-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    // 标签样式
+    &.tags {
+      flex-wrap: wrap;
+      gap: 4px;
+
+      .tag-item {
+        padding: 2px 8px;
+        background: var(--bg-hover);
+        border-radius: 4px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+    }
   }
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--text-muted);
+  flex-shrink: 0;
 
-  &.active { background: var(--accent-green); }
-  &.inactive { background: var(--accent-yellow); }
+  &.running { background: var(--accent-green); }
+  &.stopped { background: var(--text-tertiary); }
   &.error { background: var(--accent-red); }
 }
 
-.attributes-list {
+.empty-tab {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-muted);
 
-  .attr-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    background: var(--bg-hover);
-    border-radius: 8px;
-
-    .attr-key {
-      font-size: 13px;
-      color: var(--text-tertiary);
-    }
-
-    .attr-value {
-      font-size: 13px;
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+  p {
+    margin-top: 16px;
   }
 }
 
-.drawer-footer {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+.danger-text {
+  color: var(--accent-red);
 }
 </style>

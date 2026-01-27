@@ -4,7 +4,7 @@
 
 // ==================== 云厂商常量 ====================
 
-export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei'
+export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei' | 'volcengine'
 
 export interface ProviderConfig {
     id: CloudProvider
@@ -137,6 +137,27 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
             { value: 'eip', label: '弹性公网IP' }
         ],
         features: ['auto_sync', 'batch_operations']
+    },
+    volcengine: {
+        id: 'volcengine',
+        name: 'volcengine',
+        displayName: '火山引擎',
+        icon: 'icon-volcengine',
+        color: '#3370ff',
+        regions: [
+            { value: 'cn-beijing', label: '华北2(北京)' },
+            { value: 'cn-shanghai', label: '华东2(上海)' },
+            { value: 'cn-guangzhou', label: '华南1(广州)' }
+        ],
+        assetTypes: [
+            { value: 'ecs', label: '云服务器' },
+            { value: 'rds', label: '云数据库' },
+            { value: 'tos', label: '对象存储' },
+            { value: 'clb', label: '负载均衡' },
+            { value: 'vpc', label: '私有网络' },
+            { value: 'eip', label: '弹性公网IP' }
+        ],
+        features: ['auto_sync', 'cost_monitoring', 'batch_operations']
     }
 }
 

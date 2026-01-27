@@ -124,6 +124,7 @@ export function syncCloudAccountApi(id: number, data: account.SyncRequest) {
     return instance.post<account.SyncResponse>({
         url: `${API_SERVICE.CAM}/cloud-accounts/${id}/sync`,
         data,
+        timeout: 300000, // 5分钟超时，同步资产可能需要较长时间
         interceptorsToOnce: createCamApiInterceptor()
     })
 }

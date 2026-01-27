@@ -160,7 +160,7 @@ export function createCmdbInstanceApi(data: cmdb.CreateInstanceReq) {
 /** 获取实例列表 */
 export function listCmdbInstancesApi(params: cmdb.ListInstancesParams) {
     return instance.get<cmdb.InstanceListResp>({
-        url: `/cmdb/instances`,
+        url: `/cam/instances`,
         params,
         interceptorsToOnce: createCmdbApiInterceptor()
     })

@@ -9,7 +9,8 @@ import {
   Fold,
   FullScreen,
   Moon,
-  Search
+  Search,
+  Sunny
 } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -147,11 +148,6 @@ const menuGroups = ref<MenuGroup[]>([
             ]
           },
           { 
-            key: 'assets-container', 
-            title: '容器',
-            icon: 'caise-container',
-          },
-          { 
             key: 'assets-storage', 
             title: '存储',
             icon: 'caise-storage_device',
@@ -194,6 +190,14 @@ const menuGroups = ref<MenuGroup[]>([
       { key: 'cmdb-instances', path: '/cmdb/instances', title: '资源实例', icon: 'caise-computer' },
       { key: 'cmdb-relations', path: '/cmdb/relations', title: '模型关系', icon: 'veops-switch' },
       { key: 'cmdb-topology', path: '/cmdb/topology', title: '拓扑视图', icon: 'caise-network_devices' },
+    ]
+  },
+  {
+    title: '服务树',
+    items: [
+      { key: 'service-tree', path: '/service-tree', title: '服务树', icon: 'veops-switch' },
+      { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'ops-setting-security' },
+      { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'file' },
     ]
   },
   {
@@ -498,7 +502,12 @@ const toggleFullscreen = () => {
 
         <div class="navbar-right">
           <!-- 主题切换 -->
-          <div class="navbar-btn" :title="isDarkTheme ? '切换到浅色模式' : '切换到深色模式'" @click="toggleTheme">
+          <div 
+            class="navbar-btn" 
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            :title="isDarkTheme ? '切换到浅色模式' : '切换到深色模式'" 
+            @click="toggleTheme"
+          >
             <el-icon :size="18">
               <Moon v-if="isDarkTheme" />
               <Sunny v-else />
@@ -506,12 +515,21 @@ const toggleFullscreen = () => {
           </div>
           
           <!-- 全屏 -->
-          <div class="navbar-btn" title="全屏" @click="toggleFullscreen">
+          <div 
+            class="navbar-btn" 
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            title="全屏" 
+            @click="toggleFullscreen"
+          >
             <el-icon :size="18"><FullScreen /></el-icon>
           </div>
           
           <!-- 通知 -->
-          <div class="navbar-btn has-badge" title="通知">
+          <div 
+            class="navbar-btn has-badge" 
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            title="通知"
+          >
             <el-icon :size="18"><Bell /></el-icon>
             <span class="badge">3</span>
           </div>
@@ -1105,7 +1123,7 @@ $navbar-height: 56px;
 
   &:hover {
     background: var(--bg-hover);
-    color: var(--text-secondary);
+    color: var(--text-primary);
   }
 
   &.has-badge {

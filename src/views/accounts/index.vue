@@ -169,7 +169,7 @@
         <div class="col-status">状态</div>
         <div class="col-regions">区域</div>
         <div class="col-assets">资产</div>
-        <div class="col-time">创建时间</div>
+        <div class="col-time">最近同步</div>
         <div class="col-actions">操作</div>
       </div>
 
@@ -223,7 +223,7 @@
             <span class="asset-count">{{ account.asset_count || 0 }}</span>
           </div>
           <div class="col-time">
-            {{ formatTime(account.create_time) }}
+            {{ formatSyncTime(account.last_sync_time) }}
           </div>
           <div class="col-actions" @click.stop>
             <el-dropdown trigger="click" @command="(cmd: string) => handleAction(cmd, account)">
@@ -361,7 +361,7 @@
           <div class="sync-select">
             <span class="sync-label">资产类型</span>
             <el-select v-model="syncForm.assetTypes" multiple placeholder="请选择" style="width: 100%">
-              <el-option label="虚拟机" value="vm" />
+              <el-option label="虚拟机" value="ecs" />
               <el-option label="存储" value="storage" />
               <el-option label="网络" value="network" />
               <el-option label="数据库" value="database" />
@@ -595,6 +595,22 @@ const formatTime = (time: string | undefined) => {
   return new Date(time).toLocaleDateString('zh-CN')
 }
 
+const formatSyncTime = (time: string | undefined) => {
+  if (!time) return '从未同步'
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN')
+}
+
 // 获取账号列表
 const fetchAccounts = async () => {
   loading.value = true
@@ -748,8 +764,14 @@ const handleConfirmSync = async () => {
       if (syncForm.regions.length > 0) requestData.regions = syncForm.regions
     }
     const { data } = await syncCloudAccountApi(syncForm.accountId, requestData)
-    if (data.status === 'running' || data.status === 'completed') {
-      ElMessage.success('资产同步已启动')
+    if (data.status === 'running' || data.status === 'completed' || data.status === 'success' || data.status === 'pending') {
+      ElMessage({
+        message: data.message || '资产同步已启动',
+        type: 'success',
+        duration: 3000,
+        showClose: true,
+        customClass: 'modern-message'
+      })
       syncDialogVisible.value = false
       fetchAccounts()
     } else {

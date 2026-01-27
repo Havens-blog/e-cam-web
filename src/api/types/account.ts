@@ -97,6 +97,7 @@ export interface SyncRequest {
 
 export interface SyncResponse {
     sync_id: string
-    status: "running" | "completed" | "failed"
+    status: "running" | "completed" | "failed" | "success" | "pending"
+    message?: string
     start_time: string
 }

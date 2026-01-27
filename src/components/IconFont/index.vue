@@ -36,7 +36,12 @@ const colorIcons = [
   'Nutanix',
   'OpenStack',
   'ZStack',
-  'Ctyun'
+  'Ctyun',
+  // 操作系统彩色图标
+  'caise-Linux',
+  'caise-Windows',
+  'caise-Ubuntu',
+  'caise-centos'
 ]
 
 // 判断是否使用彩色图标

@@ -246,6 +246,34 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Share',
                 },
             },
+            // ==================== 服务树路由 ====================
+            {
+                path: '/service-tree',
+                name: 'ServiceTree',
+                component: () => import('@/views/service-tree/index.vue'),
+                meta: {
+                    title: '服务树',
+                    icon: 'Connection',
+                },
+            },
+            {
+                path: '/service-tree/environments',
+                name: 'ServiceTreeEnvironments',
+                component: () => import('@/views/service-tree/environments/index.vue'),
+                meta: {
+                    title: '环境管理',
+                    icon: 'Setting',
+                },
+            },
+            {
+                path: '/service-tree/rules',
+                name: 'ServiceTreeRules',
+                component: () => import('@/views/service-tree/rules/index.vue'),
+                meta: {
+                    title: '绑定规则',
+                    icon: 'List',
+                },
+            },
         ],
     },
     {
