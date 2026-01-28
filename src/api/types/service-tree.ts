@@ -58,6 +58,7 @@ export interface ServiceTreeNodeCreateParams {
     uid?: string
     name: string
     parent_id?: number
+    level?: number
     owner?: string
     team?: string
     description?: string

@@ -71,6 +71,7 @@ const props = defineProps<{
   visible: boolean
   node?: ServiceTreeNode
   parentId: number
+  parentLevel: number  // 父节点层级，根节点时为0
   isEdit: boolean
 }>()
 
@@ -129,15 +130,19 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     submitting.value = true
 
+    // 计算层级：父节点层级 + 1，根节点层级为1
+    const level = props.isEdit ? props.node?.level : (props.parentLevel + 1)
+
     const data = {
       name: form.name,
       uid: form.uid || undefined,
+      parent_id: props.isEdit ? undefined : props.parentId,
+      level: props.isEdit ? undefined : level,
       owner: form.owner || undefined,
       team: form.team || undefined,
       tags: form.tags.length > 0 ? form.tags : undefined,
       description: form.description || undefined,
-      order: form.order,
-      parent_id: props.isEdit ? undefined : props.parentId
+      order: form.order
     }
 
     if (props.isEdit && props.node) {

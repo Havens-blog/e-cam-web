@@ -240,6 +240,7 @@
         v-model:visible="nodeFormVisible"
         :node="currentNode"
         :parent-id="parentIdForCreate"
+        :parent-level="parentLevelForCreate"
         :is-edit="isEditNode"
         @success="handleNodeFormSuccess"
       />
@@ -265,22 +266,22 @@
 
 <script setup lang="ts">
 import {
-    deleteNodeApi,
-    getTreeApi,
-    listEnvironmentsApi,
-    listNodeBindingsApi,
-    unbindResourceApi
+  deleteNodeApi,
+  getTreeApi,
+  listEnvironmentsApi,
+  listNodeBindingsApi,
+  unbindResourceApi
 } from '@/api/service-tree'
 import type { Environment, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
-    Delete,
-    Document,
-    Edit,
-    Folder,
-    Link,
-    Plus,
-    Rank,
-    Search
+  Delete,
+  Document,
+  Edit,
+  Folder,
+  Link,
+  Plus,
+  Rank,
+  Search
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -324,6 +325,7 @@ const contextMenuPosition = reactive({ x: 0, y: 0 })
 const nodeFormVisible = ref(false)
 const currentNode = ref<ServiceTreeNode | undefined>()
 const parentIdForCreate = ref<number>(0)
+const parentLevelForCreate = ref<number>(0)
 const isEditNode = ref(false)
 
 const moveDialogVisible = ref(false)
@@ -430,6 +432,7 @@ const handleClickOutside = (event: MouseEvent) => {
 const handleCreateRoot = () => {
   currentNode.value = undefined
   parentIdForCreate.value = 0
+  parentLevelForCreate.value = 0  // 根节点的父级层级为0，创建后层级为1
   isEditNode.value = false
   nodeFormVisible.value = true
   contextMenuVisible.value = false
@@ -440,6 +443,7 @@ const handleCreateChild = () => {
   if (!selectedNode.value) return
   currentNode.value = undefined
   parentIdForCreate.value = selectedNode.value.id
+  parentLevelForCreate.value = selectedNode.value.level  // 父节点的层级
   isEditNode.value = false
   nodeFormVisible.value = true
   contextMenuVisible.value = false
