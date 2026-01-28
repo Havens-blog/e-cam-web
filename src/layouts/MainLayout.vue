@@ -224,31 +224,41 @@ const menuGroups = ref<MenuGroup[]>([
 // 当前激活的菜单
 const activeMenuKey = computed(() => {
   const path = route.path
+  
+  // 收集所有菜单项并按路径长度排序（更长的路径优先匹配）
+  const allItems: { key: string; path: string }[] = []
+  
   for (const group of menuGroups.value) {
     for (const item of group.items) {
-      // 检查子菜单
+      if (item.path) {
+        allItems.push({ key: item.key, path: item.path })
+      }
       if (item.children) {
         for (const child of item.children) {
-          // 检查三级菜单
+          if (child.path) {
+            allItems.push({ key: child.key, path: child.path })
+          }
           if (child.children) {
             for (const grandChild of child.children) {
-              if (grandChild.path && (path === grandChild.path || path.startsWith(grandChild.path + '/'))) {
-                return grandChild.key
+              if (grandChild.path) {
+                allItems.push({ key: grandChild.key, path: grandChild.path })
               }
             }
           }
-          // 二级菜单
-          if (child.path && (path === child.path || path.startsWith(child.path + '/'))) {
-            return child.key
-          }
         }
-      }
-      // 检查普通菜单项
-      if (item.path && (path === item.path || path.startsWith(item.path + '/'))) {
-        return item.key
       }
     }
   }
+  
+  // 按路径长度降序排序，确保更具体的路径优先匹配
+  allItems.sort((a, b) => b.path.length - a.path.length)
+  
+  for (const item of allItems) {
+    if (path === item.path || path.startsWith(item.path + '/')) {
+      return item.key
+    }
+  }
+  
   return 'dashboard'
 })
 
