@@ -336,9 +336,32 @@ const loadTree = async () => {
   treeLoading.value = true
   try {
     const res = await getTreeApi()
-    treeData.value = res.data?.children || []
+    console.log('[ServiceTree] API response:', res)
+    
+    // 处理不同的响应格式
+    const data = res.data
+    if (!data) {
+      treeData.value = []
+    } else if (Array.isArray(data)) {
+      // 如果是数组，直接使用
+      treeData.value = data
+    } else if (data.children) {
+      // 如果有 children 字段，使用 children
+      treeData.value = data.children
+    } else if (data.id) {
+      // 如果是单个节点对象，包装成数组
+      treeData.value = [data]
+    } else if (data.list) {
+      // 如果是列表格式
+      treeData.value = data.list
+    } else {
+      treeData.value = []
+    }
+    
+    console.log('[ServiceTree] treeData:', treeData.value)
   } catch (error) {
     console.error('加载服务树失败:', error)
+    treeData.value = []
   } finally {
     treeLoading.value = false
   }

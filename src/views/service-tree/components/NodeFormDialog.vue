@@ -67,13 +67,16 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { reactive, ref, watch } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean
   node?: ServiceTreeNode
   parentId: number
   parentLevel: number  // 父节点层级，根节点时为0
   isEdit: boolean
-}>()
+}>(), {
+  parentId: 0,
+  parentLevel: 0
+})
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
@@ -132,11 +135,13 @@ const handleSubmit = async () => {
 
     // 计算层级：父节点层级 + 1，根节点层级为1
     const level = props.isEdit ? props.node?.level : (props.parentLevel + 1)
+    
+    console.log('[NodeForm] parentLevel:', props.parentLevel, 'calculated level:', level)
 
     const data = {
       name: form.name,
       uid: form.uid || undefined,
-      parent_id: props.isEdit ? undefined : props.parentId,
+      parent_id: props.isEdit ? undefined : (props.parentId || undefined),  // 0 时不传
       level: props.isEdit ? undefined : level,
       owner: form.owner || undefined,
       team: form.team || undefined,
@@ -144,6 +149,8 @@ const handleSubmit = async () => {
       description: form.description || undefined,
       order: form.order
     }
+    
+    console.log('[NodeForm] submit data:', data)
 
     if (props.isEdit && props.node) {
       await updateNodeApi(props.node.id, data)
