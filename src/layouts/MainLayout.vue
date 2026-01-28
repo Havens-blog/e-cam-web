@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { listTenantsApi } from '@/api/iam'
+import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
 import { useAppStore } from '@/stores/app'
 import {
@@ -24,6 +26,35 @@ const searchKeyword = ref('')
 
 // 侧边栏折叠状态
 const isCollapsed = ref(false)
+
+// 租户列表
+const tenantList = ref<Tenant[]>([])
+const currentTenantId = ref(appStore.currentTenantId || 'default')
+
+// 加载租户列表
+const loadTenants = async () => {
+  try {
+    const res = await listTenantsApi({ page: 1, size: 100 })
+    tenantList.value = res.data?.data || []
+    // 如果当前租户ID不在列表中，选择第一个
+    if (tenantList.value.length > 0) {
+      const exists = tenantList.value.some(t => t.id === currentTenantId.value)
+      if (!exists && tenantList.value[0]) {
+        currentTenantId.value = tenantList.value[0].id
+        appStore.setCurrentTenantId(currentTenantId.value)
+      }
+    }
+  } catch (error) {
+    console.error('加载租户列表失败:', error)
+  }
+}
+
+// 切换租户
+const handleTenantChange = (tenantId: string) => {
+  appStore.setCurrentTenantId(tenantId)
+  // 刷新当前页面数据
+  window.location.reload()
+}
 
 // 当前主题 - 使用 store 的 theme 值判断
 const isDarkTheme = computed(() => {
@@ -335,6 +366,11 @@ const toggleFullscreen = () => {
     document.documentElement.requestFullscreen()
   }
 }
+
+// 初始化
+onMounted(() => {
+  loadTenants()
+})
 </script>
 
 <template>
@@ -511,6 +547,24 @@ const toggleFullscreen = () => {
         </div>
 
         <div class="navbar-right">
+          <!-- 租户选择 -->
+          <div class="tenant-selector">
+            <el-select
+              v-model="currentTenantId"
+              placeholder="选择租户"
+              size="small"
+              style="width: 160px"
+              @change="handleTenantChange"
+            >
+              <el-option
+                v-for="tenant in tenantList"
+                :key="tenant.id"
+                :label="tenant.display_name || tenant.name"
+                :value="tenant.id"
+              />
+            </el-select>
+          </div>
+
           <!-- 主题切换 -->
           <div 
             class="navbar-btn" 
@@ -1115,8 +1169,28 @@ $navbar-height: 56px;
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+.tenant-selector {
+  margin-right: 8px;
+
+  :deep(.el-select) {
+    .el-input__wrapper {
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      box-shadow: none;
+
+      &:hover {
+        border-color: var(--border-base);
+      }
+    }
+
+    .el-input__inner {
+      color: var(--text-secondary);
+    }
+  }
 }
 
 .navbar-btn {

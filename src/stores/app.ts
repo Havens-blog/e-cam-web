@@ -12,6 +12,15 @@ export type Theme = 'light' | 'dark' | 'auto'
 export type Language = 'zh-CN' | 'en-US'
 
 /**
+ * 租户信息
+ */
+export interface TenantInfo {
+    id: string
+    name: string
+    displayName?: string
+}
+
+/**
  * 应用配置状态管理
  */
 export const useAppStore = defineStore(
@@ -23,6 +32,10 @@ export const useAppStore = defineStore(
         const sidebarCollapsed = ref(false)
         const loading = ref(false)
         const pageTitle = ref('CAM 多云资产管理')
+
+        // 租户状态
+        const currentTenantId = ref<string>('default')
+        const currentTenant = ref<TenantInfo | null>(null)
 
         /**
          * 获取系统主题偏好
@@ -126,6 +139,11 @@ export const useAppStore = defineStore(
             // 应用保存的主题
             setTheme(theme.value)
 
+            // 同步租户ID到localStorage（供请求拦截器使用）
+            if (currentTenantId.value) {
+                localStorage.setItem('tenantId', currentTenantId.value)
+            }
+
             // 监听系统主题变化 (仅当设置为 auto 时)
             if (typeof window !== 'undefined' && window.matchMedia) {
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -136,6 +154,24 @@ export const useAppStore = defineStore(
             }
         }
 
+        /**
+         * 设置当前租户
+         */
+        const setCurrentTenant = (tenant: TenantInfo | null) => {
+            currentTenant.value = tenant
+            currentTenantId.value = tenant?.id || 'default'
+            // 同步到 localStorage 供请求拦截器使用
+            localStorage.setItem('tenantId', currentTenantId.value)
+        }
+
+        /**
+         * 设置当前租户ID
+         */
+        const setCurrentTenantId = (tenantId: string) => {
+            currentTenantId.value = tenantId
+            localStorage.setItem('tenantId', tenantId)
+        }
+
         return {
             // 状态
             theme,
@@ -143,6 +179,8 @@ export const useAppStore = defineStore(
             sidebarCollapsed,
             loading,
             pageTitle,
+            currentTenantId,
+            currentTenant,
             // 方法
             setTheme,
             toggleTheme,
@@ -153,6 +191,8 @@ export const useAppStore = defineStore(
             setLoading,
             setPageTitle,
             initAppState,
+            setCurrentTenant,
+            setCurrentTenantId,
         }
     },
     {
