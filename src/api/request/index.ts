@@ -34,6 +34,12 @@ class HttpRequest {
                     config.headers.Authorization = `Bearer ${token}`
                 }
 
+                // 添加租户 ID
+                const tenantId = localStorage.getItem('tenantId') || 'default'
+                if (config.headers) {
+                    config.headers['X-Tenant-ID'] = tenantId
+                }
+
                 // 添加请求 ID 用于追踪
                 const requestId = this.generateRequestId()
                 if (config.headers) {
