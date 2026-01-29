@@ -57,14 +57,27 @@
       <div class="content-section">
         <el-table v-loading="loading" :data="ruleList" stripe>
           <el-table-column prop="priority" label="优先级" width="80" align="center" />
-          <el-table-column prop="name" label="规则名称" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="node_name" label="目标节点" width="150" show-overflow-tooltip />
+          <el-table-column prop="name" label="规则名称" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="node_name" label="目标节点" width="140" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.node_name || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="目标环境" width="100">
+            <template #default="{ row }">
+              <span v-if="row.env_name" class="env-tag">
+                <span class="env-dot" :style="{ background: row.env_color || '#909399' }"></span>
+                {{ row.env_name }}
+              </span>
+              <span v-else class="text-muted">-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="条件数" width="80" align="center">
             <template #default="{ row }">
               <el-tag size="small">{{ row.conditions?.length || 0 }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column label="状态" width="80" align="center">
             <template #default="{ row }">
               <el-switch
                 :model-value="row.enabled"
@@ -72,9 +85,17 @@
               />
             </template>
           </el-table-column>
-          <el-table-column prop="match_count" label="匹配数" width="80" align="center" />
-          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-          <el-table-column label="操作" width="150" fixed="right">
+          <el-table-column prop="match_count" label="匹配数" width="80" align="center">
+            <template #default="{ row }">
+              {{ row.match_count ?? '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.description || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" size="small" @click="handleEdit(row)">
                 编辑
@@ -107,21 +128,30 @@
         :is-edit="isEdit"
         @success="handleFormSuccess"
       />
+
+      <!-- 执行规则确认弹窗 -->
+      <ExecuteConfirmDialog
+        v-model:visible="executeDialogVisible"
+        :loading="executing"
+        @confirm="confirmExecuteRules"
+      />
     </div>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import {
-    deleteRuleApi,
-    executeRulesApi,
-    listRulesApi,
-    updateRuleApi
+  deleteRuleApi,
+  executeRulesApi,
+  listEnvironmentsApi,
+  listRulesApi,
+  updateRuleApi
 } from '@/api/service-tree'
-import type { BindingRule } from '@/api/types/service-tree'
+import type { BindingRule, Environment } from '@/api/types/service-tree'
 import { Plus, RefreshLeft, Search, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import ExecuteConfirmDialog from './components/ExecuteConfirmDialog.vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 
 // 筛选条件
@@ -139,13 +169,25 @@ const pagination = reactive({
 
 // 数据
 const ruleList = ref<BindingRule[]>([])
+const environmentList = ref<Environment[]>([])
 const loading = ref(false)
 const executing = ref(false)
 
 // 弹窗
 const formDialogVisible = ref(false)
+const executeDialogVisible = ref(false)
 const currentRule = ref<BindingRule | undefined>()
 const isEdit = ref(false)
+
+// 加载环境列表
+const loadEnvironments = async () => {
+  try {
+    const res = await listEnvironmentsApi({ status: 1 })
+    environmentList.value = res.data?.list || []
+  } catch (error) {
+    console.error('加载环境列表失败:', error)
+  }
+}
 
 // 加载规则列表
 const loadRules = async () => {
@@ -158,7 +200,19 @@ const loadRules = async () => {
       page_size: pagination.pageSize
     }
     const res = await listRulesApi(params)
-    ruleList.value = res.data?.list || []
+    const rules = res.data?.list || []
+    
+    // 根据 env_id 补充环境信息
+    const envMap = new Map(environmentList.value.map(e => [e.id, e]))
+    ruleList.value = rules.map(rule => {
+      const env = envMap.get(rule.env_id)
+      return {
+        ...rule,
+        env_name: rule.env_name || env?.name,
+        env_color: rule.env_color || env?.color
+      }
+    })
+    
     pagination.total = res.data?.total || 0
   } catch (error) {
     console.error('加载规则列表失败:', error)
@@ -169,21 +223,19 @@ const loadRules = async () => {
 }
 
 // 执行规则匹配
-const handleExecuteRules = async () => {
+const handleExecuteRules = () => {
+  executeDialogVisible.value = true
+}
+
+const confirmExecuteRules = async () => {
   try {
-    await ElMessageBox.confirm(
-      '将对所有未绑定的资源执行规则匹配，是否继续？',
-      '执行确认',
-      { type: 'info' }
-    )
     executing.value = true
     await executeRulesApi()
     ElMessage.success('规则匹配执行完成')
+    executeDialogVisible.value = false
     loadRules()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '执行失败')
-    }
+    ElMessage.error(error.message || '执行失败')
   } finally {
     executing.value = false
   }
@@ -261,7 +313,8 @@ const handleFormSuccess = () => {
   loadRules()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadEnvironments()
   loadRules()
 })
 </script>
@@ -313,6 +366,23 @@ onMounted(() => {
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 16px;
+
+    .env-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+
+      .env-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+    }
+
+    .text-muted {
+      color: var(--text-muted);
+    }
   }
 
   .pagination-bar {

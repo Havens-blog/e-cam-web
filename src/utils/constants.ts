@@ -209,7 +209,11 @@ export const ASSET_STATUS = [
     { value: 'stopped', label: '已停止', color: 'info' },
     { value: 'starting', label: '启动中', color: 'warning' },
     { value: 'stopping', label: '停止中', color: 'warning' },
-    { value: 'terminated', label: '已终止', color: 'danger' },
+    { value: 'pending', label: '创建中', color: 'warning' },
+    { value: 'rebooting', label: '重启中', color: 'warning' },
+    { value: 'terminated', label: '已销毁', color: 'danger' },
+    { value: 'deleted', label: '已删除', color: 'danger' },
+    { value: 'error', label: '异常', color: 'danger' },
     { value: 'unknown', label: '未知', color: 'info' }
 ]
 
@@ -508,12 +512,12 @@ export function getSyncTaskStatus(value: string) {
 
 export function getSyncTaskStatusLabel(value: string): string {
     const status = getSyncTaskStatus(value)
-    return status.label
+    return status?.label || value
 }
 
 export function getSyncTaskStatusColor(value: string): string {
     const status = getSyncTaskStatus(value)
-    return status.color
+    return status?.color || 'info'
 }
 
 // ==================== 操作类型常量 ====================

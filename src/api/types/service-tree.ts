@@ -95,6 +95,17 @@ export interface ResourceBinding {
     resource_status?: string
     env_name?: string
     env_color?: string
+    // 资产扩展信息
+    asset_id?: string        // 云资产ID
+    asset_type?: string      // 资产类型 ecs/rds/oss 等
+    provider?: string        // 云平台 aliyun/aws/tencent 等
+    region?: string          // 地域
+    private_ip?: string      // 内网IP
+    public_ip?: string       // 公网IP
+    // CMDB实例扩展信息
+    model_uid?: string       // 模型UID
+    model_name?: string      // 模型名称
+    inst_id?: string         // 实例ID
 }
 
 export interface ResourceBindingCreateParams {
@@ -127,6 +138,7 @@ export interface RuleCondition {
 export interface BindingRule {
     id: number
     node_id: number
+    env_id: number
     name: string
     priority: number
     conditions: RuleCondition[]
@@ -137,10 +149,13 @@ export interface BindingRule {
     update_time?: number
     // 关联信息
     node_name?: string
+    env_name?: string
+    env_color?: string
 }
 
 export interface BindingRuleCreateParams {
     node_id: number
+    env_id: number
     name: string
     priority?: number
     conditions: RuleCondition[]

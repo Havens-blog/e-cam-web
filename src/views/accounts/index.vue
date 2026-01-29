@@ -492,7 +492,7 @@ const totalPages = computed(() => Math.ceil(pagination.total / pagination.size) 
 
 // 统计数据
 const activeCount = computed(() => accounts.value.filter(a => a.status === 'active').length)
-const errorCount = computed(() => accounts.value.filter(a => a.status === 'error' || a.status === 'inactive').length)
+const errorCount = computed(() => accounts.value.filter(a => a.status === 'error' || a.status === 'disabled').length)
 const totalAssets = computed(() => accounts.value.reduce((sum, a) => sum + (a.asset_count || 0), 0))
 
 // 过滤后的账号列表
@@ -565,9 +565,9 @@ const getStatusClass = (status: string | undefined) => {
   if (!status) return ''
   const map: Record<string, string> = {
     'active': 'status-active',
-    'inactive': 'status-inactive',
+    'disabled': 'status-disabled',
     'error': 'status-error',
-    'syncing': 'status-syncing'
+    'testing': 'status-testing'
   }
   return map[status] || ''
 }
@@ -590,10 +590,7 @@ const maskAccessKey = (key: string | undefined) => {
   return key.slice(0, 4) + '****' + key.slice(-4)
 }
 
-const formatTime = (time: string | undefined) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleDateString('zh-CN')
-}
+
 
 const formatSyncTime = (time: string | undefined) => {
   if (!time) return '从未同步'
@@ -1235,9 +1232,9 @@ onMounted(() => {
     background: var(--text-muted);
 
     &.status-active { background: var(--accent-green); }
-    &.status-inactive { background: var(--text-tertiary); }
+    &.status-disabled { background: var(--text-tertiary); }
     &.status-error { background: var(--accent-red); }
-    &.status-syncing { background: var(--accent-blue); animation: pulse 1.5s infinite; }
+    &.status-testing { background: var(--accent-blue); animation: pulse 1.5s infinite; }
   }
 
   .status-text {

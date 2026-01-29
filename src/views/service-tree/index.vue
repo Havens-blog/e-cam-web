@@ -149,7 +149,7 @@
                 size="small"
                 max-height="300"
               >
-                <el-table-column label="环境" width="100">
+                <el-table-column label="环境" width="90">
                   <template #default="{ row }">
                     <span class="env-tag">
                       <span class="env-dot" :style="{ background: row.env_color }"></span>
@@ -157,22 +157,56 @@
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="resource_type" label="类型" width="80">
+                <el-table-column prop="resource_name" label="资源名称" min-width="120" show-overflow-tooltip />
+                <el-table-column label="类型" width="90">
                   <template #default="{ row }">
-                    {{ row.resource_type === 'instance' ? '实例' : '资产' }}
+                    <template v-if="row.resource_type === 'asset'">
+                      {{ assetTypeMap[row.asset_type] || row.asset_type }}
+                    </template>
+                    <template v-else>
+                      {{ row.model_name || '实例' }}
+                    </template>
                   </template>
                 </el-table-column>
-                <el-table-column prop="resource_name" label="资源名称" min-width="150" show-overflow-tooltip />
-                <el-table-column prop="bind_type" label="绑定方式" width="80">
+                <el-table-column label="云平台" width="90">
+                  <template #default="{ row }">
+                    <span v-if="row.provider" class="provider-tag">
+                      {{ providerMap[row.provider] || row.provider }}
+                    </span>
+                    <span v-else class="text-muted">-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="IP地址" width="130">
+                  <template #default="{ row }">
+                    <div v-if="row.private_ip || row.public_ip" class="ip-cell">
+                      <span v-if="row.private_ip" class="ip-item">{{ row.private_ip }}</span>
+                      <span v-if="row.public_ip" class="ip-item public">{{ row.public_ip }}</span>
+                    </div>
+                    <span v-else class="text-muted">-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="地域" width="100" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    {{ row.region || '-' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="80">
+                  <template #default="{ row }">
+                    <el-tag :type="getStatusType(row.resource_status)" size="small">
+                      {{ getStatusText(row.resource_status) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="bind_type" label="绑定" width="60">
                   <template #default="{ row }">
                     <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
                       {{ row.bind_type === 'manual' ? '手动' : '规则' }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="80" fixed="right">
+                <el-table-column label="操作" width="60" fixed="right">
                   <template #default="{ row }">
-                    <el-button link type="danger" size="small" @click="handleUnbind(row)">
+                    <el-button link type="danger" size="small" @click.stop="handleUnbind(row)">
                       解绑
                     </el-button>
                   </template>
@@ -262,14 +296,22 @@
       />
     </div>
   </PageContainer>
+
+  <!-- 解绑确认弹窗 - 放在 PageContainer 外面 -->
+  <UnbindConfirmDialog
+    v-model:visible="unbindDialogVisible"
+    :resource="unbindResource"
+    @confirm="handleUnbindConfirm"
+  />
 </template>
 
 <script setup lang="ts">
+import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
   deleteNodeApi,
-  getTreeApi,
   listEnvironmentsApi,
   listNodeBindingsApi,
+  listNodesApi,
   unbindResourceApi
 } from '@/api/service-tree'
 import type { Environment, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
@@ -285,10 +327,11 @@ import {
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import BindResourceDialog from './components/BindResourceDialog.vue'
 import MoveNodeDialog from './components/MoveNodeDialog.vue'
 import NodeFormDialog from './components/NodeFormDialog.vue'
+import UnbindConfirmDialog from './components/UnbindConfirmDialog.vue'
 
 // 树形数据
 const treeRef = ref<InstanceType<typeof ElTree>>()
@@ -299,6 +342,54 @@ const searchKeyword = ref('')
 const treeProps = {
   label: 'name',
   children: 'children'
+}
+
+// 资产类型映射
+const assetTypeMap: Record<string, string> = {
+  ecs: '云服务器',
+  rds: '云数据库',
+  oss: '对象存储',
+  slb: '负载均衡',
+  eip: '弹性IP',
+  disk: '云硬盘',
+  vpc: 'VPC'
+}
+
+// 云平台映射
+const providerMap: Record<string, string> = {
+  aliyun: '阿里云',
+  aws: 'AWS',
+  tencent: '腾讯云',
+  huawei: '华为云',
+  azure: 'Azure'
+}
+
+// 获取状态类型
+const getStatusType = (status?: string): 'success' | 'info' | 'warning' | 'danger' => {
+  if (!status) return 'info'
+  const map: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
+    running: 'success',
+    active: 'success',
+    stopped: 'info',
+    inactive: 'warning',
+    error: 'danger',
+    terminated: 'danger'
+  }
+  return map[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status?: string): string => {
+  if (!status) return '-'
+  const map: Record<string, string> = {
+    running: '运行中',
+    active: '活跃',
+    stopped: '已停止',
+    inactive: '未激活',
+    error: '错误',
+    terminated: '已终止'
+  }
+  return map[status] || status
 }
 
 // 选中的节点
@@ -331,34 +422,77 @@ const isEditNode = ref(false)
 const moveDialogVisible = ref(false)
 const bindDialogVisible = ref(false)
 
+// 将扁平列表构建为树结构
+const buildTree = (nodes: ServiceTreeNode[]): ServiceTreeNode[] => {
+  if (!nodes || nodes.length === 0) return []
+  
+  // 创建节点映射
+  const nodeMap = new Map<number, ServiceTreeNode>()
+  nodes.forEach(node => {
+    nodeMap.set(node.id, { ...node, children: [] })
+  })
+  
+  // 构建树结构
+  const roots: ServiceTreeNode[] = []
+  nodeMap.forEach(node => {
+    if (node.parent_id === 0 || !nodeMap.has(node.parent_id)) {
+      // 根节点
+      roots.push(node)
+    } else {
+      // 子节点，添加到父节点的 children 中
+      const parent = nodeMap.get(node.parent_id)
+      if (parent) {
+        if (!parent.children) parent.children = []
+        parent.children.push(node)
+      }
+    }
+  })
+  
+  // 按 order 排序
+  const sortNodes = (nodes: ServiceTreeNode[]) => {
+    nodes.sort((a, b) => (a.order || 0) - (b.order || 0))
+    nodes.forEach(node => {
+      if (node.children?.length) {
+        sortNodes(node.children)
+      }
+    })
+  }
+  sortNodes(roots)
+  
+  return roots
+}
+
 // 加载树数据
 const loadTree = async () => {
   treeLoading.value = true
   try {
-    const res = await getTreeApi()
-    console.log('[ServiceTree] API response:', res)
+    // 使用 listNodesApi 获取所有节点，然后在前端构建树结构
+    const res = await listNodesApi({ page_size: 1000 })
+    const data = res.data as any
     
-    // 处理不同的响应格式
-    const data = res.data
-    if (!data) {
-      treeData.value = []
+    let nodes: ServiceTreeNode[] = []
+    if (data?.list) {
+      nodes = data.list
     } else if (Array.isArray(data)) {
-      // 如果是数组，直接使用
-      treeData.value = data
-    } else if (data.children) {
-      // 如果有 children 字段，使用 children
-      treeData.value = data.children
-    } else if (data.id) {
-      // 如果是单个节点对象，包装成数组
-      treeData.value = [data]
-    } else if (data.list) {
-      // 如果是列表格式
-      treeData.value = data.list
-    } else {
-      treeData.value = []
+      nodes = data
     }
     
-    console.log('[ServiceTree] treeData:', treeData.value)
+    // 构建树结构
+    treeData.value = buildTree(nodes)
+    
+    // 默认选中第一个根节点
+    if (treeData.value.length > 0 && !selectedNode.value) {
+      const firstNode = treeData.value[0]
+      if (firstNode) {
+        selectedNode.value = firstNode
+        buildNodePath(firstNode)
+        loadBindings()
+        // 设置树组件的当前选中节点
+        nextTick(() => {
+          treeRef.value?.setCurrentKey(firstNode.id)
+        })
+      }
+    }
   } catch (error) {
     console.error('加载服务树失败:', error)
     treeData.value = []
@@ -386,7 +520,75 @@ const loadBindings = async () => {
       env_id: bindingFilters.envId,
       resource_type: bindingFilters.resourceType
     })
-    bindingList.value = res.data?.list || []
+    const bindings = res.data?.list || []
+    
+    // 补充环境信息
+    const envMap = new Map(environmentList.value.map(e => [e.id, e]))
+    
+    // 收集需要查询的资源ID
+    const assetIds = bindings.filter(b => b.resource_type === 'asset').map(b => b.resource_id)
+    const instanceIds = bindings.filter(b => b.resource_type === 'instance').map(b => b.resource_id)
+    
+    // 查询资产详情
+    let assetMap = new Map<number, any>()
+    if (assetIds.length > 0) {
+      try {
+        const assetRes = await listAssetsApi({ offset: 0, limit: 500 })
+        const assetData = assetRes.data as any
+        const assets = assetData?.assets || assetData?.list || []
+        assetMap = new Map(assets.map((a: any) => [a.id, a]))
+      } catch (e) {
+        console.error('加载资产详情失败:', e)
+      }
+    }
+    
+    // 查询CMDB实例详情
+    let instanceMap = new Map<number, any>()
+    if (instanceIds.length > 0) {
+      try {
+        const instRes = await listCmdbInstancesApi({ offset: 0, limit: 500 })
+        const instData = instRes.data as any
+        const instances = instData?.list || instData?.instances || []
+        instanceMap = new Map(instances.map((i: any) => [i.id, i]))
+      } catch (e) {
+        console.error('加载实例详情失败:', e)
+      }
+    }
+    
+    // 补充绑定数据的详细信息
+    bindingList.value = bindings.map(binding => {
+      const env = envMap.get(binding.env_id)
+      const enriched = {
+        ...binding,
+        env_name: binding.env_name || env?.name,
+        env_color: binding.env_color || env?.color
+      }
+      
+      if (binding.resource_type === 'asset') {
+        const asset = assetMap.get(binding.resource_id)
+        if (asset) {
+          enriched.resource_name = enriched.resource_name || asset.asset_name || asset.name
+          enriched.asset_id = enriched.asset_id || asset.asset_id
+          enriched.asset_type = enriched.asset_type || asset.asset_type
+          enriched.provider = enriched.provider || asset.provider
+          enriched.region = enriched.region || asset.region
+          enriched.private_ip = enriched.private_ip || asset.private_ip
+          enriched.public_ip = enriched.public_ip || asset.public_ip
+          enriched.resource_status = enriched.resource_status || asset.status
+        }
+      } else if (binding.resource_type === 'instance') {
+        const inst = instanceMap.get(binding.resource_id)
+        if (inst) {
+          enriched.resource_name = enriched.resource_name || inst.name || inst.inst_name
+          enriched.inst_id = enriched.inst_id || inst.inst_id || inst.uid
+          enriched.model_uid = enriched.model_uid || inst.model_uid
+          enriched.model_name = enriched.model_name || inst.model_name
+          enriched.resource_status = enriched.resource_status || inst.status
+        }
+      }
+      
+      return enriched
+    })
   } catch (error) {
     console.error('加载绑定资源失败:', error)
   } finally {
@@ -399,7 +601,7 @@ watch(searchKeyword, (val) => {
   treeRef.value?.filter(val)
 })
 
-const filterNode = (value: string, data: ServiceTreeNode) => {
+const filterNode = (value: string, data: any) => {
   if (!value) return true
   return data.name.toLowerCase().includes(value.toLowerCase())
 }
@@ -435,12 +637,13 @@ const buildNodePath = (node: ServiceTreeNode) => {
 }
 
 // 右键菜单
-const handleContextMenu = (event: MouseEvent, data: ServiceTreeNode) => {
-  event.preventDefault()
+const handleContextMenu = (event: Event, data: ServiceTreeNode) => {
+  const mouseEvent = event as MouseEvent
+  mouseEvent.preventDefault()
   selectedNode.value = data
   buildNodePath(data)
-  contextMenuPosition.x = event.clientX
-  contextMenuPosition.y = event.clientY
+  contextMenuPosition.x = mouseEvent.clientX
+  contextMenuPosition.y = mouseEvent.clientY
   contextMenuVisible.value = true
 }
 
@@ -517,16 +720,25 @@ const handleBindResource = () => {
 }
 
 // 解绑资源
-const handleUnbind = async (binding: ResourceBinding) => {
+const unbindDialogVisible = ref(false)
+const unbindResource = ref<ResourceBinding | null>(null)
+
+const handleUnbind = (binding: ResourceBinding) => {
+  console.log('[DEBUG] handleUnbind called', binding)
+  unbindResource.value = binding
+  unbindDialogVisible.value = true
+  console.log('[DEBUG] unbindDialogVisible:', unbindDialogVisible.value)
+}
+
+const handleUnbindConfirm = async () => {
+  if (!unbindResource.value) return
   try {
-    await ElMessageBox.confirm('确定要解绑该资源吗？', '解绑确认', { type: 'warning' })
-    await unbindResourceApi(binding.id)
+    await unbindResourceApi(unbindResource.value.id)
     ElMessage.success('解绑成功')
+    unbindDialogVisible.value = false
     loadBindings()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '解绑失败')
-    }
+    ElMessage.error(error.message || '解绑失败')
   }
 }
 
@@ -781,6 +993,31 @@ onUnmounted(() => {
           height: 8px;
           border-radius: 50%;
         }
+      }
+
+      .provider-tag {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .ip-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 12px;
+
+        .ip-item {
+          color: var(--text-secondary);
+          font-family: monospace;
+
+          &.public {
+            color: var(--accent-blue);
+          }
+        }
+      }
+
+      .text-muted {
+        color: var(--text-muted);
       }
     }
 

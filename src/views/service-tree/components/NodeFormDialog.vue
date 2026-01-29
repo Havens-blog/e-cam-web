@@ -136,11 +136,12 @@ const handleSubmit = async () => {
     // 计算层级：父节点层级 + 1，根节点层级为1
     const level = props.isEdit ? props.node?.level : (props.parentLevel + 1)
     
-    console.log('[NodeForm] parentLevel:', props.parentLevel, 'calculated level:', level)
+    // 如果没有填写 uid，自动生成一个
+    const uid = form.uid || `node_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
     const data = {
       name: form.name,
-      uid: form.uid || undefined,
+      uid: props.isEdit ? (form.uid || undefined) : uid,
       parent_id: props.isEdit ? undefined : (props.parentId || undefined),  // 0 时不传
       level: props.isEdit ? undefined : level,
       owner: form.owner || undefined,
@@ -149,8 +150,6 @@ const handleSubmit = async () => {
       description: form.description || undefined,
       order: form.order
     }
-    
-    console.log('[NodeForm] submit data:', data)
 
     if (props.isEdit && props.node) {
       await updateNodeApi(props.node.id, data)

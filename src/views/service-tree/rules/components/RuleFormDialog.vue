@@ -16,17 +16,38 @@
       <el-form-item label="规则名称" prop="name">
         <el-input v-model="form.name" placeholder="如: 生产环境订单服务自动归属" maxlength="128" />
       </el-form-item>
-      <el-form-item label="目标节点" prop="nodeId">
-        <el-tree-select
-          v-model="form.nodeId"
-          :data="treeData"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="选择目标节点"
-          check-strictly
-          filterable
-          style="width: 100%"
-        />
-      </el-form-item>
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="目标节点" prop="nodeId">
+            <el-tree-select
+              v-model="form.nodeId"
+              :data="treeData"
+              :props="{ label: 'name', value: 'id', children: 'children' }"
+              placeholder="选择目标节点"
+              check-strictly
+              filterable
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="目标环境" prop="envId">
+            <el-select v-model="form.envId" placeholder="选择环境" style="width: 100%">
+              <el-option
+                v-for="env in environmentList"
+                :key="env.id"
+                :label="env.name"
+                :value="env.id"
+              >
+                <span class="env-option">
+                  <span class="env-dot" :style="{ background: env.color }"></span>
+                  {{ env.name }}
+                </span>
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
       <el-form-item label="优先级" prop="priority">
         <el-input-number v-model="form.priority" :min="1" :max="999" />
         <span class="form-tip">数字越小优先级越高</span>
@@ -109,8 +130,8 @@
 </template>
 
 <script setup lang="ts">
-import { createRuleApi, getTreeApi, updateRuleApi } from '@/api/service-tree'
-import type { BindingRule, RuleCondition, ServiceTreeNode } from '@/api/types/service-tree'
+import { createRuleApi, getTreeApi, listEnvironmentsApi, updateRuleApi } from '@/api/service-tree'
+import type { BindingRule, Environment, RuleCondition, ServiceTreeNode } from '@/api/types/service-tree'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -130,10 +151,12 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const treeData = ref<ServiceTreeNode[]>([])
+const environmentList = ref<Environment[]>([])
 
 const form = reactive({
   name: '',
   nodeId: undefined as number | undefined,
+  envId: undefined as number | undefined,
   priority: 10,
   description: '',
   conditions: [] as RuleCondition[],
@@ -146,6 +169,9 @@ const rules: FormRules = {
   ],
   nodeId: [
     { required: true, message: '请选择目标节点', trigger: 'change' }
+  ],
+  envId: [
+    { required: true, message: '请选择目标环境', trigger: 'change' }
   ]
 }
 
@@ -153,9 +179,29 @@ const rules: FormRules = {
 const loadTree = async () => {
   try {
     const res = await getTreeApi()
-    treeData.value = res.data?.children || []
+    // 如果返回的是根节点对象，将其包装成数组；否则使用 children
+    if (res.data) {
+      if (res.data.id) {
+        // 返回的是根节点，包装成数组以便选择
+        treeData.value = [res.data]
+      } else if (res.data.children) {
+        treeData.value = res.data.children
+      } else if (Array.isArray(res.data)) {
+        treeData.value = res.data
+      }
+    }
   } catch (error) {
     console.error('加载服务树失败:', error)
+  }
+}
+
+// 加载环境列表
+const loadEnvironments = async () => {
+  try {
+    const res = await listEnvironmentsApi({ status: 1 })
+    environmentList.value = res.data?.list || []
+  } catch (error) {
+    console.error('加载环境列表失败:', error)
   }
 }
 
@@ -200,6 +246,7 @@ const handleSubmit = async () => {
     const data = {
       name: form.name,
       node_id: form.nodeId!,
+      env_id: form.envId!,
       priority: form.priority,
       description: form.description || undefined,
       conditions: form.conditions,
@@ -229,6 +276,7 @@ watch(() => props.visible, (val) => {
     if (props.isEdit && props.rule) {
       form.name = props.rule.name
       form.nodeId = props.rule.node_id
+      form.envId = props.rule.env_id
       form.priority = props.rule.priority
       form.description = props.rule.description || ''
       form.conditions = [...props.rule.conditions]
@@ -236,6 +284,7 @@ watch(() => props.visible, (val) => {
     } else {
       form.name = ''
       form.nodeId = undefined
+      form.envId = environmentList.value[0]?.id
       form.priority = 10
       form.description = ''
       form.conditions = []
@@ -247,10 +296,23 @@ watch(() => props.visible, (val) => {
 
 onMounted(() => {
   loadTree()
+  loadEnvironments()
 })
 </script>
 
 <style scoped lang="scss">
+.env-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .env-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+}
+
 .form-tip {
   margin-left: 12px;
   font-size: 12px;

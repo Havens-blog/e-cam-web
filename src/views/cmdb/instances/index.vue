@@ -633,9 +633,14 @@ const searchFieldLabels: Record<string, string> = {
 // 有固定选项的字段
 const searchFieldOptions: Record<string, { label: string; value: string }[]> = {
   status: [
-    { label: '运行中', value: 'RUNNING' },
-    { label: '已关机', value: 'STOPPED' },
-    { label: '创建中', value: 'PENDING' },
+    { label: '运行中', value: 'running' },
+    { label: '已关机', value: 'stopped' },
+    { label: '创建中', value: 'pending' },
+    { label: '启动中', value: 'starting' },
+    { label: '停止中', value: 'stopping' },
+    { label: '重启中', value: 'rebooting' },
+    { label: '已销毁', value: 'terminated' },
+    { label: '异常', value: 'error' },
   ],
   provider: [
     { label: '阿里云', value: 'aliyun' },

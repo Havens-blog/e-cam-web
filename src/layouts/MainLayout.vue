@@ -225,6 +225,14 @@ const menuGroups = ref<MenuGroup[]>([
     ]
   },
   {
+    title: '服务树',
+    items: [
+      { key: 'service-tree', path: '/service-tree', title: '服务树', icon: 'veops-switch' },
+      { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'ops-setting-security' },
+      { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'file' },
+    ]
+  },
+  {
     title: '资源管理',
     items: [
       { 
@@ -249,9 +257,14 @@ const menuGroups = ref<MenuGroup[]>([
             key: 'assets-network', 
             title: '网络',
             icon: 'caise-network_devices',
+            children: [
+              { key: 'assets-vpc', path: '/network/vpc', title: 'VPC' },
+              { key: 'assets-eip', path: '/network/eip', title: '弹性公网IP' },
+            ]
           },
           { 
             key: 'assets-database', 
+            path: '/databases',
             title: '数据库',
             icon: 'caise-database',
           },
@@ -283,14 +296,6 @@ const menuGroups = ref<MenuGroup[]>([
       { key: 'cmdb-instances', path: '/cmdb/instances', title: '资源实例', icon: 'caise-computer' },
       { key: 'cmdb-relations', path: '/cmdb/relations', title: '模型关系', icon: 'veops-switch' },
       { key: 'cmdb-topology', path: '/cmdb/topology', title: '拓扑视图', icon: 'caise-network_devices' },
-    ]
-  },
-  {
-    title: '服务树',
-    items: [
-      { key: 'service-tree', path: '/service-tree', title: '服务树', icon: 'veops-switch' },
-      { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'ops-setting-security' },
-      { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'file' },
     ]
   },
   {

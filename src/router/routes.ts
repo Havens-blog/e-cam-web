@@ -274,6 +274,45 @@ const routes: RouteRecordRaw[] = [
                     icon: 'List',
                 },
             },
+            // ==================== 数据库管理路由 ====================
+            {
+                path: '/databases',
+                name: 'Databases',
+                component: () => import('@/views/databases/index.vue'),
+                meta: {
+                    title: '数据库管理',
+                    icon: 'Coin',
+                },
+            },
+            // ==================== ECS 虚拟机路由 ====================
+            {
+                path: '/ecs',
+                name: 'ECS',
+                component: () => import('@/views/ecs/index.vue'),
+                meta: {
+                    title: '云虚拟机',
+                    icon: 'Monitor',
+                },
+            },
+            // ==================== 网络管理路由 ====================
+            {
+                path: '/network/vpc',
+                name: 'VPC',
+                component: () => import('@/views/network/vpc/index.vue'),
+                meta: {
+                    title: 'VPC',
+                    icon: 'Connection',
+                },
+            },
+            {
+                path: '/network/eip',
+                name: 'EIP',
+                component: () => import('@/views/network/eip/index.vue'),
+                meta: {
+                    title: '弹性公网IP',
+                    icon: 'Position',
+                },
+            },
         ],
     },
     {
