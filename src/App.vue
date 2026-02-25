@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ErrorMonitor from '@/components/ErrorMonitor.vue';
 import { computed } from 'vue';
 
 // CAM Web 根组件
@@ -10,7 +9,7 @@ const isDev = computed(() => import.meta.env.DEV)
   <div id="app">
     <router-view />
     <!-- 错误监控组件（仅开发环境） -->
-    <ErrorMonitor v-if="isDev" />
+    <!-- <ErrorMonitor v-if="isDev" /> -->
   </div>
 </template>
 

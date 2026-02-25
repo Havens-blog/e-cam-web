@@ -98,24 +98,15 @@ const emit = defineEmits<{
 const localColumns = ref<ColumnConfig[]>([])
 
 const defaultColumns: ColumnConfig[] = [
-  { key: 'status', label: '状态', width: 80, visible: true },
-  { key: 'ip', label: 'IP', width: 130, visible: true },
-  { key: 'os', label: '系统', width: 40, visible: true },
-  { key: 'spec', label: '规格', width: 110, visible: true },
-  { key: 'security_group', label: '安全组', width: 90, visible: true },
-  { key: 'billing', label: '计费方式', width: 80, visible: true },
-  { key: 'platform', label: '平台', width: 50, visible: true },
-  { key: 'project', label: '项目', width: 80, visible: true },
-  { key: 'region', label: '区域', width: 100, visible: true },
-  { key: 'host_name', label: '主机名', width: 150, visible: false },
-  { key: 'public_ip', label: '公网IP', width: 120, visible: false },
-  { key: 'cpu', label: 'CPU', width: 60, visible: false },
-  { key: 'memory', label: '内存', width: 70, visible: false },
-  { key: 'cloud_account', label: '云账号', width: 120, visible: false },
-  { key: 'vpc', label: 'VPC', width: 150, visible: false },
-  { key: 'zone', label: '可用区', width: 100, visible: false },
-  { key: 'expired_time', label: '到期时间', width: 140, visible: false },
-  { key: 'create_time', label: '创建时间', width: 140, visible: false },
+  { key: 'asset_type', label: '资产类型', width: 110, visible: true },
+  { key: 'provider', label: '云平台', width: 100, visible: true },
+  { key: 'region', label: '区域', width: 120, visible: true },
+  { key: 'status', label: '状态', width: 90, visible: true },
+  { key: 'asset_id', label: '资产ID', width: 200, visible: true },
+  { key: 'account', label: '云账号', width: 120, visible: false },
+  { key: 'zone', label: '可用区', width: 120, visible: false },
+  { key: 'create_time', label: '创建时间', width: 160, visible: true },
+  { key: 'update_time', label: '更新时间', width: 160, visible: false },
   { key: 'tags', label: '标签', width: 150, visible: false },
 ]
 
@@ -149,7 +140,7 @@ const handleSave = () => {
     return
   }
   emit('update:columns', JSON.parse(JSON.stringify(localColumns.value)))
-  localStorage.setItem('vm-column-settings', JSON.stringify(localColumns.value))
+  localStorage.setItem('cmdb-instances-column-settings', JSON.stringify(localColumns.value))
   ElMessage.success('列设置已保存')
   emit('update:visible', false)
 }

@@ -1,23 +1,26 @@
 <script setup lang="ts">
+import { searchAssetsApi } from '@/api/asset'
 import { createTenantApi, listTenantsApi } from '@/api/iam'
+import type { SearchResultItem } from '@/api/types/asset'
 import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
 import { useAppStore } from '@/stores/app'
 import {
-  ArrowDown,
-  ArrowRight,
-  Bell,
-  Expand,
-  Fold,
-  FullScreen,
-  Moon,
-  OfficeBuilding,
-  Plus,
-  Search,
-  Sunny
+    ArrowDown,
+    ArrowRight,
+    Bell,
+    Expand,
+    Fold,
+    FullScreen,
+    Loading,
+    Moon,
+    OfficeBuilding,
+    Plus,
+    Search,
+    Sunny
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -26,6 +29,110 @@ const appStore = useAppStore()
 
 // 搜索关键词
 const searchKeyword = ref('')
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const showSearchResults = ref(false)
+const searchResults = ref<SearchResultItem[]>([])
+const searchLoading = ref(false)
+const searchTotal = ref(0)
+let searchDebounceTimer: number | null = null
+
+// 资产类型映射
+const assetTypeMap: Record<string, { label: string; icon: string; route: string }> = {
+  ecs: { label: 'ECS', icon: 'caise-computer', route: '/compute/ecs' },
+  rds: { label: 'RDS', icon: 'caise-database', route: '/databases/rds' },
+  redis: { label: 'Redis', icon: 'caise-database', route: '/databases/redis' },
+  mongodb: { label: 'MongoDB', icon: 'caise-database', route: '/databases/mongodb' },
+  vpc: { label: 'VPC', icon: 'caise-network_devices', route: '/network/vpc' },
+  eip: { label: 'EIP', icon: 'caise-network_devices', route: '/network/eip' },
+  nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
+  oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
+  kafka: { label: 'Kafka', icon: 'caise-middleware', route: '/middleware/kafka' },
+  elasticsearch: { label: 'Elasticsearch', icon: 'caise-middleware', route: '/middleware/elasticsearch' },
+  middleware: { label: '中间件', icon: 'caise-middleware', route: '/middleware' }
+}
+
+// 搜索资产
+const handleSearch = async () => {
+  const keyword = searchKeyword.value.trim()
+  if (!keyword) {
+    searchResults.value = []
+    showSearchResults.value = false
+    return
+  }
+
+  searchLoading.value = true
+  showSearchResults.value = true
+  
+  try {
+    const res = await searchAssetsApi({ keyword, limit: 10 })
+    searchResults.value = res.data?.items || []
+    searchTotal.value = res.data?.total || 0
+  } catch (error) {
+    console.error('搜索失败:', error)
+    searchResults.value = []
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+// 防抖搜索
+watch(searchKeyword, () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+  searchDebounceTimer = window.setTimeout(() => {
+    handleSearch()
+  }, 300)
+})
+
+// 高亮关键词
+const highlightText = (text: string, keyword: string): string => {
+  if (!keyword || !text) return text
+  const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(regex, '<mark class="search-highlight">$1</mark>')
+}
+
+// 点击搜索结果
+const handleResultClick = (item: SearchResultItem) => {
+  const typeInfo = assetTypeMap[item.asset_type]
+  if (typeInfo) {
+    // 跳转到对应页面，带上搜索参数
+    router.push({
+      path: typeInfo.route,
+      query: { search: item.asset_id }
+    })
+  }
+  showSearchResults.value = false
+  searchKeyword.value = ''
+}
+
+// 关闭搜索结果
+const closeSearchResults = () => {
+  showSearchResults.value = false
+}
+
+// 键盘快捷键
+const handleKeydown = (e: KeyboardEvent) => {
+  // Cmd/Ctrl + K 聚焦搜索框
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    searchInputRef.value?.focus()
+    showSearchResults.value = true
+  }
+  // Escape 关闭搜索结果
+  if (e.key === 'Escape') {
+    closeSearchResults()
+    searchInputRef.value?.blur()
+  }
+}
+
+// 点击外部关闭
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.search-box') && !target.closest('.search-results')) {
+    closeSearchResults()
+  }
+}
 
 // 侧边栏折叠状态
 const isCollapsed = ref(false)
@@ -245,13 +352,20 @@ const menuGroups = ref<MenuGroup[]>([
             title: '主机',
             icon: 'caise-computer',
             children: [
-              { key: 'assets-vm', path: '/assets/instances/cloud_vm', title: '虚拟机' },
+              { key: 'assets-vm', path: '/compute/ecs', title: '虚拟机' },
+              { key: 'assets-disk', path: '/compute/disk', title: '云盘' },
+              { key: 'assets-snapshot', path: '/compute/snapshot', title: '快照' },
+              { key: 'assets-security-group', path: '/compute/security-group', title: '安全组' },
             ]
           },
           { 
             key: 'assets-storage', 
             title: '存储',
             icon: 'caise-storage_device',
+            children: [
+              { key: 'assets-nas', path: '/storage/nas', title: '文件存储 NAS' },
+              { key: 'assets-oss', path: '/storage/oss', title: '对象存储 OSS' },
+            ]
           },
           { 
             key: 'assets-network', 
@@ -264,14 +378,22 @@ const menuGroups = ref<MenuGroup[]>([
           },
           { 
             key: 'assets-database', 
-            path: '/databases',
             title: '数据库',
             icon: 'caise-database',
+            children: [
+              { key: 'assets-rds', path: '/databases/rds', title: 'RDS 云数据库' },
+              { key: 'assets-redis', path: '/databases/redis', title: 'Redis' },
+              { key: 'assets-mongodb', path: '/databases/mongodb', title: 'MongoDB' },
+            ]
           },
           { 
             key: 'assets-middleware', 
             title: '中间件',
             icon: 'caise-middleware',
+            children: [
+              { key: 'assets-kafka', path: '/middleware/kafka', title: 'Kafka' },
+              { key: 'assets-elasticsearch', path: '/middleware/elasticsearch', title: 'Elasticsearch' },
+            ]
           },
           { 
             key: 'assets-service', 
@@ -287,6 +409,14 @@ const menuGroups = ref<MenuGroup[]>([
     items: [
       { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'quick_commands' },
       { key: 'cost', path: '/cost', title: '成本分析', icon: 'monitor-healing' },
+    ]
+  },
+  {
+    title: '告警中心',
+    items: [
+      { key: 'alert-events', path: '/alert/events', title: '告警事件', icon: 'ops-itsm-logs' },
+      { key: 'alert-rules', path: '/alert/rules', title: '告警规则', icon: 'file' },
+      { key: 'alert-channels', path: '/alert/channels', title: '通知渠道', icon: 'veops-switch' },
     ]
   },
   {
@@ -437,6 +567,16 @@ const toggleFullscreen = () => {
 // 初始化
 onMounted(() => {
   loadTenants()
+  document.addEventListener('keydown', handleKeydown)
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('click', handleClickOutside)
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
 })
 </script>
 
@@ -601,15 +741,61 @@ onMounted(() => {
           </el-breadcrumb>
 
           <!-- 搜索框 -->
-          <div class="search-box">
+          <div class="search-box" :class="{ 'is-focused': showSearchResults }">
             <el-icon class="search-icon"><Search /></el-icon>
             <input 
+              ref="searchInputRef"
               v-model="searchKeyword" 
               type="text" 
               placeholder="请输入关键词..." 
               class="search-input"
+              @focus="searchKeyword && (showSearchResults = true)"
             />
             <div class="search-shortcut">⌘ K</div>
+            
+            <!-- 搜索结果下拉 -->
+            <Transition name="search-dropdown">
+              <div v-if="showSearchResults && searchKeyword" class="search-results">
+                <div v-if="searchLoading" class="search-loading">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                  <span>搜索中...</span>
+                </div>
+                <template v-else-if="searchResults.length > 0">
+                  <div class="search-results-header">
+                    找到 {{ searchTotal }} 个结果
+                  </div>
+                  <div 
+                    v-for="item in searchResults" 
+                    :key="item.id" 
+                    class="search-result-item"
+                    @click="handleResultClick(item)"
+                  >
+                    <div class="result-icon">
+                      <IconFont :type="assetTypeMap[item.asset_type]?.icon || 'caise-computer'" :size="20" />
+                    </div>
+                    <div class="result-content">
+                      <div class="result-title">
+                        <span class="result-type-tag">{{ assetTypeMap[item.asset_type]?.label || item.asset_type }}</span>
+                        <span class="result-name" v-html="highlightText(item.asset_name, searchKeyword)"></span>
+                      </div>
+                      <div class="result-meta">
+                        <span class="result-id" v-html="highlightText(item.asset_id, searchKeyword)"></span>
+                        <span class="result-provider">{{ item.provider }}</span>
+                        <span class="result-region">{{ item.region }}</span>
+                      </div>
+                      <div v-if="item.matches && item.matches.length > 0" class="result-matches">
+                        <span v-for="(match, idx) in item.matches" :key="idx" class="match-item">
+                          {{ match.label }}: <span v-html="highlightText(match.value, searchKeyword)"></span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="search-empty">
+                  <span>未找到相关资产</span>
+                </div>
+              </div>
+            </Transition>
           </div>
         </div>
 
@@ -1255,8 +1441,10 @@ $navbar-height: 56px;
   transition: all 200ms ease;
   flex-shrink: 0;
   margin-left: 8px;
+  position: relative;
 
-  &:focus-within {
+  &:focus-within,
+  &.is-focused {
     border-color: var(--border-strong);
     background: var(--bg-surface);
   }
@@ -1289,6 +1477,162 @@ $navbar-height: 56px;
     font-family: var(--font-mono);
     flex-shrink: 0;
   }
+}
+
+// 搜索结果下拉
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 420px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-base);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+
+  .search-results-header {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .search-loading,
+  .search-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    .is-loading {
+      animation: rotate 1s linear infinite;
+    }
+  }
+
+  .search-result-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    .result-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-base);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+    }
+
+    .result-content {
+      flex: 1;
+      min-width: 0;
+
+      .result-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+
+        .result-type-tag {
+          padding: 2px 6px;
+          background: var(--accent-blue);
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          border-radius: 4px;
+          flex-shrink: 0;
+        }
+
+        .result-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .result-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-tertiary);
+
+        .result-id {
+          max-width: 180px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .result-provider,
+        .result-region {
+          &::before {
+            content: '·';
+            margin-right: 8px;
+          }
+        }
+      }
+
+      .result-matches {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .match-item {
+          font-size: 11px;
+          color: var(--text-muted);
+          background: var(--bg-base);
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+      }
+    }
+  }
+}
+
+// 搜索高亮
+:deep(.search-highlight) {
+  background: rgba(250, 204, 21, 0.4);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+// 搜索下拉动画
+.search-dropdown-enter-active,
+.search-dropdown-leave-active {
+  transition: all 200ms ease;
+}
+
+.search-dropdown-enter-from,
+.search-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .navbar-right {

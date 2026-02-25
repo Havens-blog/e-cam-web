@@ -39,7 +39,14 @@
     </div>
 
     <!-- 筛选器 -->
-    <VpcFilters v-model="filters" @search="handleSearch" />
+    <VpcFilters 
+      :model-value="filters" 
+      @update:model-value="handleFiltersUpdate" 
+      @search="handleSearch"
+      @refresh="fetchData"
+      @export="showExportDialog = true"
+      @column-settings="showColumnSettings = true"
+    />
 
     <!-- VPC 表格 -->
     <div class="vpc-content">
@@ -53,59 +60,74 @@
         highlight-current-row
       >
         <el-table-column type="selection" width="40" />
-        <el-table-column prop="asset_name" label="名称" min-width="160" show-overflow-tooltip>
+        <el-table-column label="云上ID/名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="name-link">{{ row.asset_name || '-' }}</span>
+            <div class="id-name-cell">
+              <span class="asset-id">{{ row.asset_id || '-' }}</span>
+              <span v-if="row.asset_name" class="asset-name">{{ row.asset_name }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <!-- 动态列 -->
+        <el-table-column
+          v-for="col in visibleColumns"
+          :key="col.key"
+          :label="col.label"
+          :min-width="col.width"
+          :show-overflow-tooltip="['account_name', 'shared_machines', 'network_domain', 'region', 'cidr_block', 'ipv6_cidr_block'].includes(col.key)"
+          :align="['status', 'enable_internet_access', 'vswitch_count', 'platform', 'is_default'].includes(col.key) ? 'center' : undefined"
+        >
           <template #default="{ row }">
-            <VpcStatusBadge :status="row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="IPv4目标网段" width="140">
-          <template #default="{ row }">
-            {{ row.attributes?.cidr_block || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="IPv6目标网段" width="140">
-          <template #default="{ row }">
-            {{ row.attributes?.ipv6_cidr_block || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="允许外网访问" width="110" align="center">
-          <template #default="{ row }">
-            {{ row.attributes?.enable_internet_access ? '启用' : '禁用' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="IP数" width="80" align="center">
-          <template #default="{ row }">
-            <span class="ip-count">{{ row.attributes?.vswitch_count || 0 }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="平台" width="60" align="center">
-          <template #default="{ row }">
-            <ProviderIcon :provider="row.provider" size="small" />
-          </template>
-        </el-table-column>
-        <el-table-column label="云账号" width="120" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.account_name || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="共享机器" width="100" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.shared_machines || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="网段域" width="100" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.network_domain || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="region" label="区域" width="140" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ getRegionLabel(row.provider, row.region) }}
+            <!-- 状态列 -->
+            <template v-if="col.key === 'status'">
+              <VpcStatusBadge :status="row.status" />
+            </template>
+            <!-- IPv4网段列 -->
+            <template v-else-if="col.key === 'cidr_block'">
+              {{ row.attributes?.cidr_block || '-' }}
+            </template>
+            <!-- IPv6网段列 -->
+            <template v-else-if="col.key === 'ipv6_cidr_block'">
+              {{ row.attributes?.ipv6_cidr_block || '-' }}
+            </template>
+            <!-- 允许外网访问列 -->
+            <template v-else-if="col.key === 'enable_internet_access'">
+              {{ row.attributes?.enable_internet_access ? '启用' : '禁用' }}
+            </template>
+            <!-- IP数列 -->
+            <template v-else-if="col.key === 'vswitch_count'">
+              <span class="ip-count">{{ row.attributes?.vswitch_count || 0 }}</span>
+            </template>
+            <!-- 平台列 -->
+            <template v-else-if="col.key === 'platform'">
+              <ProviderIcon :provider="row.provider" size="small" />
+            </template>
+            <!-- 云账号列 -->
+            <template v-else-if="col.key === 'account_name'">
+              {{ row.attributes?.account_name || '-' }}
+            </template>
+            <!-- 共享机器列 -->
+            <template v-else-if="col.key === 'shared_machines'">
+              {{ row.attributes?.shared_machines || '-' }}
+            </template>
+            <!-- 网段域列 -->
+            <template v-else-if="col.key === 'network_domain'">
+              {{ row.attributes?.network_domain || '-' }}
+            </template>
+            <!-- 区域列 -->
+            <template v-else-if="col.key === 'region'">
+              {{ getRegionLabel(row.provider, row.region) }}
+            </template>
+            <!-- 默认VPC列 -->
+            <template v-else-if="col.key === 'is_default'">
+              {{ row.attributes?.is_default ? '是' : '-' }}
+            </template>
+            <!-- 创建时间列 -->
+            <template v-else-if="col.key === 'create_time'">
+              {{ row.create_time || '-' }}
+            </template>
+            <!-- 默认 -->
+            <template v-else>-</template>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right" align="center">
@@ -173,6 +195,21 @@
       v-model:visible="detailVisible"
       :instance="detailInstance"
     />
+
+    <!-- 导出对话框 -->
+    <ExportDialog
+      v-model:visible="showExportDialog"
+      :instances="vpcList"
+      :selected-ids="selectedIds"
+      :total="pagination.total"
+    />
+
+    <!-- 自定义列对话框 -->
+    <ColumnSettingsDialog
+      v-model:visible="showColumnSettings"
+      :columns="columnSettings"
+      @update:columns="handleColumnsUpdate"
+    />
   </PageContainer>
 </template>
 
@@ -188,6 +225,8 @@ import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
+import ExportDialog from './components/ExportDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import VpcFilters from './components/VpcFilters.vue'
 import VpcStatusBadge from './components/VpcStatusBadge.vue'
@@ -219,6 +258,49 @@ const vpcList = ref<Asset[]>([])
 // 详情抽屉
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
+
+// 导出和自定义列
+const showExportDialog = ref(false)
+const showColumnSettings = ref(false)
+const selectedIds = ref<number[]>([])
+
+// 默认列配置
+const defaultColumnSettings: ColumnConfig[] = [
+  { key: 'status', label: '状态', width: 80, visible: true },
+  { key: 'cidr_block', label: 'IPv4网段', width: 130, visible: true },
+  { key: 'vswitch_count', label: 'IP数', width: 70, visible: true },
+  { key: 'platform', label: '平台', width: 60, visible: true },
+  { key: 'account_name', label: '云账号', width: 100, visible: true },
+  { key: 'region', label: '区域', width: 130, visible: true },
+  { key: 'is_default', label: '默认VPC', width: 80, visible: true },
+  { key: 'ipv6_cidr_block', label: 'IPv6网段', width: 130, visible: false },
+  { key: 'enable_internet_access', label: '允许外网访问', width: 100, visible: false },
+  { key: 'shared_machines', label: '共享机器', width: 100, visible: false },
+  { key: 'network_domain', label: '网段域', width: 100, visible: false },
+  { key: 'create_time', label: '创建时间', width: 140, visible: false },
+]
+
+const columnSettings = ref<ColumnConfig[]>([])
+const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible))
+
+// 加载列设置
+const loadColumnSettings = () => {
+  const saved = localStorage.getItem('vpc-column-settings')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        columnSettings.value = parsed
+        return
+      }
+    } catch { /* ignore */ }
+  }
+  columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
+}
+
+const handleColumnsUpdate = (columns: ColumnConfig[]) => {
+  columnSettings.value = columns
+}
 
 // 同步对话框
 const syncDialogVisible = ref(false)
@@ -267,6 +349,10 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleFiltersUpdate = (newFilters: typeof filters) => {
+  Object.assign(filters, newFilters)
 }
 
 const handleSearch = () => {
@@ -326,6 +412,7 @@ const submitSync = async () => {
 }
 
 onMounted(() => {
+  loadColumnSettings()
   fetchData()
 })
 </script>
@@ -386,12 +473,25 @@ onMounted(() => {
     }
   }
   
-  .name-link {
-    color: var(--el-color-primary);
-    cursor: pointer;
+  .id-name-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.4;
     
-    &:hover {
-      text-decoration: underline;
+    .asset-id {
+      color: var(--el-color-primary);
+      cursor: pointer;
+      font-size: 13px;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .asset-name {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      margin-top: 2px;
     }
   }
   

@@ -30,7 +30,14 @@
     </ManagerHeader>
 
     <!-- 筛选器 -->
-    <EipFilters v-model="filters" @search="handleSearch" />
+    <EipFilters 
+      :model-value="filters" 
+      @update:model-value="handleFiltersUpdate" 
+      @search="handleSearch"
+      @refresh="fetchData"
+      @export="showExportDialog = true"
+      @column-settings="showColumnSettings = true"
+    />
 
     <!-- EIP 表格 -->
     <div class="eip-content">
@@ -44,59 +51,71 @@
         highlight-current-row
       >
         <el-table-column type="selection" width="40" />
-        <el-table-column prop="asset_name" label="名称" min-width="160" show-overflow-tooltip>
+        <el-table-column label="云上ID/名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="name-link">{{ row.asset_name || '-' }}</span>
+            <div class="id-name-cell">
+              <span class="asset-id">{{ row.asset_id || '-' }}</span>
+              <span v-if="row.asset_name" class="asset-name">{{ row.asset_name }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <!-- 动态列 -->
+        <el-table-column
+          v-for="col in visibleColumns"
+          :key="col.key"
+          :label="col.label"
+          :min-width="col.width"
+          :show-overflow-tooltip="['instance_id', 'account_name', 'region', 'ip_address'].includes(col.key)"
+          :align="['status', 'bandwidth', 'charge_type', 'platform'].includes(col.key) ? 'center' : undefined"
+        >
           <template #default="{ row }">
-            <EipStatusBadge :status="row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="IP地址" width="140">
-          <template #default="{ row }">
-            <span class="ip-address">{{ row.attributes?.ip_address || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="带宽" width="100" align="center">
-          <template #default="{ row }">
-            {{ row.attributes?.bandwidth ? row.attributes.bandwidth + ' Mbps' : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="绑定实例" min-width="180" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span v-if="row.attributes?.instance_id" class="instance-link">
-              {{ row.attributes.instance_id }}
-            </span>
-            <span v-else class="text-muted">未绑定</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="实例类型" width="120">
-          <template #default="{ row }">
-            {{ getInstanceTypeLabel(row.attributes?.instance_type) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="计费方式" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.attributes?.charge_type === 'Prepaid' ? 'warning' : 'info'" size="small">
-              {{ row.attributes?.charge_type === 'Prepaid' ? '包年包月' : '按量付费' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="平台" width="60" align="center">
-          <template #default="{ row }">
-            <ProviderIcon :provider="row.provider" size="small" />
-          </template>
-        </el-table-column>
-        <el-table-column label="云账号" width="120" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.account_name || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="region" label="区域" width="140" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ getRegionLabel(row.provider, row.region) }}
+            <!-- 状态列 -->
+            <template v-if="col.key === 'status'">
+              <EipStatusBadge :status="row.status" />
+            </template>
+            <!-- IP地址列 -->
+            <template v-else-if="col.key === 'ip_address'">
+              <span class="ip-address">{{ row.attributes?.ip_address || '-' }}</span>
+            </template>
+            <!-- 带宽列 -->
+            <template v-else-if="col.key === 'bandwidth'">
+              {{ row.attributes?.bandwidth ? row.attributes.bandwidth + ' Mbps' : '-' }}
+            </template>
+            <!-- 绑定实例列 -->
+            <template v-else-if="col.key === 'instance_id'">
+              <span v-if="row.attributes?.instance_id" class="instance-link">
+                {{ row.attributes.instance_id }}
+              </span>
+              <span v-else class="text-muted">未绑定</span>
+            </template>
+            <!-- 实例类型列 -->
+            <template v-else-if="col.key === 'instance_type'">
+              {{ getInstanceTypeLabel(row.attributes?.instance_type) }}
+            </template>
+            <!-- 计费方式列 -->
+            <template v-else-if="col.key === 'charge_type'">
+              <el-tag :type="row.attributes?.charge_type === 'Prepaid' ? 'warning' : 'info'" size="small">
+                {{ row.attributes?.charge_type === 'Prepaid' ? '包年包月' : '按量付费' }}
+              </el-tag>
+            </template>
+            <!-- 平台列 -->
+            <template v-else-if="col.key === 'platform'">
+              <ProviderIcon :provider="row.provider" size="small" />
+            </template>
+            <!-- 云账号列 -->
+            <template v-else-if="col.key === 'account_name'">
+              {{ row.attributes?.account_name || '-' }}
+            </template>
+            <!-- 区域列 -->
+            <template v-else-if="col.key === 'region'">
+              {{ getRegionLabel(row.provider, row.region) }}
+            </template>
+            <!-- 创建时间列 -->
+            <template v-else-if="col.key === 'create_time'">
+              {{ row.create_time || '-' }}
+            </template>
+            <!-- 默认 -->
+            <template v-else>-</template>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right" align="center">
@@ -164,6 +183,21 @@
       v-model:visible="detailVisible"
       :instance="detailInstance"
     />
+
+    <!-- 导出对话框 -->
+    <ExportDialog
+      v-model:visible="showExportDialog"
+      :instances="eipList"
+      :selected-ids="selectedIds"
+      :total="pagination.total"
+    />
+
+    <!-- 自定义列对话框 -->
+    <ColumnSettingsDialog
+      v-model:visible="showColumnSettings"
+      :columns="columnSettings"
+      @update:columns="handleColumnsUpdate"
+    />
   </PageContainer>
 </template>
 
@@ -179,9 +213,11 @@ import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
 import EipFilters from './components/EipFilters.vue'
 import EipStatusBadge from './components/EipStatusBadge.vue'
+import ExportDialog from './components/ExportDialog.vue'
 
 const router = useRouter()
 
@@ -209,6 +245,44 @@ const eipList = ref<Asset[]>([])
 // 详情抽屉
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
+
+// 导出和自定义列
+const showExportDialog = ref(false)
+const showColumnSettings = ref(false)
+const selectedIds = ref<number[]>([])
+
+// 默认列配置
+const defaultColumnSettings: ColumnConfig[] = [
+  { key: 'status', label: '状态', width: 90, visible: true },
+  { key: 'ip_address', label: 'IP地址', width: 140, visible: true },
+  { key: 'bandwidth', label: '带宽', width: 100, visible: true },
+  { key: 'instance_id', label: '绑定实例', width: 180, visible: true },
+  { key: 'instance_type', label: '实例类型', width: 120, visible: true },
+  { key: 'charge_type', label: '计费方式', width: 100, visible: true },
+  { key: 'platform', label: '平台', width: 60, visible: true },
+  { key: 'account_name', label: '云账号', width: 120, visible: true },
+  { key: 'region', label: '区域', width: 140, visible: true },
+  { key: 'create_time', label: '创建时间', width: 140, visible: false },
+]
+
+const columnSettings = ref<ColumnConfig[]>([])
+const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible))
+
+const loadColumnSettings = () => {
+  const saved = localStorage.getItem('eip-column-settings')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        columnSettings.value = parsed
+        return
+      }
+    } catch { /* ignore */ }
+  }
+  columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
+}
+
+const handleColumnsUpdate = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
 // 同步对话框
 const syncDialogVisible = ref(false)
@@ -271,6 +345,10 @@ const fetchData = async () => {
   }
 }
 
+const handleFiltersUpdate = (newFilters: typeof filters) => {
+  Object.assign(filters, newFilters)
+}
+
 const handleSearch = () => {
   pagination.page = 1
   fetchData()
@@ -328,6 +406,7 @@ const submitSync = async () => {
 }
 
 onMounted(() => {
+  loadColumnSettings()
   fetchData()
 })
 </script>
@@ -370,10 +449,26 @@ onMounted(() => {
     cursor: pointer;
   }
   
-  .name-link {
-    color: var(--el-color-primary);
-    cursor: pointer;
-    &:hover { text-decoration: underline; }
+  .id-name-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.4;
+    
+    .asset-id {
+      color: var(--el-color-primary);
+      cursor: pointer;
+      font-size: 13px;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .asset-name {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      margin-top: 2px;
+    }
   }
   
   .ip-address {

@@ -133,7 +133,7 @@ export function syncCloudAccountApi(id: number, data: account.SyncRequest) {
 
 /** 查询资产列表 */
 export function listAssetsApi(params: asset.ListAssetsParams) {
-    return instance.get<asset.ListAssetsResponse>({
+    return instance.get<asset.AssetListResponse>({
         url: `${API_SERVICE.CAM}/assets`,
         params,
         interceptorsToOnce: createCamApiInterceptor()
@@ -142,16 +142,16 @@ export function listAssetsApi(params: asset.ListAssetsParams) {
 
 /** 获取资产详情 */
 export function getAssetDetailApi(id: number) {
-    return instance.get<asset.AssetDetail>({
+    return instance.get<asset.Asset>({
         url: `${API_SERVICE.CAM}/assets/${id}`,
         interceptorsToOnce: createCamApiInterceptor()
     })
 }
 
 /** 更新资产信息 */
-export function updateAssetApi(data: asset.UpdateAssetRequest) {
+export function updateAssetApi(id: number, data: Partial<asset.Asset>) {
     return instance.put<void>({
-        url: `${API_SERVICE.CAM}/assets`,
+        url: `${API_SERVICE.CAM}/assets/${id}`,
         data,
         interceptorsToOnce: createCamApiInterceptor()
     })
@@ -161,33 +161,6 @@ export function updateAssetApi(data: asset.UpdateAssetRequest) {
 export function deleteAssetApi(id: number) {
     return instance.delete<void>({
         url: `${API_SERVICE.CAM}/assets/${id}`,
-        interceptorsToOnce: createCamApiInterceptor()
-    })
-}
-
-/** 发现资产 */
-export function discoverAssetsApi(data: asset.DiscoverRequest) {
-    return instance.post<asset.DiscoverResponse>({
-        url: `${API_SERVICE.CAM}/assets/discover`,
-        data,
-        interceptorsToOnce: createCamApiInterceptor()
-    })
-}
-
-/** 批量创建资产 */
-export function createMultiAssetsApi(data: asset.CreateMultiAssetsRequest) {
-    return instance.post<asset.CreateMultiAssetsResponse>({
-        url: `${API_SERVICE.CAM}/assets/batch`,
-        data,
-        interceptorsToOnce: createCamApiInterceptor()
-    })
-}
-
-/** 同步资产 */
-export function syncAssetsApi(data: asset.SyncAssetsRequest) {
-    return instance.post<asset.SyncAssetsResponse>({
-        url: `${API_SERVICE.CAM}/assets/sync`,
-        data,
         interceptorsToOnce: createCamApiInterceptor()
     })
 }

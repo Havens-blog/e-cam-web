@@ -91,7 +91,7 @@
 import type { InstanceVO } from '@/api/types/cmdb';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps<{
   visible: boolean
@@ -130,26 +130,14 @@ const scopeDataCount = computed(() => {
 })
 
 const availableFields = [
-  { key: 'asset_id', label: '云上ID' },
+  { key: 'asset_id', label: '资产ID' },
   { key: 'asset_name', label: '名称' },
-  { key: 'host_name', label: '主机名' },
-  { key: 'status', label: '状态' },
-  { key: 'private_ip', label: '私网IP' },
-  { key: 'public_ip', label: '公网IP' },
-  { key: 'os_name', label: '操作系统' },
-  { key: 'instance_type', label: '规格' },
-  { key: 'cpu', label: 'CPU' },
-  { key: 'memory', label: '内存' },
-  { key: 'charge_type', label: '计费方式' },
+  { key: 'uid', label: '资产类型' },
   { key: 'provider', label: '云平台' },
-  { key: 'cloud_account_name', label: '云账号' },
   { key: 'region', label: '区域' },
   { key: 'zone', label: '可用区' },
-  { key: 'vpc_id', label: 'VPC' },
-  { key: 'vswitch_id', label: '子网' },
-  { key: 'security_groups', label: '安全组' },
-  { key: 'image_id', label: '镜像ID' },
-  { key: 'expired_time', label: '到期时间' },
+  { key: 'status', label: '状态' },
+  { key: 'cloud_account_name', label: '云账号' },
   { key: 'creation_time', label: '创建时间' },
   { key: 'tags', label: '标签' },
 ]
@@ -157,7 +145,7 @@ const availableFields = [
 const exportForm = reactive({
   scope: 'current' as 'current' | 'selected' | 'all',
   format: 'xlsx' as 'xlsx' | 'csv',
-  fields: ['asset_id', 'asset_name', 'status', 'private_ip', 'public_ip', 'os_name', 'instance_type', 'charge_type', 'provider', 'region'],
+  fields: ['asset_id', 'asset_name', 'uid', 'provider', 'region', 'status'],
 })
 
 const selectAllFields = () => {
@@ -172,14 +160,25 @@ const getFieldValue = (instance: InstanceVO, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') {
     return instance[key] || ''
   }
+  if (key === 'uid') {
+    const type = instance.uid?.split('_')[0] || instance.uid
+    const typeMap: Record<string, string> = {
+      ecs: '云服务器', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB',
+      vpc: 'VPC', eip: '弹性公网IP', nas: '文件存储', oss: '对象存储',
+      kafka: 'Kafka', elasticsearch: 'Elasticsearch'
+    }
+    return typeMap[type] || type || ''
+  }
   const attr = instance.attributes || {}
   if (key === 'status') {
-    const map: Record<string, string> = { RUNNING: '运行中', STOPPED: '已关机', Running: '运行中', Stopped: '已关机' }
+    const map: Record<string, string> = { 
+      running: '运行中', Running: '运行中', RUNNING: '运行中',
+      stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+      available: '可用', Available: '可用',
+      pending: '创建中', Pending: '创建中',
+      error: '异常', Error: '异常'
+    }
     return map[attr.status] || attr.status || ''
-  }
-  if (key === 'charge_type') {
-    const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费' }
-    return map[attr.charge_type] || attr.charge_type || ''
   }
   if (key === 'provider') {
     const map: Record<string, string> = {
@@ -188,25 +187,19 @@ const getFieldValue = (instance: InstanceVO, key: string): string => {
     }
     return map[attr.provider] || attr.provider || ''
   }
-  if (key === 'memory') {
-    const mem = attr.memory
-    if (!mem) return ''
-    return mem >= 1024 ? `${(mem / 1024).toFixed(0)}GB` : `${mem}MB`
-  }
-  if (key === 'cpu') {
-    return attr.cpu ? `${attr.cpu}核` : ''
-  }
-  if (key === 'security_groups') {
-    const groups = attr.security_groups || attr.security_group_ids
-    if (Array.isArray(groups)) return groups.length.toString()
-    return ''
-  }
   if (key === 'tags') {
     const tags = attr.tags
     if (tags && typeof tags === 'object') {
       return Object.entries(tags).map(([k, v]) => `${k}:${v}`).join('; ')
     }
     return ''
+  }
+  if (key === 'creation_time') {
+    const time = attr.creation_time || instance.create_time
+    if (!time) return ''
+    const date = typeof time === 'number' ? new Date(time * 1000) : new Date(time)
+    if (isNaN(date.getTime())) return ''
+    return date.toLocaleString('zh-CN')
   }
   return attr[key] || ''
 }
@@ -262,7 +255,7 @@ const exportToCsv = (headers: string[], rows: string[][]) => {
   ].join('\n')
 
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' })
-  downloadFile(blob, `虚拟机列表_${formatDate()}.csv`)
+  downloadFile(blob, `资源实例列表_${formatDate()}.csv`)
 }
 
 const exportToXlsx = (headers: string[], rows: string[][]) => {
@@ -273,7 +266,7 @@ const exportToXlsx = (headers: string[], rows: string[][]) => {
 
   const BOM = '\uFEFF'
   const blob = new Blob([BOM + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8' })
-  downloadFile(blob, `虚拟机列表_${formatDate()}.xlsx`)
+  downloadFile(blob, `资源实例列表_${formatDate()}.xlsx`)
 }
 
 const downloadFile = (blob: Blob, filename: string) => {

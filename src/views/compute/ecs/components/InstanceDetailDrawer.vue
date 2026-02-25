@@ -1,0 +1,1237 @@
+<template>
+  <el-drawer
+    :model-value="visible"
+    :with-header="false"
+    size="50%"
+    :close-on-click-modal="true"
+    class="instance-detail-drawer"
+    @update:model-value="$emit('update:visible', $event)"
+  >
+    <div class="drawer-wrapper">
+      <template v-if="instance">
+        <!-- 头部区域（浅灰背景） -->
+        <div class="drawer-header-area">
+          <!-- 自定义头部 -->
+          <div class="drawer-header">
+            <div class="header-left">
+              <div class="close-corner" @click="$emit('update:visible', false)">
+                <div class="corner-bg"></div>
+                <el-icon class="corner-icon" :size="12"><Close /></el-icon>
+              </div>
+              <div class="instance-icon">
+                <IconFont :type="getOsIcon(instance.attributes?.os_type)" :size="24" />
+              </div>
+              <div class="instance-info">
+                <div class="instance-type">虚拟机</div>
+                <div class="instance-name">
+                  {{ instance.asset_name || instance.asset_id }}
+                  <el-button text size="small" @click="handleRefresh">
+                    <el-icon><Refresh /></el-icon>
+                  </el-button>
+                </div>
+              </div>
+            </div>
+            <div class="header-right">
+              <el-dropdown trigger="click">
+                <el-button size="small">
+                  实例控制 <el-icon><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item>开机</el-dropdown-item>
+                    <el-dropdown-item>关机</el-dropdown-item>
+                    <el-dropdown-item>重启</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <el-dropdown trigger="click">
+                <el-button size="small">
+                  更多 <el-icon><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="$emit('edit', instance)">编辑</el-dropdown-item>
+                    <el-dropdown-item divided @click="$emit('delete', instance)">
+                      <span class="danger-text">删除</span>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </div>
+
+          <!-- 标签页 -->
+          <div class="drawer-tabs">
+            <el-tabs v-model="activeTab">
+              <el-tab-pane label="详情" name="detail" />
+              <el-tab-pane label="安全组" name="security" />
+              <el-tab-pane label="网络" name="network" />
+              <el-tab-pane label="磁盘" name="disk" />
+              <el-tab-pane label="快照" name="snapshot" />
+              <el-tab-pane label="监控" name="monitor" />
+              <el-tab-pane label="报警" name="alarm" />
+              <el-tab-pane label="任务" name="task" />
+              <el-tab-pane label="定时任务" name="schedule" />
+              <el-tab-pane label="操作日志" name="log" />
+            </el-tabs>
+          </div>
+        </div>
+
+        <!-- 内容区域 -->
+        <div class="drawer-content">
+          <template v-if="activeTab === 'detail'">
+            <div class="detail-columns">
+              <!-- 左列：基本信息 -->
+              <div class="detail-column">
+              <div class="column-title">基本信息</div>
+              <div class="info-list">
+                <div class="info-row">
+                  <span class="info-label">云上ID</span>
+                  <span class="info-value">{{ instance.asset_id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">ID</span>
+                  <span class="info-value">{{ instance.id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">名称</span>
+                  <span class="info-value">{{ instance.asset_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">状态</span>
+                  <span class="info-value">
+                    <span class="status-dot" :class="getStatusClass(instance.attributes?.status)"></span>
+                    {{ getStatusText(instance.attributes?.status) }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">主机名</span>
+                  <span class="info-value">{{ instance.attributes?.host_name || instance.asset_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">租户</span>
+                  <span class="info-value">{{ instance.tenant_id }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">云账号</span>
+                  <span class="info-value link">{{ instance.attributes?.cloud_account_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">云平台</span>
+                  <span class="info-value">
+                    <IconFont :type="getPlatformIconType(instance.attributes?.provider)" :size="16" />
+                    {{ getProviderName(instance.attributes?.provider) }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">区域</span>
+                  <span class="info-value">{{ instance.attributes?.region || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">可用区</span>
+                  <span class="info-value">{{ instance.attributes?.zone || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">计费方式</span>
+                  <span class="info-value highlight">{{ getChargeTypeText(instance.attributes?.charge_type) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">到期时间</span>
+                  <span class="info-value">{{ formatDateTime(instance.attributes?.expired_time) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">标签</span>
+                  <span class="info-value tags">
+                    <template v-if="instance.attributes?.tags && Object.keys(instance.attributes.tags).length > 0">
+                      <span v-for="(value, key) in instance.attributes.tags" :key="key" class="tag-item">
+                        {{ key }}: {{ value }}
+                      </span>
+                    </template>
+                    <span v-else>-</span>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">创建时间</span>
+                  <span class="info-value">{{ formatDateTime(instance.attributes?.creation_time) || formatTime(instance.create_time) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">更新时间</span>
+                  <span class="info-value">{{ formatTime(instance.update_time) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右列：配置信息 -->
+            <div class="detail-column">
+              <div class="column-title">配置信息</div>
+              <div class="info-list">
+                <div class="info-row">
+                  <span class="info-label">操作系统</span>
+                  <span class="info-value">
+                    <IconFont :type="getOsIcon(instance.attributes?.os_type)" :size="16" />
+                    {{ instance.attributes?.os_name || '-' }}
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">规格</span>
+                  <span class="info-value">{{ instance.attributes?.instance_type || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">CPU</span>
+                  <span class="info-value">{{ instance.attributes?.cpu || '-' }} 核</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">内存</span>
+                  <span class="info-value">{{ formatMemory(instance.attributes?.memory) }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">私网IP</span>
+                  <span class="info-value">{{ instance.attributes?.private_ip || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">公网IP</span>
+                  <span class="info-value">{{ instance.attributes?.public_ip || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">镜像ID</span>
+                  <span class="info-value">{{ instance.attributes?.image_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">VPC</span>
+                  <span class="info-value link">{{ instance.attributes?.vpc_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">子网</span>
+                  <span class="info-value">{{ instance.attributes?.vswitch_id || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">安全组</span>
+                  <span class="info-value">
+                    <template v-if="instance.attributes?.security_groups?.length">
+                      {{ instance.attributes.security_groups.length }} 个
+                    </template>
+                    <template v-else>-</template>
+                  </span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">网络类型</span>
+                  <span class="info-value">{{ instance.attributes?.network_type || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">密钥对</span>
+                  <span class="info-value">{{ instance.attributes?.key_pair_name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">入带宽</span>
+                  <span class="info-value">{{ instance.attributes?.internet_max_bandwidth_in || 0 }} Mbps</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">出带宽</span>
+                  <span class="info-value">{{ instance.attributes?.internet_max_bandwidth_out || 0 }} Mbps</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">自动续费</span>
+                  <span class="info-value">{{ instance.attributes?.auto_renew ? '开启' : '关闭' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">描述</span>
+                  <span class="info-value">{{ instance.attributes?.description || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 安全组 Tab -->
+        <template v-else-if="activeTab === 'security'">
+          <div v-loading="relationsLoading" class="tab-content">
+            <template v-if="relationsData?.security_groups?.length">
+              <div class="resource-cards">
+                <div 
+                  v-for="sg in relationsData.security_groups" 
+                  :key="sg.asset_id" 
+                  class="resource-card"
+                >
+                  <div class="card-header">
+                    <div class="card-icon security-group">
+                      <el-icon><Lock /></el-icon>
+                    </div>
+                    <div class="card-title">
+                      <span class="card-name link" @click="goToDetail('security-group', sg)">
+                        {{ sg.asset_name || sg.asset_id }}
+                      </span>
+                      <span class="card-id" @click="goToDetail('security-group', sg)">{{ sg.asset_id }}</span>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-info-row">
+                      <span class="label">VPC</span>
+                      <span class="value">{{ sg.attributes?.vpc_id || '-' }}</span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">描述</span>
+                      <span class="value">{{ sg.attributes?.description || '-' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div v-else class="empty-tab">
+              <el-icon :size="48"><Document /></el-icon>
+              <p>暂无安全组数据</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- 网络 Tab -->
+        <template v-else-if="activeTab === 'network'">
+          <div v-loading="relationsLoading" class="tab-content">
+            <div class="resource-cards" v-if="relationsData?.vpc || relationsData?.subnet">
+              <!-- VPC 卡片 -->
+              <div class="resource-card" v-if="relationsData?.vpc">
+                <div class="card-header">
+                  <div class="card-icon vpc">
+                    <el-icon><Connection /></el-icon>
+                  </div>
+                  <div class="card-title">
+                    <span class="card-type">VPC</span>
+                    <span class="card-name link" @click="goToDetail('vpc', relationsData.vpc)">
+                      {{ relationsData.vpc.asset_name || relationsData.vpc.asset_id }}
+                    </span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="card-info-row">
+                    <span class="label">VPC ID</span>
+                    <span class="value link" @click="goToDetail('vpc', relationsData.vpc)">{{ relationsData.vpc.asset_id }}</span>
+                  </div>
+                  <div class="card-info-row">
+                    <span class="label">CIDR</span>
+                    <span class="value">{{ relationsData.vpc.attributes?.cidr_block || '-' }}</span>
+                  </div>
+                  <div class="card-info-row">
+                    <span class="label">状态</span>
+                    <span class="value">
+                      <span class="status-tag success">{{ relationsData.vpc.attributes?.status || 'Available' }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <!-- 子网卡片 -->
+              <div class="resource-card" v-if="relationsData?.subnet">
+                <div class="card-header">
+                  <div class="card-icon subnet">
+                    <el-icon><Grid /></el-icon>
+                  </div>
+                  <div class="card-title">
+                    <span class="card-type">子网</span>
+                    <span class="card-name">{{ relationsData.subnet.asset_name || relationsData.subnet.asset_id }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="card-info-row">
+                    <span class="label">子网 ID</span>
+                    <span class="value">{{ relationsData.subnet.asset_id }}</span>
+                  </div>
+                  <div class="card-info-row">
+                    <span class="label">CIDR</span>
+                    <span class="value">{{ relationsData.subnet.attributes?.cidr_block || '-' }}</span>
+                  </div>
+                  <div class="card-info-row">
+                    <span class="label">可用区</span>
+                    <span class="value">{{ relationsData.subnet.attributes?.zone || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-tab">
+              <el-icon :size="48"><Document /></el-icon>
+              <p>暂无网络数据</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- 磁盘 Tab -->
+        <template v-else-if="activeTab === 'disk'">
+          <div v-loading="relationsLoading" class="tab-content">
+            <template v-if="relationsData?.disks?.length">
+              <div class="resource-cards">
+                <div 
+                  v-for="disk in relationsData.disks" 
+                  :key="disk.asset_id" 
+                  class="resource-card"
+                >
+                  <div class="card-header">
+                    <div class="card-icon disk" :class="{ system: disk.attributes?.disk_type === 'system' }">
+                      <el-icon><Coin /></el-icon>
+                    </div>
+                    <div class="card-title">
+                      <span class="card-name link" @click="goToDetail('disk', disk)">
+                        {{ disk.asset_name || disk.asset_id }}
+                      </span>
+                      <span class="card-id" @click="goToDetail('disk', disk)">{{ disk.asset_id }}</span>
+                    </div>
+                    <div class="card-badge">
+                      <span class="type-tag" :class="disk.attributes?.disk_type">
+                        {{ getDiskTypeText(disk.attributes?.disk_type) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-info-row">
+                      <span class="label">容量</span>
+                      <span class="value highlight">{{ disk.attributes?.size || '-' }} GB</span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">磁盘类型</span>
+                      <span class="value">{{ disk.attributes?.category || '-' }}</span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">状态</span>
+                      <span class="value">
+                        <span class="status-tag" :class="getDiskStatusClass(disk.attributes?.status)">
+                          {{ getDiskStatusText(disk.attributes?.status) }}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div v-else class="empty-tab">
+              <el-icon :size="48"><Document /></el-icon>
+              <p>暂无磁盘数据</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- 快照 Tab -->
+        <template v-else-if="activeTab === 'snapshot'">
+          <div v-loading="relationsLoading" class="tab-content">
+            <template v-if="relationsData?.snapshots?.length">
+              <div class="resource-cards">
+                <div 
+                  v-for="snap in relationsData.snapshots" 
+                  :key="snap.asset_id" 
+                  class="resource-card"
+                >
+                  <div class="card-header">
+                    <div class="card-icon snapshot">
+                      <el-icon><Camera /></el-icon>
+                    </div>
+                    <div class="card-title">
+                      <span class="card-name link" @click="goToDetail('snapshot', snap)">
+                        {{ snap.asset_name || snap.asset_id }}
+                      </span>
+                      <span class="card-id" @click="goToDetail('snapshot', snap)">{{ snap.asset_id }}</span>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-info-row">
+                      <span class="label">源磁盘</span>
+                      <span class="value">{{ snap.attributes?.source_disk_id || '-' }}</span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">大小</span>
+                      <span class="value highlight">{{ snap.attributes?.source_disk_size || '-' }} GB</span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">状态</span>
+                      <span class="value">
+                        <span class="status-tag" :class="getSnapshotStatusClass(snap.attributes?.status)">
+                          {{ getSnapshotStatusText(snap.attributes?.status) }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="card-info-row">
+                      <span class="label">创建时间</span>
+                      <span class="value">{{ formatDateTime(snap.attributes?.creation_time) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <div v-else class="empty-tab">
+              <el-icon :size="48"><Document /></el-icon>
+              <p>暂无快照数据</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- 其他标签页占位 -->
+        <template v-else>
+          <div class="empty-tab">
+            <el-icon :size="48"><Document /></el-icon>
+            <p>{{ activeTab }} 功能开发中...</p>
+          </div>
+        </template>
+      </div>
+      </template>
+    </div>
+  </el-drawer>
+
+  <!-- 嵌套抽屉：磁盘详情 -->
+  <DiskDetailDrawer
+    v-if="nestedDrawerType === 'disk'"
+    :visible="nestedDrawerVisible"
+    :instance="nestedDrawerData"
+    @update:visible="closeNestedDrawer"
+  />
+
+  <!-- 嵌套抽屉：快照详情 -->
+  <SnapshotDetailDrawer
+    v-if="nestedDrawerType === 'snapshot'"
+    :visible="nestedDrawerVisible"
+    :instance="nestedDrawerData"
+    @update:visible="closeNestedDrawer"
+  />
+
+  <!-- 嵌套抽屉：安全组详情 -->
+  <SecurityGroupDetailDrawer
+    v-if="nestedDrawerType === 'security-group'"
+    :visible="nestedDrawerVisible"
+    :instance="nestedDrawerData"
+    @update:visible="closeNestedDrawer"
+  />
+</template>
+
+<script setup lang="ts">
+import { getECSRelationsApi, type ECSRelationsResp } from '@/api/asset';
+import type { Asset } from '@/api/types/asset';
+import IconFont from '@/components/IconFont/index.vue';
+import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.vue';
+import SecurityGroupDetailDrawer from '@/views/compute/security-group/components/SecurityGroupDetailDrawer.vue';
+import SnapshotDetailDrawer from '@/views/compute/snapshot/components/SnapshotDetailDrawer.vue';
+import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refresh } from '@element-plus/icons-vue';
+import { ref, watch } from 'vue';
+
+const props = defineProps<{
+  visible: boolean
+  instance: Asset | null
+}>()
+
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  edit: [instance: Asset]
+  delete: [instance: Asset]
+}>()
+
+const activeTab = ref('detail')
+
+// 嵌套抽屉状态
+const nestedDrawerType = ref<'disk' | 'snapshot' | 'security-group' | 'vpc' | null>(null)
+const nestedDrawerVisible = ref(false)
+const nestedDrawerData = ref<Asset | null>(null)
+
+// 关联资源数据
+const relationsData = ref<ECSRelationsResp | null>(null)
+const relationsLoading = ref(false)
+const relationsLoaded = ref(false)
+
+// 获取关联资源
+const fetchRelations = async () => {
+  if (!props.instance?.asset_id) return
+  // 如果已加载过，不重复请求
+  if (relationsLoaded.value) return
+  
+  relationsLoading.value = true
+  try {
+    const res = await getECSRelationsApi(props.instance.asset_id, {
+      tenant_id: props.instance.tenant_id,
+      provider: props.instance.attributes?.provider
+    }) as any
+    console.log('ECS Relations API Response:', res)
+    if (res && (res.code === 0 || res.code === 200) && res.data) {
+      relationsData.value = res.data as ECSRelationsResp
+      relationsLoaded.value = true
+    } else if (res && !res.code && res.ecs) {
+      // 直接返回数据的情况
+      relationsData.value = res as ECSRelationsResp
+      relationsLoaded.value = true
+    }
+  } catch (error) {
+    console.error('获取关联资源失败:', error)
+  } finally {
+    relationsLoading.value = false
+  }
+}
+
+// 监听 tab 切换，需要关联数据时加载
+watch(activeTab, (tab) => {
+  if (['security', 'network', 'disk', 'snapshot'].includes(tab)) {
+    fetchRelations()
+  }
+})
+
+// 监听 instance 变化，重置关联数据
+watch(() => props.instance?.asset_id, (newId, oldId) => {
+  if (newId !== oldId) {
+    relationsData.value = null
+    relationsLoaded.value = false
+    activeTab.value = 'detail'
+  }
+})
+
+// 监听 visible 变化，抽屉打开时如果当前 tab 需要关联数据则加载
+watch(() => props.visible, (visible) => {
+  if (visible && ['security', 'network', 'disk', 'snapshot'].includes(activeTab.value)) {
+    fetchRelations()
+  }
+})
+
+const handleRefresh = () => {
+  // 刷新数据
+}
+
+const getOsIcon = (osType: string | undefined): string => {
+  if (!osType) return 'caise-Linux'
+  const os = osType.toLowerCase()
+  if (os.includes('windows')) return 'caise-Windows'
+  if (os.includes('ubuntu')) return 'caise-Ubuntu'
+  if (os.includes('centos')) return 'caise-centos'
+  return 'caise-Linux'
+}
+
+const getStatusClass = (status: string | undefined) => {
+  if (!status) return ''
+  const s = status.toUpperCase()
+  const map: Record<string, string> = {
+    RUNNING: 'running',
+    STOPPED: 'stopped',
+    DELETED: 'error',
+    PENDING: 'pending',
+  }
+  return map[s] || ''
+}
+
+const getStatusText = (status: string | undefined) => {
+  if (!status) return '-'
+  const s = status.toUpperCase()
+  const map: Record<string, string> = {
+    RUNNING: '运行中',
+    STOPPED: '已关机',
+    DELETED: '已删除',
+    PENDING: '创建中',
+  }
+  return map[s] || status
+}
+
+const getPlatformIconType = (provider: string | undefined): string => {
+  if (!provider) return 'Alibaba_Cloud'
+  const p = provider.toLowerCase()
+  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
+  if (p.includes('tencent') || p.includes('qcloud')) return 'Tencent_Cloud'
+  if (p.includes('huawei')) return 'Huawei_Cloud'
+  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
+  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
+  if (p.includes('google') || p.includes('gcp')) return 'Google_Cloud_Platform'
+  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return 'Bytecloud'
+  if (p.includes('ucloud')) return 'UCloud'
+  if (p.includes('jd') || p.includes('jdcloud')) return 'JDCloud'
+  if (p.includes('ecloud') || p.includes('ctyun')) return 'Ctyun'
+  if (p.includes('openstack')) return 'OpenStack'
+  if (p.includes('vmware') || p.includes('vsphere')) return 'caise-vmware'
+  if (p.includes('nutanix')) return 'Nutanix'
+  if (p.includes('zstack')) return 'ZStack'
+  return 'Alibaba_Cloud'
+}
+
+const getProviderName = (provider: string | undefined): string => {
+  if (!provider) return '-'
+  const p = provider.toLowerCase()
+  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
+  if (p.includes('tencent') || p.includes('qcloud')) return '腾讯云'
+  if (p.includes('huawei')) return '华为云'
+  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
+  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
+  if (p.includes('google') || p.includes('gcp')) return 'Google Cloud'
+  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return '火山引擎'
+  if (p.includes('ucloud')) return 'UCloud'
+  if (p.includes('jd') || p.includes('jdcloud')) return '京东云'
+  if (p.includes('ecloud') || p.includes('ctyun')) return '天翼云'
+  if (p.includes('openstack')) return 'OpenStack'
+  if (p.includes('vmware') || p.includes('vsphere')) return 'VMware'
+  if (p.includes('nutanix')) return 'Nutanix'
+  if (p.includes('zstack')) return 'ZStack'
+  return provider
+}
+
+const getChargeTypeText = (chargeType: string | undefined): string => {
+  if (!chargeType) return '-'
+  const map: Record<string, string> = {
+    PrePaid: '包年包月',
+    PostPaid: '按量付费',
+    prepaid: '包年包月',
+    postpaid: '按量付费',
+  }
+  return map[chargeType] || chargeType
+}
+
+const formatDateTime = (dateStr: string | undefined): string => {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+const formatTime = (time: number | undefined) => {
+  if (!time) return '-'
+  return new Date(time).toLocaleString('zh-CN')
+}
+
+const formatMemory = (memory: number | undefined) => {
+  if (!memory) return '-'
+  if (memory >= 1024) {
+    return `${(memory / 1024).toFixed(0)}GB`
+  }
+  return `${memory}MB`
+}
+
+// 磁盘类型
+const getDiskTypeText = (type: string | undefined): string => {
+  if (!type) return '-'
+  const map: Record<string, string> = {
+    system: '系统盘',
+    data: '数据盘',
+  }
+  return map[type.toLowerCase()] || type
+}
+
+// 磁盘状态
+const getDiskStatusClass = (status: string | undefined): string => {
+  if (!status) return ''
+  const s = status.toLowerCase()
+  if (s === 'in_use' || s === 'in-use' || s === 'attached') return 'running'
+  if (s === 'available') return 'stopped'
+  return ''
+}
+
+const getDiskStatusText = (status: string | undefined): string => {
+  if (!status) return '-'
+  const map: Record<string, string> = {
+    in_use: '使用中',
+    'in-use': '使用中',
+    attached: '使用中',
+    available: '可用',
+    creating: '创建中',
+    detaching: '卸载中',
+  }
+  return map[status.toLowerCase()] || status
+}
+
+// 快照状态
+const getSnapshotStatusText = (status: string | undefined): string => {
+  if (!status) return '-'
+  const map: Record<string, string> = {
+    accomplished: '已完成',
+    progressing: '创建中',
+    failed: '失败',
+  }
+  return map[status.toLowerCase()] || status
+}
+
+const getSnapshotStatusClass = (status: string | undefined): string => {
+  if (!status) return ''
+  const s = status.toLowerCase()
+  if (s === 'accomplished') return 'success'
+  if (s === 'progressing') return 'warning'
+  if (s === 'failed') return 'error'
+  return ''
+}
+
+// 跳转到对应资源详情页（打开嵌套抽屉）
+const goToDetail = (type: string, asset: Asset) => {
+  nestedDrawerType.value = type as 'disk' | 'snapshot' | 'security-group' | 'vpc'
+  nestedDrawerData.value = asset
+  nestedDrawerVisible.value = true
+}
+
+// 关闭嵌套抽屉
+const closeNestedDrawer = () => {
+  nestedDrawerVisible.value = false
+  nestedDrawerData.value = null
+  nestedDrawerType.value = null
+}
+</script>
+
+<style scoped lang="scss">
+.drawer-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-header-area {
+  background: #f5f7fa;
+  flex-shrink: 0;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #f5f7fa;
+  position: relative;
+}
+
+.close-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  z-index: 10;
+
+  .corner-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 36px 36px 0 0;
+    border-color: #409eff transparent transparent transparent;
+    transition: border-color 0.2s;
+  }
+
+  .corner-icon {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    color: #fff;
+  }
+
+  &:hover .corner-bg {
+    border-color: #66b1ff transparent transparent transparent;
+  }
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 36px;
+
+  .instance-icon {
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+  }
+
+  .instance-info {
+    .instance-type {
+      font-size: 11px;
+      color: #909399;
+      margin-bottom: 2px;
+    }
+
+    .instance-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #303133;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-tabs {
+  padding: 0 20px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e4e7ed;
+
+  :deep(.el-tabs) {
+    .el-tabs__header {
+      margin: 0;
+    }
+
+    .el-tabs__nav-wrap::after {
+      display: none;
+    }
+
+    .el-tabs__item {
+      height: 36px;
+      line-height: 36px;
+      font-size: 13px;
+      color: #606266;
+      padding: 0 14px;
+
+      &.is-active {
+        color: #409eff;
+      }
+
+      &:hover {
+        color: #303133;
+      }
+    }
+
+    .el-tabs__active-bar {
+      background-color: #409eff;
+      height: 2px;
+    }
+  }
+}
+
+.drawer-content {
+  padding: 24px 28px;
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+
+.detail-column {
+  .column-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ebeef5;
+  }
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0;
+  font-size: 13px;
+  min-height: 34px;
+
+  .info-label {
+    width: 80px;
+    flex-shrink: 0;
+    color: #909399;
+    line-height: 1.6;
+  }
+
+  .info-value {
+    flex: 1;
+    color: #303133;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.6;
+
+    &.link {
+      color: #409eff;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    &.highlight {
+      color: #409eff;
+    }
+
+    .edit-icon {
+      color: #409eff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .platform-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    // 标签样式
+    &.tags {
+      flex-wrap: wrap;
+      gap: 4px;
+
+      .tag-item {
+        padding: 2px 8px;
+        background: #f0f2f5;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #606266;
+      }
+    }
+  }
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #909399;
+  flex-shrink: 0;
+
+  &.running { background: #67c23a; }
+  &.stopped { background: #909399; }
+  &.error { background: #f56c6c; }
+}
+
+.empty-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #909399;
+
+  p {
+    margin-top: 16px;
+  }
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+// 资源卡片样式
+.resource-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.resource-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #409eff;
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
+    border-bottom: 1px solid #ebeef5;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+
+    &.security-group {
+      background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
+      color: #1890ff;
+    }
+
+    &.vpc {
+      background: linear-gradient(135deg, #f6ffed 0%, #b7eb8f 100%);
+      color: #52c41a;
+    }
+
+    &.subnet {
+      background: linear-gradient(135deg, #fff7e6 0%, #ffd591 100%);
+      color: #fa8c16;
+    }
+
+    &.disk {
+      background: linear-gradient(135deg, #f9f0ff 0%, #d3adf7 100%);
+      color: #722ed1;
+
+      &.system {
+        background: linear-gradient(135deg, #fff1f0 0%, #ffa39e 100%);
+        color: #f5222d;
+      }
+    }
+
+    &.snapshot {
+      background: linear-gradient(135deg, #e6fffb 0%, #87e8de 100%);
+      color: #13c2c2;
+    }
+  }
+
+  .card-title {
+    flex: 1;
+    min-width: 0;
+
+    .card-type {
+      display: block;
+      font-size: 11px;
+      color: #909399;
+      margin-bottom: 2px;
+    }
+
+    .card-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #303133;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &.link {
+        color: #409eff;
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .card-id {
+      display: block;
+      font-size: 12px;
+      color: #909399;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+
+      &:hover {
+        color: #409eff;
+      }
+    }
+  }
+
+  .card-badge {
+    .type-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+
+      &.system {
+        background: #fff1f0;
+        color: #f5222d;
+      }
+
+      &.data {
+        background: #f6ffed;
+        color: #52c41a;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 12px 16px;
+  }
+
+  .card-info-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+
+    .label {
+      width: 70px;
+      flex-shrink: 0;
+      color: #909399;
+    }
+
+    .value {
+      flex: 1;
+      color: #303133;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &.link {
+        color: #409eff;
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      &.highlight {
+        color: #409eff;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.warning {
+    background: #fffbe6;
+    color: #faad14;
+  }
+
+  &.error {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  &.running {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.stopped {
+    background: #f5f5f5;
+    color: #8c8c8c;
+  }
+}
+
+.danger-text {
+  color: #f56c6c;
+}
+</style>
+
+<style lang="scss">
+.instance-detail-drawer {
+  .el-drawer__body {
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+</style>

@@ -277,21 +277,103 @@ const routes: RouteRecordRaw[] = [
             // ==================== 数据库管理路由 ====================
             {
                 path: '/databases',
-                name: 'Databases',
-                component: () => import('@/views/databases/index.vue'),
+                redirect: '/databases/rds',
+            },
+            {
+                path: '/databases/rds',
+                name: 'DatabasesRDS',
+                component: () => import('@/views/databases/rds/index.vue'),
                 meta: {
-                    title: '数据库管理',
+                    title: 'RDS 云数据库',
+                    icon: 'Coin',
+                },
+            },
+            {
+                path: '/databases/redis',
+                name: 'DatabasesRedis',
+                component: () => import('@/views/databases/redis/index.vue'),
+                meta: {
+                    title: 'Redis 云数据库',
+                    icon: 'Coin',
+                },
+            },
+            {
+                path: '/databases/mongodb',
+                name: 'DatabasesMongoDB',
+                component: () => import('@/views/databases/mongodb/index.vue'),
+                meta: {
+                    title: 'MongoDB 云数据库',
                     icon: 'Coin',
                 },
             },
             // ==================== ECS 虚拟机路由 ====================
+
             {
-                path: '/ecs',
-                name: 'ECS',
-                component: () => import('@/views/ecs/index.vue'),
+                path: '/compute/ecs',
+                name: 'ComputeECS',
+                component: () => import('@/views/compute/ecs/index.vue'),
                 meta: {
-                    title: '云虚拟机',
+                    title: '虚拟机',
                     icon: 'Monitor',
+                },
+            },
+            {
+                path: '/compute/disk',
+                name: 'ComputeDisk',
+                component: () => import('@/views/compute/disk/index.vue'),
+                meta: {
+                    title: '云盘',
+                    icon: 'Coin',
+                },
+            },
+            {
+                path: '/compute/snapshot',
+                name: 'ComputeSnapshot',
+                component: () => import('@/views/compute/snapshot/index.vue'),
+                meta: {
+                    title: '快照',
+                    icon: 'Camera',
+                },
+            },
+            {
+                path: '/compute/security-group',
+                name: 'ComputeSecurityGroup',
+                component: () => import('@/views/compute/security-group/index.vue'),
+                meta: {
+                    title: '安全组',
+                    icon: 'Lock',
+                },
+            },
+            // ==================== 告警中心路由 ====================
+            {
+                path: '/alert',
+                redirect: '/alert/events',
+            },
+            {
+                path: '/alert/events',
+                name: 'AlertEvents',
+                component: () => import('@/views/alert/events/index.vue'),
+                meta: {
+                    title: '告警事件',
+                    icon: 'Bell',
+                },
+            },
+            {
+                path: '/alert/rules',
+                name: 'AlertRules',
+                component: () => import('@/views/alert/rules/index.vue'),
+                meta: {
+                    title: '告警规则',
+                    icon: 'List',
+                },
+            },
+            {
+                path: '/alert/channels',
+                name: 'AlertChannels',
+                component: () => import('@/views/alert/channels/index.vue'),
+                meta: {
+                    title: '通知渠道',
+                    icon: 'ChatDotRound',
                 },
             },
             // ==================== 网络管理路由 ====================
@@ -311,6 +393,44 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: '弹性公网IP',
                     icon: 'Position',
+                },
+            },
+            // ==================== 存储管理路由 ====================
+            {
+                path: '/storage/nas',
+                name: 'NAS',
+                component: () => import('@/views/storage/nas/index.vue'),
+                meta: {
+                    title: '文件存储 NAS',
+                    icon: 'FolderOpened',
+                },
+            },
+            {
+                path: '/storage/oss',
+                name: 'OSS',
+                component: () => import('@/views/storage/oss/index.vue'),
+                meta: {
+                    title: '对象存储 OSS',
+                    icon: 'Folder',
+                },
+            },
+            // ==================== 中间件管理路由 ====================
+            {
+                path: '/middleware/kafka',
+                name: 'Kafka',
+                component: () => import('@/views/middleware/kafka/index.vue'),
+                meta: {
+                    title: 'Kafka 消息队列',
+                    icon: 'Message',
+                },
+            },
+            {
+                path: '/middleware/elasticsearch',
+                name: 'Elasticsearch',
+                component: () => import('@/views/middleware/elasticsearch/index.vue'),
+                meta: {
+                    title: 'Elasticsearch',
+                    icon: 'Search',
                 },
             },
         ],

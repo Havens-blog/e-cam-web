@@ -1,0 +1,263 @@
+// 存储页面通用样式
+.nas-page,
+.oss-page {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+}
+
+.page-top {
+  margin-bottom: 16px;
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.stats-badges {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .stat-num {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+
+    &.blue { color: #409eff; }
+    &.orange { color: #e6a23c; }
+    &.red { color: #f56c6c; }
+  }
+}
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.action-left {
+  display: flex;
+  gap: 8px;
+}
+
+.action-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .page-info {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-right: 8px;
+  }
+}
+
+.search-bar {
+  margin-bottom: 12px;
+}
+
+.search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  .search-input-wrap {
+    width: 240px;
+  }
+
+  .el-select {
+    width: 140px;
+  }
+}
+
+.table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.table-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+  }
+
+  td {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  tbody tr {
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &.selected {
+      background: rgba(64, 158, 255, 0.08);
+    }
+  }
+}
+
+.col-checkbox {
+  width: 40px;
+}
+
+.col-name {
+  width: 200px;
+}
+
+.col-actions {
+  width: 80px;
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+
+  .instance-name {
+    color: #409eff;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: #909399;
+
+  &.running { background: #67c23a; }
+  &.stopped { background: #909399; }
+  &.error { background: #f56c6c; }
+}
+
+.status-text {
+  font-size: 13px;
+}
+
+.platform-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.action-link {
+  color: #409eff;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+
+  p {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+}
+
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  margin-top: auto;
+}
+
+.pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .select-info {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+}
+
+.pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}

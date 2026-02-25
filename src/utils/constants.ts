@@ -4,7 +4,7 @@
 
 // ==================== 云厂商常量 ====================
 
-export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei' | 'volcengine'
+export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei' | 'volcano'
 
 export interface ProviderConfig {
     id: CloudProvider
@@ -138,11 +138,11 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         ],
         features: ['auto_sync', 'batch_operations']
     },
-    volcengine: {
-        id: 'volcengine',
-        name: 'volcengine',
+    volcano: {
+        id: 'volcano',
+        name: 'volcano',
         displayName: '火山引擎',
-        icon: 'icon-volcengine',
+        icon: 'icon-volcano',
         color: '#3370ff',
         regions: [
             { value: 'cn-beijing', label: '华北2(北京)' },
@@ -175,6 +175,7 @@ export const ASSET_TYPES = [
     { value: 'database', label: '数据库服务' },
     { value: 'storage', label: '存储服务' },
     { value: 'network', label: '网络服务' },
+    { value: 'middleware', label: '中间件服务' },
     { value: 'security', label: '安全服务' },
     { value: 'monitor', label: '监控服务' }
 ]
@@ -199,7 +200,8 @@ export const ASSET_TYPE_MAPPING: Record<string, string> = {
     cdb: 'database',
     cos: 'storage',
     clb: 'network',
-    obs: 'storage'
+    obs: 'storage',
+    middleware: 'middleware'
 }
 
 // ==================== 资产状态常量 ====================

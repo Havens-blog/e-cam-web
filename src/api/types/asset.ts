@@ -58,3 +58,33 @@ export interface Tag {
     key: string
     value: string
 }
+
+/** 搜索匹配信息 */
+export interface MatchInfo {
+    field: string
+    value: string
+    label: string
+}
+
+/** 搜索结果项 */
+export interface SearchResultItem extends Asset {
+    matches: MatchInfo[]
+}
+
+/** 搜索响应 */
+export interface SearchResponse {
+    items: SearchResultItem[]
+    total: number
+    keyword: string
+}
+
+/** 搜索参数 */
+export interface SearchParams {
+    keyword: string
+    types?: string
+    provider?: string
+    account_id?: number
+    region?: string
+    offset?: number
+    limit?: number
+}

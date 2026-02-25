@@ -39,7 +39,13 @@
     </div>
 
     <!-- 筛选器 -->
-    <DatabaseFilters v-model="filters" @search="handleSearch" />
+    <DatabaseFilters 
+      v-model="filters" 
+      @search="handleSearch"
+      @refresh="fetchData"
+      @export="showExportDialog = true"
+      @column-settings="showColumnSettings = true"
+    />
 
     <!-- 数据库表格 -->
     <div class="database-content">
@@ -58,58 +64,70 @@
             <span class="name-link">{{ row.asset_name || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90" align="center">
+        <!-- 动态列 -->
+        <el-table-column
+          v-for="col in visibleColumns"
+          :key="col.key"
+          :label="col.label"
+          :width="col.width"
+          :show-overflow-tooltip="['connection_string', 'account_name', 'project', 'region', 'vpc_id'].includes(col.key)"
+          :align="['status', 'port', 'charge_type', 'platform'].includes(col.key) ? 'center' : undefined"
+        >
           <template #default="{ row }">
-            <DatabaseStatusBadge :status="row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="实例类型" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag size="small" type="info">{{ getInstanceType(row) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="类型版本" width="100">
-          <template #default="{ row }">
-            {{ row.attributes?.engine || activeTab.toUpperCase() }} {{ row.attributes?.engine_version || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="链接地址" min-width="280" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span class="connection-text">
-              内网：{{ row.attributes?.connection_string || row.attributes?.private_ip || '-' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="端口" width="80" align="center">
-          <template #default="{ row }">
-            内网：{{ row.attributes?.port || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="计费方式" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.attributes?.charge_type === 'Prepaid' ? 'warning' : 'info'" size="small">
-              {{ row.attributes?.charge_type === 'Prepaid' ? '包年包月' : '按量付费' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="平台" width="60" align="center">
-          <template #default="{ row }">
-            <ProviderIcon :provider="row.provider" size="small" />
-          </template>
-        </el-table-column>
-        <el-table-column label="云账号" width="120" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.account_name || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="项目" width="120" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.attributes?.project || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="region" label="区域" width="120" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ getRegionLabel(row.provider, row.region) }}
+            <!-- 状态列 -->
+            <template v-if="col.key === 'status'">
+              <DatabaseStatusBadge :status="row.status" />
+            </template>
+            <!-- 实例类型列 -->
+            <template v-else-if="col.key === 'instance_type'">
+              <el-tag size="small" type="info">{{ getInstanceType(row) }}</el-tag>
+            </template>
+            <!-- 类型版本列 -->
+            <template v-else-if="col.key === 'engine_version'">
+              {{ row.attributes?.engine || activeTab.toUpperCase() }} {{ row.attributes?.engine_version || '-' }}
+            </template>
+            <!-- 链接地址列 -->
+            <template v-else-if="col.key === 'connection_string'">
+              <span class="connection-text">
+                内网：{{ row.attributes?.connection_string || row.attributes?.private_ip || '-' }}
+              </span>
+            </template>
+            <!-- 端口列 -->
+            <template v-else-if="col.key === 'port'">
+              内网：{{ row.attributes?.port || '-' }}
+            </template>
+            <!-- 计费方式列 -->
+            <template v-else-if="col.key === 'charge_type'">
+              <el-tag :type="row.attributes?.charge_type === 'Prepaid' ? 'warning' : 'info'" size="small">
+                {{ row.attributes?.charge_type === 'Prepaid' ? '包年包月' : '按量付费' }}
+              </el-tag>
+            </template>
+            <!-- 平台列 -->
+            <template v-else-if="col.key === 'platform'">
+              <ProviderIcon :provider="row.provider" size="small" />
+            </template>
+            <!-- 云账号列 -->
+            <template v-else-if="col.key === 'account_name'">
+              {{ row.attributes?.account_name || '-' }}
+            </template>
+            <!-- 项目列 -->
+            <template v-else-if="col.key === 'project'">
+              {{ row.attributes?.project || '-' }}
+            </template>
+            <!-- 区域列 -->
+            <template v-else-if="col.key === 'region'">
+              {{ getRegionLabel(row.provider, row.region) }}
+            </template>
+            <!-- VPC列 -->
+            <template v-else-if="col.key === 'vpc_id'">
+              {{ row.attributes?.vpc_id || '-' }}
+            </template>
+            <!-- 创建时间列 -->
+            <template v-else-if="col.key === 'create_time'">
+              {{ row.create_time || '-' }}
+            </template>
+            <!-- 默认 -->
+            <template v-else>-</template>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right" align="center">
@@ -186,6 +204,21 @@
       :db-type="activeTab"
       :instance="detailInstance"
     />
+
+    <!-- 导出对话框 -->
+    <ExportDialog
+      v-model:visible="showExportDialog"
+      :instances="currentList"
+      :selected-ids="selectedIds"
+      :total="pagination.total"
+    />
+
+    <!-- 自定义列对话框 -->
+    <ColumnSettingsDialog
+      v-model:visible="showColumnSettings"
+      :columns="columnSettings"
+      @update:columns="handleColumnsUpdate"
+    />
   </PageContainer>
 </template>
 
@@ -201,9 +234,11 @@ import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import DatabaseDetailDrawer from './components/DatabaseDetailDrawer.vue'
 import DatabaseFilters from './components/DatabaseFilters.vue'
 import DatabaseStatusBadge from './components/DatabaseStatusBadge.vue'
+import ExportDialog from './components/ExportDialog.vue'
 
 type DatabaseType = 'rds' | 'redis' | 'mongodb'
 
@@ -236,6 +271,46 @@ const mongoList = ref<Asset[]>([])
 // 详情抽屉
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
+
+// 导出和自定义列
+const showExportDialog = ref(false)
+const showColumnSettings = ref(false)
+const selectedIds = ref<number[]>([])
+
+// 默认列配置
+const defaultColumnSettings: ColumnConfig[] = [
+  { key: 'status', label: '状态', width: 90, visible: true },
+  { key: 'instance_type', label: '实例类型', width: 100, visible: true },
+  { key: 'engine_version', label: '类型版本', width: 100, visible: true },
+  { key: 'connection_string', label: '链接地址', width: 280, visible: true },
+  { key: 'port', label: '端口', width: 80, visible: true },
+  { key: 'charge_type', label: '计费方式', width: 100, visible: true },
+  { key: 'platform', label: '平台', width: 60, visible: true },
+  { key: 'account_name', label: '云账号', width: 120, visible: true },
+  { key: 'project', label: '项目', width: 120, visible: false },
+  { key: 'region', label: '区域', width: 120, visible: true },
+  { key: 'vpc_id', label: 'VPC', width: 150, visible: false },
+  { key: 'create_time', label: '创建时间', width: 140, visible: false },
+]
+
+const columnSettings = ref<ColumnConfig[]>([])
+const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible))
+
+const loadColumnSettings = () => {
+  const saved = localStorage.getItem('database-column-settings')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        columnSettings.value = parsed
+        return
+      }
+    } catch { /* ignore */ }
+  }
+  columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
+}
+
+const handleColumnsUpdate = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
 // 同步对话框
 const syncDialogVisible = ref(false)
@@ -409,6 +484,7 @@ const submitSync = async () => {
 }
 
 onMounted(() => {
+  loadColumnSettings()
   fetchData()
 })
 </script>

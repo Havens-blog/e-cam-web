@@ -361,10 +361,11 @@
           <div class="sync-select">
             <span class="sync-label">资产类型</span>
             <el-select v-model="syncForm.assetTypes" multiple placeholder="请选择" style="width: 100%">
-              <el-option label="虚拟机" value="ecs" />
+              <el-option label="虚拟机" value="compute" />
               <el-option label="存储" value="storage" />
               <el-option label="网络" value="network" />
               <el-option label="数据库" value="database" />
+              <el-option label="中间件" value="middleware" />
             </el-select>
           </div>
           <div class="sync-select">
@@ -1111,9 +1112,8 @@ onMounted(() => {
 }
 
 .list-header {
-  display: grid;
-  grid-template-columns: 2fr 120px 80px 100px 140px 80px 100px 60px;
-  gap: 12px;
+  display: flex;
+  align-items: center;
   padding: 14px 20px;
   background: var(--bg-hover);
   border-bottom: 1px solid var(--border-subtle);
@@ -1124,12 +1124,20 @@ onMounted(() => {
   letter-spacing: 0.05em;
 
   @media (max-width: 1200px) { display: none; }
+
+  .col-account { flex: 2; min-width: 180px; }
+  .col-provider { width: 140px; flex-shrink: 0; }
+  .col-env { width: 80px; flex-shrink: 0; text-align: center; }
+  .col-status { width: 80px; flex-shrink: 0; }
+  .col-regions { width: 100px; flex-shrink: 0; }
+  .col-assets { width: 60px; flex-shrink: 0; text-align: center; }
+  .col-time { width: 100px; flex-shrink: 0; }
+  .col-actions { width: 50px; flex-shrink: 0; text-align: center; }
 }
 
 .account-item {
-  display: grid;
-  grid-template-columns: 2fr 120px 80px 100px 140px 80px 100px 60px;
-  gap: 12px;
+  display: flex;
+  align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
@@ -1139,20 +1147,20 @@ onMounted(() => {
   &:hover { background: var(--glass-bg-hover); }
 
   @media (max-width: 1200px) {
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
+    flex-wrap: wrap;
 
-    .col-account { grid-column: 1; }
-    .col-actions { grid-row: span 2; align-self: center; }
+    .col-account { flex: 1; min-width: 0; }
+    .col-actions { flex-shrink: 0; }
     .col-provider, .col-env, .col-status, .col-regions, .col-assets, .col-time { display: none; }
   }
 }
 
 .col-account {
+  flex: 2;
+  min-width: 180px;
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
 
   .account-avatar {
     width: 40px;
@@ -1192,6 +1200,8 @@ onMounted(() => {
 }
 
 .col-provider {
+  width: 140px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
 
@@ -1202,8 +1212,11 @@ onMounted(() => {
 }
 
 .col-env {
+  width: 80px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 
   .env-badge {
     padding: 4px 10px;
@@ -1221,6 +1234,8 @@ onMounted(() => {
 }
 
 .col-status {
+  width: 80px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1244,6 +1259,8 @@ onMounted(() => {
 }
 
 .col-regions {
+  width: 100px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
 
@@ -1273,8 +1290,11 @@ onMounted(() => {
 }
 
 .col-assets {
+  width: 60px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 
   .asset-count {
     font-size: 14px;
@@ -1284,6 +1304,8 @@ onMounted(() => {
 }
 
 .col-time {
+  width: 100px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   font-size: 13px;
@@ -1291,6 +1313,8 @@ onMounted(() => {
 }
 
 .col-actions {
+  width: 50px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
