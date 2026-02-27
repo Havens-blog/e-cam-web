@@ -6,18 +6,18 @@ import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
 import { useAppStore } from '@/stores/app'
 import {
-    ArrowDown,
-    ArrowRight,
-    Bell,
-    Expand,
-    Fold,
-    FullScreen,
-    Loading,
-    Moon,
-    OfficeBuilding,
-    Plus,
-    Search,
-    Sunny
+  ArrowDown,
+  ArrowRight,
+  Bell,
+  Expand,
+  Fold,
+  FullScreen,
+  Loading,
+  Moon,
+  OfficeBuilding,
+  Plus,
+  Search,
+  Sunny
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -420,6 +420,13 @@ const menuGroups = ref<MenuGroup[]>([
     ]
   },
   {
+    title: '审计',
+    items: [
+      { key: 'audit-logs', path: '/audit/logs', title: '操作审计', icon: 'ops-itsm-logs' },
+      { key: 'audit-changes', path: '/audit/changes', title: '变更历史', icon: 'file' },
+    ]
+  },
+  {
     title: 'CMDB',
     items: [
       { key: 'cmdb-models', path: '/cmdb/models', title: '资源模型', icon: 'caise-database' },
@@ -441,8 +448,6 @@ const menuGroups = ref<MenuGroup[]>([
           { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'file' },
           { key: 'accounts', path: '/accounts', title: '云账号管理', icon: 'caise-public_cloud' },
           { key: 'tenants', path: '/iam/tenants', title: '租户管理', icon: 'veops-company' },
-          { key: 'sync', path: '/iam/sync', title: '同步任务', icon: 'veops-switch' },
-          { key: 'audit', path: '/iam/audit', title: '审计日志', icon: 'ops-itsm-logs' },
         ]
       },
     ]

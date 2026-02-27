@@ -311,6 +311,31 @@ onMounted(() => {
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 16px;
+
+    :deep(.el-table) {
+      background: transparent;
+
+      th.el-table__cell {
+        background: var(--table-header-bg);
+      }
+
+      tr {
+        background: transparent;
+
+        &:hover > td.el-table__cell {
+          background: var(--table-row-hover);
+        }
+      }
+
+      td.el-table__cell {
+        background: transparent;
+      }
+
+      // stripe 行
+      .el-table__row--striped td.el-table__cell {
+        background: rgba(255, 255, 255, 0.02);
+      }
+    }
   }
 
   .env-color-dot {

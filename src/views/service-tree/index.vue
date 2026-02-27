@@ -856,10 +856,15 @@ onUnmounted(() => {
       :deep(.el-tree-node__content) {
         height: 36px;
         border-radius: 6px;
+        background: transparent;
 
         &:hover {
           background: var(--bg-hover);
         }
+      }
+
+      :deep(.el-tree) {
+        background: transparent;
       }
 
       :deep(.el-tree-node.is-current > .el-tree-node__content) {
@@ -1018,6 +1023,26 @@ onUnmounted(() => {
 
       .text-muted {
         color: var(--text-muted);
+      }
+
+      :deep(.el-table) {
+        background: transparent;
+
+        th.el-table__cell {
+          background: var(--table-header-bg);
+        }
+
+        tr {
+          background: transparent;
+
+          &:hover > td.el-table__cell {
+            background: var(--table-row-hover);
+          }
+        }
+
+        td.el-table__cell {
+          background: transparent;
+        }
       }
     }
 

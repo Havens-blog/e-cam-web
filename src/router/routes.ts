@@ -376,6 +376,29 @@ const routes: RouteRecordRaw[] = [
                     icon: 'ChatDotRound',
                 },
             },
+            // ==================== 审计日志路由 ====================
+            {
+                path: '/audit',
+                redirect: '/audit/logs',
+            },
+            {
+                path: '/audit/logs',
+                name: 'AuditLogs',
+                component: () => import('@/views/audit/logs/index.vue'),
+                meta: {
+                    title: '审计日志',
+                    icon: 'Document',
+                },
+            },
+            {
+                path: '/audit/changes',
+                name: 'AuditChanges',
+                component: () => import('@/views/audit/changes/index.vue'),
+                meta: {
+                    title: '资产变更历史',
+                    icon: 'List',
+                },
+            },
             // ==================== 网络管理路由 ====================
             {
                 path: '/network/vpc',

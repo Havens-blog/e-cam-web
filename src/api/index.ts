@@ -417,6 +417,16 @@ export {
     generateAuditReportApi, listAuditLogsApi
 } from './iam'
 
+// ==================== 审计日志与变更历史 API ====================
+
+export {
+    exportAuditLogsApi as exportCamAuditLogsApi,
+    generateAuditReportApi as generateCamAuditReportApi,
+    getChangeSummaryApi,
+    listAssetChangesApi,
+    listAuditLogsApi as listCamAuditLogsApi
+} from './audit'
+
 // ==================== IAM 同步任务管理 API ====================
 
 export {

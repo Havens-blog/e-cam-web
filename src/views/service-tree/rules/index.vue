@@ -141,11 +141,11 @@
 
 <script setup lang="ts">
 import {
-  deleteRuleApi,
-  executeRulesApi,
-  listEnvironmentsApi,
-  listRulesApi,
-  updateRuleApi
+    deleteRuleApi,
+    executeRulesApi,
+    listEnvironmentsApi,
+    listRulesApi,
+    updateRuleApi
 } from '@/api/service-tree'
 import type { BindingRule, Environment } from '@/api/types/service-tree'
 import { Plus, RefreshLeft, Search, VideoPlay } from '@element-plus/icons-vue'
@@ -366,6 +366,30 @@ onMounted(async () => {
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 16px;
+
+    :deep(.el-table) {
+      background: transparent;
+
+      th.el-table__cell {
+        background: var(--table-header-bg);
+      }
+
+      tr {
+        background: transparent;
+
+        &:hover > td.el-table__cell {
+          background: var(--table-row-hover);
+        }
+      }
+
+      td.el-table__cell {
+        background: transparent;
+      }
+
+      .el-table__row--striped td.el-table__cell {
+        background: rgba(255, 255, 255, 0.02);
+      }
+    }
 
     .env-tag {
       display: inline-flex;

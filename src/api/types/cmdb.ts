@@ -395,13 +395,13 @@ export interface InstanceRelationListResp {
 /** 拓扑节点 */
 export interface TopologyNode {
     id: number
-    uid: string
+    model_uid: string
     model_name: string
     asset_id: string
     asset_name?: string
-    attributes?: Record<string, any>
     icon?: string
     category: string
+    attributes?: Record<string, any>
 }
 
 /** 拓扑边 */
@@ -445,8 +445,8 @@ export interface ModelTopologyNode {
 
 /** 模型拓扑边 */
 export interface ModelTopologyEdge {
-    source_uid: string
-    target_uid: string
+    source_model_uid: string
+    target_model_uid: string
     relation_uid: string
     relation_name: string
     relation_type: string
