@@ -1,105 +1,137 @@
+import { redirectToLogin } from '@/api/request/index'
+import { getEcmdbToken, removeEcmdbToken } from '@/utils/cookie'
+import axios from 'axios'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 /**
- * 用户信息接口
+ * 用户信息接口（与 ecmdb 用户模型对齐）
  */
 export interface UserInfo {
-    id: string
+    id: number
     username: string
+    displayName?: string
     email?: string
-    avatar?: string
-    roles?: string[]
-    permissions?: string[]
+    title?: string
+    departmentId?: number
+    roleCodes?: string[]
+    createType?: number
 }
 
 /**
- * 用户状态管理
+ * ecmdb 专用 axios 实例
+ */
+const ecmdbAxios = axios.create({
+    timeout: 15000,
+    withCredentials: true,
+    headers: { 'Content-Type': 'application/json' },
+})
+
+// 请求拦截：注入 ecmdb session token（从 cookie 读取）
+ecmdbAxios.interceptors.request.use((config) => {
+    const token = getEcmdbToken()
+    if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
+// 响应拦截：401 跳转登录
+ecmdbAxios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            redirectToLogin()
+        }
+        return Promise.reject(error)
+    }
+)
+
+/**
+ * ecmdb 统一鉴权下的用户状态管理
  */
 export const useUserStore = defineStore(
     'user',
     () => {
-        // 状态
-        const token = ref<string>('')
         const userInfo = ref<UserInfo | null>(null)
         const isLoggedIn = ref(false)
+        const permissions = ref<string[]>([])
+
+        const setUserInfo = (info: UserInfo | null) => {
+            userInfo.value = info
+            isLoggedIn.value = !!info
+        }
 
         /**
-         * 设置 Token
+         * 从 ecmdb 获取当前登录用户信息
          */
-        const setToken = (newToken: string) => {
-            token.value = newToken
-            isLoggedIn.value = !!newToken
-            if (newToken) {
-                localStorage.setItem('token', newToken)
-            } else {
-                localStorage.removeItem('token')
+        const fetchUserInfo = async (): Promise<boolean> => {
+            try {
+                const res = await ecmdbAxios.post('/api/cmdb/user/info')
+                const data = res.data
+                if (data.code === 0 && data.data) {
+                    setUserInfo(data.data as UserInfo)
+                    return true
+                }
+                return false
+            } catch {
+                return false
             }
         }
 
         /**
-         * 设置用户信息
+         * 获取用户权限菜单（从 ecmdb 的权限系统）
          */
-        const setUserInfo = (info: UserInfo | null) => {
-            userInfo.value = info
-        }
-
-        /**
-         * 登录
-         */
-        const login = (newToken: string, info: UserInfo) => {
-            setToken(newToken)
-            setUserInfo(info)
+        const fetchPermissions = async () => {
+            try {
+                const res = await ecmdbAxios.post('/api/cmdb/permission/get_user_menu')
+                const data = res.data
+                if (data.code === 0 && data.data) {
+                    permissions.value = data.data.menus || []
+                }
+            } catch {
+                permissions.value = []
+            }
         }
 
         /**
          * 登出
          */
-        const logout = () => {
-            setToken('')
+        const logout = async () => {
+            try {
+                await ecmdbAxios.post('/api/cmdb/user/logout')
+            } catch {
+                // 即使登出接口失败也清理本地状态
+            }
             setUserInfo(null)
-            isLoggedIn.value = false
+            permissions.value = []
+            removeEcmdbToken()
+            const loginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
+            window.location.href = loginUrl
         }
 
-        /**
-         * 初始化用户状态
-         */
-        const initUserState = () => {
-            const savedToken = localStorage.getItem('token')
-            if (savedToken) {
-                setToken(savedToken)
+        const initUserState = async () => {
+            const success = await fetchUserInfo()
+            if (success) {
+                await fetchPermissions()
             }
         }
 
-        /**
-         * 检查权限
-         */
         const hasPermission = (permission: string): boolean => {
-            if (!userInfo.value?.permissions) {
-                return false
-            }
-            return userInfo.value.permissions.includes(permission)
+            return permissions.value.includes(permission)
         }
 
-        /**
-         * 检查角色
-         */
         const hasRole = (role: string): boolean => {
-            if (!userInfo.value?.roles) {
-                return false
-            }
-            return userInfo.value.roles.includes(role)
+            return userInfo.value?.roleCodes?.includes(role) ?? false
         }
 
         return {
-            // 状态
-            token,
             userInfo,
             isLoggedIn,
-            // 方法
-            setToken,
+            permissions,
             setUserInfo,
-            login,
+            fetchUserInfo,
+            fetchPermissions,
             logout,
             initUserState,
             hasPermission,

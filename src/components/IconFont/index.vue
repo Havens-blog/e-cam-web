@@ -46,6 +46,8 @@ const colorIcons = [
 
 // 判断是否使用彩色图标
 const useColorIcon = computed(() => {
+  // 所有 caise-* 前缀的图标都是 SVG symbol 彩色图标
+  if (props.type.startsWith('caise-')) return true
   return colorIcons.includes(props.type)
 })
 

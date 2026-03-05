@@ -106,7 +106,9 @@
           >
             <div class="card-header">
               <div class="model-icon" :class="getCategoryClass(model.category)">
-                <el-icon :size="20"><component :is="getCategoryIcon(model.category)" /></el-icon>
+                <img v-if="model.icon && isImageUrl(model.icon)" :src="model.icon" class="icon-img" />
+                <IconFont v-else-if="model.icon" :type="model.icon" :size="20" />
+                <el-icon v-else :size="20"><component :is="getCategoryIcon(model.category)" /></el-icon>
               </div>
               <el-dropdown trigger="click" @command="(cmd: string) => handleModelAction(cmd, model)" @click.stop>
                 <button class="more-btn" @click.stop>
@@ -281,6 +283,10 @@ const getCategoryIcon = (category: string) => {
 const getProviderLabel = (provider: string) => {
   const map: Record<string, string> = { aliyun: '阿里云', aws: 'AWS', azure: 'Azure', all: '通用' }
   return map[provider] || provider
+}
+
+const isImageUrl = (v: string) => {
+  return v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')
 }
 
 // 获取分组和模型数据

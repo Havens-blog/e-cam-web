@@ -1,3 +1,6 @@
+import { redirectToLogin } from '@/api/request/index'
+import { useUserStore } from '@/stores/user'
+import { getEcmdbToken } from '@/utils/cookie'
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from './routes'
@@ -27,7 +30,7 @@ const router = createRouter({
  * 在路由跳转前执行
  */
 router.beforeEach(
-    (
+    async (
         to: RouteLocationNormalized,
         _from: RouteLocationNormalized,
         next: NavigationGuardNext
@@ -39,12 +42,25 @@ router.beforeEach(
             document.title = 'CAM 多云资产管理'
         }
 
-        // 这里可以添加认证检查
-        // const token = localStorage.getItem('token')
-        // if (!token && to.path !== '/login') {
-        //   next('/login')
-        //   return
-        // }
+        const userStore = useUserStore()
+
+        // 检查 cookie 中是否有 ecmdb session token
+        const hasToken = !!getEcmdbToken()
+
+        if (!hasToken) {
+            redirectToLogin()
+            return
+        }
+
+        // 有 token 但还没获取用户信息，尝试获取
+        if (!userStore.isLoggedIn) {
+            const success = await userStore.fetchUserInfo()
+            if (!success) {
+                redirectToLogin()
+                return
+            }
+            await userStore.fetchPermissions()
+        }
 
         next()
     }

@@ -7,7 +7,9 @@
             <div class="detail-section">
               <div class="section-header">
                 <div class="model-avatar" :class="getCategoryClass(model.category)">
-                  <el-icon :size="24"><component :is="getCategoryIcon(model.category)" /></el-icon>
+                  <img v-if="model.icon && isImageUrl(model.icon)" :src="model.icon" class="icon-img" />
+                  <IconFont v-else-if="model.icon" :type="model.icon" :size="28" />
+                  <el-icon v-else :size="24"><component :is="getCategoryIcon(model.category)" /></el-icon>
                 </div>
                 <div class="model-title">
                   <h3>{{ model.name }}</h3>
@@ -475,6 +477,10 @@ const getProviderLabel = (provider: string) => {
   }
   return map[provider] || provider
 }
+
+const isImageUrl = (v: string) => {
+  return v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')
+}
 </script>
 
 <style scoped lang="scss">
@@ -511,6 +517,17 @@ const getProviderLabel = (provider: string) => {
       &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
       &.red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
       &.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+
+      .icon-img {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        object-fit: contain;
+      }
+
+      .iconfont {
+        font-size: 28px;
+      }
     }
 
     .model-title {

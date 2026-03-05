@@ -1,9 +1,26 @@
+import { getEcmdbToken, removeEcmdbToken } from '@/utils/cookie'
 import { handleApiError } from '@/utils/error-handler'
 import { logError, logInfo, logWarn } from '@/utils/error-logger'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
+
+// 防止多个并发 401 请求重复跳转登录页
+let isRedirectingToLogin = false
+
+/**
+ * 统一跳转登录页（防重复）
+ */
+export function redirectToLogin() {
+    if (isRedirectingToLogin) return
+    isRedirectingToLogin = true
+    removeEcmdbToken()
+    ElMessage.warning('登录已过期，请重新登录')
+    const ecmdbLoginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
+    const currentUrl = window.location.href
+    window.location.href = `${ecmdbLoginUrl}?redirect=${encodeURIComponent(currentUrl)}`
+}
 
 class HttpRequest {
     instance: AxiosInstance
@@ -28,8 +45,8 @@ class HttpRequest {
         // 全局请求拦截
         this.instance.interceptors.request.use(
             (config) => {
-                // 添加认证 token
-                const token = localStorage.getItem('token')
+                // ecmdb session 认证：从 cookie 读取 token
+                const token = getEcmdbToken()
                 if (token && config.headers) {
                     config.headers.Authorization = `Bearer ${token}`
                 }
@@ -115,6 +132,19 @@ class HttpRequest {
                     status: error.response?.status,
                     message: error.message,
                 }, 'API')
+
+                // 401 未认证：session 过期或未登录，跳转到 ecmdb 登录页
+                if (error.response?.status === 401) {
+                    logWarn('Session expired, redirecting to ecmdb login', {}, 'AUTH')
+                    redirectToLogin()
+                    return Promise.reject(error)
+                }
+
+                // 403 无权限
+                if (error.response?.status === 403) {
+                    ElMessage.error('权限不足，请联系管理员')
+                    return Promise.reject(error)
+                }
 
                 // 使用统一错误处理
                 handleApiError(error)

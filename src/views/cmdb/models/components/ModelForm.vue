@@ -60,7 +60,7 @@
     </el-form-item>
 
     <el-form-item label="图标" prop="icon">
-      <el-input v-model="form.icon" placeholder="图标名称（可选）" />
+      <CustomIconSelect v-model="form.icon" @change="(v: string) => form.icon = v" />
     </el-form-item>
 
     <el-form-item label="描述" prop="description">
@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { createCmdbModelApi, updateCmdbModelApi } from '@/api';
 import type { ModelCategory, ModelProvider, ModelVO } from '@/api/types/cmdb';
+import CustomIconSelect from '@/components/CustomIconSelect/index.vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { reactive, ref, watch } from 'vue';
 
