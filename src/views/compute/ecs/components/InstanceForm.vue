@@ -147,8 +147,18 @@ const buildAttributes = () => {
 
 const submit = async () => {
   await formRef.value?.validate()
-  // TODO: 新API暂不支持创建/更新操作
-  throw new Error('创建/编辑功能暂未开放')
+
+  const attributes = buildAttributes()
+
+  if (props.isEdit && props.instance) {
+    await updateCmdbInstanceApi(props.instance.id, {
+      asset_name: form.asset_name || undefined,
+      attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+    })
+  } else {
+    // 创建功能暂未开放（资产通过云同步任务自动创建）
+    throw new Error('创建功能暂未开放，请通过云同步任务添加资产')
+  }
 }
 
 const reset = () => {
