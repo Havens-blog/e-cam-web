@@ -106,112 +106,254 @@
               </p>
             </div>
 
-            <!-- 绑定资源 -->
+            <!-- Tab 切换：绑定资源 / 关联资产 -->
             <div class="bindings-section">
-              <div class="section-header">
-                <h4 class="section-title">绑定资源</h4>
-                <div class="section-actions">
-                  <el-select
-                    v-model="bindingFilters.envId"
-                    placeholder="全部环境"
-                    clearable
-                    size="small"
-                    style="width: 120px"
-                    @change="loadBindings"
-                  >
-                    <el-option
-                      v-for="env in environmentList"
-                      :key="env.id"
-                      :label="env.name"
-                      :value="env.id"
-                    />
-                  </el-select>
-                  <el-select
-                    v-model="bindingFilters.resourceType"
-                    placeholder="全部类型"
-                    clearable
-                    size="small"
-                    style="width: 120px"
-                    @change="loadBindings"
-                  >
-                    <el-option label="实例" value="instance" />
-                    <el-option label="资产" value="asset" />
-                  </el-select>
-                  <el-button type="primary" size="small" @click="handleBindResource">
-                    <el-icon><Link /></el-icon>
-                    绑定资源
-                  </el-button>
-                </div>
-              </div>
-              <el-table
-                v-loading="bindingsLoading"
-                :data="bindingList"
-                size="small"
-                max-height="300"
-              >
-                <el-table-column label="环境" width="90">
-                  <template #default="{ row }">
-                    <span class="env-tag">
-                      <span class="env-dot" :style="{ background: row.env_color }"></span>
-                      {{ row.env_name }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="resource_name" label="资源名称" min-width="120" show-overflow-tooltip />
-                <el-table-column label="类型" width="90">
-                  <template #default="{ row }">
-                    <template v-if="row.resource_type === 'asset'">
-                      {{ assetTypeMap[row.asset_type] || row.asset_type }}
-                    </template>
-                    <template v-else>
-                      {{ row.model_name || '实例' }}
-                    </template>
-                  </template>
-                </el-table-column>
-                <el-table-column label="云平台" width="90">
-                  <template #default="{ row }">
-                    <span v-if="row.provider" class="provider-tag">
-                      {{ providerMap[row.provider] || row.provider }}
-                    </span>
-                    <span v-else class="text-muted">-</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="IP地址" width="130">
-                  <template #default="{ row }">
-                    <div v-if="row.private_ip || row.public_ip" class="ip-cell">
-                      <span v-if="row.private_ip" class="ip-item">{{ row.private_ip }}</span>
-                      <span v-if="row.public_ip" class="ip-item public">{{ row.public_ip }}</span>
+              <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+                <el-tab-pane label="绑定资源" name="bindings">
+                  <div class="section-header">
+                    <div class="section-actions">
+                      <el-select
+                        v-model="bindingFilters.envId"
+                        placeholder="全部环境"
+                        clearable
+                        size="small"
+                        style="width: 120px"
+                        @change="loadBindings"
+                      >
+                        <el-option
+                          v-for="env in environmentList"
+                          :key="env.id"
+                          :label="env.name"
+                          :value="env.id"
+                        />
+                      </el-select>
+                      <el-select
+                        v-model="bindingFilters.resourceType"
+                        placeholder="全部类型"
+                        clearable
+                        size="small"
+                        style="width: 120px"
+                        @change="loadBindings"
+                      >
+                        <el-option label="实例" value="instance" />
+                        <el-option label="资产" value="asset" />
+                      </el-select>
+                      <el-button type="primary" size="small" @click="handleBindResource">
+                        <el-icon><Link /></el-icon>
+                        绑定资源
+                      </el-button>
                     </div>
-                    <span v-else class="text-muted">-</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="地域" width="100" show-overflow-tooltip>
-                  <template #default="{ row }">
-                    {{ row.region || '-' }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="状态" width="80">
-                  <template #default="{ row }">
-                    <el-tag :type="getStatusType(row.resource_status)" size="small">
-                      {{ getStatusText(row.resource_status) }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="bind_type" label="绑定" width="60">
-                  <template #default="{ row }">
-                    <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
-                      {{ row.bind_type === 'manual' ? '手动' : '规则' }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="60" fixed="right">
-                  <template #default="{ row }">
-                    <el-button link type="danger" size="small" @click.stop="handleUnbind(row)">
-                      解绑
+                  </div>
+                  <el-table
+                    v-loading="bindingsLoading"
+                    :data="bindingList"
+                    size="small"
+                    max-height="300"
+                  >
+                    <el-table-column label="环境" width="90">
+                      <template #default="{ row }">
+                        <span class="env-tag">
+                          <span class="env-dot" :style="{ background: row.env_color }"></span>
+                          {{ row.env_name }}
+                        </span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="resource_name" label="资源名称" min-width="120" show-overflow-tooltip />
+                    <el-table-column label="类型" width="90">
+                      <template #default="{ row }">
+                        <template v-if="row.resource_type === 'asset'">
+                          {{ assetTypeMap[row.asset_type] || row.asset_type }}
+                        </template>
+                        <template v-else>
+                          {{ row.model_name || '实例' }}
+                        </template>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="云平台" width="90">
+                      <template #default="{ row }">
+                        <span v-if="row.provider" class="provider-tag">
+                          {{ providerMap[row.provider] || row.provider }}
+                        </span>
+                        <span v-else class="text-muted">-</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="IP地址" width="130">
+                      <template #default="{ row }">
+                        <div v-if="row.private_ip || row.public_ip" class="ip-cell">
+                          <span v-if="row.private_ip" class="ip-item">{{ row.private_ip }}</span>
+                          <span v-if="row.public_ip" class="ip-item public">{{ row.public_ip }}</span>
+                        </div>
+                        <span v-else class="text-muted">-</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="地域" width="100" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        {{ row.region || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="80">
+                      <template #default="{ row }">
+                        <el-tag :type="getStatusType(row.resource_status)" size="small">
+                          {{ getStatusText(row.resource_status) }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="bind_type" label="绑定" width="60">
+                      <template #default="{ row }">
+                        <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
+                          {{ row.bind_type === 'manual' ? '手动' : '规则' }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="60" fixed="right">
+                      <template #default="{ row }">
+                        <el-button link type="danger" size="small" @click.stop="handleUnbind(row)">
+                          解绑
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </el-tab-pane>
+
+                <el-tab-pane label="关联资产" name="assets">
+                  <!-- 统计卡片 -->
+                  <div v-if="assetStats" class="asset-stats-row">
+                    <div class="stat-card total">
+                      <span class="stat-num">{{ assetStats.total }}</span>
+                      <span class="stat-label">总资产</span>
+                    </div>
+                    <div
+                      v-for="(count, type) in assetStats.by_asset_type"
+                      :key="type"
+                      class="stat-card"
+                    >
+                      <span class="stat-num">{{ count }}</span>
+                      <span class="stat-label">{{ assetTypeMap[type as string] || type }}</span>
+                    </div>
+                  </div>
+
+                  <!-- 筛选 -->
+                  <div class="asset-filters">
+                    <el-select
+                      v-model="assetFilters.asset_type"
+                      placeholder="全部类型"
+                      clearable
+                      size="small"
+                      style="width: 130px"
+                      @change="loadNodeAssets"
+                    >
+                      <el-option label="云服务器" value="ecs" />
+                      <el-option label="云数据库" value="rds" />
+                      <el-option label="Redis" value="redis" />
+                      <el-option label="MongoDB" value="mongodb" />
+                      <el-option label="VPC" value="vpc" />
+                      <el-option label="弹性IP" value="eip" />
+                      <el-option label="文件存储" value="nas" />
+                      <el-option label="对象存储" value="oss" />
+                      <el-option label="Kafka" value="kafka" />
+                      <el-option label="Elasticsearch" value="elasticsearch" />
+                      <el-option label="安全组" value="security_group" />
+                      <el-option label="云盘" value="disk" />
+                      <el-option label="快照" value="snapshot" />
+                    </el-select>
+                    <el-select
+                      v-model="assetFilters.env_id"
+                      placeholder="全部环境"
+                      clearable
+                      size="small"
+                      style="width: 120px"
+                      @change="loadNodeAssets"
+                    >
+                      <el-option
+                        v-for="env in environmentList"
+                        :key="env.id"
+                        :label="env.name"
+                        :value="env.id"
+                      />
+                    </el-select>
+                    <el-switch
+                      v-model="assetFilters.include_children"
+                      active-text="含子节点"
+                      size="small"
+                      @change="handleIncludeChildrenChange"
+                    />
+                    <el-button size="small" circle @click="loadNodeAssets" title="刷新">
+                      <el-icon><Refresh /></el-icon>
                     </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
+                  </div>
+
+                  <!-- 资产表格 -->
+                  <el-table
+                    v-loading="assetsLoading"
+                    :data="nodeAssetList"
+                    size="small"
+                    max-height="400"
+                  >
+                    <el-table-column prop="asset_name" label="资产名称" min-width="140" show-overflow-tooltip />
+                    <el-table-column prop="asset_id" label="资产ID" width="160" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <span style="font-family: monospace; font-size: 12px;">{{ row.asset_id }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="100">
+                      <template #default="{ row }">
+                        <el-tag size="small" type="info">{{ assetTypeMap[row.asset_type] || row.asset_type }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="云厂商" width="90">
+                      <template #default="{ row }">
+                        {{ providerMap[row.provider] || row.provider }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="region" label="地域" width="110" show-overflow-tooltip />
+                    <el-table-column label="状态" width="80">
+                      <template #default="{ row }">
+                        <el-tag :type="getStatusType(row.status)" size="small">
+                          {{ getStatusText(row.status) }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="绑定方式" width="80">
+                      <template #default="{ row }">
+                        <template v-if="row.binding_id === 0">
+                          <el-tag type="warning" size="small">未绑定</el-tag>
+                        </template>
+                        <template v-else>
+                          <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
+                            {{ row.bind_type === 'manual' ? '手动' : '规则' }}
+                          </el-tag>
+                        </template>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="100" fixed="right">
+                      <template #default="{ row }">
+                        <template v-if="row.binding_id === 0">
+                          <el-button link type="primary" size="small" @click.stop="handleAssignToNode(row)">
+                            分配到节点
+                          </el-button>
+                        </template>
+                        <template v-else>
+                          <el-button link type="danger" size="small" @click.stop="handleUnbindAsset(row)">
+                            解绑
+                          </el-button>
+                        </template>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+
+                  <!-- 分页 -->
+                  <div v-if="assetTotal > 20" class="asset-pagination">
+                    <el-pagination
+                      v-model:current-page="assetCurrentPage"
+                      :page-size="20"
+                      :total="assetTotal"
+                      layout="total, prev, pager, next"
+                      small
+                      @current-change="handleAssetPageChange"
+                    />
+                  </div>
+                </el-tab-pane>
+              </el-tabs>
             </div>
 
             <!-- 操作按钮 -->
@@ -303,18 +445,62 @@
     :resource="unbindResource"
     @confirm="handleUnbindConfirm"
   />
+
+  <!-- 分配资产到节点弹窗 -->
+  <el-dialog
+    v-model="assignDialogVisible"
+    title="分配资产到节点"
+    width="480px"
+    :close-on-click-modal="false"
+  >
+    <div v-if="assignAsset" style="margin-bottom: 16px;">
+      <p style="margin: 0 0 8px; color: #606266;">
+        将资产 <strong>{{ assignAsset.asset_name }}</strong> ({{ assetTypeMap[assignAsset.asset_type] || assignAsset.asset_type }}) 分配到：
+      </p>
+    </div>
+    <el-form label-width="80px">
+      <el-form-item label="目标节点">
+        <el-tree-select
+          v-model="assignTargetNodeId"
+          :data="treeData"
+          :props="{ label: 'name', children: 'children', value: 'id' }"
+          placeholder="选择目标节点"
+          check-strictly
+          filterable
+          style="width: 100%"
+        />
+      </el-form-item>
+      <el-form-item label="环境">
+        <el-select v-model="assignEnvId" placeholder="选择环境" style="width: 100%">
+          <el-option
+            v-for="env in environmentList"
+            :key="env.id"
+            :label="env.name"
+            :value="env.id"
+          />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="assignDialogVisible = false">取消</el-button>
+      <el-button type="primary" :loading="assignLoading" @click="handleAssignConfirm">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
+  bindResourceApi,
   deleteNodeApi,
+  getNodeAssetStatsApi,
   listEnvironmentsApi,
+  listNodeAssetsApi,
   listNodeBindingsApi,
   listNodesApi,
   unbindResourceApi
 } from '@/api/service-tree'
-import type { Environment, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
+import type { AssetStatsVO, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
   Delete,
   Document,
@@ -323,6 +509,7 @@ import {
   Link,
   Plus,
   Rank,
+  Refresh,
   Search
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
@@ -348,11 +535,19 @@ const treeProps = {
 const assetTypeMap: Record<string, string> = {
   ecs: '云服务器',
   rds: '云数据库',
+  redis: 'Redis',
+  mongodb: 'MongoDB',
   oss: '对象存储',
+  nas: '文件存储',
   slb: '负载均衡',
   eip: '弹性IP',
   disk: '云硬盘',
-  vpc: 'VPC'
+  snapshot: '快照',
+  vpc: 'VPC',
+  security_group: '安全组',
+  kafka: 'Kafka',
+  elasticsearch: 'Elasticsearch',
+  image: '镜像'
 }
 
 // 云平台映射
@@ -361,7 +556,8 @@ const providerMap: Record<string, string> = {
   aws: 'AWS',
   tencent: '腾讯云',
   huawei: '华为云',
-  azure: 'Azure'
+  azure: 'Azure',
+  volcano: '火山引擎'
 }
 
 // 获取状态类型
@@ -396,6 +592,8 @@ const getStatusText = (status?: string): string => {
 const selectedNode = ref<ServiceTreeNode | null>(null)
 const nodePath = ref<string[]>([])
 
+// 是否为根节点（parent_id === 0）
+const isRootNode = computed(() => selectedNode.value?.parent_id === 0)
 // 环境列表
 const environmentList = ref<Environment[]>([])
 
@@ -405,6 +603,23 @@ const bindingsLoading = ref(false)
 const bindingFilters = reactive({
   envId: undefined as number | undefined,
   resourceType: undefined as string | undefined
+})
+
+// Tab 切换
+const activeTab = ref('bindings')
+
+// 关联资产
+const nodeAssetList = ref<NodeAssetVO[]>([])
+const assetsLoading = ref(false)
+const assetStats = ref<AssetStatsVO | null>(null)
+const assetTotal = ref(0)
+const assetCurrentPage = ref(1)
+const assetFilters = reactive<ListNodeAssetsParams>({
+  asset_type: undefined,
+  env_id: undefined,
+  include_children: false,
+  offset: 0,
+  limit: 20
 })
 
 // 右键菜单
@@ -596,6 +811,123 @@ const loadBindings = async () => {
   }
 }
 
+// Tab 切换
+const handleTabChange = (tab: string | number) => {
+  if (tab === 'assets' && selectedNode.value) {
+    loadNodeAssets()
+    loadAssetStats()
+  }
+}
+
+// 加载节点关联资产
+const loadNodeAssets = async () => {
+  if (!selectedNode.value) return
+  assetsLoading.value = true
+  try {
+    const res = await listNodeAssetsApi(selectedNode.value.id, {
+      asset_type: assetFilters.asset_type || undefined,
+      env_id: assetFilters.env_id || undefined,
+      include_children: assetFilters.include_children,
+      offset: (assetCurrentPage.value - 1) * 20,
+      limit: 20
+    })
+    const data = res.data as any
+    nodeAssetList.value = data?.items || []
+    assetTotal.value = data?.total || 0
+  } catch (error) {
+    console.error('加载关联资产失败:', error)
+    nodeAssetList.value = []
+    assetTotal.value = 0
+  } finally {
+    assetsLoading.value = false
+  }
+}
+
+// 加载资产统计
+const loadAssetStats = async () => {
+  if (!selectedNode.value) return
+  try {
+    const res = await getNodeAssetStatsApi(selectedNode.value.id, {
+      include_children: assetFilters.include_children
+    })
+    assetStats.value = (res.data as any) || null
+  } catch (error) {
+    console.error('加载资产统计失败:', error)
+    assetStats.value = null
+  }
+}
+
+// 资产分页
+const handleAssetPageChange = (page: number) => {
+  assetCurrentPage.value = page
+  loadNodeAssets()
+}
+
+// 含子节点切换
+const handleIncludeChildrenChange = () => {
+  assetCurrentPage.value = 1
+  loadNodeAssets()
+  loadAssetStats()
+}
+
+// 分配资产到节点（根节点未绑定资产）
+const assignAsset = ref<NodeAssetVO | null>(null)
+const assignDialogVisible = ref(false)
+
+const handleAssignToNode = (row: NodeAssetVO) => {
+  assignAsset.value = row
+  assignDialogVisible.value = true
+}
+
+// 解绑关联资产（子节点已绑定资产）
+const handleUnbindAsset = async (row: NodeAssetVO) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要解绑资产 "${row.asset_name}" 吗？`,
+      '解绑确认',
+      { type: 'warning' }
+    )
+    await unbindResourceApi(row.binding_id)
+    ElMessage.success('解绑成功')
+    loadNodeAssets()
+    loadAssetStats()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '解绑失败')
+    }
+  }
+}
+
+// 分配到节点弹窗状态
+const assignTargetNodeId = ref<number | undefined>()
+const assignEnvId = ref<number | undefined>()
+const assignLoading = ref(false)
+
+const handleAssignConfirm = async () => {
+  if (!assignAsset.value || !assignTargetNodeId.value || !assignEnvId.value) {
+    ElMessage.warning('请选择目标节点和环境')
+    return
+  }
+  assignLoading.value = true
+  try {
+    await bindResourceApi(assignTargetNodeId.value, {
+      env_id: assignEnvId.value,
+      resource_type: 'asset',
+      resource_id: assignAsset.value.id
+    })
+    ElMessage.success('分配成功')
+    assignDialogVisible.value = false
+    assignTargetNodeId.value = undefined
+    assignEnvId.value = undefined
+    loadNodeAssets()
+    loadAssetStats()
+  } catch (error: any) {
+    ElMessage.error(error.message || '分配失败')
+  } finally {
+    assignLoading.value = false
+  }
+}
+
 // 搜索过滤
 watch(searchKeyword, (val) => {
   treeRef.value?.filter(val)
@@ -610,6 +942,10 @@ const filterNode = (value: string, data: any) => {
 const handleNodeClick = (data: ServiceTreeNode) => {
   selectedNode.value = data
   buildNodePath(data)
+  activeTab.value = 'bindings'
+  assetStats.value = null
+  nodeAssetList.value = []
+  assetCurrentPage.value = 1
   loadBindings()
   contextMenuVisible.value = false
 }
@@ -968,6 +1304,7 @@ onUnmounted(() => {
       display: flex;
       flex-direction: column;
       min-height: 0;
+      overflow: hidden;
 
       .section-header {
         display: flex;
@@ -1043,6 +1380,73 @@ onUnmounted(() => {
         td.el-table__cell {
           background: transparent;
         }
+      }
+
+      :deep(.el-tabs) {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+
+      :deep(.el-tabs__header) {
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
+
+      :deep(.el-tabs__content) {
+        flex: 1;
+        overflow: auto;
+      }
+
+      .asset-stats-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+
+        .stat-card {
+          padding: 8px 14px;
+          background: var(--bg-hover);
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 70px;
+
+          &.total {
+            background: rgba(59, 130, 246, 0.12);
+
+            .stat-num {
+              color: var(--accent-blue);
+            }
+          }
+
+          .stat-num {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+          }
+
+          .stat-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+          }
+        }
+      }
+
+      .asset-filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .asset-pagination {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
       }
     }
 

@@ -3,6 +3,8 @@
  */
 import instance, { API_SERVICE } from './request/service'
 import type {
+    AssetNodeVO,
+    AssetStatsVO,
     BindingRule,
     BindingRuleCreateParams,
     BindingRuleListParams,
@@ -11,7 +13,10 @@ import type {
     EnvironmentCreateParams,
     EnvironmentListParams,
     EnvironmentUpdateParams,
+    ListNodeAssetsParams,
     ListResponse,
+    NodeAssetListResponse,
+    NodeAssetStatsParams,
     ResourceBinding,
     ResourceBindingBatchParams,
     ResourceBindingCreateParams,
@@ -140,4 +145,22 @@ export const deleteRuleApi = (id: number) => {
 /** 执行规则匹配 */
 export const executeRulesApi = () => {
     return instance.post({ url: `${BASE_URL}/rules/execute` })
+}
+
+
+// ==================== 节点资产查询 ====================
+
+/** 查询节点下的云资产列表 */
+export const listNodeAssetsApi = (nodeId: number, params?: ListNodeAssetsParams) => {
+    return instance.get<NodeAssetListResponse>({ url: `${BASE_URL}/nodes/${nodeId}/assets`, params })
+}
+
+/** 查询节点资产统计 */
+export const getNodeAssetStatsApi = (nodeId: number, params?: NodeAssetStatsParams) => {
+    return instance.get<AssetStatsVO>({ url: `${BASE_URL}/nodes/${nodeId}/assets/stats`, params })
+}
+
+/** 查询资产所属节点 */
+export const getAssetNodeApi = (assetId: number) => {
+    return instance.get<AssetNodeVO>({ url: `${BASE_URL}/assets/${assetId}/node` })
 }
