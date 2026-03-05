@@ -2,6 +2,17 @@
  * CAM 模块常量定义
  */
 
+// ==================== el-tag type 安全类型 ====================
+
+/** el-tag 组件允许的 type 值 */
+export type TagType = '' | 'success' | 'warning' | 'primary' | 'info' | 'danger'
+
+/** 确保值是合法的 el-tag type，防止 null/undefined/非法值导致 validator 警告 */
+export function safeTagType(value: string | null | undefined): TagType {
+    const valid: TagType[] = ['', 'success', 'warning', 'primary', 'info', 'danger']
+    return valid.includes(value as TagType) ? (value as TagType) : 'info'
+}
+
 // ==================== 云厂商常量 ====================
 
 export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei' | 'volcano'
@@ -517,9 +528,9 @@ export function getSyncTaskStatusLabel(value: string): string {
     return status?.label || value
 }
 
-export function getSyncTaskStatusColor(value: string): string {
+export function getSyncTaskStatusColor(value: string): TagType {
     const status = getSyncTaskStatus(value)
-    return status?.color || 'info'
+    return safeTagType(status?.color)
 }
 
 // ==================== 操作类型常量 ====================
@@ -538,9 +549,9 @@ export function getOperationTypeLabel(value: string): string {
     return operationType?.label || value
 }
 
-export function getOperationTypeColor(value: string): string {
+export function getOperationTypeColor(value: string): TagType {
     const operationType = OPERATION_TYPES.find((t) => t.value === value)
-    return operationType?.color || 'info'
+    return safeTagType(operationType?.color)
 }
 
 // ==================== 目标类型常量 ====================

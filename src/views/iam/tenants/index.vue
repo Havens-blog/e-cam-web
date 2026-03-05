@@ -109,7 +109,7 @@
           <el-table-column prop="display_name" label="显示名称" width="150" />
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
-              <el-tag :type="getTenantStatus(row.status)?.color as any">
+              <el-tag :type="safeTagType(getTenantStatus(row.status)?.color)">
                 {{ getTenantStatus(row.status)?.label }}
               </el-tag>
             </template>
@@ -179,7 +179,7 @@
 <script setup lang="ts">
 import { deleteTenantApi, listTenantsApi } from '@/api/iam'
 import type { Tenant } from '@/api/types/iam'
-import { INDUSTRIES, REGIONS, TENANT_STATUS, getIndustryLabel, getRegionLabel, getTenantStatus } from '@/utils/constants'
+import { INDUSTRIES, REGIONS, TENANT_STATUS, getIndustryLabel, getRegionLabel, getTenantStatus, safeTagType } from '@/utils/constants'
 import { Plus, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'

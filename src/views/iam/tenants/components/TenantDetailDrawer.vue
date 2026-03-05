@@ -35,7 +35,7 @@
             <el-descriptions-item label="租户名称">{{ tenant.name }}</el-descriptions-item>
             <el-descriptions-item label="显示名称">{{ tenant.display_name }}</el-descriptions-item>
             <el-descriptions-item label="状态">
-              <el-tag :type="getTenantStatus(tenant.status)?.color as any">
+              <el-tag :type="safeTagType(getTenantStatus(tenant.status)?.color)">
                 {{ getTenantStatus(tenant.status)?.label }}
               </el-tag>
             </el-descriptions-item>
@@ -186,7 +186,7 @@
 <script setup lang="ts">
 import { getTenantDetailApi, getTenantStatsApi } from '@/api/iam'
 import type { Tenant, TenantStats } from '@/api/types/iam'
-import { getIndustryLabel, getRegionLabel, getTenantStatus } from '@/utils/constants'
+import { getIndustryLabel, getRegionLabel, getTenantStatus, safeTagType } from '@/utils/constants'
 import { Connection, Delete, Edit, Refresh, User, UserFilled } from '@element-plus/icons-vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'

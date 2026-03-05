@@ -1,5 +1,5 @@
 <template>
-  <el-tag :type="(statusType as any)" :effect="effect" class="task-status-badge">
+  <el-tag :type="statusType" :effect="effect" class="task-status-badge">
     <el-icon v-if="showIcon" class="status-icon">
       <component :is="statusIcon" />
     </el-icon>
@@ -10,11 +10,11 @@
 <script setup lang="ts">
 import type { TaskStatus } from '@/api/types/task'
 import {
-    CircleCloseFilled,
-    Loading,
-    RemoveFilled,
-    SuccessFilled,
-    WarningFilled,
+  CircleCloseFilled,
+  Loading,
+  RemoveFilled,
+  SuccessFilled,
+  WarningFilled,
 } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 
@@ -35,7 +35,7 @@ const statusConfig = {
   cancelled: { type: 'info', label: '已取消', icon: RemoveFilled, effect: 'plain' },
 } as const
 
-const statusType = computed(() => statusConfig[props.status]?.type || 'info')
+const statusType = computed((): TagType => statusConfig[props.status]?.type || 'info')
 const statusLabel = computed(() => statusConfig[props.status]?.label || props.status)
 const statusIcon = computed(() => statusConfig[props.status]?.icon)
 const effect = computed(() => statusConfig[props.status]?.effect || 'plain')

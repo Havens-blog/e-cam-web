@@ -34,7 +34,7 @@
             >
               <div class="account-option">
                 <span class="account-name">{{ account.name }}</span>
-                <el-tag size="small" :type="getProviderType(account.provider) as any">
+                <el-tag size="small" :type="safeTagType(getProviderType(account.provider))">
                   {{ getProviderLabel(account.provider) }}
                 </el-tag>
               </div>

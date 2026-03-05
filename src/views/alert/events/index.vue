@@ -112,7 +112,7 @@ const severityLabel = (s: string) => {
 }
 const severityTagType = (s: string) => {
   const m: Record<string, string> = { info: '', warning: 'warning', critical: 'danger' }
-  return (m[s] || '') as any
+  return (m[s] || '') as '' | 'warning' | 'danger'
 }
 const statusLabel = (s: string) => {
   const m: Record<string, string> = { pending: '待发送', sent: '已发送', failed: '发送失败', silenced: '已静默' }
@@ -120,7 +120,7 @@ const statusLabel = (s: string) => {
 }
 const statusTagType = (s: string) => {
   const m: Record<string, string> = { pending: 'info', sent: 'success', failed: 'danger', silenced: 'warning' }
-  return (m[s] || '') as any
+  return (m[s] || 'info') as 'info' | 'success' | 'danger' | 'warning'
 }
 const formatTime = (t: string) => t ? new Date(t).toLocaleString('zh-CN') : '-'
 

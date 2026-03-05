@@ -1,11 +1,11 @@
 <template>
-  <el-tag v-if="statusInfo" :type="(statusInfo.color as any)" size="small">
+  <el-tag v-if="statusInfo" :type="safeTagType(statusInfo.color)" size="small">
     {{ statusInfo.label }}
   </el-tag>
 </template>
 
 <script setup lang="ts">
-import { getAssetStatus } from '@/utils/constants';
+import { getAssetStatus, safeTagType } from '@/utils/constants';
 import { computed } from 'vue';
 
 interface Props {

@@ -220,9 +220,9 @@ const getLBTypeLabel = (type: string | undefined) => {
   return map[type || ''] || type || 'SLB'
 }
 
-const getLBTypeTag = (type: string | undefined): '' | 'success' | 'warning' => {
-  const map: Record<string, '' | 'success' | 'warning'> = { slb: '', alb: 'success', nlb: 'warning' }
-  return map[type || ''] || ''
+const getLBTypeTag = (type: string | undefined): 'success' | 'warning' | 'info' | 'primary' | 'danger' => {
+  const map: Record<string, 'success' | 'warning' | 'info' | 'primary' | 'danger'> = { slb: 'primary', alb: 'success', nlb: 'warning' }
+  return map[type || ''] || 'info'
 }
 
 const getRegionLabel = (provider: string, region: string) => {

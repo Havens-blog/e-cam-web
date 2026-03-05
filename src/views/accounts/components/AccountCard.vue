@@ -3,10 +3,10 @@
     <div class="card-header">
       <div class="account-info">
         <div class="account-name">{{ account.name }}</div>
-        <el-tag :type="getProviderType(account.provider) as any" size="small">
+        <el-tag :type="safeTagType(getProviderType(account.provider))" size="small">
           {{ getProviderLabel(account.provider) }}
         </el-tag>
-        <el-tag :type="getEnvironmentType(account.environment) as any" size="small">
+        <el-tag :type="safeTagType(getEnvironmentType(account.environment))" size="small">
           {{ getEnvironmentLabel(account.environment) }}
         </el-tag>
       </div>

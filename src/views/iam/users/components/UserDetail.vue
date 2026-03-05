@@ -16,7 +16,7 @@
       
       <el-descriptions-item label="状态">
         <template v-if="user && user.status">
-          <el-tag :type="getUserStatus(user.status).color as any" size="small">
+          <el-tag :type="safeTagType(getUserStatus(user.status).color)" size="small">
             {{ getUserStatus(user.status).label }}
           </el-tag>
         </template>

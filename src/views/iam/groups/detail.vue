@@ -131,7 +131,7 @@
           </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="{ row }">
-              <el-tag v-if="row.status" :type="getUserStatus(row.status).color as any" size="small">
+              <el-tag v-if="row.status" :type="safeTagType(getUserStatus(row.status).color)" size="small">
                 {{ getUserStatus(row.status).label }}
               </el-tag>
               <span v-else>-</span>
