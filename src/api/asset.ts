@@ -360,3 +360,23 @@ export function getECSRelationsApi(assetId: string, params?: { tenant_id?: strin
         interceptorsToOnce: createAssetApiInterceptor()
     })
 }
+
+// ==================== LB (负载均衡) API ====================
+
+/** 获取负载均衡实例列表 */
+export function listLBAssetsApi(params?: ListAssetsParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/lb`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取负载均衡实例详情 */
+export function getLBAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
+    return instance.get<{ code: number; data: Asset; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/lb/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}

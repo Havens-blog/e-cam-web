@@ -44,6 +44,7 @@ const assetTypeMap: Record<string, { label: string; icon: string; route: string 
   mongodb: { label: 'MongoDB', icon: 'caise-database', route: '/databases/mongodb' },
   vpc: { label: 'VPC', icon: 'caise-network_devices', route: '/network/vpc' },
   eip: { label: 'EIP', icon: 'caise-network_devices', route: '/network/eip' },
+  lb: { label: '负载均衡', icon: 'caise-network_devices', route: '/network/lb' },
   nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
   oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
   kafka: { label: 'Kafka', icon: 'caise-middleware', route: '/middleware/kafka' },
@@ -374,6 +375,7 @@ const menuGroups = ref<MenuGroup[]>([
             children: [
               { key: 'assets-vpc', path: '/network/vpc', title: 'VPC' },
               { key: 'assets-eip', path: '/network/eip', title: '弹性公网IP' },
+              { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
             ]
           },
           { 
@@ -409,6 +411,16 @@ const menuGroups = ref<MenuGroup[]>([
     items: [
       { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'quick_commands' },
       { key: 'cost', path: '/cost', title: '成本分析', icon: 'monitor-healing' },
+    ]
+  },
+  {
+    title: '成本管理',
+    items: [
+      { key: 'finops-cost', path: '/finops/cost', title: '成本概览', icon: 'monitor-healing' },
+      { key: 'finops-budget', path: '/finops/budget', title: '预算管理', icon: 'ops-oneterm-dashboard' },
+      { key: 'finops-allocation', path: '/finops/allocation', title: '成本分摊', icon: 'veops-switch' },
+      { key: 'finops-anomaly', path: '/finops/anomaly', title: '异常与优化', icon: 'ops-itsm-logs' },
+      { key: 'finops-collect', path: '/finops/collect', title: '采集管理', icon: 'ops-itsm-logs' },
     ]
   },
   {

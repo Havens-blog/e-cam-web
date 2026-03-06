@@ -418,6 +418,15 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Position',
                 },
             },
+            {
+                path: '/network/lb',
+                name: 'LoadBalancer',
+                component: () => import('@/views/network/lb/index.vue'),
+                meta: {
+                    title: '负载均衡',
+                    icon: 'SetUp',
+                },
+            },
             // ==================== 存储管理路由 ====================
             {
                 path: '/storage/nas',
@@ -454,6 +463,56 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: 'Elasticsearch',
                     icon: 'Search',
+                },
+            },
+            // ==================== FinOps 成本管理路由 ====================
+            {
+                path: '/finops',
+                redirect: '/finops/cost',
+            },
+            {
+                path: '/finops/cost',
+                name: 'FinOpsCost',
+                component: () => import('@/views/cam/cost/index.vue'),
+                meta: {
+                    title: 'FinOps 成本概览',
+                    icon: 'monitor-healing',
+                },
+            },
+            {
+                path: '/finops/budget',
+                name: 'FinOpsBudget',
+                component: () => import('@/views/cam/budget/index.vue'),
+                meta: {
+                    title: '预算管理',
+                    icon: 'monitor-healing',
+                },
+            },
+            {
+                path: '/finops/allocation',
+                name: 'FinOpsAllocation',
+                component: () => import('@/views/cam/allocation/index.vue'),
+                meta: {
+                    title: '成本分摊',
+                    icon: 'monitor-healing',
+                },
+            },
+            {
+                path: '/finops/anomaly',
+                name: 'FinOpsAnomaly',
+                component: () => import('@/views/cam/cost/anomaly.vue'),
+                meta: {
+                    title: '异常与优化',
+                    icon: 'monitor-healing',
+                },
+            },
+            {
+                path: '/finops/collect',
+                name: 'FinOpsCollect',
+                component: () => import('@/views/cam/collect/index.vue'),
+                meta: {
+                    title: '采集管理',
+                    icon: 'monitor-healing',
                 },
             },
         ],
