@@ -266,7 +266,7 @@ interface MenuGroup {
 }
 
 // 展开的子菜单 - 默认展开资产列表
-const expandedMenus = ref<string[]>(['assets'])
+const expandedMenus = ref<string[]>(['assets', 'service-tree'])
 
 // 当前悬停的三级菜单父项
 const hoveredFlyout = ref<string | null>(null)
@@ -324,7 +324,7 @@ const toggleSubMenu = (key: string) => {
 // 检查子菜单是否展开
 const isMenuExpanded = (key: string) => expandedMenus.value.includes(key)
 
-// 菜单配置
+// 菜单配置 — 4 大分组，统一 ops-* 线性图标风格
 const menuGroups = ref<MenuGroup[]>([
   {
     title: '概览',
@@ -333,23 +333,15 @@ const menuGroups = ref<MenuGroup[]>([
     ]
   },
   {
-    title: '服务树',
+    title: '资源',
     items: [
-      { key: 'service-tree', path: '/service-tree', title: '服务树', icon: 'veops-switch' },
-      { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'ops-setting-security' },
-      { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'file' },
-    ]
-  },
-  {
-    title: '资源管理',
-    items: [
-      { 
-        key: 'assets', 
-        title: '资产列表', 
-        icon: 'caise-public_cloud',
+      {
+        key: 'assets',
+        title: '资产列表',
+        icon: 'icon-xianxing-xuniji',
         children: [
-          { 
-            key: 'assets-host', 
+          {
+            key: 'assets-host',
             title: '主机',
             icon: 'caise-computer',
             children: [
@@ -359,8 +351,8 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-security-group', path: '/compute/security-group', title: '安全组' },
             ]
           },
-          { 
-            key: 'assets-storage', 
+          {
+            key: 'assets-storage',
             title: '存储',
             icon: 'caise-storage_device',
             children: [
@@ -368,8 +360,8 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-oss', path: '/storage/oss', title: '对象存储 OSS' },
             ]
           },
-          { 
-            key: 'assets-network', 
+          {
+            key: 'assets-network',
             title: '网络',
             icon: 'caise-network_devices',
             children: [
@@ -378,8 +370,8 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
             ]
           },
-          { 
-            key: 'assets-database', 
+          {
+            key: 'assets-database',
             title: '数据库',
             icon: 'caise-database',
             children: [
@@ -388,8 +380,8 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-mongodb', path: '/databases/mongodb', title: 'MongoDB' },
             ]
           },
-          { 
-            key: 'assets-middleware', 
+          {
+            key: 'assets-middleware',
             title: '中间件',
             icon: 'caise-middleware',
             children: [
@@ -397,69 +389,72 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-elasticsearch', path: '/middleware/elasticsearch', title: 'Elasticsearch' },
             ]
           },
-          { 
-            key: 'assets-service', 
+          {
+            key: 'assets-service',
             title: '容器服务',
-            icon: 'caise-service',
+            icon: 'caise-virtualization',
           },
         ]
       },
+      {
+        key: 'service-tree',
+        title: '服务树',
+        icon: 'icon-xianxing-yingyong',
+        children: [
+          { key: 'service-tree-main', path: '/service-tree', title: '服务树总览', icon: 'icon-xianxing-yingyong' },
+          { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'icon-xianxing-chanpin' },
+          { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'icon-xianxing-luyouqi' },
+        ]
+      },
+      { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'icon-xianxing-bumen' },
     ]
   },
   {
-    title: '运维',
+    title: 'FinOps',
     items: [
-      { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'quick_commands' },
-      { key: 'cost', path: '/cost', title: '成本分析', icon: 'monitor-healing' },
-    ]
-  },
-  {
-    title: '成本管理',
-    items: [
-      { key: 'finops-cost', path: '/finops/cost', title: '成本概览', icon: 'monitor-healing' },
-      { key: 'finops-budget', path: '/finops/budget', title: '预算管理', icon: 'ops-oneterm-dashboard' },
-      { key: 'finops-allocation', path: '/finops/allocation', title: '成本分摊', icon: 'veops-switch' },
+      { key: 'finops-cost', path: '/finops/cost', title: '成本概览', icon: 'ops-oneterm-dashboard' },
+      { key: 'finops-allocation', path: '/finops/allocation', title: '成本分摊', icon: 'icon-xianxing-bumen' },
+      { key: 'finops-budget', path: '/finops/budget', title: '预算管理', icon: 'icon-xianxing-chanpin' },
       { key: 'finops-anomaly', path: '/finops/anomaly', title: '异常与优化', icon: 'ops-itsm-logs' },
-      { key: 'finops-collect', path: '/finops/collect', title: '采集管理', icon: 'ops-itsm-logs' },
+      { key: 'finops-collect', path: '/finops/collect', title: '采集管理', icon: 'icon-xianxing-yingyong' },
     ]
   },
   {
-    title: '告警中心',
+    title: '平台管理',
     items: [
-      { key: 'alert-events', path: '/alert/events', title: '告警事件', icon: 'ops-itsm-logs' },
-      { key: 'alert-rules', path: '/alert/rules', title: '告警规则', icon: 'file' },
-      { key: 'alert-channels', path: '/alert/channels', title: '通知渠道', icon: 'veops-switch' },
-    ]
-  },
-  {
-    title: '审计',
-    items: [
+      {
+        key: 'alert',
+        title: '告警中心',
+        icon: 'ops-itsm-logs',
+        children: [
+          { key: 'alert-events', path: '/alert/events', title: '告警事件', icon: 'ops-itsm-logs' },
+          { key: 'alert-rules', path: '/alert/rules', title: '告警规则', icon: 'icon-xianxing-luyouqi' },
+          { key: 'alert-channels', path: '/alert/channels', title: '通知渠道', icon: 'icon-xianxing-wangka' },
+        ]
+      },
+      {
+        key: 'cmdb',
+        title: 'CMDB',
+        icon: 'icon-xianxing-wuliji',
+        children: [
+          { key: 'cmdb-models', path: '/cmdb/models', title: '资源模型', icon: 'icon-xianxing-wuliji' },
+          { key: 'cmdb-instances', path: '/cmdb/instances', title: '资源实例', icon: 'icon-xianxing-xuniji' },
+          { key: 'cmdb-relations', path: '/cmdb/relations', title: '模型关系', icon: 'icon-xianxing-jiaohuanji' },
+          { key: 'cmdb-topology', path: '/cmdb/topology', title: '拓扑视图', icon: 'icon-xianxing-luyouqi' },
+        ]
+      },
       { key: 'audit-logs', path: '/audit/logs', title: '操作审计', icon: 'ops-itsm-logs' },
-      { key: 'audit-changes', path: '/audit/changes', title: '变更历史', icon: 'file' },
-    ]
-  },
-  {
-    title: 'CMDB',
-    items: [
-      { key: 'cmdb-models', path: '/cmdb/models', title: '资源模型', icon: 'caise-database' },
-      { key: 'cmdb-instances', path: '/cmdb/instances', title: '资源实例', icon: 'caise-computer' },
-      { key: 'cmdb-relations', path: '/cmdb/relations', title: '模型关系', icon: 'veops-switch' },
-      { key: 'cmdb-topology', path: '/cmdb/topology', title: '拓扑视图', icon: 'caise-network_devices' },
-    ]
-  },
-  {
-    title: '安全',
-    items: [
-      { 
-        key: 'security', 
-        title: '认证与安全', 
-        icon: 'ops-setting-security',
+      { key: 'audit-changes', path: '/audit/changes', title: '变更历史', icon: 'icon-xianxing-chanpin' },
+      { key: 'accounts', path: '/accounts', title: '云账号管理', icon: 'icon-xianxing-aliyun' },
+      {
+        key: 'security',
+        title: '用户与权限',
+        icon: 'ops-oneterm-authorization',
         children: [
           { key: 'users', path: '/iam/users', title: '用户管理', icon: 'ops-oneterm-authorization' },
-          { key: 'groups', path: '/iam/groups', title: '用户组管理', icon: 'veops-group' },
-          { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'file' },
-          { key: 'accounts', path: '/accounts', title: '云账号管理', icon: 'caise-public_cloud' },
-          { key: 'tenants', path: '/iam/tenants', title: '租户管理', icon: 'veops-company' },
+          { key: 'groups', path: '/iam/groups', title: '用户组管理', icon: 'icon-xianxing-bumen' },
+          { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'icon-xianxing-chanpin' },
+          { key: 'tenants', path: '/iam/tenants', title: '租户管理', icon: 'icon-xianxing-yingyong' },
         ]
       },
     ]
@@ -1093,6 +1088,11 @@ $navbar-height: 56px;
   .menu-icon {
     opacity: 0.85;
     flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-secondary);
   }
 
@@ -1102,6 +1102,7 @@ $navbar-height: 56px;
     white-space: nowrap;
     color: var(--text-regular);
     flex: 1;
+    line-height: 1;
   }
 
   .arrow-icon {
@@ -1162,6 +1163,11 @@ $navbar-height: 56px;
 
     .submenu-icon {
       flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       color: var(--text-tertiary);
       opacity: 0.85;
       transition: all 150ms ease;
@@ -1173,6 +1179,7 @@ $navbar-height: 56px;
       border-radius: 50%;
       background: var(--text-tertiary);
       flex-shrink: 0;
+      margin: 0 6px;
       transition: all 150ms ease;
     }
 
@@ -1181,6 +1188,7 @@ $navbar-height: 56px;
       color: var(--text-secondary);
       white-space: nowrap;
       flex: 1;
+      line-height: 1;
     }
 
     .submenu-arrow {
