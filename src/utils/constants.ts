@@ -292,7 +292,9 @@ export const ENVIRONMENTS = Object.values(ENVIRONMENT_CONFIGS).map((config) => (
 export const ACCOUNT_STATUS = [
     { value: 'active', label: '活跃', color: 'success' },
     { value: 'disabled', label: '禁用', color: 'info' },
-    { value: 'error', label: '错误', color: 'danger' }
+    { value: 'error', label: '错误', color: 'danger' },
+    { value: 'testing', label: '测试中', color: 'warning' },
+    { value: 'inactive', label: '未激活', color: 'info' }
 ]
 
 // ==================== 表单验证规则 ====================
@@ -500,9 +502,9 @@ export function getTemplateCategoryDescription(value: string): string {
 // ==================== 同步任务类型常量 ====================
 
 export const SYNC_TASK_TYPES = [
-    { value: 'user_sync', label: '用户同步', icon: 'User' },
-    { value: 'permission_sync', label: '权限同步', icon: 'Lock' },
-    { value: 'group_sync', label: '用户组同步', icon: 'UserFilled' }
+    { value: 'user_sync', label: '用户同步', icon: 'User', description: '同步云平台用户信息' },
+    { value: 'permission_sync', label: '权限同步', icon: 'Lock', description: '同步权限策略配置' },
+    { value: 'group_sync', label: '用户组同步', icon: 'UserFilled', description: '同步用户组及成员关系' }
 ]
 
 export function getSyncTaskTypeLabel(value: string): string {
@@ -520,7 +522,7 @@ export const SYNC_TASK_STATUS = [
 ]
 
 export function getSyncTaskStatus(value: string) {
-    return SYNC_TASK_STATUS.find((s) => s.value === value) || SYNC_TASK_STATUS[SYNC_TASK_STATUS.length - 1]
+    return SYNC_TASK_STATUS.find((s) => s.value === value) ?? SYNC_TASK_STATUS[SYNC_TASK_STATUS.length - 1]
 }
 
 export function getSyncTaskStatusLabel(value: string): string {

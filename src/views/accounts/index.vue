@@ -568,7 +568,8 @@ const getStatusClass = (status: string | undefined) => {
     'active': 'status-active',
     'disabled': 'status-disabled',
     'error': 'status-error',
-    'testing': 'status-testing'
+    'testing': 'status-testing',
+    'inactive': 'status-inactive'
   }
   return map[status] || ''
 }
@@ -1250,6 +1251,7 @@ onMounted(() => {
     &.status-disabled { background: var(--text-tertiary); }
     &.status-error { background: var(--accent-red); }
     &.status-testing { background: var(--accent-blue); animation: pulse 1.5s infinite; }
+    &.status-inactive { background: var(--text-muted); }
   }
 
   .status-text {

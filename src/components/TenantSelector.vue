@@ -35,7 +35,7 @@ interface Emits {
   (e: 'update:modelValue', value: string | undefined): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   width: '200px'
 })
 

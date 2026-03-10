@@ -111,7 +111,7 @@
 <script setup lang="ts">
 import { listCloudAccountsApi } from '@/api'
 import { createSyncTaskApi } from '@/api/iam'
-import type { CloudAccount } from '@/api/types'
+import type { CloudAccount } from '@/api/types/account'
 import { CLOUD_PROVIDERS, SYNC_TASK_TYPES } from '@/utils/constants'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'

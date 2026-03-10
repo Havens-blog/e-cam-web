@@ -55,7 +55,7 @@ export interface TenantStats {
 
 // ==================== 云用户类型 ====================
 
-export type CloudUserType = 'api_key' | 'access_key' | 'ram_user' | 'iam_user'
+export type CloudUserType = 'api_key' | 'access_key' | 'ram_user' | 'iam_user' | 'root_user'
 export type CloudUserStatus = 'active' | 'inactive' | 'deleted'
 
 export interface CloudUser {
@@ -69,6 +69,7 @@ export interface CloudUser {
     cloud_account_name: string
     email: string
     permission_groups: PermissionGroup[]
+    groups?: PermissionGroup[]
     tenant_id: string
     create_time: string
     update_time: string
@@ -127,22 +128,29 @@ export interface AuditLog {
     operation_type: string
     operator_id: string
     operator_name: string
+    operator?: string
     target_type: string
     target_id: string
     target_name: string
     cloud_platform: CloudProvider
+    provider?: CloudProvider
     tenant_id: string
     operation_time: string
     operation_result: OperationResult
+    result?: OperationResult
     error_message?: string
     request_data?: any
     response_data?: any
+    ip_address?: string
+    user_agent?: string
+    description?: string
+    changes?: Record<string, any>
 }
 
 // ==================== 同步任务类型 ====================
 
 export type SyncTaskType = 'user_sync' | 'permission_sync' | 'group_sync'
-export type SyncTaskStatus = 'pending' | 'running' | 'completed' | 'failed'
+export type SyncTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'success' | 'cancelled'
 export type SyncTargetType = 'user' | 'group'
 
 export interface SyncTask {
@@ -156,8 +164,11 @@ export interface SyncTask {
     target_id: number
     progress: number
     error_message?: string
+    result?: Record<string, any>
+    config?: Record<string, any>
     create_time: string
     start_time?: string
+    end_time?: string
     complete_time?: string
 }
 
@@ -174,6 +185,7 @@ export interface ListTenantsParams {
 
 export interface ListTenantsResponse {
     data: Tenant[]
+    tenants?: Tenant[]
     total: number
     page: number
     size: number
@@ -259,6 +271,7 @@ export interface ListGroupsParams {
 
 export interface ListGroupsResponse {
     data: PermissionGroup[]
+    groups?: PermissionGroup[]
     total: number
     page: number
     size: number
@@ -339,6 +352,7 @@ export interface ListAuditLogsParams {
 
 export interface ListAuditLogsResponse {
     data: AuditLog[]
+    logs?: AuditLog[]
     total: number
     page: number
     size: number
@@ -356,9 +370,14 @@ export interface ExportAuditLogsParams {
 }
 
 export interface GenerateAuditReportRequest {
+    name?: string
     start_time: string
     end_time: string
-    tenant_id: string
+    tenant_id?: string
+    tenant_ids?: string[]
+    report_type?: 'summary' | 'detailed'
+    format?: 'html' | 'excel' | 'pdf'
+    sections?: string[]
 }
 
 // ==================== 同步任务 API 请求/响应类型 ====================
@@ -374,6 +393,7 @@ export interface ListSyncTasksParams {
 
 export interface ListSyncTasksResponse {
     data: SyncTask[]
+    tasks?: SyncTask[]
     total: number
     page: number
     size: number
@@ -387,6 +407,6 @@ export interface CreateSyncTaskRequest {
     target_id: number
 }
 
-export interface SyncTaskStatusResponse {
-    task: SyncTask
+export interface SyncTaskStatusResponse extends Partial<SyncTask> {
+    task?: SyncTask
 }

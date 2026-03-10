@@ -19,7 +19,7 @@ services:
       # 如果需要自定义 nginx 配置
       # - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
     networks:
-      - cam-network
+      - ecmdb
     healthcheck:
       test:
         [
@@ -48,6 +48,6 @@ services:
       - "com.cam.description=CAM Web Frontend Production"
 
 networks:
-  cam-network:
+  default:
+    name: ecmdb
     external: true
-    name: cam-network

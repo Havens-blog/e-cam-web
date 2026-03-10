@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div v-if="selectedParentId !== null && selectedParentId !== node?.parent_id" class="preview">
+      <div v-if="selectedParentId !== undefined && selectedParentId !== node?.parent_id" class="preview">
         <span class="label">移动后位置:</span>
         <span class="path">{{ newPath }}</span>
       </div>
@@ -55,7 +55,7 @@
       <el-button
         type="primary"
         :loading="submitting"
-        :disabled="selectedParentId === null || selectedParentId === node?.parent_id"
+        :disabled="selectedParentId === undefined || selectedParentId === node?.parent_id"
         @click="handleSubmit"
       >
         确认移动
@@ -83,7 +83,7 @@ const emit = defineEmits<{
 }>()
 
 const submitting = ref(false)
-const selectedParentId = ref<number | null>(null)
+const selectedParentId = ref<number | undefined>(undefined)
 
 // 当前路径
 const currentPath = computed(() => {
@@ -93,7 +93,7 @@ const currentPath = computed(() => {
 
 // 新路径
 const newPath = computed(() => {
-  if (!props.node || selectedParentId.value === null) return ''
+  if (!props.node || selectedParentId.value === undefined) return ''
   if (selectedParentId.value === 0) {
     return props.node.name
   }
@@ -162,7 +162,7 @@ const handleNodeSelect = (data: ServiceTreeNode) => {
 
 // 提交
 const handleSubmit = async () => {
-  if (!props.node || selectedParentId.value === null) return
+  if (!props.node || selectedParentId.value === undefined) return
 
   try {
     submitting.value = true
@@ -178,7 +178,7 @@ const handleSubmit = async () => {
 
 watch(() => props.visible, (val) => {
   if (val) {
-    selectedParentId.value = null
+    selectedParentId.value = undefined
   }
 })
 </script>

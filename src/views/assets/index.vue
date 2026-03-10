@@ -18,7 +18,7 @@
     </ManagerHeader>
 
     <!-- 筛选器 -->
-    <AssetFilters v-model="filters" @search="handleSearch" />
+    <AssetFilters :model-value="filters" @search="handleSearch" />
 
     <!-- 资产表格 -->
     <AssetTable
@@ -279,11 +279,11 @@
 
 <script setup lang="ts">
 import {
-  deleteAssetApi,
-  listAssetsApi,
-  submitDiscoverAssetsTaskApi,
-  submitSyncAssetsTaskApi,
-  updateAssetApi,
+    deleteAssetApi,
+    listAssetsApi,
+    submitDiscoverAssetsTaskApi,
+    submitSyncAssetsTaskApi,
+    updateAssetApi,
 } from '@/api'
 import type { Asset } from '@/api/types/asset'
 import DetailDrawer from '@/components/DetailDrawer/index.vue'

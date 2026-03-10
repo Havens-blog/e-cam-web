@@ -9,7 +9,7 @@
               <el-icon class="corner-icon" :size="12"><Close /></el-icon>
             </div>
             <div class="header-left">
-              <div class="instance-icon"><el-icon :size="24"><Shield /></el-icon></div>
+              <div class="instance-icon"><el-icon :size="24"><Lock /></el-icon></div>
               <div class="instance-info">
                 <div class="instance-type">WAF 防火墙</div>
                 <div class="instance-name">{{ instance.asset_name || instance.asset_id }}</div>
@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { Close, Document, PriceTag, Shield } from '@element-plus/icons-vue'
+import { Close, Document, PriceTag } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import WafStatusBadge from './WafStatusBadge.vue'
 

@@ -12,7 +12,7 @@ export interface CloudAccount {
     region: string
     regions?: string[] // 支持多区域
     description?: string
-    status: "active" | "disabled" | "error" | "testing"
+    status: "active" | "disabled" | "error" | "testing" | "inactive"
     config: AccountConfig
     tenant_id: string
     last_sync_time?: string
@@ -42,6 +42,8 @@ export interface ListAccountsParams {
     status?: string
     offset?: number
     limit?: number
+    page?: number
+    size?: number
 }
 
 export interface ListAccountsResponse {

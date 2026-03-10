@@ -507,26 +507,26 @@
 <script setup lang="ts">
 import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
-  bindResourceApi,
-  deleteNodeApi,
-  getNodeAssetStatsApi,
-  listEnvironmentsApi,
-  listNodeAssetsApi,
-  listNodeBindingsApi,
-  listNodesApi,
-  unbindResourceApi
+    bindResourceApi,
+    deleteNodeApi,
+    getNodeAssetStatsApi,
+    listEnvironmentsApi,
+    listNodeAssetsApi,
+    listNodeBindingsApi,
+    listNodesApi,
+    unbindResourceApi
 } from '@/api/service-tree'
 import type { AssetStatsVO, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
-  Delete,
-  Document,
-  Edit,
-  Folder,
-  Link,
-  Plus,
-  Rank,
-  Refresh,
-  Search
+    Delete,
+    Document,
+    Edit,
+    Folder,
+    Link,
+    Plus,
+    Rank,
+    Refresh,
+    Search
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -1046,7 +1046,7 @@ const buildNodePath = (node: ServiceTreeNode) => {
 }
 
 // 右键菜单
-const handleContextMenu = (event: Event, data: ServiceTreeNode) => {
+const handleContextMenu = (event: Event, data: any) => {
   const mouseEvent = event as MouseEvent
   mouseEvent.preventDefault()
   selectedNode.value = data
