@@ -1,12 +1,12 @@
 import type { AssetTag } from '@/api/types/asset'
 import dayjs from 'dayjs'
 
-export function formatTime(time?: string, format = 'YYYY-MM-DD HH:mm:ss'): string {
+export function formatTime(time?: string | number, format = 'YYYY-MM-DD HH:mm:ss'): string {
     if (!time) return '-'
     return dayjs(time).format(format)
 }
 
-export function formatRelativeTime(time?: string): string {
+export function formatRelativeTime(time?: string | number): string {
     if (!time) return '-'
     const now = dayjs()
     const target = dayjs(time)
@@ -41,13 +41,16 @@ export function formatTags(tags?: AssetTag[]): string {
     return tags.map((tag) => `${tag.key}:${tag.value}`).join(', ')
 }
 
-export function formatJSON(jsonStr?: string): string {
-    if (!jsonStr) return '{}'
+export function formatJSON(input?: string | Record<string, unknown>): string {
+    if (!input) return '{}'
+    if (typeof input === 'object') {
+        return JSON.stringify(input, null, 2)
+    }
     try {
-        const obj = JSON.parse(jsonStr)
+        const obj = JSON.parse(input)
         return JSON.stringify(obj, null, 2)
     } catch {
-        return jsonStr
+        return input
     }
 }
 

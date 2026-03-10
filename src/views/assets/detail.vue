@@ -171,13 +171,13 @@
 
 <script setup lang="ts">
 import { deleteAssetApi, getAssetDetailApi, updateAssetApi } from '@/api'
-import type { AssetDetail } from '@/api/types/asset'
+import type { Asset } from '@/api/types/asset'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
-    ASSET_STATUS,
-    getAssetTypeLabel,
-    getProviderLabel,
+  ASSET_STATUS,
+  getAssetTypeLabel,
+  getProviderLabel,
 } from '@/utils/constants'
 import { formatCost, formatJSON, formatTime } from '@/utils/formatters'
 import { Delete, Edit } from '@element-plus/icons-vue'
@@ -195,7 +195,7 @@ const updating = ref(false)
 const editDialogVisible = ref(false)
 
 // 数据
-const asset = ref<AssetDetail | null>(null)
+const asset = ref<Asset | null>(null)
 
 // 编辑表单
 const editForm = reactive({
@@ -231,7 +231,7 @@ const handleEdit = () => {
 
   editForm.asset_name = asset.value.asset_name
   editForm.status = asset.value.status
-  editForm.cost = asset.value.cost
+  editForm.cost = asset.value.cost ?? 0
   editDialogVisible.value = true
 }
 
@@ -244,8 +244,7 @@ const submitEdit = async () => {
 
   updating.value = true
   try {
-    await updateAssetApi({
-      id: asset.value.id,
+    await updateAssetApi(asset.value.id, {
       asset_name: editForm.asset_name,
       status: editForm.status,
       cost: editForm.cost,
