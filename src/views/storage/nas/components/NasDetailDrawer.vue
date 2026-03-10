@@ -78,6 +78,44 @@
               </div>
             </div>
           </template>
+          <template v-else-if="activeTab === 'mount'">
+            <div class="tab-section">
+              <div class="section-title">挂载点列表</div>
+              <template v-if="mountTargets.length > 0">
+                <div class="mount-list">
+                  <div v-for="(mt, idx) in mountTargets" :key="idx" class="mount-card">
+                    <div class="info-list">
+                      <div class="info-row" v-if="mt.mount_target_id"><span class="info-label">挂载点ID</span><span class="info-value">{{ mt.mount_target_id }}</span></div>
+                      <div class="info-row"><span class="info-label">挂载地址</span><span class="info-value monospace">{{ mt.mount_target_domain || '-' }}</span></div>
+                      <div class="info-row"><span class="info-label">网络类型</span><span class="info-value">{{ mt.network_type || '-' }}</span></div>
+                      <div class="info-row" v-if="mt.vpc_id"><span class="info-label">VPC</span><span class="info-value">{{ mt.vpc_id }}</span></div>
+                      <div class="info-row" v-if="mt.vswitch_id"><span class="info-label">交换机</span><span class="info-value">{{ mt.vswitch_id }}</span></div>
+                      <div class="info-row" v-if="mt.access_group_name"><span class="info-label">权限组</span><span class="info-value">{{ mt.access_group_name }}</span></div>
+                      <div class="info-row" v-if="mt.status"><span class="info-label">状态</span><span class="info-value">{{ mt.status }}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="empty-tab"><el-icon :size="48"><FolderOpened /></el-icon><p>暂无挂载点</p></div>
+            </div>
+          </template>
+          <template v-else-if="activeTab === 'tags'">
+            <div class="tab-section">
+              <div class="section-title">标签列表</div>
+              <template v-if="tagList.length > 0">
+                <table class="tags-table">
+                  <thead><tr><th>标签键</th><th>标签值</th></tr></thead>
+                  <tbody>
+                    <tr v-for="tag in tagList" :key="tag.key">
+                      <td>{{ tag.key }}</td>
+                      <td>{{ tag.value || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
+              <div v-else class="empty-tab"><el-icon :size="48"><PriceTag /></el-icon><p>暂无标签</p></div>
+            </div>
+          </template>
           <template v-else>
             <div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p>{{ activeTab }} 功能开发中...</p></div>
           </template>
@@ -90,28 +128,64 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
-import { ArrowDown, Close, Document, FolderOpened } from '@element-plus/icons-vue';
-import { ref } from 'vue';
+import { ArrowDown, Close, Document, FolderOpened, PriceTag } from '@element-plus/icons-vue';
+import { computed, ref } from 'vue';
 
-defineProps<{ visible: boolean; instance: Asset | null }>()
+const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
 
+const mountTargets = computed(() => {
+  const targets = props.instance?.attributes?.mount_targets
+  if (Array.isArray(targets)) return targets
+  return []
+})
+
+const tagList = computed(() => {
+  const tags = props.instance?.attributes?.tags
+  if (!tags || typeof tags !== 'object') return []
+  return Object.entries(tags).map(([key, value]) => ({ key, value: String(value) }))
+})
+
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); return s === 'running' ? 'running' : s === 'stopped' ? 'stopped' : '' }
 const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', stopped: '已停止', pending: '创建中', Running: '运行中', Stopped: '已停止' }; return map[status] || status }
 const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }; return map[type] || type }
-const formatCapacity = (capacity?: number) => { if (!capacity) return '-'; if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`; if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`; return `${capacity} MB` }
+const formatCapacity = (capacity?: number) => { if (capacity === undefined || capacity === null) return '-'; if (capacity === 0) return '0'; if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`; if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`; return `${capacity} MB` }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => { if (!provider) return '-'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return '阿里云'; if (p.includes('tencent')) return '腾讯云'; if (p.includes('huawei')) return '华为云'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return '火山引擎'; return provider }
 const getChargeTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费', prepaid: '包年包月', postpaid: '按量付费' }; return map[type] || type }
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>
 
-<style scoped lang="scss">
-@import '../../styles/detail-drawer.scss';
-</style>
-
 <style lang="scss">
 .nas-detail-drawer { .el-drawer__body { padding: 0; height: 100%; overflow: hidden; } }
+</style>
+
+<style scoped lang="scss">
+@import '../../styles/detail-drawer.scss';
+
+.tab-section {
+  padding: 16px;
+  .section-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: #303133; }
+}
+
+.mount-list {
+  display: flex; flex-direction: column; gap: 12px;
+  .mount-card {
+    border: 1px solid #ebeef5; border-radius: 6px; padding: 12px 16px; background: #fafafa;
+    .info-list { display: flex; flex-direction: column; gap: 6px; }
+    .info-row { display: flex; align-items: center; font-size: 13px; }
+    .info-label { color: #909399; width: 80px; flex-shrink: 0; }
+    .info-value { color: #303133; word-break: break-all; }
+    .info-value.monospace { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+  }
+}
+
+.tags-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  th { text-align: left; padding: 8px 12px; background: #f5f7fa; color: #909399; font-weight: 500; border-bottom: 1px solid #ebeef5; }
+  td { padding: 8px 12px; border-bottom: 1px solid #ebeef5; color: #303133; }
+  tr:hover td { background: #f5f7fa; }
+}
 </style>

@@ -160,6 +160,11 @@ export const getNodeAssetStatsApi = (nodeId: number, params?: NodeAssetStatsPara
     return instance.get<AssetStatsVO>({ url: `${BASE_URL}/nodes/${nodeId}/assets/stats`, params })
 }
 
+/** 查询全局资产统计（按产品类别聚合） */
+export const getGlobalAssetStatsApi = (params?: NodeAssetStatsParams) => {
+    return instance.get<AssetStatsVO>({ url: `${BASE_URL}/assets/stats`, params })
+}
+
 /** 查询资产所属节点 */
 export const getAssetNodeApi = (assetId: number) => {
     return instance.get<AssetNodeVO>({ url: `${BASE_URL}/assets/${assetId}/node` })

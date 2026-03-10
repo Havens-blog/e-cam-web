@@ -8,6 +8,9 @@
           <p class="page-subtitle">可视化展示资源模型和实例之间的关联关系</p>
         </div>
         <div class="header-right">
+          <el-tag v-if="viewMode === 'model'" type="info" size="small" effect="plain" style="margin-right: 12px">
+            Shift + 拖拽节点可创建关系
+          </el-tag>
           <el-radio-group v-model="viewMode" size="small" @change="handleViewModeChange">
             <el-radio-button value="model">模型拓扑</el-radio-button>
             <el-radio-button value="instance">实例拓扑</el-radio-button>
@@ -122,7 +125,70 @@
           <div class="empty-desc">{{ emptyDesc }}</div>
         </div>
         <div ref="chartRef" class="topology-canvas"></div>
+        <!-- 拖拽连线覆盖层 -->
+        <canvas ref="dragOverlayRef" class="drag-overlay" :class="{ active: dragState.dragging }"></canvas>
+        <!-- 拖拽提示 -->
+        <Transition name="fade">
+          <div v-if="dragState.dragging" class="drag-hint">
+            拖拽到目标模型以创建关系
+          </div>
+        </Transition>
       </div>
+
+      <!-- 模型关系创建对话框 -->
+      <el-dialog
+        v-model="relationDialog.visible"
+        title="创建模型关系"
+        width="480px"
+        :close-on-click-modal="false"
+        @closed="resetRelationDialog"
+      >
+        <div class="relation-dialog-nodes">
+          <div class="relation-node">
+            <span class="node-dot" :style="{ background: getCategoryColor(relationDialog.sourceNode?.category || '') }"></span>
+            <span>{{ relationDialog.sourceNode?.name }}</span>
+          </div>
+          <el-icon :size="20" color="var(--text-tertiary)"><Right /></el-icon>
+          <div class="relation-node">
+            <span class="node-dot" :style="{ background: getCategoryColor(relationDialog.targetNode?.category || '') }"></span>
+            <span>{{ relationDialog.targetNode?.name }}</span>
+          </div>
+        </div>
+        <el-form ref="relationFormRef" :model="relationDialog.form" :rules="relationRules" label-width="90px" style="margin-top: 20px">
+          <el-form-item label="关系UID" prop="uid">
+            <el-input v-model="relationDialog.form.uid" placeholder="如 ecs_belongs_to_vpc" />
+          </el-form-item>
+          <el-form-item label="关系名称" prop="name">
+            <el-input v-model="relationDialog.form.name" placeholder="如 ECS属于VPC" />
+          </el-form-item>
+          <el-form-item label="关系类型" prop="relation_type">
+            <el-select v-model="relationDialog.form.relation_type" placeholder="请选择" style="width: 100%">
+              <el-option label="归属 (belongs_to)" value="belongs_to" />
+              <el-option label="包含 (contains)" value="contains" />
+              <el-option label="绑定 (bindto)" value="bindto" />
+              <el-option label="连接 (connects)" value="connects" />
+              <el-option label="依赖 (depends_on)" value="depends_on" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="方向" prop="direction">
+            <el-select v-model="relationDialog.form.direction" placeholder="请选择" style="width: 100%">
+              <el-option label="一对一" value="one_to_one" />
+              <el-option label="一对多" value="one_to_many" />
+              <el-option label="多对多" value="many_to_many" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="源→目标" prop="source_to_target">
+            <el-input v-model="relationDialog.form.source_to_target" placeholder="如：属于" />
+          </el-form-item>
+          <el-form-item label="目标→源" prop="target_to_source">
+            <el-input v-model="relationDialog.form.target_to_source" placeholder="如：包含" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="relationDialog.visible = false">取消</el-button>
+          <el-button type="primary" :loading="relationDialog.submitting" @click="handleCreateRelation">创建</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 节点详情面板 -->
       <Transition name="slide-panel">
@@ -152,12 +218,15 @@
 </template>
 
 <script setup lang="ts">
-import { getInstanceTopologyApi, getModelTopologyApi, listCmdbInstancesApi } from '@/api'
+import { createModelRelationApi, getInstanceTopologyApi, getModelTopologyApi, listCmdbInstancesApi } from '@/api'
 import type {
+  CreateModelRelationReq,
   InstanceVO,
   ModelTopologyEdge,
   ModelTopologyGraph,
   ModelTopologyNode,
+  RelationDirection,
+  RelationType,
   TopologyEdge,
   TopologyGraph,
   TopologyNode
@@ -170,11 +239,13 @@ import {
   FullScreen,
   Monitor,
   Refresh,
+  Right,
   Share,
   ZoomIn,
   ZoomOut
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, shallowRef } from 'vue'
 
@@ -236,6 +307,275 @@ const selectedNode = ref<SelectedNodeInfo | null>(null)
 // 分类筛选
 const visibleCategories = ref(new Set(Object.keys(CATEGORY_LABELS)))
 const layoutMode = ref<'grouped' | 'force'>('grouped')
+
+// ==================== 拖拽连线状态 ====================
+const dragOverlayRef = ref<HTMLCanvasElement>()
+
+interface DragLinkState {
+  dragging: boolean
+  sourceNode: ModelTopologyNode | null
+  sourcePixel: { x: number; y: number } | null
+  currentPixel: { x: number; y: number } | null
+  hoverTarget: ModelTopologyNode | null
+}
+const dragState = reactive<DragLinkState>({
+  dragging: false,
+  sourceNode: null,
+  sourcePixel: null,
+  currentPixel: null,
+  hoverTarget: null,
+})
+
+// ==================== 关系创建对话框 ====================
+const relationFormRef = ref<FormInstance>()
+const relationDialog = reactive({
+  visible: false,
+  submitting: false,
+  sourceNode: null as ModelTopologyNode | null,
+  targetNode: null as ModelTopologyNode | null,
+  form: {
+    uid: '',
+    name: '',
+    relation_type: 'belongs_to' as RelationType,
+    direction: 'one_to_many' as RelationDirection,
+    source_to_target: '',
+    target_to_source: '',
+  },
+})
+
+const relationRules: FormRules = {
+  uid: [{ required: true, message: '请输入关系UID', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入关系名称', trigger: 'blur' }],
+  relation_type: [{ required: true, message: '请选择关系类型', trigger: 'change' }],
+}
+
+// 自动生成 UID 和名称
+const autoFillRelationForm = () => {
+  const src = relationDialog.sourceNode
+  const tgt = relationDialog.targetNode
+  if (!src || !tgt) return
+  const srcKey = src.uid.replace(/^(aliyun|aws|tencent|huawei|volcano)_/, '')
+  const tgtKey = tgt.uid.replace(/^(aliyun|aws|tencent|huawei|volcano)_/, '')
+  relationDialog.form.uid = `${srcKey}_belongs_to_${tgtKey}`
+  relationDialog.form.name = `${src.name}属于${tgt.name}`
+  relationDialog.form.source_to_target = '属于'
+  relationDialog.form.target_to_source = '包含'
+}
+
+const resetRelationDialog = () => {
+  relationDialog.sourceNode = null
+  relationDialog.targetNode = null
+  relationDialog.form.uid = ''
+  relationDialog.form.name = ''
+  relationDialog.form.relation_type = 'belongs_to'
+  relationDialog.form.direction = 'one_to_many'
+  relationDialog.form.source_to_target = ''
+  relationDialog.form.target_to_source = ''
+  relationFormRef.value?.resetFields()
+}
+
+const handleCreateRelation = async () => {
+  const valid = await relationFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+  const src = relationDialog.sourceNode
+  const tgt = relationDialog.targetNode
+  if (!src || !tgt) return
+
+  relationDialog.submitting = true
+  try {
+    const data: CreateModelRelationReq = {
+      uid: relationDialog.form.uid,
+      name: relationDialog.form.name,
+      source_uid: src.uid,
+      target_uid: tgt.uid,
+      relation_type: relationDialog.form.relation_type,
+      direction: relationDialog.form.direction,
+      source_to_target: relationDialog.form.source_to_target,
+      target_to_source: relationDialog.form.target_to_source,
+    }
+    await createModelRelationApi(data)
+    ElMessage.success('模型关系创建成功')
+    relationDialog.visible = false
+    // 刷新拓扑图
+    fetchModelTopology()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建失败')
+  } finally {
+    relationDialog.submitting = false
+  }
+}
+
+// ==================== 拖拽连线绘制 ====================
+const drawDragLine = () => {
+  const canvas = dragOverlayRef.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // 同步 canvas 尺寸
+  const rect = canvas.parentElement?.getBoundingClientRect()
+  if (rect) {
+    canvas.width = rect.width * window.devicePixelRatio
+    canvas.height = rect.height * window.devicePixelRatio
+    canvas.style.width = `${rect.width}px`
+    canvas.style.height = `${rect.height}px`
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  if (!dragState.dragging || !dragState.sourcePixel || !dragState.currentPixel) return
+
+  const { x: sx, y: sy } = dragState.sourcePixel
+  const { x: ex, y: ey } = dragState.currentPixel
+
+  // 绘制连线
+  ctx.beginPath()
+  ctx.moveTo(sx, sy)
+  ctx.lineTo(ex, ey)
+  ctx.strokeStyle = dragState.hoverTarget ? '#3b82f6' : '#71717a'
+  ctx.lineWidth = dragState.hoverTarget ? 2.5 : 1.5
+  ctx.setLineDash([6, 4])
+  ctx.stroke()
+
+  // 绘制箭头
+  const angle = Math.atan2(ey - sy, ex - sx)
+  const arrowLen = 10
+  ctx.beginPath()
+  ctx.moveTo(ex, ey)
+  ctx.lineTo(ex - arrowLen * Math.cos(angle - Math.PI / 6), ey - arrowLen * Math.sin(angle - Math.PI / 6))
+  ctx.moveTo(ex, ey)
+  ctx.lineTo(ex - arrowLen * Math.cos(angle + Math.PI / 6), ey - arrowLen * Math.sin(angle + Math.PI / 6))
+  ctx.strokeStyle = dragState.hoverTarget ? '#3b82f6' : '#71717a'
+  ctx.lineWidth = 2
+  ctx.setLineDash([])
+  ctx.stroke()
+
+  // 目标高亮圆圈
+  if (dragState.hoverTarget) {
+    ctx.beginPath()
+    ctx.arc(ex, ey, 28, 0, Math.PI * 2)
+    ctx.strokeStyle = '#3b82f6'
+    ctx.lineWidth = 2
+    ctx.setLineDash([])
+    ctx.stroke()
+  }
+}
+
+// 安装拖拽连线事件（仅模型拓扑模式）
+const installDragLinkEvents = () => {
+  const c = chart.value
+  if (!c) return
+
+  const zr = c.getZr()
+
+  // 右键按下开始拖拽连线（左键保留给 ECharts 原生拖拽/点击）
+  zr.on('mousedown', (e: any) => {
+    if (viewMode.value !== 'model') return
+    // 使用 Shift+左键 或 右键 触发连线
+    if (!(e.event?.shiftKey || e.event?.button === 2)) return
+
+    // 查找点击的节点
+    const point = [e.offsetX, e.offsetY]
+    const dataIndex = findNodeAtPoint(c, point)
+    if (dataIndex === -1) return
+
+    const opt = c.getOption() as any
+    const nodeData = opt?.series?.[0]?.data?.[dataIndex]
+    if (!nodeData?.value || nodeData.id?.startsWith('__label_')) return
+
+    e.event?.preventDefault?.()
+    e.event?.stopPropagation?.()
+
+    const wrapperRect = chartRef.value?.parentElement?.getBoundingClientRect()
+    const chartRect = chartRef.value?.getBoundingClientRect()
+    if (!wrapperRect || !chartRect) return
+
+    dragState.dragging = true
+    dragState.sourceNode = nodeData.value as ModelTopologyNode
+    dragState.sourcePixel = {
+      x: e.offsetX + (chartRect.left - wrapperRect.left),
+      y: e.offsetY + (chartRect.top - wrapperRect.top),
+    }
+    dragState.currentPixel = { ...dragState.sourcePixel }
+    dragState.hoverTarget = null
+  })
+
+  zr.on('mousemove', (e: any) => {
+    if (!dragState.dragging) return
+
+    const wrapperRect = chartRef.value?.parentElement?.getBoundingClientRect()
+    const chartRect = chartRef.value?.getBoundingClientRect()
+    if (!wrapperRect || !chartRect) return
+
+    dragState.currentPixel = {
+      x: e.offsetX + (chartRect.left - wrapperRect.left),
+      y: e.offsetY + (chartRect.top - wrapperRect.top),
+    }
+
+    // 检测是否悬停在目标节点上
+    const point = [e.offsetX, e.offsetY]
+    const dataIndex = findNodeAtPoint(c, point)
+    if (dataIndex !== -1) {
+      const opt = c.getOption() as any
+      const nodeData = opt?.series?.[0]?.data?.[dataIndex]
+      if (nodeData?.value && !nodeData.id?.startsWith('__label_') && nodeData.value.uid !== dragState.sourceNode?.uid) {
+        dragState.hoverTarget = nodeData.value as ModelTopologyNode
+      } else {
+        dragState.hoverTarget = null
+      }
+    } else {
+      dragState.hoverTarget = null
+    }
+
+    drawDragLine()
+  })
+
+  zr.on('mouseup', (e: any) => {
+    if (!dragState.dragging) return
+
+    if (dragState.hoverTarget && dragState.sourceNode) {
+      // 打开关系创建对话框
+      relationDialog.sourceNode = dragState.sourceNode
+      relationDialog.targetNode = dragState.hoverTarget
+      autoFillRelationForm()
+      relationDialog.visible = true
+    }
+
+    // 重置拖拽状态
+    dragState.dragging = false
+    dragState.sourceNode = null
+    dragState.sourcePixel = null
+    dragState.currentPixel = null
+    dragState.hoverTarget = null
+    drawDragLine() // 清除画布
+  })
+
+  // 禁用右键菜单
+  chartRef.value?.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+  })
+}
+
+// 查找指定像素位置的节点索引
+const findNodeAtPoint = (c: echarts.ECharts, point: number[]): number => {
+  const opt = c.getOption() as any
+  const nodes = opt?.series?.[0]?.data || []
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (!node.value || node.id?.startsWith('__label_')) continue
+    // 将数据坐标转换为像素坐标
+    const pos = c.convertToPixel({ seriesIndex: 0 }, [node.x ?? 0, node.y ?? 0])
+    if (!pos) continue
+    const size = typeof node.symbolSize === 'number' ? node.symbolSize : 40
+    const dx = point[0] - pos[0]
+    const dy = point[1] - pos[1]
+    if (Math.sqrt(dx * dx + dy * dy) <= size * 0.7) {
+      return i
+    }
+  }
+  return -1
+}
 
 const toggleCategory = (cat: string) => {
   const s = new Set(visibleCategories.value)
@@ -620,6 +960,9 @@ const renderModelGraph = () => {
       }
     }
   })
+
+  // 安装拖拽连线事件
+  installDragLinkEvents()
 }
 
 const renderInstanceGraph = () => {
@@ -975,6 +1318,32 @@ onUnmounted(() => {
       min-height: 500px;
     }
 
+    .drag-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+
+      &.active {
+        pointer-events: none; // 始终不拦截鼠标事件
+      }
+    }
+
+    .drag-hint {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 16px;
+      background: rgba(59, 130, 246, 0.9);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 20px;
+      z-index: 15;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
     .empty-state {
       position: absolute;
       inset: 0;
@@ -1091,5 +1460,45 @@ onUnmounted(() => {
 .slide-panel-leave-to {
   transform: translateX(100%);
   opacity: 0;
+}
+
+// 淡入淡出
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 200ms ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// 关系创建对话框
+.relation-dialog-nodes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--glass-bg, #f5f5f5);
+  border-radius: 8px;
+
+  .relation-node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-surface, #fff);
+    border: 1px solid var(--border-base, #e5e5e5);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+
+    .node-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  }
 }
 </style>

@@ -44,7 +44,10 @@ const assetTypeMap: Record<string, { label: string; icon: string; route: string 
   mongodb: { label: 'MongoDB', icon: 'caise-database', route: '/databases/mongodb' },
   vpc: { label: 'VPC', icon: 'caise-network_devices', route: '/network/vpc' },
   eip: { label: 'EIP', icon: 'caise-network_devices', route: '/network/eip' },
+  vswitch: { label: '交换机', icon: 'caise-network_devices', route: '/network/vswitch' },
   lb: { label: '负载均衡', icon: 'caise-network_devices', route: '/network/lb' },
+  cdn: { label: 'CDN 加速', icon: 'caise-network_devices', route: '/network/cdn' },
+  waf: { label: 'WAF 防火墙', icon: 'caise-network_devices', route: '/network/waf' },
   nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
   oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
   kafka: { label: 'Kafka', icon: 'caise-middleware', route: '/middleware/kafka' },
@@ -367,7 +370,10 @@ const menuGroups = ref<MenuGroup[]>([
             children: [
               { key: 'assets-vpc', path: '/network/vpc', title: 'VPC' },
               { key: 'assets-eip', path: '/network/eip', title: '弹性公网IP' },
+              { key: 'assets-vswitch', path: '/network/vswitch', title: '交换机' },
               { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
+              { key: 'assets-cdn', path: '/network/cdn', title: 'CDN 加速' },
+              { key: 'assets-waf', path: '/network/waf', title: 'WAF 防火墙' },
             ]
           },
           {

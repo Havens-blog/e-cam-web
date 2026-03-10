@@ -147,6 +147,7 @@ import {
   type KeyCount,
   type OverviewData
 } from '@/api/dashboard'
+import { getGlobalAssetStatsApi } from '@/api/service-tree'
 import { Box, CircleCheck, User, Warning } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -333,12 +334,23 @@ const fetchOverview = async () => {
         by_type: d.by_type || [],
         by_status: d.by_status || [],
       }
-      // 用 overview 数据初始化 provider 图表
       providerItems.value = overview.value.by_provider
-      assetTypeItems.value = overview.value.by_type
     }
   } catch (e: any) {
     console.error('获取总览失败:', e)
+  }
+}
+
+const fetchAssetTypeStats = async () => {
+  try {
+    const res = await getGlobalAssetStatsApi({ include_children: true })
+    const d = (res as any).data
+    if (d?.by_asset_type) {
+      assetTypeItems.value = Object.entries(d.by_asset_type)
+        .map(([key, count]) => ({ key, count: count as number }))
+    }
+  } catch (e: any) {
+    console.error('获取资产类别统计失败:', e)
   }
 }
 
@@ -371,7 +383,7 @@ const handleResize = () => {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchOverview(), fetchByRegion(), fetchExpiring()])
+  await Promise.all([fetchOverview(), fetchAssetTypeStats(), fetchByRegion(), fetchExpiring()])
   nextTick(() => {
     initProviderChart()
     initAssetTypeChart()

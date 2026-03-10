@@ -149,6 +149,9 @@
                     :data="bindingList"
                     size="small"
                     max-height="300"
+                    highlight-current-row
+                    @row-click="handleBindingRowClick"
+                    style="cursor: pointer"
                   >
                     <el-table-column label="环境" width="90">
                       <template #default="{ row }">
@@ -248,6 +251,9 @@
                       <el-option label="MongoDB" value="mongodb" />
                       <el-option label="VPC" value="vpc" />
                       <el-option label="弹性IP" value="eip" />
+                      <el-option label="负载均衡" value="lb" />
+                      <el-option label="CDN" value="cdn" />
+                      <el-option label="WAF" value="waf" />
                       <el-option label="文件存储" value="nas" />
                       <el-option label="对象存储" value="oss" />
                       <el-option label="Kafka" value="kafka" />
@@ -288,6 +294,9 @@
                     :data="nodeAssetList"
                     size="small"
                     max-height="400"
+                    highlight-current-row
+                    @row-click="handleAssetRowClick"
+                    style="cursor: pointer"
                   >
                     <el-table-column prop="asset_name" label="资产名称" min-width="140" show-overflow-tooltip />
                     <el-table-column prop="asset_id" label="资产ID" width="160" show-overflow-tooltip>
@@ -446,6 +455,13 @@
     @confirm="handleUnbindConfirm"
   />
 
+  <!-- 资源详情抽屉 -->
+  <ResourceDetailDrawer
+    v-model:visible="resourceDetailVisible"
+    :resource="resourceDetailData"
+    :binding-info="resourceDetailBinding"
+  />
+
   <!-- 分配资产到节点弹窗 -->
   <el-dialog
     v-model="assignDialogVisible"
@@ -514,7 +530,7 @@ import {
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import BindResourceDialog from './components/BindResourceDialog.vue'
 import MoveNodeDialog from './components/MoveNodeDialog.vue'
 import NodeFormDialog from './components/NodeFormDialog.vue'
@@ -540,13 +556,18 @@ const assetTypeMap: Record<string, string> = {
   oss: '对象存储',
   nas: '文件存储',
   slb: '负载均衡',
+  lb: '负载均衡',
   eip: '弹性IP',
   disk: '云硬盘',
   snapshot: '快照',
   vpc: 'VPC',
+  vswitch: '交换机',
+  subnet: '子网',
   security_group: '安全组',
   kafka: 'Kafka',
   elasticsearch: 'Elasticsearch',
+  cdn: 'CDN',
+  waf: 'WAF',
   image: '镜像'
 }
 
@@ -626,6 +647,11 @@ const assetFilters = reactive<ListNodeAssetsParams>({
 const contextMenuVisible = ref(false)
 const contextMenuRef = ref<HTMLElement>()
 const contextMenuPosition = reactive({ x: 0, y: 0 })
+
+// 资源详情抽屉
+const resourceDetailVisible = ref(false)
+const resourceDetailData = ref<ResourceData | null>(null)
+const resourceDetailBinding = ref<{ env_name?: string; env_color?: string; bind_type?: string } | null>(null)
 
 // 弹窗
 const nodeFormVisible = ref(false)
@@ -932,6 +958,53 @@ const handleAssignConfirm = async () => {
 watch(searchKeyword, (val) => {
   treeRef.value?.filter(val)
 })
+
+// 点击绑定资源行 -> 打开详情抽屉
+const handleBindingRowClick = (row: ResourceBinding) => {
+  resourceDetailData.value = {
+    asset_id: row.asset_id,
+    asset_name: row.resource_name,
+    asset_type: row.asset_type,
+    resource_name: row.resource_name,
+    resource_status: row.resource_status,
+    provider: row.provider,
+    region: row.region,
+    model_uid: row.model_uid,
+    model_name: row.model_name,
+    inst_id: row.inst_id,
+    attributes: {
+      private_ip: row.private_ip,
+      public_ip: row.public_ip,
+      region: row.region,
+      provider: row.provider,
+      status: row.resource_status,
+    }
+  }
+  resourceDetailBinding.value = {
+    env_name: row.env_name,
+    env_color: row.env_color,
+    bind_type: row.bind_type,
+  }
+  resourceDetailVisible.value = true
+}
+
+// 点击关联资产行 -> 打开详情抽屉
+const handleAssetRowClick = (row: NodeAssetVO) => {
+  resourceDetailData.value = {
+    asset_id: row.asset_id,
+    asset_name: row.asset_name,
+    asset_type: row.asset_type,
+    status: row.status,
+    provider: row.provider,
+    region: row.region,
+    attributes: row.attributes || {},
+  }
+  resourceDetailBinding.value = row.binding_id ? {
+    env_name: undefined,
+    bind_type: row.bind_type,
+  } : null
+  resourceDetailVisible.value = true
+}
 
 const filterNode = (value: string, data: any) => {
   if (!value) return true

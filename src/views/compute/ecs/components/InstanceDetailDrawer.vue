@@ -198,19 +198,25 @@
                 </div>
                 <div class="info-row">
                   <span class="info-label">VPC</span>
-                  <span class="info-value link">{{ instance.attributes?.vpc_id || '-' }}</span>
+                  <span class="info-value">
+                    <a v-if="instance.attributes?.vpc_id" class="link-text" @click.prevent="openVpcDetail">{{ instance.attributes.vpc_id }}</a>
+                    <span v-else>-</span>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">子网</span>
-                  <span class="info-value">{{ instance.attributes?.vswitch_id || '-' }}</span>
+                  <span class="info-value">
+                    <a v-if="instance.attributes?.vswitch_id" class="link-text" @click.prevent="activeTab = 'network'">{{ instance.attributes.vswitch_id }}</a>
+                    <span v-else>-</span>
+                  </span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">安全组</span>
                   <span class="info-value">
-                    <template v-if="instance.attributes?.security_groups?.length">
+                    <a v-if="instance.attributes?.security_groups?.length" class="link-text" @click.prevent="activeTab = 'security'">
                       {{ instance.attributes.security_groups.length }} 个
-                    </template>
-                    <template v-else>-</template>
+                    </a>
+                    <span v-else>-</span>
                   </span>
                 </div>
                 <div class="info-row">
@@ -493,6 +499,14 @@
     :instance="nestedDrawerData"
     @update:visible="closeNestedDrawer"
   />
+
+  <!-- 嵌套抽屉：VPC详情 -->
+  <VpcDetailDrawer
+    v-if="nestedDrawerType === 'vpc'"
+    :visible="nestedDrawerVisible"
+    :instance="nestedDrawerData"
+    @update:visible="closeNestedDrawer"
+  />
 </template>
 
 <script setup lang="ts">
@@ -530,9 +544,21 @@ const relationsLoaded = ref(false)
 
 // 获取关联资源
 const fetchRelations = async () => {
-  if (!props.instance?.asset_id) return
+  if (!props.instance?.asset_id) {
+    console.warn('fetchRelations: 没有 asset_id，跳过')
+    return
+  }
   // 如果已加载过，不重复请求
-  if (relationsLoaded.value) return
+  if (relationsLoaded.value) {
+    console.log('fetchRelations: 已加载过，跳过')
+    return
+  }
+  
+  console.log('fetchRelations: 开始请求', {
+    asset_id: props.instance.asset_id,
+    tenant_id: props.instance.tenant_id,
+    provider: props.instance.attributes?.provider
+  })
   
   relationsLoading.value = true
   try {
@@ -540,14 +566,23 @@ const fetchRelations = async () => {
       tenant_id: props.instance.tenant_id,
       provider: props.instance.attributes?.provider
     }) as any
-    console.log('ECS Relations API Response:', res)
+    console.log('ECS Relations API Response:', JSON.stringify(res, null, 2))
     if (res && (res.code === 0 || res.code === 200) && res.data) {
       relationsData.value = res.data as ECSRelationsResp
       relationsLoaded.value = true
+      console.log('fetchRelations: 数据已设置', {
+        disks: res.data.disks?.length || 0,
+        security_groups: res.data.security_groups?.length || 0,
+        snapshots: res.data.snapshots?.length || 0,
+        vpc: !!res.data.vpc,
+        subnet: !!res.data.subnet
+      })
     } else if (res && !res.code && res.ecs) {
       // 直接返回数据的情况
       relationsData.value = res as ECSRelationsResp
       relationsLoaded.value = true
+    } else {
+      console.warn('fetchRelations: 响应格式不匹配', res)
     }
   } catch (error) {
     console.error('获取关联资源失败:', error)
@@ -572,15 +607,21 @@ watch(() => props.instance?.asset_id, (newId, oldId) => {
   }
 })
 
-// 监听 visible 变化，抽屉打开时如果当前 tab 需要关联数据则加载
+// 监听 visible 变化，抽屉打开时预加载关联数据
 watch(() => props.visible, (visible) => {
-  if (visible && ['security', 'network', 'disk', 'snapshot'].includes(activeTab.value)) {
+  if (visible) {
+    // 抽屉打开时立即预加载关联数据
     fetchRelations()
   }
 })
 
 const handleRefresh = () => {
-  // 刷新数据
+  // 重置关联数据缓存，重新加载
+  relationsData.value = null
+  relationsLoaded.value = false
+  if (['security', 'network', 'disk', 'snapshot'].includes(activeTab.value)) {
+    fetchRelations()
+  }
 }
 
 const getOsIcon = (osType: string | undefined): string => {
@@ -753,6 +794,32 @@ const goToDetail = (type: string, asset: Asset) => {
   nestedDrawerType.value = type as 'disk' | 'snapshot' | 'security-group' | 'vpc'
   nestedDrawerData.value = asset
   nestedDrawerVisible.value = true
+}
+
+// 从详情页 VPC 字段打开 VPC 详情抽屉
+const openVpcDetail = () => {
+  const attrs = props.instance?.attributes
+  if (!attrs?.vpc_id) return
+  // 优先使用已加载的关联数据中的 VPC
+  if (relationsData.value?.vpc) {
+    goToDetail('vpc', relationsData.value.vpc)
+    return
+  }
+  // 否则从 ECS 属性构造一个最小 Asset 对象
+  goToDetail('vpc', {
+    id: 0,
+    asset_id: attrs.vpc_id,
+    asset_name: attrs.vpc_name || attrs.vpc_id,
+    model_uid: 'cloud_vpc',
+    tenant_id: props.instance?.tenant_id || '',
+    create_time: 0,
+    update_time: 0,
+    attributes: {
+      provider: attrs.provider,
+      region: attrs.region,
+      vpc_id: attrs.vpc_id,
+    },
+  } as Asset)
 }
 
 // 关闭嵌套抽屉
@@ -964,6 +1031,16 @@ const closeNestedDrawer = () => {
       color: #409eff;
       cursor: pointer;
       font-size: 12px;
+    }
+
+    .link-text {
+      color: #409eff;
+      cursor: pointer;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
 
     .platform-icon {

@@ -114,7 +114,7 @@
                 <template v-else-if="col.key === 'storage_type'">{{ item.attributes?.storage_type || '-' }}</template>
                 <template v-else-if="col.key === 'capacity'">{{ formatCapacity(item.attributes?.capacity) }}</template>
                 <template v-else-if="col.key === 'used_capacity'">{{ formatCapacity(item.attributes?.used_capacity) }}</template>
-                <template v-else-if="col.key === 'mount_target_count'">{{ item.attributes?.mount_target_count || 0 }}</template>
+                <template v-else-if="col.key === 'mount_target_count'">{{ getMountTargetCount(item) }}</template>
                 <template v-else-if="col.key === 'platform'">
                   <IconFont :type="getPlatformIcon(item.attributes?.provider)" class="platform-icon" />
                 </template>
@@ -208,8 +208,8 @@ const defaultColumnSettings: ColumnConfig[] = [
   { key: 'file_system_type', label: '文件系统类型', width: 160, visible: true },
   { key: 'protocol_type', label: '协议类型', width: 80, visible: true },
   { key: 'storage_type', label: '存储类型', width: 80, visible: true },
-  { key: 'capacity', label: '已用容量', width: 90, visible: true },
-  { key: 'used_capacity', label: '总容量', width: 90, visible: false },
+  { key: 'capacity', label: '总容量', width: 90, visible: true },
+  { key: 'used_capacity', label: '已用容量', width: 90, visible: true },
   { key: 'mount_target_count', label: '挂载点数', width: 80, visible: true },
   { key: 'platform', label: '平台', width: 50, visible: true },
   { key: 'region', label: '区域', width: 110, visible: true },
@@ -288,8 +288,15 @@ const getFileSystemTypeText = (type?: string) => {
   const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }
   return map[type] || type
 }
+const getMountTargetCount = (item: Asset) => {
+  if (item.attributes?.mount_target_count !== undefined) return item.attributes.mount_target_count
+  const targets = item.attributes?.mount_targets
+  if (Array.isArray(targets)) return targets.length
+  return 0
+}
 const formatCapacity = (capacity?: number) => {
-  if (!capacity) return '-'
+  if (capacity === undefined || capacity === null) return '-'
+  if (capacity === 0) return '0'
   if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`
   if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`
   return `${capacity} MB`

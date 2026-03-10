@@ -380,3 +380,63 @@ export function getLBAssetApi(assetId: string, params?: { tenant_id?: string; pr
         interceptorsToOnce: createAssetApiInterceptor()
     })
 }
+
+// ==================== VSwitch (交换机/子网) API ====================
+
+/** 获取交换机/子网列表 */
+export function listVSwitchAssetsApi(params?: ListAssetsParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/vswitch`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取交换机/子网详情 */
+export function getVSwitchAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
+    return instance.get<Asset>({
+        url: `${API_SERVICE.CAM}/assets/vswitch/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+// ==================== CDN (内容分发网络) API ====================
+
+/** 获取CDN加速域名列表 */
+export function listCDNAssetsApi(params?: ListAssetsParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/cdn`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取CDN加速域名详情 */
+export function getCDNAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
+    return instance.get<{ code: number; data: Asset; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/cdn/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+// ==================== WAF (Web应用防火墙) API ====================
+
+/** 获取WAF实例列表 */
+export function listWAFAssetsApi(params?: ListAssetsParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/waf`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取WAF实例详情 */
+export function getWAFAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
+    return instance.get<{ code: number; data: Asset; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/waf/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}

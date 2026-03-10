@@ -419,12 +419,39 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
+                path: '/network/vswitch',
+                name: 'VSwitch',
+                component: () => import('@/views/network/vswitch/index.vue'),
+                meta: {
+                    title: '交换机',
+                    icon: 'Share',
+                },
+            },
+            {
                 path: '/network/lb',
                 name: 'LoadBalancer',
                 component: () => import('@/views/network/lb/index.vue'),
                 meta: {
                     title: '负载均衡',
                     icon: 'SetUp',
+                },
+            },
+            {
+                path: '/network/cdn',
+                name: 'CDN',
+                component: () => import('@/views/network/cdn/index.vue'),
+                meta: {
+                    title: 'CDN 加速',
+                    icon: 'Promotion',
+                },
+            },
+            {
+                path: '/network/waf',
+                name: 'WAF',
+                component: () => import('@/views/network/waf/index.vue'),
+                meta: {
+                    title: 'WAF 防火墙',
+                    icon: 'Shield',
                 },
             },
             // ==================== 存储管理路由 ====================
