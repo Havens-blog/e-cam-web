@@ -1,79 +1,324 @@
 #!/bin/bash
+# cam-web 生产环境部署脚本
+# 使用方式: bash docker-build.sh [命令]
+# 命令: build | deploy | rollback | restart | stop | status | logs | cleanup
 
-# CAM Web Docker 构建脚本
+set -euo pipefail
 
-set -e
+# ==================== 配置 ====================
+APP_NAME="cam-web"
+IMAGE_NAME="cam-web"
+CONTAINER_NAME="cam-web"
+NETWORK_NAME="ecmdb"
+REGISTRY="registry.cn-shenzhen.aliyuncs.com/havenblog/cam-web"
+REGISTRY_TAG="latest"
+WEB_PORT=80
+DEPLOY_DIR=$(cd "$(dirname "$0")" && pwd)
+BACKUP_DIR="${DEPLOY_DIR}/backups"
+LOG_DIR="${DEPLOY_DIR}/logs/nginx"
+MAX_BACKUPS=5
 
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# 配置
-IMAGE_NAME="cam-web"
-IMAGE_TAG="${1:-latest}"
-REGISTRY="${REGISTRY:-}"
+log_info()  { echo -e "${GREEN}[INFO]${NC}  $(date '+%Y-%m-%d %H:%M:%S') $*"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $(date '+%Y-%m-%d %H:%M:%S') $*"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%Y-%m-%d %H:%M:%S') $*"; }
+log_step()  { echo -e "${CYAN}[STEP]${NC}  $(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}CAM Web Docker 构建脚本${NC}"
-echo -e "${GREEN}========================================${NC}"
+# ==================== 前置检查 ====================
+check_docker() {
+    if ! command -v docker &>/dev/null; then
+        log_error "Docker 未安装"
+        exit 1
+    fi
+    if ! docker info &>/dev/null; then
+        log_error "Docker 服务未运行"
+        exit 1
+    fi
+}
 
-# 检查 Docker 是否安装
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}错误: Docker 未安装${NC}"
-    exit 1
-fi
+# ==================== 网络检查 ====================
+ensure_network() {
+    if ! docker network inspect "${NETWORK_NAME}" &>/dev/null; then
+        log_step "创建 Docker 网络: ${NETWORK_NAME}"
+        docker network create "${NETWORK_NAME}"
+        log_info "网络创建完成"
+    fi
+}
 
-# 显示构建信息
-echo -e "${YELLOW}镜像名称:${NC} ${IMAGE_NAME}"
-echo -e "${YELLOW}镜像标签:${NC} ${IMAGE_TAG}"
-if [ -n "$REGISTRY" ]; then
-    echo -e "${YELLOW}镜像仓库:${NC} ${REGISTRY}"
-fi
+# ==================== 版本信息 ====================
+get_version() {
+    git describe --tags --always --dirty 2>/dev/null || echo "dev"
+}
 
-# 构建镜像
-echo -e "\n${GREEN}开始构建 Docker 镜像...${NC}"
-if [ -n "$REGISTRY" ]; then
-    FULL_IMAGE_NAME="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-else
-    FULL_IMAGE_NAME="${IMAGE_NAME}:${IMAGE_TAG}"
-fi
+get_commit() {
+    git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+}
 
-docker build -t "${FULL_IMAGE_NAME}" .
+# ==================== 构建镜像 ====================
+do_build() {
+    check_docker
 
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Docker 镜像构建成功${NC}"
-    echo -e "${GREEN}镜像: ${FULL_IMAGE_NAME}${NC}"
-else
-    echo -e "${RED}✗ Docker 镜像构建失败${NC}"
-    exit 1
-fi
+    local version commit build_time tag
+    version=$(get_version)
+    commit=$(get_commit)
+    build_time=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    tag="${IMAGE_NAME}:${version}"
 
-# 显示镜像信息
-echo -e "\n${GREEN}镜像信息:${NC}"
-docker images "${FULL_IMAGE_NAME}"
+    log_info "=========================================="
+    log_info "  构建 ${APP_NAME}"
+    log_info "  版本: ${version}"
+    log_info "  提交: ${commit}"
+    log_info "=========================================="
 
-# 询问是否推送到仓库
-if [ -n "$REGISTRY" ]; then
-    echo -e "\n${YELLOW}是否推送镜像到仓库? (y/n)${NC}"
-    read -r PUSH_CONFIRM
-    if [ "$PUSH_CONFIRM" = "y" ] || [ "$PUSH_CONFIRM" = "Y" ]; then
-        echo -e "${GREEN}推送镜像到仓库...${NC}"
-        docker push "${FULL_IMAGE_NAME}"
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ 镜像推送成功${NC}"
-        else
-            echo -e "${RED}✗ 镜像推送失败${NC}"
-            exit 1
+    # 可选: 拉取最新代码
+    if [ "${PULL:-false}" = "true" ]; then
+        log_step "拉取最新代码..."
+        git pull --rebase 2>/dev/null || log_warn "git pull 失败，使用本地代码"
+    fi
+
+    log_step "构建镜像: ${tag}"
+    docker build \
+        -t "${tag}" \
+        -t "${IMAGE_NAME}:latest" \
+        "${DEPLOY_DIR}"
+
+    log_info "=========================================="
+    log_info "  构建完成: ${tag}"
+    log_info "=========================================="
+
+    # 推送到阿里云镜像仓库
+    log_step "推送镜像到仓库: ${REGISTRY}:${REGISTRY_TAG}"
+    docker tag "${IMAGE_NAME}:latest" "${REGISTRY}:${REGISTRY_TAG}"
+    docker push "${REGISTRY}:${REGISTRY_TAG}"
+    log_info "推送完成: ${REGISTRY}:${REGISTRY_TAG}"
+}
+
+# ==================== 备份当前版本 ====================
+backup_current() {
+    local current_image
+    current_image=$(docker inspect --format='{{.Config.Image}}' "${CONTAINER_NAME}" 2>/dev/null || echo "")
+
+    if [ -n "${current_image}" ]; then
+        local backup_tag="backup-$(date '+%Y%m%d%H%M%S')"
+        log_step "备份当前镜像: ${current_image} -> ${IMAGE_NAME}:${backup_tag}"
+        docker tag "${current_image}" "${IMAGE_NAME}:${backup_tag}" 2>/dev/null || true
+
+        mkdir -p "${BACKUP_DIR}"
+        echo "${backup_tag}|${current_image}|$(date '+%Y-%m-%d %H:%M:%S')" >> "${BACKUP_DIR}/history.log"
+
+        # 清理旧备份
+        local backup_count
+        backup_count=$(docker images "${IMAGE_NAME}" --format '{{.Tag}}' | grep '^backup-' | wc -l)
+        if [ "${backup_count}" -gt "${MAX_BACKUPS}" ]; then
+            log_info "清理旧备份镜像 (保留最近 ${MAX_BACKUPS} 个)..."
+            docker images "${IMAGE_NAME}" --format '{{.Tag}}' | grep '^backup-' | sort | head -n -${MAX_BACKUPS} | while read -r old_tag; do
+                docker rmi "${IMAGE_NAME}:${old_tag}" 2>/dev/null || true
+            done
         fi
     fi
-fi
+}
 
-echo -e "\n${GREEN}========================================${NC}"
-echo -e "${GREEN}构建完成!${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo -e "\n${YELLOW}运行容器:${NC}"
-echo -e "  docker run -d -p 8080:80 --name cam-web ${FULL_IMAGE_NAME}"
-echo -e "\n${YELLOW}使用 docker-compose:${NC}"
-echo -e "  docker-compose up -d"
+# ==================== 启动容器 ====================
+start_container() {
+    local image_tag="$1"
+
+    docker run -d \
+        --name "${CONTAINER_NAME}" \
+        --restart unless-stopped \
+        --network "${NETWORK_NAME}" \
+        -p ${WEB_PORT}:80 \
+        -v "${LOG_DIR}:/var/log/nginx" \
+        -e TZ=Asia/Shanghai \
+        --health-cmd="wget --quiet --tries=1 --spider http://localhost/health || exit 1" \
+        --health-interval=30s \
+        --health-timeout=3s \
+        --health-start-period=10s \
+        --health-retries=3 \
+        "${image_tag}"
+}
+
+# ==================== 健康检查 ====================
+health_check() {
+    log_step "健康检查..."
+    local retries=0
+    local max_retries=15
+
+    while [ ${retries} -lt ${max_retries} ]; do
+        local status
+        status=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "starting")
+
+        case "${status}" in
+            healthy)
+                log_info "服务健康检查通过"
+                return 0
+                ;;
+            unhealthy)
+                log_error "服务健康检查失败"
+                docker logs --tail 30 "${CONTAINER_NAME}"
+                return 1
+                ;;
+            *)
+                retries=$((retries + 1))
+                echo -ne "\r  等待健康检查... (${retries}/${max_retries})"
+                sleep 2
+                ;;
+        esac
+    done
+
+    echo ""
+    if docker ps -q -f name="${CONTAINER_NAME}" &>/dev/null; then
+        log_warn "容器运行中，但健康检查未通过，请手动确认"
+        docker logs --tail 10 "${CONTAINER_NAME}"
+    else
+        log_error "容器未运行"
+        docker logs --tail 30 "${CONTAINER_NAME}"
+        return 1
+    fi
+}
+
+# ==================== 部署 (仅启动，不构建) ====================
+do_deploy() {
+    check_docker
+    ensure_network
+    mkdir -p "${BACKUP_DIR}" "${LOG_DIR}"
+
+    # 从仓库拉取最新镜像
+    log_step "拉取镜像: ${REGISTRY}:${REGISTRY_TAG}"
+    docker pull "${REGISTRY}:${REGISTRY_TAG}"
+
+    local image_tag="${REGISTRY}:${REGISTRY_TAG}"
+
+    log_info "=========================================="
+    log_info "  部署 ${APP_NAME}"
+    log_info "  镜像: ${image_tag}"
+    log_info "=========================================="
+
+    # 备份当前版本
+    backup_current
+
+    # 停止旧容器
+    log_step "停止旧容器..."
+    docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+    docker rm "${CONTAINER_NAME}" 2>/dev/null || true
+
+    # 启动新容器
+    log_step "启动新容器..."
+    start_container "${image_tag}"
+
+    # 健康检查
+    health_check
+
+    log_info "=========================================="
+    log_info "  部署完成"
+    log_info "  访问: http://localhost:${WEB_PORT}"
+    log_info "=========================================="
+}
+
+# ==================== 回滚 ====================
+do_rollback() {
+    check_docker
+    ensure_network
+    mkdir -p "${LOG_DIR}"
+
+    local latest_backup
+    latest_backup=$(docker images "${IMAGE_NAME}" --format '{{.Tag}}' | grep '^backup-' | sort -r | head -1)
+
+    if [ -z "${latest_backup}" ]; then
+        log_error "没有可用的备份镜像"
+        exit 1
+    fi
+
+    log_info "回滚到: ${IMAGE_NAME}:${latest_backup}"
+
+    docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+    docker rm "${CONTAINER_NAME}" 2>/dev/null || true
+
+    start_container "${IMAGE_NAME}:${latest_backup}"
+    health_check
+    log_info "回滚完成"
+}
+
+# ==================== 重启 ====================
+do_restart() {
+    log_step "重启 ${CONTAINER_NAME}..."
+    docker restart "${CONTAINER_NAME}"
+    health_check
+    log_info "重启完成"
+}
+
+# ==================== 停止 ====================
+do_stop() {
+    log_step "停止服务..."
+    docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+    log_info "服务已停止"
+}
+
+# ==================== 状态 ====================
+do_status() {
+    echo ""
+    echo "===== 容器状态 ====="
+    docker ps -a --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+    echo ""
+    echo "===== 可用镜像 ====="
+    docker images "${IMAGE_NAME}" --format "table {{.Tag}}\t{{.Size}}\t{{.CreatedSince}}" | head -10
+    echo ""
+    local health
+    health=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "未运行")
+    echo "健康状态: ${health}"
+    echo ""
+}
+
+# ==================== 日志 ====================
+do_logs() {
+    local lines=${1:-100}
+    docker logs --tail "${lines}" -f "${CONTAINER_NAME}"
+}
+
+# ==================== 清理 ====================
+do_cleanup() {
+    log_step "清理无用镜像..."
+    docker image prune -f
+    docker images "${IMAGE_NAME}" -f "dangling=true" -q | xargs -r docker rmi 2>/dev/null || true
+    log_info "清理完成"
+}
+
+# ==================== 主入口 ====================
+usage() {
+    echo "用法: $0 <命令> [选项]"
+    echo ""
+    echo "命令:"
+    echo "  build     构建镜像并推送到阿里云仓库 (可选: PULL=true 先拉取代码)"
+    echo "  deploy    从仓库拉取镜像并部署"
+    echo "  rollback  回滚到上一个版本"
+    echo "  restart   重启服务"
+    echo "  stop      停止服务"
+    echo "  status    查看服务状态"
+    echo "  logs      查看日志 (可选参数: 行数，默认100)"
+    echo "  cleanup   清理无用镜像"
+    echo ""
+    echo "示例:"
+    echo "  $0 build                    # 构建并推送镜像"
+    echo "  PULL=true $0 build          # 拉取代码后构建并推送"
+    echo "  $0 deploy                   # 拉取镜像并部署"
+    echo ""
+    echo "仓库: ${REGISTRY}:${REGISTRY_TAG}"
+    echo ""
+}
+
+case "${1:-}" in
+    build)    do_build ;;
+    deploy)   do_deploy ;;
+    rollback) do_rollback ;;
+    restart)  do_restart ;;
+    stop)     do_stop ;;
+    status)   do_status ;;
+    logs)     do_logs "${2:-100}" ;;
+    cleanup)  do_cleanup ;;
+    *)        usage; exit 1 ;;
+esac
