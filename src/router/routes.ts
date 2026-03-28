@@ -344,6 +344,16 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Lock',
                 },
             },
+            // ==================== 镜像管理路由 ====================
+            {
+                path: '/compute/image',
+                name: 'ComputeImage',
+                component: () => import('@/views/compute/image/index.vue'),
+                meta: {
+                    title: '镜像管理',
+                    icon: 'Picture',
+                },
+            },
             // ==================== 主机模板与创建路由 ====================
             {
                 path: '/compute/template',

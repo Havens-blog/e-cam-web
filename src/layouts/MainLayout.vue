@@ -354,6 +354,7 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-disk', path: '/compute/disk', title: '云盘' },
               { key: 'assets-snapshot', path: '/compute/snapshot', title: '快照' },
               { key: 'assets-security-group', path: '/compute/security-group', title: '安全组' },
+              { key: 'assets-image', path: '/compute/image', title: '镜像管理' },
             ]
           },
           {

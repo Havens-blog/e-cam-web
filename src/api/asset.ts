@@ -440,3 +440,49 @@ export function getWAFAssetApi(assetId: string, params?: { tenant_id?: string; p
         interceptorsToOnce: createAssetApiInterceptor()
     })
 }
+
+
+// ==================== Image (镜像) API ====================
+
+/** 镜像列表查询参数 */
+export interface ListImageParams extends ListAssetsParams {
+    image_owner_alias?: string  // system, self, others, marketplace
+    os_type?: string            // linux, windows
+    platform?: string           // CentOS, Ubuntu, Windows Server
+    architecture?: string       // x86_64, arm64
+}
+
+/** 镜像统计响应 */
+export interface ImageStatsResponse {
+    total: number
+    system: number
+    custom: number
+    shared: number
+}
+
+/** 获取镜像列表 */
+export function listImageAssetsApi(params?: ListImageParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/image`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取镜像详情 */
+export function getImageAssetApi(assetId: string, params?: { provider?: string }) {
+    return instance.get<Asset>({
+        url: `${API_SERVICE.CAM}/assets/image/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取镜像统计 */
+export function getImageStatsApi(params?: { account_id?: number; provider?: string }) {
+    return instance.get<ImageStatsResponse>({
+        url: `${API_SERVICE.CAM}/assets/image/stats`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
