@@ -507,33 +507,34 @@
 <script setup lang="ts">
 import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
-    bindResourceApi,
-    deleteNodeApi,
-    getNodeAssetStatsApi,
-    listEnvironmentsApi,
-    listNodeAssetsApi,
-    listNodeBindingsApi,
-    listNodesApi,
-    unbindResourceApi
+  bindResourceApi,
+  deleteNodeApi,
+  getNodeAssetStatsApi,
+  listEnvironmentsApi,
+  listNodeAssetsApi,
+  listNodeBindingsApi,
+  listNodesApi,
+  unbindResourceApi
 } from '@/api/service-tree'
 import type { AssetStatsVO, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
-    Delete,
-    Document,
-    Edit,
-    Folder,
-    Link,
-    Plus,
-    Rank,
-    Refresh,
-    Search
+  Delete,
+  Document,
+  Edit,
+  Folder,
+  Link,
+  Plus,
+  Rank,
+  Refresh,
+  Search
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import BindResourceDialog from './components/BindResourceDialog.vue'
 import MoveNodeDialog from './components/MoveNodeDialog.vue'
 import NodeFormDialog from './components/NodeFormDialog.vue'
+import ResourceDetailDrawer, { type ResourceData } from './components/ResourceDetailDrawer.vue'
 import UnbindConfirmDialog from './components/UnbindConfirmDialog.vue'
 
 // 树形数据
@@ -613,8 +614,6 @@ const getStatusText = (status?: string): string => {
 const selectedNode = ref<ServiceTreeNode | null>(null)
 const nodePath = ref<string[]>([])
 
-// 是否为根节点（parent_id === 0）
-const isRootNode = computed(() => selectedNode.value?.parent_id === 0)
 // 环境列表
 const environmentList = ref<Environment[]>([])
 

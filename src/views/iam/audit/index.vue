@@ -218,7 +218,7 @@
 import { listAuditLogsApi, listTenantsApi } from '@/api/iam'
 import type { AuditLog, Tenant } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
-import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES } from '@/utils/constants'
+import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType } from '@/utils/constants'
 import { Document, Download, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -370,7 +370,7 @@ const getOperationTypeLabel = (type: string): string => {
 }
 
 // 获取操作类型颜色
-const getOperationTypeColor = (type: string): string => {
+const getOperationTypeColor = (type: string) => {
   const colorMap: Record<string, string> = {
     create: 'success',
     update: 'warning',
@@ -378,7 +378,7 @@ const getOperationTypeColor = (type: string): string => {
     query: 'info',
     sync: 'primary'
   }
-  return colorMap[type] || 'info'
+  return safeTagType(colorMap[type] || 'info')
 }
 
 // 获取目标类型标签

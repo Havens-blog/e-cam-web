@@ -344,6 +344,26 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Lock',
                 },
             },
+            // ==================== 主机模板与创建路由 ====================
+            {
+                path: '/compute/template',
+                name: 'ComputeTemplate',
+                component: () => import('@/views/compute/template/index.vue'),
+                meta: {
+                    title: '主机模板',
+                    icon: 'DocumentCopy',
+                },
+            },
+            {
+                path: '/compute/template/create',
+                name: 'ComputeProvision',
+                component: () => import('@/views/compute/provision/index.vue'),
+                meta: {
+                    title: '直接创建云主机',
+                    icon: 'Monitor',
+                    hideInMenu: true,
+                },
+            },
             // ==================== 告警中心路由 ====================
             {
                 path: '/alert',
@@ -396,6 +416,16 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('@/views/audit/changes/index.vue'),
                 meta: {
                     title: '资产变更历史',
+                    icon: 'List',
+                },
+            },
+            // ==================== 数据字典路由 ====================
+            {
+                path: '/system/dictionary',
+                name: 'DataDictionary',
+                component: () => import('@/views/system/dictionary/index.vue'),
+                meta: {
+                    title: '数据字典',
                     icon: 'List',
                 },
             },

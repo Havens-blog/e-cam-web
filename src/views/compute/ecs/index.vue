@@ -9,15 +9,15 @@
           <span class="tab-item">公有云</span>
         </div>
         <div class="stats-badges">
-          <div class="stat-badge">
+          <div class="stat-badge" :class="{ active: !activeStatFilter }" @click="handleStatBadgeClick('')">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ pagination.total }}</span>
+            <span class="stat-num">{{ totalCount }}</span>
           </div>
-          <div class="stat-badge">
+          <div class="stat-badge" :class="{ active: activeStatFilter === 'running' }" @click="handleStatBadgeClick('running')">
             <span class="stat-label">运行中</span>
             <span class="stat-num blue">{{ runningCount }}</span>
           </div>
-          <div class="stat-badge">
+          <div class="stat-badge" :class="{ active: activeStatFilter === 'stopped' }" @click="handleStatBadgeClick('stopped')">
             <span class="stat-label">关机</span>
             <span class="stat-num">{{ stoppedCount }}</span>
           </div>
@@ -476,18 +476,18 @@ import { listECSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import {
-    ArrowDown,
-    ArrowLeft,
-    ArrowRight,
-    Box,
-    Check,
-    Download,
-    Lock,
-    Plus,
-    PriceTag,
-    Refresh,
-    Search,
-    Setting
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Box,
+  Check,
+  Download,
+  Lock,
+  Plus,
+  PriceTag,
+  Refresh,
+  Search,
+  Setting
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -772,6 +772,10 @@ const applySearchConditions = () => {
     }
   })
 
+  // 同步统计卡片高亮状态
+  const statusCond = searchConditions.value.find(c => c.field === 'status')
+  activeStatFilter.value = statusCond?.value || ''
+
   pagination.page = 1
   fetchInstances()
 }
@@ -862,14 +866,53 @@ const pageTitle = computed(() => {
 })
 
 const dialogTitle = computed(() => (isEdit.value ? '编辑实例' : '创建实例'))
-const runningCount = computed(() => instances.value.filter(i => {
-  const status = i.attributes?.status?.toUpperCase()
-  return status === 'RUNNING'
-}).length)
-const stoppedCount = computed(() => instances.value.filter(i => {
-  const status = i.attributes?.status?.toUpperCase()
-  return status === 'STOPPED'
-}).length)
+
+// 全局状态统计（从后端获取，非当前页）
+const totalCount = ref(0)
+const runningCount = ref(0)
+const stoppedCount = ref(0)
+
+const fetchStatusCounts = async () => {
+  try {
+    const [totalRes, runningRes, stoppedRes] = await Promise.all([
+      listECSAssetsApi({ limit: 1, offset: 0 }),
+      listECSAssetsApi({ status: 'running', limit: 1, offset: 0 }),
+      listECSAssetsApi({ status: 'stopped', limit: 1, offset: 0 }),
+    ])
+    const totalData = (totalRes as any).data || totalRes
+    const runningData = (runningRes as any).data || runningRes
+    const stoppedData = (stoppedRes as any).data || stoppedRes
+    totalCount.value = totalData.total || 0
+    runningCount.value = runningData.total || 0
+    stoppedCount.value = stoppedData.total || 0
+  } catch {
+    // 统计请求失败不影响主流程
+  }
+}
+
+// 统计卡片点击筛选
+const activeStatFilter = ref('')
+
+const handleStatBadgeClick = (status: string) => {
+  // 点击已激活的卡片 或 点击"总数"，清除状态筛选
+  if (activeStatFilter.value === status || !status) {
+    activeStatFilter.value = ''
+    // 移除搜索条件中的状态条件
+    const idx = searchConditions.value.findIndex(c => c.field === 'status')
+    if (idx > -1) searchConditions.value.splice(idx, 1)
+  } else {
+    activeStatFilter.value = status
+    const displayMap: Record<string, string> = { running: '运行中', stopped: '已关机' }
+    const existingIdx = searchConditions.value.findIndex(c => c.field === 'status')
+    const cond = { field: 'status', value: status, displayValue: displayMap[status] || status }
+    if (existingIdx > -1) {
+      searchConditions.value[existingIdx] = cond
+    } else {
+      searchConditions.value.push(cond)
+    }
+  }
+  applySearchConditions()
+}
 
 // 辅助函数
 const getStatusClass = (status: string | undefined) => {
@@ -1058,6 +1101,8 @@ const fetchInstances = async () => {
     const responseData = (res as any).data || res
     instances.value = responseData.items || []
     pagination.total = responseData.total || 0
+    // 同步刷新全局状态统计
+    fetchStatusCounts()
   } catch (error: any) {
     console.error('获取实例列表失败:', error)
     ElMessage.error('获取实例列表失败')
@@ -1255,6 +1300,18 @@ watch(
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   min-width: 60px;
+  cursor: pointer;
+  transition: all 200ms ease;
+
+  &:hover {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  &.active {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+  }
 
   .stat-label {
     font-size: 11px;

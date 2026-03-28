@@ -124,7 +124,7 @@
 <script setup lang="ts">
 import { listCloudAccountsApi, syncUsersApi } from '@/api'
 import TenantSelector from '@/components/TenantSelector.vue'
-import { getProviderLabel } from '@/utils/constants'
+import { getProviderLabel, safeTagType } from '@/utils/constants'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 

@@ -191,8 +191,8 @@ const handleGenerate = async () => {
     // 构建报告参数
     const reportParams = {
       name: formData.name,
-      start_time: formData.dateRange?.[0].toISOString(),
-      end_time: formData.dateRange?.[1].toISOString(),
+      start_time: formData.dateRange![0].toISOString(),
+      end_time: formData.dateRange![1].toISOString(),
       tenant_ids: formData.tenantIds.length > 0 ? formData.tenantIds : undefined,
       report_type: formData.reportType,
       format: formData.format,
@@ -218,7 +218,8 @@ const handleGenerate = async () => {
     const response = await generateAuditReportApi(reportParams)
 
     // 下载报告文件
-    const blob = new Blob([response.data], {
+    const responseData = response.data as unknown as BlobPart
+    const blob = new Blob([responseData], {
       type: formData.format === 'pdf' ? 'application/pdf' : 
             formData.format === 'html' ? 'text/html' : 
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

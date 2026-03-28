@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
-import { getEnvironmentLabel, getProviderLabel } from '@/utils/constants'
+import { getEnvironmentLabel, getProviderLabel, safeTagType } from '@/utils/constants'
 import { Setting, User, UserFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 

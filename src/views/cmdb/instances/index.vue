@@ -115,7 +115,7 @@
           <template #default="{ row }">
             <!-- 资产类型 -->
             <template v-if="col.key === 'asset_type'">
-              <el-tag size="small" :type="getAssetTypeTagType(row.uid)">
+              <el-tag size="small" :type="safeTagType(getAssetTypeTagType(row.uid))">
                 {{ getAssetTypeLabel(row.uid) }}
               </el-tag>
             </template>
@@ -225,6 +225,7 @@ import { deleteCmdbInstanceApi, listCmdbInstancesApi, listCmdbModelsApi } from '
 import type { InstanceVO, ModelVO } from '@/api/types/cmdb'
 import IconFont from '@/components/IconFont/index.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { safeTagType } from '@/utils/constants'
 import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -440,7 +441,7 @@ const fetchInstances = async () => {
 
     const res = await listCmdbInstancesApi(params)
     const data = res.data?.data || res.data
-    instances.value = data?.instances || data?.items || []
+    instances.value = data?.instances || []
     pagination.total = data?.total || 0
 
     // 提取区域选项

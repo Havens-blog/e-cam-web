@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { exportAuditLogsApi } from '@/api/iam'
+import type { ExportAuditLogsParams } from '@/api/types/iam'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
@@ -166,7 +167,7 @@ const handleExport = async () => {
     })
 
     // 调用导出 API
-    const response = await exportAuditLogsApi(exportParams)
+    const response = await exportAuditLogsApi(exportParams as ExportAuditLogsParams)
 
     // 下载文件
     const blob = new Blob([response.data], {

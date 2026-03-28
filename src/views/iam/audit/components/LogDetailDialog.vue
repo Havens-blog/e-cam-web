@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import type { AuditLog } from '@/api/types/iam'
-import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES } from '@/utils/constants'
+import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType } from '@/utils/constants'
 import { computed } from 'vue'
 
 interface Props {
@@ -162,7 +162,7 @@ const getOperationTypeLabel = (type: string): string => {
 }
 
 // 获取操作类型颜色
-const getOperationTypeColor = (type: string): string => {
+const getOperationTypeColor = (type: string) => {
   const colorMap: Record<string, string> = {
     create: 'success',
     update: 'warning',
@@ -170,7 +170,7 @@ const getOperationTypeColor = (type: string): string => {
     query: 'info',
     sync: 'primary'
   }
-  return colorMap[type] || 'info'
+  return safeTagType(colorMap[type] || 'info')
 }
 
 // 获取目标类型标签

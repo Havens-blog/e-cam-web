@@ -145,10 +145,10 @@
 import { getSyncTaskStatusApi } from '@/api/iam'
 import type { SyncTask } from '@/api/types/iam'
 import {
-    CLOUD_PROVIDERS,
-    getSyncTaskStatusColor,
-    getSyncTaskStatusLabel,
-    getSyncTaskTypeLabel
+  CLOUD_PROVIDERS,
+  getSyncTaskStatusColor,
+  getSyncTaskStatusLabel,
+  getSyncTaskTypeLabel
 } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -184,12 +184,14 @@ const loadTaskDetail = async () => {
   loading.value = true
   try {
     const res = await getSyncTaskStatusApi(props.taskId)
-    task.value = res.data
+    // API 可能返回 SyncTaskStatusResponse，提取 task 或直接使用
+    const data = res.data as any
+    task.value = data?.task ?? data
 
     // 如果任务正在运行,启动自动刷新
-    if (task.value.status === 'running' && !refreshTimer) {
+    if (task.value?.status === 'running' && !refreshTimer) {
       startAutoRefresh()
-    } else if (task.value.status !== 'running' && refreshTimer) {
+    } else if (task.value?.status !== 'running' && refreshTimer) {
       stopAutoRefresh()
     }
   } catch (error) {

@@ -182,7 +182,7 @@
 
 <script setup lang="ts">
 import { listRDSAssetsApi } from '@/api/asset'
-import type { Asset } from '@/api/types/asset'
+import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -241,7 +241,7 @@ const fetchInstances = async () => {
     const res = await listRDSAssetsApi({
       offset: (pagination.page - 1) * pagination.size,
       limit: pagination.size,
-      provider: filters.provider || undefined,
+      provider: (filters.provider || undefined) as CloudProvider | undefined,
       status: filters.status || undefined,
       name: filters.keyword || undefined,
     })
@@ -260,8 +260,8 @@ const handleRefresh = () => fetchInstances()
 const handleSizeChange = (size: number) => { pagination.size = size; pagination.page = 1; fetchInstances() }
 const handleCurrentChange = (page: number) => { pagination.page = page; fetchInstances() }
 
-const handleSelectAll = (val: boolean) => { selectedIds.value = val ? instances.value.map(i => i.id) : [] }
-const handleSelect = (id: number, val: boolean) => {
+const handleSelectAll = (val: string | number | boolean) => { selectedIds.value = val ? instances.value.map(i => i.id) : [] }
+const handleSelect = (id: number, val: string | number | boolean) => {
   if (val) { selectedIds.value.push(id) } else { selectedIds.value = selectedIds.value.filter(i => i !== id) }
   selectAll.value = selectedIds.value.length === instances.value.length
 }

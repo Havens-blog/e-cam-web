@@ -45,12 +45,12 @@
             @change="handleChange"
             style="width: 130px"
           >
-            <el-option label="计算" value="compute" />
-            <el-option label="存储" value="storage" />
-            <el-option label="网络" value="network" />
-            <el-option label="数据库" value="database" />
-            <el-option label="中间件" value="middleware" />
-            <el-option label="其他" value="other" />
+            <el-option
+              v-for="opt in serviceTypeOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </el-form-item>
 
@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import { listCloudAccountsApi } from '@/api'
+import { useDictionary } from '@/composables/useDictionary'
 import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
 import { Refresh, RefreshLeft } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -115,6 +116,9 @@ export interface CostFilterValues {
   start_date: string
   end_date: string
 }
+
+const { loadDict, getDictOptions } = useDictionary()
+const serviceTypeOptions = getDictOptions('service_type')
 
 const props = defineProps<{
   modelValue: CostFilterValues
@@ -260,6 +264,7 @@ const fetchAccounts = async () => {
 
 onMounted(() => {
   fetchAccounts()
+  loadDict('service_type')
 })
 </script>
 

@@ -12,7 +12,7 @@
               <div class="instance-icon"><el-icon :size="24"><Connection /></el-icon></div>
               <div class="instance-info">
                 <div class="instance-type">CDN 加速域名</div>
-                <div class="instance-name">{{ instance.asset_name || instance.asset_id }}</div>
+                <div class="instance-name">{{ extractDomainFromAsset(instance) }}</div>
               </div>
             </div>
           </div>
@@ -30,8 +30,8 @@
               <div class="detail-column">
                 <div class="column-title">基本信息</div>
                 <div class="info-list">
-                  <div class="info-row"><span class="info-label">域名</span><span class="info-value">{{ instance.asset_name || '-' }}</span></div>
-                  <div class="info-row"><span class="info-label">CNAME</span><span class="info-value mono">{{ instance.attributes?.cname || '-' }}</span></div>
+                  <div class="info-row"><span class="info-label">域名</span><span class="info-value">{{ extractDomainFromAsset(instance) }}</span></div>
+                  <div class="info-row"><span class="info-label">CNAME</span><span class="info-value mono">{{ extractCnameFromAsset(instance) }}</span></div>
                   <div class="info-row"><span class="info-label">状态</span><span class="info-value"><CdnStatusBadge :status="instance.status" /></span></div>
                   <div class="info-row"><span class="info-label">业务类型</span><span class="info-value">{{ getBusinessTypeLabel(instance.attributes?.business_type) }}</span></div>
                   <div class="info-row"><span class="info-label">加速区域</span><span class="info-value">{{ getServiceAreaLabel(instance.attributes?.service_area) }}</span></div>
@@ -74,6 +74,22 @@ import CdnStatusBadge from './CdnStatusBadge.vue'
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
+
+const extractDomainFromAsset = (asset: Asset | null) => {
+  if (!asset) return '-'
+  if (asset.attributes?.domain_name) return asset.attributes.domain_name
+  const name = asset.asset_name || asset.asset_id || ''
+  const idx = name.indexOf('CNAME:')
+  return idx > 0 ? name.substring(0, idx) : name || '-'
+}
+
+const extractCnameFromAsset = (asset: Asset | null) => {
+  if (!asset) return '-'
+  if (asset.attributes?.cname) return asset.attributes.cname
+  const name = asset.asset_name || asset.asset_id || ''
+  const idx = name.indexOf('CNAME:')
+  return idx > 0 ? name.substring(idx + 'CNAME:'.length).trim() : '-'
+}
 
 const getBusinessTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = { web: '网页加速', download: '下载加速', media: '流媒体' }

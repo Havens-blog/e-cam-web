@@ -174,6 +174,7 @@
 import { listOSSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import type { TagType } from '@/utils/constants'
 import { Box, Download, Folder, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
@@ -259,9 +260,9 @@ const getStorageClassText = (type?: string) => {
   const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储', ColdArchive: '冷归档存储' }
   return map[type] || type
 }
-const getStorageClassType = (type?: string): '' | 'success' | 'warning' | 'info' | 'danger' => {
+const getStorageClassType = (type?: string): TagType => {
   if (!type) return 'info'
-  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = { Standard: '', IA: 'warning', Archive: 'info', ColdArchive: 'info' }
+  const map: Record<string, TagType> = { Standard: 'primary', IA: 'warning', Archive: 'info', ColdArchive: 'info' }
   return map[type] || 'info'
 }
 const getAclText = (acl?: string) => {

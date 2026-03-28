@@ -85,19 +85,11 @@
       </div>
       <div class="chart-card">
         <div class="chart-header">
-          <h3>状态分布</h3>
+          <h3>产品成本 TOP10（{{ costMonth }}）</h3>
         </div>
-        <div class="chart-body status-body">
-          <div v-for="item in overview.by_status" :key="item.key" class="status-item">
-            <div class="status-bar-row">
-              <span class="status-name">{{ item.key }}</span>
-              <span class="status-count">{{ item.count }}</span>
-            </div>
-            <div class="status-bar">
-              <div class="status-bar-fill" :style="{ width: statusPercent(item.count) + '%', background: statusColor(item.key) }"></div>
-            </div>
-          </div>
-          <div v-if="!overview.by_status.length" class="empty-tip">暂无数据</div>
+        <div class="chart-body">
+          <div v-if="costByProductItems.length" ref="costByProductChartRef" class="chart-container full"></div>
+          <div v-else class="empty-tip">暂无成本数据</div>
         </div>
       </div>
     </div>
@@ -147,7 +139,9 @@ import {
   type KeyCount,
   type OverviewData
 } from '@/api/dashboard'
+import { getCostDistributionApi } from '@/api/finops'
 import { getGlobalAssetStatsApi } from '@/api/service-tree'
+import type { CostDistItem } from '@/api/types/finops'
 import { Box, CircleCheck, User, Warning } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -164,6 +158,15 @@ const expiringList = ref<ExpiringAsset[]>([])
 const expiringTotal = ref(0)
 const expiringDays = ref(30)
 const expiringLoading = ref(false)
+const costByProductItems = ref<CostDistItem[]>([])
+
+// 上个月的年月标签
+const lastMonth = (() => {
+  const d = new Date()
+  d.setMonth(d.getMonth() - 1)
+  return { year: d.getFullYear(), month: d.getMonth() + 1 }
+})()
+const costMonth = `${lastMonth.year}年${String(lastMonth.month).padStart(2, '0')}月`
 
 const runningCount = computed(() => {
   const r = overview.value.by_status.find(s => s.key.toLowerCase() === 'running')
@@ -192,10 +195,12 @@ const COLORS = ['#3b82f6', '#f59e0b', '#06b6d4', '#10b981', '#8b5cf6', '#ef4444'
 const providerChartRef = ref<HTMLElement>()
 const assetTypeChartRef = ref<HTMLElement>()
 const regionChartRef = ref<HTMLElement>()
+const costByProductChartRef = ref<HTMLElement>()
 const expiringRef = ref<HTMLElement>()
 let providerChart: echarts.ECharts | null = null
 let assetTypeChart: echarts.ECharts | null = null
 let regionChart: echarts.ECharts | null = null
+let costByProductChart: echarts.ECharts | null = null
 
 const providerLegend = computed(() =>
   providerItems.value.map((item, i) => ({
@@ -204,15 +209,6 @@ const providerLegend = computed(() =>
     color: COLORS[i % COLORS.length],
   }))
 )
-
-const statusMaxCount = computed(() => Math.max(...overview.value.by_status.map(s => s.count), 1))
-const statusPercent = (count: number) => (count / statusMaxCount.value) * 100
-const statusColor = (key: string) => {
-  const k = key.toLowerCase()
-  if (k === 'running' || k === 'available') return '#10b981'
-  if (k === 'stopped') return '#ef4444'
-  return '#f59e0b'
-}
 
 const formatNumber = (n: number) => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n)
 
@@ -322,6 +318,56 @@ const initRegionChart = () => {
   })
 }
 
+const initCostByProductChart = () => {
+  if (!costByProductChartRef.value || !costByProductItems.value.length) return
+  costByProductChart = echarts.init(costByProductChartRef.value)
+  const sorted = [...costByProductItems.value].sort((a, b) => b.amount_cny - a.amount_cny)
+  const top10 = sorted.slice(0, 10)
+  // 如果超过10项，将剩余合并为"其他"
+  if (sorted.length > 10) {
+    const otherAmount = sorted.slice(10).reduce((sum, item) => sum + item.amount_cny, 0)
+    top10.push({ key: `其他 (${sorted.length - 10}项)`, amount: 0, amount_cny: otherAmount, percent: 0 })
+  }
+  const reversed = [...top10].reverse()
+  const barColors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#ec4899', '#10b981', '#f97316', '#14b8a6', '#6366f1', '#22d3ee']
+  costByProductChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(23,23,23,0.95)',
+      borderColor: 'rgba(255,255,255,0.1)',
+      textStyle: { color: '#fafafa' },
+      formatter: (params: unknown) => {
+        const list = params as Array<{ name: string; value: number }>
+        const p = list[0]
+        return `${p.name}<br/>¥${p.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      },
+    },
+    grid: { left: '3%', right: '8%', bottom: '3%', top: '5%', containLabel: true },
+    xAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+      axisLabel: {
+        color: '#71717a',
+        formatter: (val: number) => val >= 10000 ? (val / 10000).toFixed(0) + '万' : String(val),
+      },
+    },
+    yAxis: {
+      type: 'category',
+      data: reversed.map(i => i.key),
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+      axisLabel: { color: '#71717a', fontSize: 11 },
+    },
+    series: [{
+      type: 'bar', barWidth: '60%', barMaxWidth: 24,
+      itemStyle: {
+        borderRadius: [0, 4, 4, 0],
+        color: (params: { dataIndex: number }) => barColors[params.dataIndex % barColors.length],
+      },
+      data: reversed.map(i => i.amount_cny),
+    }],
+  })
+}
+
 // ==================== 数据加载 ====================
 const fetchOverview = async () => {
   try {
@@ -363,6 +409,25 @@ const fetchByRegion = async () => {
   }
 }
 
+const fetchCostByProduct = async () => {
+  try {
+    // 查询上个月整月数据
+    const startDate = `${lastMonth.year}-${String(lastMonth.month).padStart(2, '0')}-01`
+    const endDay = new Date(lastMonth.year, lastMonth.month, 0).getDate()
+    const endDate = `${lastMonth.year}-${String(lastMonth.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
+    const res = await getCostDistributionApi({ dimension: 'service_type', start_date: startDate, end_date: endDate })
+    // eslint-disable-next-line -- 响应结构可能被拦截器改写，需要兼容多种格式
+    const d = (res as any).data || res || []
+    costByProductItems.value = Array.isArray(d) ? d : []
+    // 数据到位后在下一帧渲染图表
+    if (costByProductItems.value.length) {
+      nextTick(() => initCostByProductChart())
+    }
+  } catch (e: unknown) {
+    console.error('获取产品成本分布失败:', e)
+  }
+}
+
 const fetchExpiring = async () => {
   expiringLoading.value = true
   try {
@@ -380,10 +445,11 @@ const handleResize = () => {
   providerChart?.resize()
   assetTypeChart?.resize()
   regionChart?.resize()
+  costByProductChart?.resize()
 }
 
 onMounted(async () => {
-  await Promise.all([fetchOverview(), fetchAssetTypeStats(), fetchByRegion(), fetchExpiring()])
+  await Promise.all([fetchOverview(), fetchAssetTypeStats(), fetchByRegion(), fetchCostByProduct(), fetchExpiring()])
   nextTick(() => {
     initProviderChart()
     initAssetTypeChart()
@@ -397,6 +463,7 @@ onUnmounted(() => {
   providerChart?.dispose()
   assetTypeChart?.dispose()
   regionChart?.dispose()
+  costByProductChart?.dispose()
 })
 </script>
 
@@ -501,24 +568,8 @@ onUnmounted(() => {
   }
 }
 
-.status-body {
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 12px !important;
-}
-.status-item {
-  .status-bar-row {
-    display: flex; justify-content: space-between; margin-bottom: 6px;
-    .status-name { font-size: 13px; color: var(--text-secondary); }
-    .status-count { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  }
-  .status-bar {
-    height: 8px; background: var(--bg-hover, rgba(255,255,255,0.06)); border-radius: 4px; overflow: hidden;
-    .status-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-  }
-}
 .empty-tip {
-  text-align: center; color: var(--text-tertiary); padding: 40px 0; font-size: 14px;
+  text-align: center; color: var(--text-tertiary); padding: 40px 0; font-size: 14px; width: 100%;
 }
 
 .expiring-section {

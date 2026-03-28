@@ -6,11 +6,11 @@
 set -euo pipefail
 
 # ==================== 配置 ====================
-APP_NAME="cam-web"
-IMAGE_NAME="cam-web"
-CONTAINER_NAME="cam-web"
+APP_NAME="e-cam-web"
+IMAGE_NAME="e-cam-web"
+CONTAINER_NAME="e-cam-web"
 NETWORK_NAME="ecmdb"
-REGISTRY="registry.cn-shenzhen.aliyuncs.com/havenblog/cam-web"
+REGISTRY="registry.cn-shenzhen.aliyuncs.com/havenblog/e-cam-web"
 REGISTRY_TAG="latest"
 WEB_PORT=80
 DEPLOY_DIR=$(cd "$(dirname "$0")" && pwd)

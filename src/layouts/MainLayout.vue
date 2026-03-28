@@ -17,10 +17,11 @@ import {
   OfficeBuilding,
   Plus,
   Search,
+  Setting,
   Sunny
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -349,6 +350,7 @@ const menuGroups = ref<MenuGroup[]>([
             icon: 'caise-computer',
             children: [
               { key: 'assets-vm', path: '/compute/ecs', title: '虚拟机' },
+              { key: 'assets-template', path: '/compute/template', title: '主机模板' },
               { key: 'assets-disk', path: '/compute/disk', title: '云盘' },
               { key: 'assets-snapshot', path: '/compute/snapshot', title: '快照' },
               { key: 'assets-security-group', path: '/compute/security-group', title: '安全组' },
@@ -452,6 +454,7 @@ const menuGroups = ref<MenuGroup[]>([
       { key: 'audit-logs', path: '/audit/logs', title: '操作审计', icon: 'ops-itsm-logs' },
       { key: 'audit-changes', path: '/audit/changes', title: '变更历史', icon: 'icon-xianxing-chanpin' },
       { key: 'accounts', path: '/accounts', title: '云账号管理', icon: 'icon-xianxing-aliyun' },
+      { key: 'data-dictionary', path: '/system/dictionary', title: '数据字典', icon: 'icon-xianxing-chanpin' },
       {
         key: 'security',
         title: '用户与权限',

@@ -516,6 +516,7 @@ import IconFont from '@/components/IconFont/index.vue';
 import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.vue';
 import SecurityGroupDetailDrawer from '@/views/compute/security-group/components/SecurityGroupDetailDrawer.vue';
 import SnapshotDetailDrawer from '@/views/compute/snapshot/components/SnapshotDetailDrawer.vue';
+import VpcDetailDrawer from '@/views/network/vpc/components/VpcDetailDrawer.vue';
 import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refresh } from '@element-plus/icons-vue';
 import { ref, watch } from 'vue';
 
@@ -810,7 +811,12 @@ const openVpcDetail = () => {
     id: 0,
     asset_id: attrs.vpc_id,
     asset_name: attrs.vpc_name || attrs.vpc_id,
+    asset_type: 'vpc',
     model_uid: 'cloud_vpc',
+    account_id: 0,
+    provider: attrs.provider || '',
+    region: attrs.region || '',
+    status: 'running',
     tenant_id: props.instance?.tenant_id || '',
     create_time: 0,
     update_time: 0,

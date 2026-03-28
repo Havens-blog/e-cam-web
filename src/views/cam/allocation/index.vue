@@ -243,13 +243,13 @@
 
 <script setup lang="ts">
 import {
-  createAllocationRuleApi,
-  deleteAllocationRuleApi,
-  getAllocationTreeApi,
-  listAllocationRulesApi,
-  reallocateCostsApi,
-  setDefaultAllocationPolicyApi,
-  updateAllocationRuleApi
+    createAllocationRuleApi,
+    deleteAllocationRuleApi,
+    getAllocationTreeApi,
+    listAllocationRulesApi,
+    reallocateCostsApi,
+    setDefaultAllocationPolicyApi,
+    updateAllocationRuleApi
 } from '@/api/finops'
 import type { AllocationRule, CreateAllocationRuleRequest, DimensionCombo, DimensionFilter } from '@/api/types/finops'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
@@ -369,11 +369,11 @@ const removeCombo = (idx: number) => {
 }
 
 const addDimension = (comboIdx: number) => {
-  ruleForm.dimension_combos[comboIdx].dimensions.push(emptyDimension())
+  ruleForm.dimension_combos[comboIdx]?.dimensions.push(emptyDimension())
 }
 
 const removeDimension = (comboIdx: number, dimIdx: number) => {
-  ruleForm.dimension_combos[comboIdx].dimensions.splice(dimIdx, 1)
+  ruleForm.dimension_combos[comboIdx]?.dimensions.splice(dimIdx, 1)
 }
 
 const handleSubmitRule = async () => {

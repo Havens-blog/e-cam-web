@@ -317,22 +317,22 @@ import TenantSelector from '@/components/TenantSelector.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'
 import {
-  ArrowLeft,
-  ArrowRight,
-  Close,
-  Connection,
-  Delete,
-  Document,
-  Download,
-  Edit,
-  Folder,
-  MoreFilled,
-  Plus,
-  Refresh,
-  RefreshLeft,
-  Search,
-  User,
-  View
+    ArrowLeft,
+    ArrowRight,
+    Close,
+    Connection,
+    Delete,
+    Document,
+    Download,
+    Edit,
+    Folder,
+    MoreFilled,
+    Plus,
+    Refresh,
+    RefreshLeft,
+    Search,
+    User,
+    View
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -573,7 +573,22 @@ const handleDialogClosed = () => {
   currentGroup.value = null
 }
 
-onMounted(() => {
+// 初始化默认租户
+const initDefaultTenant = async () => {
+  try {
+    const { listTenantsApi } = await import('@/api/iam')
+    const res = await listTenantsApi({ page: 1, size: 1 })
+    const tenants = res.data?.data || []
+    if (tenants.length > 0 && tenants[0]) {
+      filters.tenant_id = tenants[0].id
+    }
+  } catch (error) {
+    console.error('获取默认租户失败:', error)
+  }
+}
+
+onMounted(async () => {
+  await initDefaultTenant()
   fetchGroups()
 })
 </script>

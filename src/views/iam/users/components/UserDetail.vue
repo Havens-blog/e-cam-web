@@ -16,8 +16,8 @@
       
       <el-descriptions-item label="状态">
         <template v-if="user && user.status">
-          <el-tag :type="safeTagType(getUserStatus(user.status).color)" size="small">
-            {{ getUserStatus(user.status).label }}
+          <el-tag :type="safeTagType(getUserStatus(user.status)?.color)" size="small">
+            {{ getUserStatus(user.status)?.label }}
           </el-tag>
         </template>
         <span v-else>-</span>
@@ -102,7 +102,7 @@
 <script setup lang="ts">
 import type { CloudUser } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
-import { getUserStatus, getUserTypeLabel } from '@/utils/constants'
+import { getUserStatus, getUserTypeLabel, safeTagType } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'
 import { Delete, Edit, Setting, Switch } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

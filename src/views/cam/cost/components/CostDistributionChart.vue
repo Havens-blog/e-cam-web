@@ -23,19 +23,13 @@
 
 <script setup lang="ts">
 import type { CostDistItem } from '@/api/types/finops'
+import { useDictionary } from '@/composables/useDictionary'
 import { getProviderLabel } from '@/utils/constants'
 import { Loading } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  compute: '计算',
-  storage: '存储',
-  network: '网络',
-  database: '数据库',
-  middleware: '中间件',
-  other: '其他'
-}
+const { loadDict, getDictLabel } = useDictionary()
 
 const props = defineProps<{
   data: CostDistItem[]
@@ -52,7 +46,7 @@ let chartInstance: echarts.ECharts | null = null
 
 const getLabel = (key: string): string => {
   if (activeDimension.value === 'provider') return getProviderLabel(key) || key
-  if (activeDimension.value === 'service_type') return SERVICE_TYPE_LABELS[key] || key
+  if (activeDimension.value === 'service_type') return getDictLabel('service_type', key)
   return key
 }
 
@@ -146,6 +140,7 @@ watch(() => props.loading, (newVal, oldVal) => {
 })
 
 onMounted(() => {
+  loadDict('service_type')
   nextTick(renderChart)
   window.addEventListener('resize', handleResize)
 })

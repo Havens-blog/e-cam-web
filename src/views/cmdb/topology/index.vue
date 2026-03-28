@@ -531,7 +531,7 @@ const installDragLinkEvents = () => {
     drawDragLine()
   })
 
-  zr.on('mouseup', (e: any) => {
+  zr.on('mouseup', (_e: any) => {
     if (!dragState.dragging) return
 
     if (dragState.hoverTarget && dragState.sourceNode) {
@@ -568,8 +568,8 @@ const findNodeAtPoint = (c: echarts.ECharts, point: number[]): number => {
     const pos = c.convertToPixel({ seriesIndex: 0 }, [node.x ?? 0, node.y ?? 0])
     if (!pos) continue
     const size = typeof node.symbolSize === 'number' ? node.symbolSize : 40
-    const dx = point[0] - pos[0]
-    const dy = point[1] - pos[1]
+    const dx = (point[0] ?? 0) - (pos[0] ?? 0)
+    const dy = (point[1] ?? 0) - (pos[1] ?? 0)
     if (Math.sqrt(dx * dx + dy * dy) <= size * 0.7) {
       return i
     }

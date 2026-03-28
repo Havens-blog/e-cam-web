@@ -131,8 +131,8 @@
           </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="{ row }">
-              <el-tag v-if="row.status" :type="safeTagType(getUserStatus(row.status).color)" size="small">
-                {{ getUserStatus(row.status).label }}
+              <el-tag v-if="row.status" :type="safeTagType(getUserStatus(row.status)?.color)" size="small">
+                {{ getUserStatus(row.status)?.label }}
               </el-tag>
               <span v-else>-</span>
             </template>
@@ -168,7 +168,7 @@ import type { CloudUser, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
-import { getUserStatus, getUserTypeLabel } from '@/utils/constants'
+import { getUserStatus, getUserTypeLabel, safeTagType } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'
 import { Delete, Edit, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

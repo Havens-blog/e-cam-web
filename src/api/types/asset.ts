@@ -26,7 +26,17 @@ export interface Asset {
     attributes: Record<string, any>
     create_time: number
     update_time: number
+    /** 可选字段 - 部分接口返回 */
+    tags?: Tag[]
+    metadata?: Record<string, any>
+    cost?: number
+    zone?: string
+    discover_time?: string
+    model_uid?: string
 }
+
+/** 资产详情（含扩展字段） */
+export type AssetDetail = Asset
 
 /** 资产列表查询参数 */
 export interface ListAssetsParams {
@@ -43,8 +53,12 @@ export interface ListAssetsParams {
 /** 资产列表响应 */
 export interface AssetListResponse {
     items: Asset[]
+    assets?: Asset[]
     total: number
 }
+
+/** 资产标签（formatters 使用） */
+export type AssetTag = Tag
 
 /** 资产详情响应 */
 export interface AssetDetailResponse {

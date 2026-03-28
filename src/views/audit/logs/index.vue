@@ -125,9 +125,12 @@
 <script setup lang="ts">
 import type { AuditLog, AuditLogParams } from '@/api/audit'
 import { exportAuditLogsApi, listAuditLogsApi } from '@/api/audit'
+import { useDictionary } from '@/composables/useDictionary'
 import { CircleCheck, CircleClose, Document, Download, Refresh, Timer } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+
+const { loadDict, getDictOptions } = useDictionary()
 
 const loading = ref(false)
 const logList = ref<AuditLog[]>([])
@@ -146,15 +149,7 @@ const filters = reactive<AuditLogParams>({
 })
 
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-const opTypes = [
-  { label: '查询', value: 'query' },
-  { label: '创建', value: 'create' },
-  { label: '更新', value: 'update' },
-  { label: '删除', value: 'delete' },
-  { label: '同步', value: 'sync' },
-  { label: '导入', value: 'import' },
-  { label: '导出', value: 'export' },
-]
+const opTypes = getDictOptions('operation_type')
 
 const successCount = computed(() => logList.value.filter(l => l.result === 'success').length)
 const failCount = computed(() => logList.value.filter(l => l.result !== 'success').length)
@@ -264,7 +259,7 @@ function opTypeTag(type: string): 'success' | 'primary' | 'warning' | 'danger' |
 }
 
 function opTypeLabel(type: string) {
-  const found = opTypes.find(o => o.value === type)
+  const found = opTypes.value.find(o => o.value === type)
   return found ? found.label : type
 }
 
@@ -277,6 +272,7 @@ function formatJson(str: string) {
 }
 
 onMounted(() => {
+  loadDict('operation_type')
   fetchLogs()
 })
 </script>

@@ -111,8 +111,8 @@ const severityLabel = (s: string) => {
   return m[s] || s
 }
 const severityTagType = (s: string) => {
-  const m: Record<string, string> = { info: '', warning: 'warning', critical: 'danger' }
-  return (m[s] || '') as '' | 'warning' | 'danger'
+  const m: Record<string, string> = { info: 'info', warning: 'warning', critical: 'danger' }
+  return (m[s] || 'info') as 'info' | 'warning' | 'danger'
 }
 const statusLabel = (s: string) => {
   const m: Record<string, string> = { pending: '待发送', sent: '已发送', failed: '发送失败', silenced: '已静默' }

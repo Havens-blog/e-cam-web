@@ -234,7 +234,7 @@ const handleManageGroups = (user: CloudUser) => {
 const fetchPermissionGroups = async () => {
   try {
     const { data } = await listGroupsApi({ size: 100 })
-    permissionGroups.value = data.groups
+    permissionGroups.value = data.groups ?? data.data ?? []
   } catch (error) {
     console.error('获取权限组列表失败:', error)
   }

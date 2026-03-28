@@ -157,7 +157,7 @@
                 size="small"
                 style="width: 160px"
               />
-              <span class="threshold-hint">{{ (form.thresholds[idx] * 100).toFixed(0) }}%</span>
+              <span class="threshold-hint">{{ ((form.thresholds[idx] ?? 0) * 100).toFixed(0) }}%</span>
               <el-button
                 link
                 type="danger"

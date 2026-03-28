@@ -82,6 +82,7 @@ export interface ColumnConfig {
   key: string
   label: string
   width?: number
+  minWidth?: number
   visible: boolean
 }
 

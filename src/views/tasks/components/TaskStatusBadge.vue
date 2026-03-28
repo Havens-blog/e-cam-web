@@ -9,12 +9,13 @@
 
 <script setup lang="ts">
 import type { TaskStatus } from '@/api/types/task'
+import type { TagType } from '@/utils/constants'
 import {
-  CircleCloseFilled,
-  Loading,
-  RemoveFilled,
-  SuccessFilled,
-  WarningFilled,
+    CircleCloseFilled,
+    Loading,
+    RemoveFilled,
+    SuccessFilled,
+    WarningFilled,
 } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 

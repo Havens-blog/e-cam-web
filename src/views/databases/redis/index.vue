@@ -126,7 +126,7 @@
 
 <script setup lang="ts">
 import { listRedisAssetsApi } from '@/api/asset'
-import type { Asset } from '@/api/types/asset'
+import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -177,7 +177,7 @@ const handleColumnSettingsChange = (columns: ColumnConfig[]) => { columnSettings
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const res = await listRedisAssetsApi({ offset: (pagination.page - 1) * pagination.size, limit: pagination.size, provider: filters.provider || undefined, status: filters.status || undefined, name: filters.keyword || undefined })
+    const res = await listRedisAssetsApi({ offset: (pagination.page - 1) * pagination.size, limit: pagination.size, provider: (filters.provider || undefined) as CloudProvider | undefined, status: filters.status || undefined, name: filters.keyword || undefined })
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
@@ -188,8 +188,8 @@ const handleSearch = () => { pagination.page = 1; fetchInstances() }
 const handleRefresh = () => fetchInstances()
 const handleSizeChange = (size: number) => { pagination.size = size; pagination.page = 1; fetchInstances() }
 const handleCurrentChange = (page: number) => { pagination.page = page; fetchInstances() }
-const handleSelectAll = (val: boolean) => { selectedIds.value = val ? instances.value.map(i => i.id) : [] }
-const handleSelect = (id: number, val: boolean) => { if (val) { selectedIds.value.push(id) } else { selectedIds.value = selectedIds.value.filter(i => i !== id) }; selectAll.value = selectedIds.value.length === instances.value.length }
+const handleSelectAll = (val: string | number | boolean) => { selectedIds.value = val ? instances.value.map(i => i.id) : [] }
+const handleSelect = (id: number, val: string | number | boolean) => { if (val) { selectedIds.value.push(id) } else { selectedIds.value = selectedIds.value.filter(i => i !== id) }; selectAll.value = selectedIds.value.length === instances.value.length }
 const handleRowClick = (item: Asset) => { handleViewDetail(item) }
 const handleViewDetail = (item: Asset) => { detailInstance.value = item; detailDrawerVisible.value = true }
 const handleAction = (cmd: string, item: Asset) => { if (cmd === 'view') handleViewDetail(item) }

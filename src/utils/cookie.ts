@@ -8,7 +8,7 @@ const ECMDB_TOKEN_KEY = 'ecmdb-token-key'
 /** 从 cookie 中获取 ecmdb session token */
 export function getEcmdbToken(): string | undefined {
     const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${ECMDB_TOKEN_KEY}=([^;]*)`))
-    return match ? decodeURIComponent(match[1]) : undefined
+    return match ? decodeURIComponent(match[1]!) : undefined
 }
 
 /** 删除 ecmdb session token cookie */

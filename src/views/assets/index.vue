@@ -279,12 +279,13 @@
 
 <script setup lang="ts">
 import {
-    deleteAssetApi,
-    listAssetsApi,
-    submitDiscoverAssetsTaskApi,
-    submitSyncAssetsTaskApi,
-    updateAssetApi,
+  deleteAssetApi,
+  listAssetsApi,
+  submitDiscoverAssetsTaskApi,
+  submitSyncAssetsTaskApi,
+  updateAssetApi,
 } from '@/api'
+import type * as asset from '@/api/types/asset'
 import type { Asset } from '@/api/types/asset'
 import DetailDrawer from '@/components/DetailDrawer/index.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
@@ -343,16 +344,16 @@ const fetchAssets = async () => {
   loading.value = true
   try {
     const params = {
-      provider: filters.provider || undefined,
+      provider: (filters.provider || undefined) as asset.CloudProvider | undefined,
       asset_type: filters.asset_type || undefined,
       region: filters.region || undefined,
       status: filters.status || undefined,
-      asset_name: filters.asset_name || undefined,
+      name: filters.asset_name || undefined,
       offset: (pagination.page - 1) * pagination.size,
       limit: pagination.size,
     }
     const { data } = await listAssetsApi(params)
-    assets.value = data.assets || []
+    assets.value = data.items || data.assets || []
     pagination.total = data.total || 0
   } catch (error: any) {
     ElMessage.error(error.message || '获取资产列表失败')
@@ -396,7 +397,7 @@ const handleEdit = (asset: Asset) => {
   editForm.id = asset.id
   editForm.asset_name = asset.asset_name
   editForm.status = asset.status
-  editForm.cost = asset.cost
+  editForm.cost = asset.cost ?? 0
   editDialogVisible.value = true
 }
 
@@ -409,8 +410,7 @@ const submitEdit = async () => {
 
   updating.value = true
   try {
-    await updateAssetApi({
-      id: editForm.id,
+    await updateAssetApi(editForm.id, {
       asset_name: editForm.asset_name,
       status: editForm.status,
       cost: editForm.cost,

@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
 // CAM Web 根组件
-const isDev = computed(() => import.meta.env.DEV)
 </script>
 
 <template>

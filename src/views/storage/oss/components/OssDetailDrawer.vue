@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
+import { safeTagType } from '@/utils/constants';
 import { ArrowDown, Close, Document, Folder } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -99,7 +100,7 @@ defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
 
 const getStorageClassText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储', ColdArchive: '冷归档存储' }; return map[type] || type }
-const getStorageClassType = (type?: string) => { if (!type) return 'info'; const map: Record<string, string> = { Standard: '', IA: 'warning', Archive: 'info' }; return map[type] || 'info' }
+const getStorageClassType = (type?: string) => { if (!type) return 'info'; const map: Record<string, string> = { Standard: 'info', IA: 'warning', Archive: 'info' }; return safeTagType(map[type] || 'info') }
 const getAclText = (acl?: string) => { if (!acl) return '-'; const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[acl] || acl }
 const formatNumber = (num?: number) => { if (!num) return '0'; return num.toLocaleString() }
 const formatStorageSize = (size?: number) => { if (!size) return '-'; if (size >= 1024 * 1024 * 1024) return `${(size / 1024 / 1024 / 1024).toFixed(2)} TB`; if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(2)} GB`; if (size >= 1024) return `${(size / 1024).toFixed(2)} MB`; return `${size} KB` }

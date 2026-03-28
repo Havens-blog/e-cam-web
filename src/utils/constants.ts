@@ -1,15 +1,18 @@
 /**
  * CAM 模块常量定义
+ *
+ * 注意：简单枚举列表已迁移至数据字典系统，通过 useDictionary composable 获取。
+ * 本文件保留复杂映射关系、配置对象、表单规则、错误码和工具函数。
  */
 
 // ==================== el-tag type 安全类型 ====================
 
 /** el-tag 组件允许的 type 值 */
-export type TagType = '' | 'success' | 'warning' | 'primary' | 'info' | 'danger'
+export type TagType = 'success' | 'warning' | 'primary' | 'info' | 'danger'
 
 /** 确保值是合法的 el-tag type，防止 null/undefined/非法值导致 validator 警告 */
 export function safeTagType(value: string | null | undefined): TagType {
-    const valid: TagType[] = ['', 'success', 'warning', 'primary', 'info', 'danger']
+    const valid: TagType[] = ['success', 'warning', 'primary', 'info', 'danger']
     return valid.includes(value as TagType) ? (value as TagType) : 'info'
 }
 
@@ -172,6 +175,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     }
 }
 
+/** @deprecated 请使用 useDictionary composable 从 'cloud_provider' 字典获取。保留此导出以兼容现有组件。 */
 export const CLOUD_PROVIDERS = Object.values(PROVIDER_CONFIGS).map((config) => ({
     value: config.id,
     label: config.displayName,
@@ -179,8 +183,9 @@ export const CLOUD_PROVIDERS = Object.values(PROVIDER_CONFIGS).map((config) => (
     color: config.color
 }))
 
-// ==================== 资产类型常量 ====================
+// ==================== 已迁移常量（保留 deprecated 导出以兼容现有组件） ====================
 
+/** @deprecated 请使用 useDictionary composable 从 'asset_type' 字典获取。 */
 export const ASSET_TYPES = [
     { value: 'compute', label: '计算服务' },
     { value: 'database', label: '数据库服务' },
@@ -190,6 +195,116 @@ export const ASSET_TYPES = [
     { value: 'security', label: '安全服务' },
     { value: 'monitor', label: '监控服务' }
 ]
+
+/** @deprecated 请使用 useDictionary composable 从 'asset_status' 字典获取。 */
+export const ASSET_STATUS = [
+    { value: 'running', label: '运行中', color: 'success' },
+    { value: 'stopped', label: '已停止', color: 'info' },
+    { value: 'starting', label: '启动中', color: 'warning' },
+    { value: 'stopping', label: '停止中', color: 'warning' },
+    { value: 'pending', label: '创建中', color: 'warning' },
+    { value: 'rebooting', label: '重启中', color: 'warning' },
+    { value: 'terminated', label: '已销毁', color: 'danger' },
+    { value: 'deleted', label: '已删除', color: 'danger' },
+    { value: 'error', label: '异常', color: 'danger' },
+    { value: 'unknown', label: '未知', color: 'info' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'account_status' 字典获取。 */
+export const ACCOUNT_STATUS = [
+    { value: 'active', label: '活跃', color: 'success' },
+    { value: 'disabled', label: '禁用', color: 'info' },
+    { value: 'error', label: '错误', color: 'danger' },
+    { value: 'testing', label: '测试中', color: 'warning' },
+    { value: 'inactive', label: '未激活', color: 'info' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'tenant_status' 字典获取。 */
+export const TENANT_STATUS = [
+    { value: 'active', label: '活跃', color: 'success' },
+    { value: 'inactive', label: '非活跃', color: 'info' },
+    { value: 'suspended', label: '暂停', color: 'warning' },
+    { value: 'deleted', label: '已删除', color: 'danger' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'industry' 字典获取。 */
+export const INDUSTRIES = [
+    { value: 'technology', label: '科技' },
+    { value: 'finance', label: '金融' },
+    { value: 'healthcare', label: '医疗' },
+    { value: 'education', label: '教育' },
+    { value: 'retail', label: '零售' },
+    { value: 'manufacturing', label: '制造' },
+    { value: 'other', label: '其他' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'region_group' 字典获取。 */
+export const REGIONS = [
+    { value: 'cn-north', label: '华北' },
+    { value: 'cn-east', label: '华东' },
+    { value: 'cn-south', label: '华南' },
+    { value: 'cn-west', label: '华西' },
+    { value: 'cn-central', label: '华中' },
+    { value: 'overseas', label: '海外' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'user_type' 字典获取。 */
+export const USER_TYPES = [
+    { value: 'api_key', label: 'API Key' },
+    { value: 'access_key', label: 'Access Key' },
+    { value: 'ram_user', label: 'RAM 用户' },
+    { value: 'iam_user', label: 'IAM 用户' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'user_status' 字典获取。 */
+export const USER_STATUS = [
+    { value: 'active', label: '活跃', color: 'success' },
+    { value: 'inactive', label: '未激活', color: 'info' },
+    { value: 'deleted', label: '已删除', color: 'danger' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'template_category' 字典获取。 */
+export const TEMPLATE_CATEGORIES = [
+    { value: 'read_only', label: '只读权限', description: '仅允许查看资源，不能进行修改操作' },
+    { value: 'admin', label: '管理员权限', description: '拥有完整的管理权限，可以进行所有操作' },
+    { value: 'developer', label: '开发者权限', description: '适合开发人员的权限配置' },
+    { value: 'custom', label: '自定义', description: '根据需求自定义的权限配置' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'sync_task_type' 字典获取。 */
+export const SYNC_TASK_TYPES = [
+    { value: 'user_sync', label: '用户同步', icon: 'User', description: '同步云平台用户信息' },
+    { value: 'permission_sync', label: '权限同步', icon: 'Lock', description: '同步权限策略配置' },
+    { value: 'group_sync', label: '用户组同步', icon: 'UserFilled', description: '同步用户组及成员关系' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'sync_task_status' 字典获取。 */
+export const SYNC_TASK_STATUS = [
+    { value: 'pending', label: '等待中', color: 'info' },
+    { value: 'running', label: '执行中', color: 'warning' },
+    { value: 'completed', label: '已完成', color: 'success' },
+    { value: 'failed', label: '失败', color: 'danger' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'operation_type' 字典获取。 */
+export const OPERATION_TYPES = [
+    { value: 'create', label: '创建', color: 'success' },
+    { value: 'update', label: '更新', color: 'primary' },
+    { value: 'delete', label: '删除', color: 'danger' },
+    { value: 'sync', label: '同步', color: 'warning' },
+    { value: 'assign', label: '分配', color: 'success' },
+    { value: 'revoke', label: '撤销', color: 'warning' }
+]
+
+/** @deprecated 请使用 useDictionary composable 从 'target_type' 字典获取。 */
+export const TARGET_TYPES = [
+    { value: 'user', label: '用户' },
+    { value: 'group', label: '用户组' },
+    { value: 'template', label: '策略模板' },
+    { value: 'policy', label: '权限策略' }
+]
+
+// ==================== 资产类型映射（保留） ====================
 
 export const ASSET_TYPE_MAPPING: Record<string, string> = {
     ecs: 'compute',
@@ -215,22 +330,7 @@ export const ASSET_TYPE_MAPPING: Record<string, string> = {
     middleware: 'middleware'
 }
 
-// ==================== 资产状态常量 ====================
-
-export const ASSET_STATUS = [
-    { value: 'running', label: '运行中', color: 'success' },
-    { value: 'stopped', label: '已停止', color: 'info' },
-    { value: 'starting', label: '启动中', color: 'warning' },
-    { value: 'stopping', label: '停止中', color: 'warning' },
-    { value: 'pending', label: '创建中', color: 'warning' },
-    { value: 'rebooting', label: '重启中', color: 'warning' },
-    { value: 'terminated', label: '已销毁', color: 'danger' },
-    { value: 'deleted', label: '已删除', color: 'danger' },
-    { value: 'error', label: '异常', color: 'danger' },
-    { value: 'unknown', label: '未知', color: 'info' }
-]
-
-// ==================== 环境常量 ====================
+// ==================== 环境常量（保留配置和映射） ====================
 
 export type Environment = 'production' | 'staging' | 'development'
 
@@ -279,6 +379,7 @@ export const ENVIRONMENT_MAPPING: Record<string, Environment> = {
     production: 'production'
 }
 
+/** @deprecated 请使用 useDictionary composable 从 'environment' 字典获取。保留此导出以兼容现有组件。 */
 export const ENVIRONMENTS = Object.values(ENVIRONMENT_CONFIGS).map((config) => ({
     value: config.id,
     label: config.displayName,
@@ -286,16 +387,6 @@ export const ENVIRONMENTS = Object.values(ENVIRONMENT_CONFIGS).map((config) => (
     icon: config.icon,
     description: config.description
 }))
-
-// ==================== 账号状态常量 ====================
-
-export const ACCOUNT_STATUS = [
-    { value: 'active', label: '活跃', color: 'success' },
-    { value: 'disabled', label: '禁用', color: 'info' },
-    { value: 'error', label: '错误', color: 'danger' },
-    { value: 'testing', label: '测试中', color: 'warning' },
-    { value: 'inactive', label: '未激活', color: 'info' }
-]
 
 // ==================== 表单验证规则 ====================
 
@@ -357,6 +448,7 @@ export function isProviderFeatureSupported(provider: string, feature: string): b
     return config?.features.includes(feature) || false
 }
 
+/** @deprecated 建议迁移到 useDictionary composable。保留内联 fallback 以兼容现有代码。 */
 export function getAssetTypeLabel(value: string, provider?: string): string {
     if (provider) {
         const config = getProviderConfig(provider)
@@ -368,7 +460,17 @@ export function getAssetTypeLabel(value: string, provider?: string): string {
 
     const genericType = ASSET_TYPE_MAPPING[value]
     if (genericType) {
-        const assetType = ASSET_TYPES.find((t) => t.value === genericType)
+        // Inline fallback: 原 ASSET_TYPES 数据
+        const ASSET_TYPES_FALLBACK = [
+            { value: 'compute', label: '计算服务' },
+            { value: 'database', label: '数据库服务' },
+            { value: 'storage', label: '存储服务' },
+            { value: 'network', label: '网络服务' },
+            { value: 'middleware', label: '中间件服务' },
+            { value: 'security', label: '安全服务' },
+            { value: 'monitor', label: '监控服务' }
+        ]
+        const assetType = ASSET_TYPES_FALLBACK.find((t) => t.value === genericType)
         if (assetType) {
             return assetType.label
         }
@@ -381,8 +483,21 @@ export function getAssetTypeCategory(value: string): string {
     return ASSET_TYPE_MAPPING[value] || 'other'
 }
 
+/** @deprecated 建议迁移到 useDictionary composable 从 'asset_status' 字典获取。 */
 export function getAssetStatus(value: string) {
-    return ASSET_STATUS.find((s) => s.value === value) || ASSET_STATUS[ASSET_STATUS.length - 1]
+    const ASSET_STATUS_FALLBACK = [
+        { value: 'running', label: '运行中', color: 'success' },
+        { value: 'stopped', label: '已停止', color: 'info' },
+        { value: 'starting', label: '启动中', color: 'warning' },
+        { value: 'stopping', label: '停止中', color: 'warning' },
+        { value: 'pending', label: '创建中', color: 'warning' },
+        { value: 'rebooting', label: '重启中', color: 'warning' },
+        { value: 'terminated', label: '已销毁', color: 'danger' },
+        { value: 'deleted', label: '已删除', color: 'danger' },
+        { value: 'error', label: '异常', color: 'danger' },
+        { value: 'unknown', label: '未知', color: 'info' }
+    ]
+    return ASSET_STATUS_FALLBACK.find((s) => s.value === value) || ASSET_STATUS_FALLBACK[ASSET_STATUS_FALLBACK.length - 1]
 }
 
 export function getEnvironmentConfig(value: string): EnvironmentConfig | undefined {
@@ -404,125 +519,124 @@ export function isValidEnvironment(value: string): boolean {
     return Object.keys(ENVIRONMENT_CONFIGS).includes(mappedValue)
 }
 
+/** @deprecated 建议迁移到 useDictionary composable 从 'account_status' 字典获取。 */
 export function getAccountStatus(value: string) {
-    return ACCOUNT_STATUS.find((s) => s.value === value) || ACCOUNT_STATUS[ACCOUNT_STATUS.length - 1]
+    const ACCOUNT_STATUS_FALLBACK = [
+        { value: 'active', label: '活跃', color: 'success' },
+        { value: 'disabled', label: '禁用', color: 'info' },
+        { value: 'error', label: '错误', color: 'danger' },
+        { value: 'testing', label: '测试中', color: 'warning' },
+        { value: 'inactive', label: '未激活', color: 'info' }
+    ]
+    return ACCOUNT_STATUS_FALLBACK.find((s) => s.value === value) || ACCOUNT_STATUS_FALLBACK[ACCOUNT_STATUS_FALLBACK.length - 1]
 }
 
-// ==================== 租户状态常量 ====================
-
-export const TENANT_STATUS = [
-    { value: 'active', label: '活跃', color: 'success' },
-    { value: 'inactive', label: '非活跃', color: 'info' },
-    { value: 'suspended', label: '暂停', color: 'warning' },
-    { value: 'deleted', label: '已删除', color: 'danger' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'tenant_status' 字典获取。 */
 export function getTenantStatus(value: string) {
-    return TENANT_STATUS.find((s) => s.value === value) || TENANT_STATUS[0]
+    const TENANT_STATUS_FALLBACK = [
+        { value: 'active', label: '活跃', color: 'success' },
+        { value: 'inactive', label: '非活跃', color: 'info' },
+        { value: 'suspended', label: '暂停', color: 'warning' },
+        { value: 'deleted', label: '已删除', color: 'danger' }
+    ]
+    return TENANT_STATUS_FALLBACK.find((s) => s.value === value) || TENANT_STATUS_FALLBACK[0]
 }
 
-// ==================== 行业类型常量 ====================
-
-export const INDUSTRIES = [
-    { value: 'technology', label: '科技' },
-    { value: 'finance', label: '金融' },
-    { value: 'healthcare', label: '医疗' },
-    { value: 'education', label: '教育' },
-    { value: 'retail', label: '零售' },
-    { value: 'manufacturing', label: '制造' },
-    { value: 'other', label: '其他' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'industry' 字典获取。 */
 export function getIndustryLabel(value: string): string {
-    const industry = INDUSTRIES.find((i) => i.value === value)
+    const INDUSTRIES_FALLBACK = [
+        { value: 'technology', label: '科技' },
+        { value: 'finance', label: '金融' },
+        { value: 'healthcare', label: '医疗' },
+        { value: 'education', label: '教育' },
+        { value: 'retail', label: '零售' },
+        { value: 'manufacturing', label: '制造' },
+        { value: 'other', label: '其他' }
+    ]
+    const industry = INDUSTRIES_FALLBACK.find((i) => i.value === value)
     return industry?.label || value
 }
 
-// ==================== 地区类型常量 ====================
-
-export const REGIONS = [
-    { value: 'cn-north', label: '华北' },
-    { value: 'cn-east', label: '华东' },
-    { value: 'cn-south', label: '华南' },
-    { value: 'cn-west', label: '华西' },
-    { value: 'cn-central', label: '华中' },
-    { value: 'overseas', label: '海外' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'region_group' 字典获取。 */
 export function getRegionLabel(value: string): string {
-    const region = REGIONS.find((r) => r.value === value)
+    const REGIONS_FALLBACK = [
+        { value: 'cn-north', label: '华北' },
+        { value: 'cn-east', label: '华东' },
+        { value: 'cn-south', label: '华南' },
+        { value: 'cn-west', label: '华西' },
+        { value: 'cn-central', label: '华中' },
+        { value: 'overseas', label: '海外' }
+    ]
+    const region = REGIONS_FALLBACK.find((r) => r.value === value)
     return region?.label || value
 }
 
-// ==================== IAM 用户类型常量 ====================
-
-export const USER_TYPES = [
-    { value: 'api_key', label: 'API Key' },
-    { value: 'access_key', label: 'Access Key' },
-    { value: 'ram_user', label: 'RAM 用户' },
-    { value: 'iam_user', label: 'IAM 用户' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'user_type' 字典获取。 */
 export function getUserTypeLabel(value: string): string {
-    const userType = USER_TYPES.find((t) => t.value === value)
+    const USER_TYPES_FALLBACK = [
+        { value: 'api_key', label: 'API Key' },
+        { value: 'access_key', label: 'Access Key' },
+        { value: 'ram_user', label: 'RAM 用户' },
+        { value: 'iam_user', label: 'IAM 用户' }
+    ]
+    const userType = USER_TYPES_FALLBACK.find((t) => t.value === value)
     return userType?.label || value
 }
 
-// ==================== IAM 用户状态常量 ====================
-
-export const USER_STATUS = [
-    { value: 'active', label: '活跃', color: 'success' },
-    { value: 'inactive', label: '未激活', color: 'info' },
-    { value: 'deleted', label: '已删除', color: 'danger' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'user_status' 字典获取。 */
 export function getUserStatus(value: string) {
-    return USER_STATUS.find((s) => s.value === value) || USER_STATUS[USER_STATUS.length - 1]
+    const USER_STATUS_FALLBACK = [
+        { value: 'active', label: '活跃', color: 'success' },
+        { value: 'inactive', label: '未激活', color: 'info' },
+        { value: 'deleted', label: '已删除', color: 'danger' }
+    ]
+    return USER_STATUS_FALLBACK.find((s) => s.value === value) || USER_STATUS_FALLBACK[USER_STATUS_FALLBACK.length - 1]
 }
 
-// ==================== 策略模板分类常量 ====================
-
-export const TEMPLATE_CATEGORIES = [
-    { value: 'read_only', label: '只读权限', description: '仅允许查看资源，不能进行修改操作' },
-    { value: 'admin', label: '管理员权限', description: '拥有完整的管理权限，可以进行所有操作' },
-    { value: 'developer', label: '开发者权限', description: '适合开发人员的权限配置' },
-    { value: 'custom', label: '自定义', description: '根据需求自定义的权限配置' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'template_category' 字典获取。 */
 export function getTemplateCategoryLabel(value: string): string {
-    const category = TEMPLATE_CATEGORIES.find((c) => c.value === value)
+    const TEMPLATE_CATEGORIES_FALLBACK = [
+        { value: 'read_only', label: '只读权限', description: '仅允许查看资源，不能进行修改操作' },
+        { value: 'admin', label: '管理员权限', description: '拥有完整的管理权限，可以进行所有操作' },
+        { value: 'developer', label: '开发者权限', description: '适合开发人员的权限配置' },
+        { value: 'custom', label: '自定义', description: '根据需求自定义的权限配置' }
+    ]
+    const category = TEMPLATE_CATEGORIES_FALLBACK.find((c) => c.value === value)
     return category?.label || value
 }
 
+/** @deprecated 建议迁移到 useDictionary composable 从 'template_category' 字典获取。 */
 export function getTemplateCategoryDescription(value: string): string {
-    const category = TEMPLATE_CATEGORIES.find((c) => c.value === value)
+    const TEMPLATE_CATEGORIES_FALLBACK = [
+        { value: 'read_only', label: '只读权限', description: '仅允许查看资源，不能进行修改操作' },
+        { value: 'admin', label: '管理员权限', description: '拥有完整的管理权限，可以进行所有操作' },
+        { value: 'developer', label: '开发者权限', description: '适合开发人员的权限配置' },
+        { value: 'custom', label: '自定义', description: '根据需求自定义的权限配置' }
+    ]
+    const category = TEMPLATE_CATEGORIES_FALLBACK.find((c) => c.value === value)
     return category?.description || ''
 }
 
-// ==================== 同步任务类型常量 ====================
-
-export const SYNC_TASK_TYPES = [
-    { value: 'user_sync', label: '用户同步', icon: 'User', description: '同步云平台用户信息' },
-    { value: 'permission_sync', label: '权限同步', icon: 'Lock', description: '同步权限策略配置' },
-    { value: 'group_sync', label: '用户组同步', icon: 'UserFilled', description: '同步用户组及成员关系' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'sync_task_type' 字典获取。 */
 export function getSyncTaskTypeLabel(value: string): string {
-    const taskType = SYNC_TASK_TYPES.find((t) => t.value === value)
+    const SYNC_TASK_TYPES_FALLBACK = [
+        { value: 'user_sync', label: '用户同步' },
+        { value: 'permission_sync', label: '权限同步' },
+        { value: 'group_sync', label: '用户组同步' }
+    ]
+    const taskType = SYNC_TASK_TYPES_FALLBACK.find((t) => t.value === value)
     return taskType?.label || value
 }
 
-// ==================== 同步任务状态常量 ====================
-
-export const SYNC_TASK_STATUS = [
-    { value: 'pending', label: '等待中', color: 'info' },
-    { value: 'running', label: '执行中', color: 'warning' },
-    { value: 'completed', label: '已完成', color: 'success' },
-    { value: 'failed', label: '失败', color: 'danger' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'sync_task_status' 字典获取。 */
 export function getSyncTaskStatus(value: string) {
-    return SYNC_TASK_STATUS.find((s) => s.value === value) ?? SYNC_TASK_STATUS[SYNC_TASK_STATUS.length - 1]
+    const SYNC_TASK_STATUS_FALLBACK = [
+        { value: 'pending', label: '等待中', color: 'info' },
+        { value: 'running', label: '执行中', color: 'warning' },
+        { value: 'completed', label: '已完成', color: 'success' },
+        { value: 'failed', label: '失败', color: 'danger' }
+    ]
+    return SYNC_TASK_STATUS_FALLBACK.find((s) => s.value === value) ?? SYNC_TASK_STATUS_FALLBACK[SYNC_TASK_STATUS_FALLBACK.length - 1]
 }
 
 export function getSyncTaskStatusLabel(value: string): string {
@@ -535,38 +649,43 @@ export function getSyncTaskStatusColor(value: string): TagType {
     return safeTagType(status?.color)
 }
 
-// ==================== 操作类型常量 ====================
-
-export const OPERATION_TYPES = [
-    { value: 'create', label: '创建', color: 'success' },
-    { value: 'update', label: '更新', color: 'primary' },
-    { value: 'delete', label: '删除', color: 'danger' },
-    { value: 'sync', label: '同步', color: 'warning' },
-    { value: 'assign', label: '分配', color: 'success' },
-    { value: 'revoke', label: '撤销', color: 'warning' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'operation_type' 字典获取。 */
 export function getOperationTypeLabel(value: string): string {
-    const operationType = OPERATION_TYPES.find((t) => t.value === value)
+    const OPERATION_TYPES_FALLBACK = [
+        { value: 'create', label: '创建', color: 'success' },
+        { value: 'update', label: '更新', color: 'primary' },
+        { value: 'delete', label: '删除', color: 'danger' },
+        { value: 'sync', label: '同步', color: 'warning' },
+        { value: 'assign', label: '分配', color: 'success' },
+        { value: 'revoke', label: '撤销', color: 'warning' }
+    ]
+    const operationType = OPERATION_TYPES_FALLBACK.find((t) => t.value === value)
     return operationType?.label || value
 }
 
+/** @deprecated 建议迁移到 useDictionary composable 从 'operation_type' 字典获取。 */
 export function getOperationTypeColor(value: string): TagType {
-    const operationType = OPERATION_TYPES.find((t) => t.value === value)
+    const OPERATION_TYPES_FALLBACK = [
+        { value: 'create', label: '创建', color: 'success' },
+        { value: 'update', label: '更新', color: 'primary' },
+        { value: 'delete', label: '删除', color: 'danger' },
+        { value: 'sync', label: '同步', color: 'warning' },
+        { value: 'assign', label: '分配', color: 'success' },
+        { value: 'revoke', label: '撤销', color: 'warning' }
+    ]
+    const operationType = OPERATION_TYPES_FALLBACK.find((t) => t.value === value)
     return safeTagType(operationType?.color)
 }
 
-// ==================== 目标类型常量 ====================
-
-export const TARGET_TYPES = [
-    { value: 'user', label: '用户' },
-    { value: 'group', label: '用户组' },
-    { value: 'template', label: '策略模板' },
-    { value: 'policy', label: '权限策略' }
-]
-
+/** @deprecated 建议迁移到 useDictionary composable 从 'target_type' 字典获取。 */
 export function getTargetTypeLabel(value: string): string {
-    const targetType = TARGET_TYPES.find((t) => t.value === value)
+    const TARGET_TYPES_FALLBACK = [
+        { value: 'user', label: '用户' },
+        { value: 'group', label: '用户组' },
+        { value: 'template', label: '策略模板' },
+        { value: 'policy', label: '权限策略' }
+    ]
+    const targetType = TARGET_TYPES_FALLBACK.find((t) => t.value === value)
     return targetType?.label || value
 }
 

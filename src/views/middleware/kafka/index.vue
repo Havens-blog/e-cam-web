@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { listKafkaAssetsApi } from '@/api/asset'
-import type { Asset } from '@/api/types/asset'
+import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -150,7 +150,7 @@ const handleColumnSettingsChange = (columns: ColumnConfig[]) => { columnSettings
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const res = await listKafkaAssetsApi({ offset: (pagination.page - 1) * pagination.size, limit: pagination.size, provider: filters.provider || undefined, status: filters.status || undefined, name: filters.keyword || undefined })
+    const res = await listKafkaAssetsApi({ offset: (pagination.page - 1) * pagination.size, limit: pagination.size, provider: (filters.provider || undefined) as CloudProvider | undefined, status: filters.status || undefined, name: filters.keyword || undefined })
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
