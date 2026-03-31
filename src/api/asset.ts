@@ -12,6 +12,11 @@ function createAssetApiInterceptor() {
     return {
         responseInterceptor: (response: AxiosResponse) => {
             const data = response.data
+            // CAM API 返回 code: 200 表示成功
+            if (data.code === 200) {
+                response.data = { code: 0, data: data.data, message: data.msg || data.message || 'success' }
+                return response
+            }
             if (data.code === 0) {
                 return response
             }
@@ -440,7 +445,6 @@ export function getWAFAssetApi(assetId: string, params?: { tenant_id?: string; p
         interceptorsToOnce: createAssetApiInterceptor()
     })
 }
-
 
 // ==================== Image (镜像) API ====================
 

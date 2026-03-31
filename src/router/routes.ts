@@ -532,6 +532,16 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Search',
                 },
             },
+            // ==================== 标签管理路由 ====================
+            {
+                path: '/resource/tags',
+                name: 'ResourceTags',
+                component: () => import('@/views/resource/tag/index.vue'),
+                meta: {
+                    title: '标签管理',
+                    icon: 'PriceTag',
+                },
+            },
             // ==================== FinOps 成本管理路由 ====================
             {
                 path: '/finops',

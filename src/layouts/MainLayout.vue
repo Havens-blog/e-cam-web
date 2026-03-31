@@ -416,6 +416,7 @@ const menuGroups = ref<MenuGroup[]>([
         ]
       },
       { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'icon-xianxing-bumen' },
+      { key: 'resource-tags', path: '/resource/tags', title: '标签管理', icon: 'icon-xianxing-chanpin' },
     ]
   },
   {

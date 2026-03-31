@@ -96,7 +96,12 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">VPC ID</span>
-                    <span class="info-value link">{{ instance.attributes?.vpc_id || '-' }}</span>
+                    <span
+                      v-if="instance.attributes?.vpc_id"
+                      class="info-value link"
+                      @click="$emit('vpcClick', instance.attributes.vpc_id, instance.provider)"
+                    >{{ instance.attributes.vpc_id }}</span>
+                    <span v-else class="info-value">-</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">可用IP数</span>
@@ -149,7 +154,10 @@ const props = defineProps<{
   instance: Asset | null
 }>()
 
-defineEmits<{ 'update:visible': [value: boolean] }>()
+defineEmits<{
+  'update:visible': [value: boolean]
+  vpcClick: [vpcId: string, provider?: string]
+}>()
 
 const activeTab = ref('detail')
 

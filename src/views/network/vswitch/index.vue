@@ -64,7 +64,12 @@
         </el-table-column>
         <el-table-column label="VPC ID" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="vpc-link">{{ row.attributes?.vpc_id || '-' }}</span>
+            <span
+              v-if="row.attributes?.vpc_id"
+              class="vpc-link"
+              @click.stop="handleVpcClick(row.attributes.vpc_id, row.provider)"
+            >{{ row.attributes.vpc_id }}</span>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="可用IP数" width="100" align="center">
@@ -134,13 +139,20 @@
     <VSwitchDetailDrawer
       v-model:visible="detailVisible"
       :instance="detailInstance"
+      @vpc-click="handleVpcClick"
+    />
+
+    <!-- VPC 详情抽屉 -->
+    <VpcDetailDrawer
+      v-model:visible="vpcDetailVisible"
+      :instance="vpcDetailInstance"
     />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { submitSyncAssetsTaskApi } from '@/api'
-import { listVSwitchAssetsApi } from '@/api/asset'
+import { getVPCAssetApi, listVSwitchAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
@@ -149,15 +161,17 @@ import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import VpcDetailDrawer from '../vpc/components/VpcDetailDrawer.vue'
 import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
 import VSwitchFilters from './components/VSwitchFilters.vue'
 import VSwitchStatusBadge from './components/VSwitchStatusBadge.vue'
 
+const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 
-const filters = reactive({ provider: '', region: '', status: '', name: '' })
+const filters = reactive({ provider: '', region: '', status: '', name: '', vpc_id: '' })
 const pagination = reactive({ page: 1, size: 20, total: 0 })
 const vswitchList = ref<Asset[]>([])
 const detailVisible = ref(false)
@@ -165,6 +179,26 @@ const detailInstance = ref<Asset | null>(null)
 const syncDialogVisible = ref(false)
 const syncForm = reactive({ provider: '', regions: [] as string[] })
 const syncing = ref(false)
+
+// VPC 详情抽屉
+const vpcDetailVisible = ref(false)
+const vpcDetailInstance = ref<Asset | null>(null)
+
+const handleVpcClick = async (vpcId: string, provider?: string) => {
+  if (!vpcId) return
+  try {
+    const params: Record<string, string> = {}
+    if (provider) params.provider = provider
+    const res = await getVPCAssetApi(vpcId, params)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
+    const data = (res as unknown as { data: Asset }).data || res
+    vpcDetailInstance.value = data as Asset
+    vpcDetailVisible.value = true
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '获取 VPC 详情失败'
+    ElMessage.error(msg)
+  }
+}
 
 const getRegionLabel = (provider: string, region: string) => {
   const config = PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]
@@ -183,6 +217,7 @@ const fetchData = async () => {
     if (filters.region) params.region = filters.region
     if (filters.status) params.status = filters.status
     if (filters.name) params.name = filters.name
+    if (filters.vpc_id) params.vpc_id = filters.vpc_id
 
     const res = await listVSwitchAssetsApi(params)
     const responseData = (res as any).data || res
@@ -199,6 +234,7 @@ const fetchData = async () => {
 
 const handleFiltersUpdate = (newFilters: typeof filters) => { Object.assign(filters, newFilters) }
 const handleSearch = () => { pagination.page = 1; fetchData() }
+const handleReset = () => { Object.assign(filters, { provider: '', name: '', region: '', status: '', vpc_id: '' }); handleSearch() }
 const handleSizeChange = () => { pagination.page = 1; fetchData() }
 const handlePageChange = () => { fetchData() }
 const handleRowClick = (row: Asset) => { detailInstance.value = row; detailVisible.value = true }
@@ -228,7 +264,14 @@ const submitSync = async () => {
   }
 }
 
-onMounted(() => { fetchData() })
+onMounted(() => {
+  // 从 URL query 读取 vpc_id 过滤参数（从 VPC 详情跳转过来）
+  const queryVpcId = route.query.vpc_id
+  if (typeof queryVpcId === 'string' && queryVpcId) {
+    filters.vpc_id = queryVpcId
+  }
+  fetchData()
+})
 </script>
 
 <style scoped lang="scss">
