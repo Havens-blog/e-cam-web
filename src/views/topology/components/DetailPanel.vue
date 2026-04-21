@@ -41,6 +41,17 @@
         </div>
       </div>
 
+      <!-- 聚合节点详情 -->
+      <div v-if="detail.attributes?.is_aggregated" class="dp-section">
+        <div class="dp-section-title">包含实例 ({{ detail.attributes.count }})</div>
+        <div v-for="name in (detail.attributes.sample_names || [])" :key="name" class="dp-attr-row">
+          <span class="dp-attr-value" style="text-align: left; max-width: 100%">{{ name }}</span>
+        </div>
+        <div v-if="(detail.attributes.count || 0) > 3" class="dp-meta" style="border: none; padding-top: 4px">
+          <span class="dp-meta-label">... 等 {{ detail.attributes.count }} 个实例</span>
+        </div>
+      </div>
+
       <!-- 上游节点 -->
       <div v-if="upstreamNodes.length > 0" class="dp-section">
         <div class="dp-section-title">
