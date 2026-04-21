@@ -41,15 +41,15 @@ export interface VMTemplate {
 export interface CreateTemplateReq {
     name: string
     description?: string
-    provider: string
-    cloud_account_id: number
-    region: string
-    zone: string
-    instance_type: string
-    image_id: string
-    vpc_id: string
-    subnet_id: string
-    security_group_ids: string[]
+    provider?: string
+    cloud_account_id?: number
+    region?: string
+    zone?: string
+    instance_type?: string
+    image_id?: string
+    vpc_id?: string
+    subnet_id?: string
+    security_group_ids?: string[]
     instance_name_prefix?: string
     host_name_prefix?: string
     system_disk_type?: string

@@ -156,7 +156,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">子网数量</span>
-                    <span class="info-value link">{{ instance.attributes?.vswitch_count || 0 }}</span>
+                    <span class="info-value link" @click="navigateToVSwitch">{{ instance.attributes?.vswitch_count || 0 }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">路由表数量</span>
@@ -187,6 +187,70 @@
             </div>
           </template>
 
+          <!-- 安全组标签页 -->
+          <template v-else-if="activeTab === 'security'">
+            <div v-loading="securityLoading">
+              <el-table v-if="securityGroups.length > 0" :data="securityGroups" style="width: 100%" size="small" highlight-current-row @row-click="handleSecurityGroupClick">
+                <el-table-column label="安全组ID" min-width="200" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span class="cell-link">{{ row.asset_id }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="名称" min-width="160" show-overflow-tooltip>
+                  <template #default="{ row }">{{ row.asset_name || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="类型" width="100">
+                  <template #default="{ row }">{{ row.attributes?.security_group_type || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="描述" min-width="200" show-overflow-tooltip>
+                  <template #default="{ row }">{{ row.attributes?.description || '-' }}</template>
+                </el-table-column>
+              </el-table>
+              <div v-else class="empty-tab">
+                <el-icon :size="48"><Lock /></el-icon>
+                <p>暂无安全组数据</p>
+              </div>
+            </div>
+          </template>
+
+          <!-- IP子网标签页 -->
+          <template v-else-if="activeTab === 'subnet'">
+            <div v-loading="subnetLoading">
+              <el-table v-if="subnets.length > 0" :data="subnets" style="width: 100%" size="small" highlight-current-row @row-click="handleSubnetClick">
+                <el-table-column label="子网ID" min-width="200" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span class="cell-link">{{ row.asset_id }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="名称" min-width="140" show-overflow-tooltip>
+                  <template #default="{ row }">{{ row.asset_name || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="CIDR" min-width="140">
+                  <template #default="{ row }">
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{ row.attributes?.cidr_block || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="可用区" min-width="120">
+                  <template #default="{ row }">{{ row.attributes?.zone || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="可用IP" width="80" align="center">
+                  <template #default="{ row }">{{ row.attributes?.available_ip_count ?? '-' }}</template>
+                </el-table-column>
+                <el-table-column label="状态" width="80" align="center">
+                  <template #default="{ row }">
+                    <span :style="{ color: row.status === 'Available' || row.status === 'available' ? '#10b981' : '#909399' }">
+                      {{ row.status || '-' }}
+                    </span>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div v-else class="empty-tab">
+                <el-icon :size="48"><Share /></el-icon>
+                <p>暂无子网数据</p>
+              </div>
+            </div>
+          </template>
+
           <!-- 其他标签页占位 -->
           <template v-else-if="activeTab === 'tags'">
             <div v-if="tagList.length > 0" class="tags-container">
@@ -210,14 +274,30 @@
       </template>
     </div>
   </el-drawer>
+
+  <!-- 子网详情抽屉 -->
+  <VSwitchDetailDrawer
+    v-model:visible="subnetDetailVisible"
+    :instance="subnetDetailInstance"
+  />
+
+  <!-- 安全组详情抽屉 -->
+  <SecurityGroupDetailDrawer
+    v-model:visible="sgDetailVisible"
+    :instance="sgDetailInstance"
+  />
 </template>
 
 <script setup lang="ts">
+import { listSecurityGroupAssetsApi, listVSwitchAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
-import { ArrowDown, Close, Connection, Document, PriceTag, Refresh } from '@element-plus/icons-vue'
-import { computed, ref } from 'vue'
+import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import SecurityGroupDetailDrawer from '../../security-group/components/SecurityGroupDetailDrawer.vue'
+import VSwitchDetailDrawer from '../../vswitch/components/VSwitchDetailDrawer.vue'
 import VpcStatusBadge from './VpcStatusBadge.vue'
 
 const props = defineProps<{
@@ -225,11 +305,104 @@ const props = defineProps<{
   instance: Asset | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
 
+const router = useRouter()
 const activeTab = ref('detail')
+
+// 安全组数据
+const securityGroups = ref<Asset[]>([])
+const securityLoading = ref(false)
+
+// 子网数据
+const subnets = ref<Asset[]>([])
+const subnetLoading = ref(false)
+
+async function loadSecurityGroups() {
+  if (!props.instance) return
+  securityLoading.value = true
+  try {
+    const res = await listSecurityGroupAssetsApi({
+      vpc_id: props.instance.asset_id,
+      provider: props.instance.provider,
+      limit: 100
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
+    const data = (res as unknown as { data: { items: Asset[] } }).data || res
+    securityGroups.value = (data as { items?: Asset[] }).items || []
+  } catch {
+    securityGroups.value = []
+  } finally {
+    securityLoading.value = false
+  }
+}
+
+async function loadSubnets() {
+  if (!props.instance) return
+  subnetLoading.value = true
+  try {
+    const res = await listVSwitchAssetsApi({
+      vpc_id: props.instance.asset_id,
+      provider: props.instance.provider,
+      limit: 100
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
+    const data = (res as unknown as { data: { items: Asset[] } }).data || res
+    subnets.value = (data as { items?: Asset[] }).items || []
+  } catch {
+    subnets.value = []
+  } finally {
+    subnetLoading.value = false
+  }
+}
+
+// 切换 tab 时按需加载
+watch(activeTab, (tab) => {
+  if (tab === 'security' && securityGroups.value.length === 0 && !securityLoading.value) {
+    loadSecurityGroups()
+  }
+  if (tab === 'subnet' && subnets.value.length === 0 && !subnetLoading.value) {
+    loadSubnets()
+  }
+})
+
+// 打开抽屉时重置
+watch(() => props.visible, (val) => {
+  if (val) {
+    activeTab.value = 'detail'
+    securityGroups.value = []
+    subnets.value = []
+  }
+})
+
+// 子网详情抽屉
+const subnetDetailVisible = ref(false)
+const subnetDetailInstance = ref<Asset | null>(null)
+
+function handleSubnetClick(row: Asset) {
+  subnetDetailInstance.value = row
+  subnetDetailVisible.value = true
+}
+
+// 安全组详情抽屉
+const sgDetailVisible = ref(false)
+const sgDetailInstance = ref<Asset | null>(null)
+
+function handleSecurityGroupClick(row: Asset) {
+  sgDetailInstance.value = row
+  sgDetailVisible.value = true
+}
+
+const navigateToVSwitch = () => {
+  if (!props.instance) return
+  emit('update:visible', false)
+  router.push({
+    path: '/network/vswitch',
+    query: { vpc_id: props.instance.asset_id }
+  })
+}
 
 const handleRefresh = () => {
   // 刷新数据
@@ -523,6 +696,12 @@ const getTabName = (tab: string) => {
   p {
     margin-top: 16px;
   }
+}
+
+.cell-link {
+  color: #409eff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
 }
 </style>
 

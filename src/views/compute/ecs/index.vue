@@ -473,6 +473,7 @@
 
 <script setup lang="ts">
 import { listECSAssetsApi } from '@/api/asset'
+import { listTagsApi } from '@/api/tag'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import {
@@ -498,6 +499,7 @@ import InstanceDetailDrawer from './components/InstanceDetailDrawer.vue'
 import InstanceForm from './components/InstanceForm.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 // 状态
 const loading = ref(false)
@@ -780,17 +782,30 @@ const applySearchConditions = () => {
   fetchInstances()
 }
 
-// 从实例数据中动态提取标签键
-const availableTagKeys = computed(() => {
-  const keysSet = new Set<string>()
-  instances.value.forEach(instance => {
-    const tags = instance.attributes?.tags
-    if (tags && typeof tags === 'object') {
-      Object.keys(tags).forEach(key => keysSet.add(key))
-    }
-  })
-  return Array.from(keysSet).sort()
-})
+// 从标签管理 API 获取全量 ECS 标签键（不受分页限制）
+const availableTagKeys = ref<string[]>([])
+
+const loadAvailableTagKeys = async () => {
+  try {
+    const res = await listTagsApi({ resource_type: 'ecs', limit: 200 })
+    const items = res.data?.items || []
+    const keysSet = new Set<string>()
+    items.filter((item: any) => item != null).forEach((item: any) => {
+      if (item?.key) keysSet.add(item.key)
+    })
+    availableTagKeys.value = Array.from(keysSet).sort()
+  } catch {
+    // Fallback: extract from current page data
+    const keysSet = new Set<string>()
+    instances.value.forEach(instance => {
+      const tags = instance.attributes?.tags
+      if (tags && typeof tags === 'object') {
+        Object.keys(tags).forEach(key => keysSet.add(key))
+      }
+    })
+    availableTagKeys.value = Array.from(keysSet).sort()
+  }
+}
 
 const hasTagFilter = computed(() => filters.has_tags !== '' || filters.tag_key !== '')
 
@@ -1132,9 +1147,7 @@ const handleCurrentChange = (page: number) => {
 
 // 添加实例
 const handleAdd = () => {
-  isEdit.value = false
-  currentInstance.value = null
-  dialogVisible.value = true
+  router.push('/compute/template/create')
 }
 
 // 编辑实例
@@ -1217,6 +1230,7 @@ onMounted(() => {
   }
   fetchModels()
   fetchInstances()
+  loadAvailableTagKeys()
 })
 
 watch(

@@ -122,6 +122,22 @@
     <div v-else class="empty-placeholder">
       请先选择云账号和地域以加载实例规格
     </div>
+
+    <!-- 自定义输入 -->
+    <div class="custom-input-section">
+      <div class="custom-input-divider">
+        <span>或手动输入规格</span>
+      </div>
+      <div class="custom-input-row">
+        <el-input
+          v-model="customType"
+          placeholder="输入实例规格 ID，如 ecs.g6.large"
+          clearable
+          @keyup.enter="applyCustomType"
+        />
+        <el-button type="primary" :disabled="!customType.trim()" @click="applyCustomType">确定</el-button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -153,6 +169,7 @@ const cpuFilter = ref<number | string>('')
 const memoryFilter = ref<number | string>('')
 const activeCategory = ref('all')
 const expandedGroups = ref(new Set<string>())
+const customType = ref('')
 
 const cpuOptions = [1, 2, 4, 8, 16, 32, 64]
 const memoryOptions = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -181,12 +198,31 @@ interface CategoryDef {
 }
 
 const categoryDefs: CategoryDef[] = [
-  { key: 'general', label: '通用型', icon: '🔷', match: (n) => /\.g\d/.test(n) && !/\.gn/.test(n) && !/\.gpu/.test(n) },
-  { key: 'compute', label: '计算型', icon: '🔴', match: (n) => /\.c\d/.test(n) },
-  { key: 'memory', label: '内存型', icon: '🟣', match: (n) => /\.r\d/.test(n) },
-  { key: 'storage', label: '存储型', icon: '🟢', match: (n) => /\.[id]\d/.test(n) },
-  { key: 'gpu', label: 'GPU型', icon: '🟡', match: (n) => /\.gn\d/.test(n) || /\.gpu/.test(n) },
-  { key: 'burstable', label: '突发型', icon: '🔵', match: (n) => /\.t\d/.test(n) },
+  { key: 'gpu', label: 'GPU型', icon: '🟡', match: (n) => {
+    // 阿里云: ecs.gn6.*, 火山: ecs.gni.*, AWS: p3.*, g4dn.*, 腾讯: GN*
+    return /\.gn/i.test(n) || /\.gpu/i.test(n) || /^p\d/i.test(n) || /^g\d[a-z]*dn/i.test(n) || /^GN/i.test(n)
+  }},
+  { key: 'burstable', label: '突发型', icon: '🔵', match: (n) => {
+    // 阿里云: ecs.t6.*, 火山: ecs.t3i.*, AWS: t3.*, 腾讯: T*
+    return /\.t\d/i.test(n) || /^t\d/i.test(n) || /^T\d/.test(n)
+  }},
+  { key: 'compute', label: '计算型', icon: '🔴', match: (n) => {
+    // 阿里云: ecs.c6.*, 火山: ecs.c3i.*, 华为: c6.*, AWS: c5.*, 腾讯: C3.*
+    return /\.c\d/i.test(n) || /^c\d/i.test(n) || /^C\d/.test(n)
+  }},
+  { key: 'memory', label: '内存型', icon: '🟣', match: (n) => {
+    // 阿里云: ecs.r6.*, 火山: ecs.r3i.*, AWS: r5.*, x1.*, 腾讯: M5.*
+    return /\.r\d/i.test(n) || /^r\d/i.test(n) || /^R\d/.test(n) || /^x\d/i.test(n) || /^M\d/.test(n)
+  }},
+  { key: 'storage', label: '存储型', icon: '🟢', match: (n) => {
+    // 阿里云: ecs.i2.*, ecs.d1.*, AWS: i3.*, d2.*, 华为: ir3.*
+    return /\.[id]\d/i.test(n) || /^i\d/i.test(n) || /^d\d/i.test(n) || /^I\d/.test(n) || /^D\d/.test(n)
+  }},
+  { key: 'general', label: '通用型', icon: '🔷', match: (n) => {
+    // 阿里云: ecs.g6.* (非gn), 火山: ecs.g3i.*, 华为: s6.*, AWS: m5.*, 腾讯: S5.*
+    if (/\.gn/i.test(n)) return false // 排除 GPU
+    return /\.g\d/i.test(n) || /^s\d/i.test(n) || /^m\d/i.test(n) || /^S\d/.test(n) || /\.s\d/i.test(n)
+  }},
 ]
 
 function getCategory(name: string): CategoryKey {
@@ -299,6 +335,14 @@ function handleSelect(instanceType: string) {
 
 function handleChangeSpec() {
   emit('update:modelValue', '')
+}
+
+function applyCustomType() {
+  const val = customType.value.trim()
+  if (val) {
+    emit('update:modelValue', val)
+    customType.value = ''
+  }
 }
 
 function toggleGroup(key: string) {
@@ -615,6 +659,33 @@ function toggleGroup(key: string) {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 10px 0 0 0;
+}
+
+/* ==================== 自定义输入 ==================== */
+.custom-input-section {
+  margin-top: 16px;
+}
+.custom-input-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--el-text-color-placeholder);
+  font-size: 12px;
+}
+.custom-input-divider::before,
+.custom-input-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--el-border-color-lighter);
+}
+.custom-input-row {
+  display: flex;
+  gap: 8px;
+}
+.custom-input-row .el-input {
+  flex: 1;
 }
 
 /* ==================== 深色模式 ==================== */

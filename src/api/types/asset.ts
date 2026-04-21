@@ -46,6 +46,7 @@ export interface ListAssetsParams {
     region?: string
     status?: string
     name?: string
+    vpc_id?: string
     offset?: number
     limit?: number
 }

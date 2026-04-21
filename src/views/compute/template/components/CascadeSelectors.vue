@@ -137,13 +137,11 @@
 </template>
 
 <script setup lang="ts">
+import { listSecurityGroupAssetsApi, listVPCAssetsApi, listVSwitchAssetsApi } from '@/api/asset'
 import {
   listImagesApi,
   listInstanceTypesApi,
-  listRegionsApi,
-  listSecurityGroupsApi,
-  listSubnetsApi,
-  listVPCsApi
+  listRegionsApi
 } from '@/api/template'
 import type {
   ImageInfo,
@@ -311,14 +309,26 @@ async function handleRegionChange(region: string) {
 
   specLoading.value = true
   try {
-    const [typesRes, imagesRes, vpcsRes] = await Promise.all([
+    const [typesRes, imagesRes, vpcsRes] = await Promise.allSettled([
       listInstanceTypesApi(form.value.cloud_account_id, region),
       listImagesApi(form.value.cloud_account_id, region),
-      listVPCsApi(form.value.cloud_account_id, region)
+      listVPCAssetsApi({ account_id: form.value.cloud_account_id, region, limit: 200 })
     ])
-    instanceTypes.value = typesRes?.data || []
-    images.value = imagesRes?.data || []
-    vpcs.value = vpcsRes?.data || []
+    if (typesRes.status === 'fulfilled') {
+      instanceTypes.value = typesRes.value?.data || []
+    }
+    if (imagesRes.status === 'fulfilled') {
+      images.value = imagesRes.value?.data || []
+    }
+    if (vpcsRes.status === 'fulfilled') {
+      const vpcItems = vpcsRes.value?.data?.items || vpcsRes.value?.data || []
+      vpcs.value = (Array.isArray(vpcItems) ? vpcItems : []).filter((v: any) => v != null).map((v: any) => ({
+        vpc_id: v?.asset_id || v?.attributes?.vpc_id || '',
+        vpc_name: v?.asset_name || v?.attributes?.vpc_name || '',
+        cidr_block: v?.attributes?.cidr_block || '',
+        status: v?.attributes?.status || 'Available'
+      }))
+    }
     console.log('[CascadeSelectors] Loaded resources:', {
       instanceTypes: instanceTypes.value.length,
       images: images.value.length,
@@ -347,12 +357,29 @@ async function handleVPCChange(vpcId: string) {
 
   subnetLoading.value = true
   try {
-    const [subnetsRes, sgRes] = await Promise.all([
-      listSubnetsApi(form.value.cloud_account_id, form.value.region, vpcId),
-      listSecurityGroupsApi(form.value.cloud_account_id, form.value.region, vpcId)
+    const [subnetsRes, sgRes] = await Promise.allSettled([
+      listVSwitchAssetsApi({ account_id: form.value.cloud_account_id, region: form.value.region, vpc_id: vpcId, limit: 200 }),
+      listSecurityGroupAssetsApi({ account_id: form.value.cloud_account_id, region: form.value.region, vpc_id: vpcId, limit: 200 })
     ])
-    subnets.value = subnetsRes?.data || []
-    securityGroups.value = sgRes?.data || []
+    if (subnetsRes.status === 'fulfilled') {
+      const snItems = subnetsRes.value?.data?.items || subnetsRes.value?.data || []
+      subnets.value = (Array.isArray(snItems) ? snItems : []).filter((s: any) => s != null).map((s: any) => ({
+        subnet_id: s?.asset_id || s?.attributes?.vswitch_id || s?.attributes?.subnet_id || '',
+        name: s?.asset_name || s?.attributes?.vswitch_name || s?.attributes?.subnet_name || '',
+        cidr_block: s?.attributes?.cidr_block || '',
+        zone: s?.attributes?.zone || s?.attributes?.zone_id || '',
+        vpc_id: s?.attributes?.vpc_id || ''
+      }))
+    }
+    if (sgRes.status === 'fulfilled') {
+      const sgItems = sgRes.value?.data?.items || sgRes.value?.data || []
+      securityGroups.value = (Array.isArray(sgItems) ? sgItems : []).filter((s: any) => s != null).map((s: any) => ({
+        security_group_id: s?.asset_id || s?.attributes?.security_group_id || '',
+        name: s?.asset_name || s?.attributes?.security_group_name || '',
+        description: s?.attributes?.description || '',
+        vpc_id: s?.attributes?.vpc_id || ''
+      }))
+    }
   } catch (err) {
     ElMessage.error('加载子网和安全组失败，请重试')
     subnets.value = []

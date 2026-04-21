@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudMux 原型图</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080b11;--sb:#0b0f17;--nv:#0d1220;--cd:#111827;
+  --hv:rgba(99,144,255,.055);--at:rgba(99,144,255,.11);
+  --bd:rgba(255,255,255,.04);--bd2:rgba(255,255,255,.07);
+  --t1:#dfe3ed;--t2:#7e89a4;--t3:#525d78;--t4:#3a4260;
+  --ac:#6490ff;--ac2:#8bb2ff;--gl:rgba(99,144,255,.22);
+  --gn:#34d399;--og:#fbbf24;--rd:#f87171;--pp:#a78bfa;--cy:#22d3ee;
+  --sw:256px;--nh:52px;--r:10px;--rs:6px
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,"Segoe UI","Helvetica Neue",sans-serif;background:var(--bg);color:var(--t1);font-size:13px;-webkit-font-smoothing:antialiased}
+.W{display:flex;height:100vh}
+.S{width:var(--sw);background:var(--sb);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.S-logo{height:52px;display:flex;align-items:center;padding:0 18px;gap:10px;border-bottom:1px solid var(--bd);cursor:pointer}
+.S-logo svg{width:26px;height:26px}
+.S-logo b{font-size:15px;font-weight:700;background:linear-gradient(135deg,#6490ff,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.S-nav{flex:1;overflow-y:auto;padding:4px 0 24px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent}
+.S-nav::-webkit-scrollbar{width:3px}.S-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:3px}
+.S-ft{border-top:1px solid var(--bd);padding:8px}
+.S-ft div{height:34px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);cursor:pointer;color:var(--t3);transition:.15s}
+.S-ft div:hover{background:var(--hv);color:var(--t1)}
+.G{margin-bottom:2px}
+.G-t{padding:14px 18px 5px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t4);letter-spacing:1.2px}
+.M.child-active{color:var(--t1)}
+.L2-i.child-active{color:var(--t1)}
+
+/* === MAIN === */
+.MA{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.NB{height:var(--nh);background:var(--nv);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.NB-l,.NB-r{display:flex;align-items:center;gap:12px}
+.NB .btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);cursor:pointer;color:var(--t3);transition:.12s;position:relative}
+.NB .btn:hover{background:var(--hv);color:var(--t1)}
+.NB .btn svg{width:17px;height:17px}
+.badge{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:1.5px solid var(--nv)}
+.bc{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t3)}
+.bc .cur{color:var(--t1)}
+.bc .sep{opacity:.4}
+.srch{display:flex;align-items:center;background:rgba(255,255,255,.025);border:1px solid var(--bd2);border-radius:8px;padding:0 10px;height:32px;width:260px;gap:7px;cursor:text}
+.srch svg{width:14px;height:14px;stroke:var(--t3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.srch em{font-style:normal;color:var(--t4);font-size:12px;flex:1}
+.srch kbd{font-size:10px;color:var(--t4);background:rgba(255,255,255,.04);padding:1px 5px;border-radius:3px;font-family:monospace;border:1px solid var(--bd)}
+.tn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.025);border:1px solid var(--bd2);border-radius:var(--rs);padding:0 10px;height:32px;font-size:12px;color:var(--t2);cursor:pointer}
+.tn svg{width:15px;height:15px;stroke:var(--ac);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#6490ff,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;cursor:pointer}
+.proto{position:fixed;top:10px;right:10px;background:rgba(248,113,113,.1);color:var(--rd);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid rgba(248,113,113,.2);z-index:999;letter-spacing:.8px}
+
+/* === CONTENT === */
+.CT{flex:1;overflow-y:auto;padding:22px 26px;background:var(--bg)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.st{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:18px 20px;transition:.2s;position:relative;overflow:hidden}
+.st:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.st-l{font-size:11.5px;color:var(--t2);margin-bottom:8px}
+.st-v{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.st-c{font-size:11px;margin-top:6px}.st-c.up{color:var(--gn)}.st-c.dn{color:var(--rd)}.st-c.wn{color:var(--og)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.ch{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:18px 20px}
+.ch-t{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.ch-t small{font-size:11px;color:var(--t3);font-weight:400}
+.line-ch{height:180px;position:relative;overflow:hidden;border-radius:var(--rs)}
+.line-ch .grid{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.015) 0 1px,transparent 1px 60px),repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 36px)}
+.line-ch .area{position:absolute;bottom:0;left:0;right:0;height:70%}
+.line-ch .area svg{width:100%;height:100%}
+.donut-wrap{display:flex;align-items:center;gap:24px;padding:10px 0}
+.donut{width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--ac) 0deg 130deg,var(--pp) 130deg 210deg,var(--gn) 210deg 280deg,var(--og) 280deg 330deg,var(--cy) 330deg 360deg);position:relative;flex-shrink:0}
+.donut::after{content:"";position:absolute;inset:28px;background:var(--cd);border-radius:50%}
+.donut-info{display:flex;flex-direction:column;gap:8px}
+.donut-info div{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--t2)}
+.donut-info div::before{content:"";width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.donut-info div:nth-child(1)::before{background:var(--ac)}.donut-info div:nth-child(2)::before{background:var(--pp)}.donut-info div:nth-child(3)::before{background:var(--gn)}.donut-info div:nth-child(4)::before{background:var(--og)}.donut-info div:nth-child(5)::before{background:var(--cy)}
+.donut-info b{color:var(--t1);font-weight:600;margin-left:auto;font-size:12px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:160px;padding-top:10px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-col .b{width:100%;border-radius:4px 4px 0 0;min-height:4px}
+.bar-col small{font-size:9.5px;color:var(--t4)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--t3);padding:8px 12px;border-bottom:1px solid var(--bd)}
+.tbl td{font-size:12px;color:var(--t2);padding:10px 12px;border-bottom:1px solid var(--bd)}
+.tbl tr:hover td{background:var(--hv)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:500}
+.tag-b{background:rgba(99,144,255,.12);color:var(--ac)}.tag-g{background:rgba(52,211,153,.12);color:var(--gn)}.tag-o{background:rgba(251,191,36,.12);color:var(--og)}.tag-r{background:rgba(248,113,113,.12);color:var(--rd)}.tag-p{background:rgba(167,139,250,.12);color:var(--pp)}
+
+/* Page header */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding:20px 24px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--r)}
+.ph h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.ph p{font-size:12.5px;color:var(--t2)}
+.ph-stats{display:flex;gap:24px}
+.ph-st{text-align:center}
+.ph-st-v{font-size:22px;font-weight:700}
+.ph-st-l{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* Toolbar */
+.tb{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-left h2{font-size:14px;font-weight:600;white-space:nowrap}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-filters{display:flex;gap:6px}
+.tb-sel{display:flex;align-items:center;gap:4px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--rs);padding:0 10px;height:30px;font-size:11.5px;color:var(--t2);cursor:pointer}
+.tb-sel:hover{border-color:var(--bd2)}
+.tb-btn{display:flex;align-items:center;gap:5px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--rs);padding:0 12px;height:30px;font-size:11.5px;color:var(--t2);cursor:pointer;white-space:nowrap}
+.tb-btn:hover{border-color:var(--bd2);color:var(--t1)}
+.tb-btn.primary{background:var(--ac);border-color:var(--ac);color:#fff}
+.tb-btn.primary:hover{opacity:.9}
+.tb-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tb-search{display:flex;align-items:center;gap:6px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--rs);padding:0 10px;height:30px}
+.tb-search svg{width:13px;height:13px;stroke:var(--t3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-search input{background:none;border:none;outline:none;color:var(--t1);font-size:11.5px;width:120px}
+.tb-search input::placeholder{color:var(--t4)}
+
+/* Pager */
+.pager{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:8px 0}
+.pg-info{font-size:11.5px;color:var(--t3)}
+.pg-btns{display:flex;gap:4px}
+.pg-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);font-size:11.5px;color:var(--t2);cursor:pointer;border:1px solid var(--bd)}
+.pg-btn:hover{border-color:var(--bd2);color:var(--t1)}
+.pg-btn.on{background:var(--ac);border-color:var(--ac);color:#fff}
+
+/* Progress */
+.progress{width:100%;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.progress-bar{height:100%;background:var(--ac);border-radius:3px;transition:.3s}
+.progress-bar.warn{background:var(--og)}
+.progress-bar.err{background:var(--rd)}
+
+/* Card grid */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.model-card{display:flex;align-items:center;gap:14px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:16px 18px;cursor:pointer;transition:.15s}
+.model-card:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.mc-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.mc-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.mc-meta{font-size:11px;color:var(--t3)}
+
+/* Account cards */
+.account-card{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:18px 20px;cursor:pointer;transition:.15s}
+.account-card:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.ac-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ac-provider{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.ac-provider.ali{background:rgba(255,106,0,.12);color:#ff6a00}
+.ac-provider.aws{background:rgba(255,153,0,.12);color:#ff9900}
+.ac-provider.tc{background:rgba(0,130,255,.12);color:#0082ff}
+.ac-provider.hw{background:rgba(207,0,15,.12);color:#cf000f}
+.ac-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.ac-desc{font-size:11.5px;color:var(--t3);margin-bottom:10px}
+.ac-stats{display:flex;gap:12px;font-size:11px;color:var(--t2)}
+
+/* Tree view */
+.tree-view{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tree-card{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:18px 20px}
+.tree-node{padding:8px 12px;font-size:13px;border-radius:var(--rs);display:flex;align-items:center;gap:8px}
+.tree-node.root{font-weight:600;font-size:14px;margin-bottom:4px}
+.tree-children{padding-left:20px;border-left:1px solid var(--bd);margin-left:12px}
+.tree-children .tree-node{cursor:pointer;transition:.12s}
+.tree-children .tree-node:hover{background:var(--hv)}
+.tree-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tree-count{margin-left:auto;font-size:11px;color:var(--t3)}
+
+/* Dict layout */
+.dict-layout{display:grid;grid-template-columns:240px 1fr;gap:14px}
+.dict-left{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:12px 0;overflow-y:auto}
+.dict-header{padding:8px 16px;font-size:12px;font-weight:600;color:var(--t3);border-bottom:1px solid var(--bd);margin-bottom:4px}
+.dict-item{padding:8px 16px;font-size:12.5px;color:var(--t2);cursor:pointer;transition:.12s;display:flex;justify-content:space-between}
+.dict-item:hover{background:var(--hv);color:var(--t1)}
+.dict-item.on{color:var(--ac);background:var(--at)}
+.dict-item small{color:var(--t4);font-size:11px}
+.dict-right{background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);padding:18px 20px}
+
+/* Topology */
+.topo-placeholder{position:relative;height:440px;background:var(--cd);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.topo-node{position:absolute;padding:12px 18px;border:1.5px solid var(--bd2);border-radius:var(--r);font-size:12.5px;text-align:center;line-height:1.5;background:var(--cd);z-index:2}
+.topo-node small{color:var(--t3);font-size:10.5px}
+.topo-line{position:absolute;width:1px;background:var(--bd2);z-index:1}
+.topo-row{position:absolute;left:0;right:0;display:flex;justify-content:center;gap:40px}
+
+/* Empty page */
+.empty-page{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--t3)}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.5}
+.empty-text{font-size:18px;font-weight:600;margin-bottom:6px;color:var(--t2)}
+.empty-desc{font-size:13px}
+</style>
+</head>
+<body>
+<div class="W" id="app"></div>
+<script>
+// ===== MENU DATA =====
+const menu = [
+  { group:'概览', items:[
+    {id:'dashboard',label:'仪表盘',icon:'grid'}
+  ]},
+  { group:'资源', items:[
+    {id:'assets',label:'资产列表',icon:'layers',children:[
+      {id:'host',label:'主机',icon:'monitor',children:[
+        {id:'ecs',label:'虚拟机'},
+        {id:'template',label:'主机模板'},
+        {id:'disk',label:'云盘'},
+        {id:'snapshot',label:'快照'},
+        {id:'sg',label:'安全组'},
+        {id:'image',label:'镜像管理'},
+      ]},
+      {id:'storage',label:'存储',icon:'folder',children:[
+        {id:'nas',label:'文件存储 NAS'},
+        {id:'oss',label:'对象存储 OSS'},
+      ]},
+      {id:'network',label:'网络',icon:'globe',children:[
+        {id:'vpc',label:'VPC'},
+        {id:'eip',label:'弹性公网IP'},
+        {id:'vswitch',label:'交换机'},
+        {id:'lb',label:'负载均衡'},
+        {id:'cdn',label:'CDN 加速'},
+        {id:'waf',label:'WAF 防火墙'},
+      ]},
+      {id:'database',label:'数据库',icon:'database',children:[
+        {id:'rds',label:'RDS 云数据库'},
+        {id:'redis',label:'Redis'},
+        {id:'mongodb',label:'MongoDB'},
+      ]},
+      {id:'middleware',label:'中间件',icon:'settings',children:[
+        {id:'kafka',label:'Kafka'},
+        {id:'es',label:'Elasticsearch'},
+      ]},
+      {id:'container',label:'容器服务',icon:'box',disabled:true},
+    ]},
+    {id:'svc-tree',label:'服务树',icon:'share2',children:[
+      {id:'svc-overview',label:'服务树总览'},
+      {id:'svc-env',label:'环境管理'},
+      {id:'svc-rules',label:'绑定规则'},
+    ]},
+    {id:'tasks',label:'任务管理',icon:'check-square'},
+    {id:'tags',label:'标签管理',icon:'tag'},
+  ]},
+  { group:'FinOps', items:[
+    {id:'fin-cost',label:'成本概览',icon:'dollar-sign'},
+    {id:'fin-alloc',label:'成本分摊',icon:'users'},
+    {id:'fin-budget',label:'预算管理',icon:'file-text'},
+    {id:'fin-anomaly',label:'异常与优化',icon:'alert-triangle'},
+    {id:'fin-collect',label:'采集管理',icon:'activity'},
+  ]},
+  { group:'平台管理', items:[
+    {id:'alert',label:'告警中心',icon:'bell',children:[
+      {id:'alert-events',label:'告警事件'},
+      {id:'alert-rules',label:'告警规则'},
+      {id:'alert-channels',label:'通知渠道'},
+    ]},
+    {id:'cmdb',label:'CMDB',icon:'box2',children:[
+      {id:'cmdb-models',label:'资源模型'},
+      {id:'cmdb-instances',label:'资源实例'},
+      {id:'cmdb-relations',label:'模型关系'},
+      {id:'cmdb-topology',label:'拓扑视图'},
+    ]},
+    {id:'audit',label:'操作审计',icon:'file'},
+    {id:'changes',label:'变更历史',icon:'rotate-ccw'},
+    {id:'accounts',label:'云账号管理',icon:'cloud'},
+    {id:'dict',label:'数据字典',icon:'book'},
+    {id:'security',label:'用户与权限',icon:'shield',children:[
+      {id:'iam-users',label:'用户管理'},
+      {id:'iam-groups',label:'用户组管理'},
+      {id:'iam-templates',label:'策略模板'},
+      {id:'iam-tenants',label:'租户管理'},
+    ]},
+  ]},
+];
+// ===== SVG ICONS =====
+const icons={
+grid:`<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>`,
+layers:`<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>`,
+monitor:`<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>`,
+folder:`<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>`,
+globe:`<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>`,
+database:`<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>`,
+settings:`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>`,
+box:`<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>`,
+share2:`<path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/>`,
+'check-square':`<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>`,
+tag:`<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>`,
+'dollar-sign':`<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>`,
+users:`<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>`,
+'file-text':`<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>`,
+'alert-triangle':`<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+activity:`<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>`,
+bell:`<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>`,
+box2:`<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>`,
+file:`<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>`,
+'rotate-ccw':`<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>`,
+cloud:`<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>`,
+book:`<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>`,
+shield:`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`,
+};
+function ico(name,size=17){return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons[name]||''}</svg>`;}
+// ===== PAGE CONTENT GENERATORS =====
+// Helper: stat card
+function statCard(label,value,color,change,dir){
+  return `<div class="st"><div class="st-l">${label}</div><div class="st-v" style="color:var(--${color})">${value}</div><div class="st-c ${dir}">${change}</div></div>`;
+}
+// Helper: table
+function tbl(cols,rows){
+  let h=cols.map(c=>`<th>${c}</th>`).join('');
+  let b=rows.map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' style="color:var(--t1)"':''}>${c}</td>`).join('')}</tr>`).join('');
+  return `<table class="tbl"><thead><tr>${h}</tr></thead><tbody>${b}</tbody></table>`;
+}
+// Helper: tag
+function tg(text,type){return `<span class="tag tag-${type}">${text}</span>`;}
+// Helper: toolbar
+function toolbar(title,btns,filters){
+  let fb=filters?`<div class="tb-filters">${filters.map(f=>`<div class="tb-sel">${f} <span style="opacity:.4;font-size:10px">▾</span></div>`).join('')}</div>`:'';
+  let bb=btns?btns.map(b=>`<div class="tb-btn${b.primary?' primary':''}">${b.icon?ico(b.icon,14)+' ':''}${b.label}</div>`).join(''):'';
+  return `<div class="tb"><div class="tb-left"><h2>${title}</h2>${fb}</div><div class="tb-right"><div class="tb-search">${ico('search',14)}<input placeholder="搜索..." /></div>${bb}</div></div>`;
+}
+// Helper: page header with stats
+function pageHeader(title,desc,stats){
+  let s=stats?`<div class="ph-stats">${stats.map(s=>`<div class="ph-st"><div class="ph-st-v" style="color:var(--${s.color||'ac'})">${s.value}</div><div class="ph-st-l">${s.label}</div></div>`).join('')}</div>`:'';
+  return `<div class="ph"><div><h1>${title}</h1><p>${desc}</p></div>${s}</div>`;
+}
+// ===== PAGE DEFINITIONS =====
+const pages = {};
+
+// Dashboard
+pages.dashboard = ()=>`
+<div class="stats">${statCard('云账号','12','ac','↑ 2 本月新增','up')}${statCard('资产总量','3,847','gn','↑ 156 较上月','up')}${statCard('本月成本','¥284K','og','↓ 8.2% 较上月','dn')}${statCard('告警事件','23','rd','⚠ 5 待处理','wn')}</div>
+<div class="charts">
+  <div class="ch"><div class="ch-t">成本趋势<small>近 6 个月</small></div><div class="line-ch"><div class="grid"></div><div class="area"><svg viewBox="0 0 600 200" preserveAspectRatio="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6490ff" stop-opacity=".3"/><stop offset="100%" stop-color="#6490ff" stop-opacity="0"/></linearGradient></defs><path d="M0,160 C100,120 200,80 300,60 C400,50 500,20 600,25 L600,200 L0,200Z" fill="url(#g1)"/><path d="M0,160 C100,120 200,80 300,60 C400,50 500,20 600,25" fill="none" stroke="#6490ff" stroke-width="2.5"/></svg></div></div></div>
+  <div class="ch"><div class="ch-t">资产分布<small>按云厂商</small></div><div class="donut-wrap"><div class="donut"></div><div class="donut-info"><div>阿里云 <b>36%</b></div><div>AWS <b>22%</b></div><div>腾讯云 <b>20%</b></div><div>华为云 <b>14%</b></div><div>其他 <b>8%</b></div></div></div></div>
+</div>
+<div class="charts">
+  <div class="ch"><div class="ch-t">资源类型<small>TOP 8</small></div><div class="bars"><div class="bar-col"><div class="b" style="height:90%;background:var(--ac)"></div><small>ECS</small></div><div class="bar-col"><div class="b" style="height:65%;background:var(--pp)"></div><small>RDS</small></div><div class="bar-col"><div class="b" style="height:55%;background:var(--gn)"></div><small>Redis</small></div><div class="bar-col"><div class="b" style="height:48%;background:var(--cy)"></div><small>VPC</small></div><div class="bar-col"><div class="b" style="height:40%;background:var(--og)"></div><small>OSS</small></div><div class="bar-col"><div class="b" style="height:32%;background:var(--ac2)"></div><small>EIP</small></div><div class="bar-col"><div class="b" style="height:25%;background:var(--pp)"></div><small>LB</small></div><div class="bar-col"><div class="b" style="height:18%;background:var(--gn)"></div><small>CDN</small></div></div></div>
+  <div class="ch"><div class="ch-t">最近告警<small>最新 5 条</small></div>${tbl(['资源','级别','描述','时间'],[['ecs-prod-01',tg('严重','r'),'CPU &gt; 95%','2分钟前'],['rds-main',tg('警告','o'),'连接数接近上限','15分钟前'],['redis-cache',tg('警告','o'),'内存 85%','1小时前'],['vpc-prod',tg('信息','b'),'安全组变更','3小时前'],['oss-backup',tg('信息','b'),'容量超 1TB','5小时前']])}</div>
+</div>`;
+// ECS 虚拟机
+pages.ecs=()=>`
+${pageHeader('虚拟机','管理所有云平台的 ECS / EC2 / CVM 实例',[{label:'运行中',value:'286',color:'gn'},{label:'已停止',value:'34',color:'rd'},{label:'总实例',value:'320',color:'ac'},{label:'本月费用',value:'¥89.2K',color:'og'}])}
+${toolbar('实例列表',[{label:'创建实例',icon:'monitor',primary:true},{label:'批量操作'},{label:'导出'}],['全部云平台','全部地域','全部状态'])}
+${tbl(['实例名称','实例ID','云平台','规格','状态','公网IP','地域','创建时间'],[
+['web-prod-01','i-2ze8f0k3x','阿里云','ecs.c6.xlarge',tg('运行中','g'),'47.96.xx.xx','华东1','2025-08-12'],
+['api-server-03','i-0a3b7c9d','AWS','c5.2xlarge',tg('运行中','g'),'52.83.xx.xx','us-east-1','2025-06-20'],
+['db-backup','ins-k8s02m','腾讯云','S5.LARGE8',tg('已停止','r'),'—','广州','2025-09-01'],
+['gateway-01','i-9xm3fa','阿里云','ecs.g7.large',tg('运行中','g'),'120.55.xx.xx','华北2','2025-07-15'],
+['ml-training','i-0f8e2d1c','AWS','p3.2xlarge',tg('运行中','g'),'54.21.xx.xx','ap-southeast-1','2025-10-03'],
+['test-env-02','i-5bn7kq','阿里云','ecs.t6-c1m1.large',tg('已停止','r'),'—','华东2','2025-11-22'],
+['monitor-node','ins-qw9r3t','腾讯云','SA2.MEDIUM4',tg('运行中','g'),'119.29.xx.xx','上海','2025-05-18'],
+])}
+<div class="pager"><span class="pg-info">共 320 条</span><div class="pg-btns"><span class="pg-btn">‹</span><span class="pg-btn on">1</span><span class="pg-btn">2</span><span class="pg-btn">3</span><span class="pg-btn">...</span><span class="pg-btn">32</span><span class="pg-btn">›</span></div></div>`;
+
+// 主机模板
+pages.template=()=>`
+${pageHeader('主机模板','预定义主机配置模板，快速创建标准化实例',[{label:'模板总数',value:'18',color:'ac'},{label:'本月使用',value:'42',color:'gn'}])}
+${toolbar('模板列表',[{label:'创建模板',primary:true}],['全部云平台'])}
+${tbl(['模板名称','云平台','规格','镜像','网络','使用次数','更新时间'],[
+['Web标准-4C8G','阿里云','ecs.c6.xlarge','CentOS 7.9','VPC-prod / 交换机A',tg('156','b'),'2025-12-01'],
+['DB高性能-8C32G','阿里云','ecs.r6.2xlarge','CentOS 7.9','VPC-prod / 交换机B',tg('43','b'),'2025-11-15'],
+['GPU训练-V100','AWS','p3.2xlarge','Ubuntu 22.04','vpc-ml / subnet-gpu',tg('12','b'),'2025-10-20'],
+['测试环境-2C4G','腾讯云','S5.MEDIUM4','Ubuntu 20.04','VPC-test / 子网1',tg('89','b'),'2025-11-28'],
+])}`;
+
+// 云盘
+pages.disk=()=>`
+${pageHeader('云盘','管理所有云平台的块存储资源',[{label:'云盘总数',value:'487',color:'ac'},{label:'总容量',value:'24.6 TB',color:'pp'},{label:'使用中',value:'412',color:'gn'},{label:'未挂载',value:'75',color:'og'}])}
+${toolbar('云盘列表',[{label:'创建云盘',primary:true},{label:'导出'}],['全部云平台','全部状态','全部类型'])}
+${tbl(['云盘名称','云盘ID','云平台','类型','容量','状态','挂载实例','地域'],[
+['sys-web-prod-01','d-2ze9x0k3','阿里云','ESSD PL1','40 GB',tg('使用中','g'),'web-prod-01','华东1'],
+['data-db-main','d-0a3b7c9d','阿里云','ESSD PL2','500 GB',tg('使用中','g'),'db-main-01','华东1'],
+['vol-backup-03','vol-08f3a2','AWS','gp3','200 GB',tg('未挂载','o'),'—','us-east-1'],
+['log-storage','disk-qw9r3t','腾讯云','高性能云硬盘','100 GB',tg('使用中','g'),'monitor-node','上海'],
+])}`;
+// 快照
+pages.snapshot=()=>`
+${pageHeader('快照','云盘快照管理与恢复',[{label:'快照总数',value:'156',color:'ac'},{label:'总大小',value:'3.2 TB',color:'pp'}])}
+${toolbar('快照列表',[{label:'创建快照',primary:true}],['全部云平台'])}
+${tbl(['快照名称','快照ID','云平台','源云盘','大小','状态','创建时间'],[
+['snap-daily-web01','s-2ze8f0k3','阿里云','sys-web-prod-01','40 GB',tg('可用','g'),'2026-03-29'],
+['snap-before-upgrade','s-0a3b7c9d','AWS','vol-db-main','500 GB',tg('可用','g'),'2026-03-25'],
+['snap-test-env','snap-k8s02m','腾讯云','disk-test-02','100 GB',tg('创建中','o'),'2026-03-30'],
+])}`;
+
+// 安全组
+pages.sg=()=>`
+${pageHeader('安全组','管理云平台安全组及规则',[{label:'安全组',value:'45',color:'ac'},{label:'规则总数',value:'328',color:'pp'}])}
+${toolbar('安全组列表',[{label:'创建安全组',primary:true}],['全部云平台','全部VPC'])}
+${tbl(['安全组名称','安全组ID','云平台','VPC','规则数','关联实例','描述'],[
+['sg-web-prod','sg-2ze8f0k3','阿里云','VPC-prod','24',tg('12','b'),'Web服务器安全组'],
+['sg-db-internal','sg-0a3b7c9d','阿里云','VPC-prod','8',tg('4','b'),'数据库内网安全组'],
+['sg-default','sg-k8s02m','AWS','vpc-main','16',tg('28','b'),'默认安全组'],
+['sg-office-vpn','sg-qw9r3t','腾讯云','VPC-office','6',tg('3','b'),'办公VPN安全组'],
+])}`;
+
+// 镜像管理
+pages.image=()=>`
+${pageHeader('镜像管理','管理自定义镜像与公共镜像',[{label:'自定义镜像',value:'23',color:'ac'},{label:'共享镜像',value:'8',color:'pp'}])}
+${toolbar('镜像列表',[{label:'创建镜像',primary:true},{label:'导入镜像'}],['全部云平台','全部类型'])}
+${tbl(['镜像名称','镜像ID','云平台','操作系统','大小','类型','创建时间'],[
+['centos7.9-base-v3','m-2ze8f0k3','阿里云','CentOS 7.9 64位','40 GB',tg('自定义','b'),'2026-01-15'],
+['ubuntu22-gpu-cuda','ami-0a3b7c','AWS','Ubuntu 22.04','80 GB',tg('自定义','b'),'2025-12-20'],
+['web-golden-image','img-k8s02m','腾讯云','CentOS 7.9 64位','50 GB',tg('自定义','b'),'2026-02-10'],
+['CentOS 7.9 公共','m-public-01','阿里云','CentOS 7.9 64位','40 GB',tg('公共','p'),'—'],
+])}`;
+
+// NAS
+pages.nas=()=>`
+${pageHeader('文件存储 NAS','管理所有云平台的文件存储服务',[{label:'文件系统',value:'12',color:'ac'},{label:'总容量',value:'8.5 TB',color:'pp'},{label:'月费用',value:'¥4.2K',color:'og'}])}
+${toolbar('文件系统列表',[{label:'创建文件系统',primary:true}],['全部云平台','全部类型'])}
+${tbl(['名称','文件系统ID','云平台','协议','类型','已用容量','状态','挂载点数'],[
+['nas-shared-data','nas-2ze8f0','阿里云','NFS v4','通用型','1.2 TB',tg('运行中','g'),'6'],
+['nas-log-archive','nas-0a3b7c','阿里云','NFS v4','容量型','3.8 TB',tg('运行中','g'),'2'],
+['efs-ml-dataset','fs-08f3a2','AWS','NFS v4.1','通用型','2.1 TB',tg('运行中','g'),'4'],
+])}`;
+
+// OSS
+pages.oss=()=>`
+${pageHeader('对象存储 OSS','管理所有云平台的对象存储桶',[{label:'存储桶',value:'28',color:'ac'},{label:'总存储量',value:'42.3 TB',color:'pp'},{label:'月费用',value:'¥6.8K',color:'og'}])}
+${toolbar('存储桶列表',[{label:'创建存储桶',primary:true}],['全部云平台','全部地域'])}
+${tbl(['存储桶名称','云平台','地域','存储类型','对象数量','存储量','访问权限','创建时间'],[
+['static-assets-prod','阿里云','华东1','标准存储','1,234,567','2.3 TB',tg('公共读','o'),'2024-03-15'],
+['db-backup-daily','阿里云','华东1','低频访问','8,432','12.8 TB',tg('私有','b'),'2024-01-20'],
+['ml-training-data','AWS','us-east-1','S3 Standard','456,789','8.5 TB',tg('私有','b'),'2024-06-10'],
+['log-archive-2025','腾讯云','广州','归档存储','2,345,678','15.2 TB',tg('私有','b'),'2025-01-01'],
+])}`;
+// VPC
+pages.vpc=()=>`
+${pageHeader('VPC','管理所有云平台的虚拟私有网络',[{label:'VPC总数',value:'18',color:'ac'},{label:'子网数',value:'56',color:'pp'}])}
+${toolbar('VPC 列表',[{label:'创建VPC',primary:true}],['全部云平台','全部地域'])}
+${tbl(['VPC名称','VPC ID','云平台','CIDR','子网数','实例数','地域','状态'],[
+['VPC-prod','vpc-2ze8f0k3','阿里云','10.0.0.0/8','12','86',tg('华东1','b'),tg('可用','g')],
+['vpc-main','vpc-0a3b7c9d','AWS','172.16.0.0/16','8','42',tg('us-east-1','b'),tg('可用','g')],
+['VPC-test','vpc-k8s02m','腾讯云','192.168.0.0/16','4','15',tg('广州','b'),tg('可用','g')],
+['VPC-office','vpc-qw9r3t','阿里云','10.10.0.0/16','6','23',tg('华北2','b'),tg('可用','g')],
+])}`;
+
+// EIP
+pages.eip=()=>`
+${pageHeader('弹性公网IP','管理所有云平台的弹性公网IP资源',[{label:'EIP总数',value:'45',color:'ac'},{label:'已绑定',value:'38',color:'gn'},{label:'未绑定',value:'7',color:'og'},{label:'月费用',value:'¥3.2K',color:'og'}])}
+${toolbar('EIP 列表',[{label:'申请EIP',primary:true},{label:'导出'}],['全部云平台','全部状态'])}
+${tbl(['EIP地址','EIP ID','云平台','带宽','状态','绑定资源','地域','计费方式'],[
+['47.96.xx.xx','eip-2ze8f0','阿里云','100 Mbps',tg('已绑定','g'),'web-prod-01','华东1','按量付费'],
+['52.83.xx.xx','eipalloc-0a3b','AWS','—',tg('已绑定','g'),'api-server-03','us-east-1','—'],
+['120.55.xx.xx','eip-qw9r3t','阿里云','50 Mbps',tg('已绑定','g'),'gateway-01','华北2','包年包月'],
+['39.108.xx.xx','eip-unused1','阿里云','20 Mbps',tg('未绑定','o'),'—','华东2','按量付费'],
+])}`;
+
+// 交换机
+pages.vswitch=()=>`
+${pageHeader('交换机','管理VPC下的虚拟交换机/子网',[{label:'交换机总数',value:'56',color:'ac'}])}
+${toolbar('交换机列表',[{label:'创建交换机',primary:true}],['全部云平台','全部VPC'])}
+${tbl(['交换机名称','交换机ID','云平台','所属VPC','CIDR','可用IP','可用区','状态'],[
+['vsw-web-zone-a','vsw-2ze8f0','阿里云','VPC-prod','10.0.1.0/24','230','华东1-A',tg('可用','g')],
+['vsw-db-zone-b','vsw-0a3b7c','阿里云','VPC-prod','10.0.2.0/24','248','华东1-B',tg('可用','g')],
+['subnet-public','subnet-08f3','AWS','vpc-main','172.16.1.0/24','245','us-east-1a',tg('可用','g')],
+['subnet-private','subnet-k8s0','腾讯云','VPC-test','192.168.1.0/24','250','广州3',tg('可用','g')],
+])}`;
+
+// 负载均衡
+pages.lb=()=>`
+${pageHeader('负载均衡','管理所有云平台的负载均衡实例',[{label:'实例总数',value:'15',color:'ac'},{label:'监听器',value:'42',color:'pp'},{label:'月费用',value:'¥5.6K',color:'og'}])}
+${toolbar('负载均衡列表',[{label:'创建实例',primary:true}],['全部云平台','全部类型'])}
+${tbl(['名称','实例ID','云平台','类型','VIP','监听器','后端服务器','状态'],[
+['slb-web-prod','lb-2ze8f0','阿里云','应用型 ALB','47.96.xx.xx','3',tg('6','b'),tg('运行中','g')],
+['nlb-gateway','lb-0a3b7c','阿里云','网络型 NLB','120.55.xx.xx','2',tg('4','b'),tg('运行中','g')],
+['alb-api','arn:aws:elb','AWS','ALB','52.83.xx.xx','4',tg('8','b'),tg('运行中','g')],
+['clb-internal','lb-k8s02m','腾讯云','传统型 CLB','10.0.3.100','2',tg('3','b'),tg('运行中','g')],
+])}`;
+
+// CDN
+pages.cdn=()=>`
+${pageHeader('CDN 加速','管理所有云平台的CDN加速域名',[{label:'加速域名',value:'23',color:'ac'},{label:'今日流量',value:'1.2 TB',color:'pp'},{label:'月费用',value:'¥8.5K',color:'og'}])}
+${toolbar('域名列表',[{label:'添加域名',primary:true}],['全部云平台','全部状态'])}
+${tbl(['加速域名','CNAME','云平台','业务类型','状态','今日带宽峰值','今日请求数'],[
+['static.example.com','static.example.com.w.cdn','阿里云','图片小文件',tg('正常','g'),'256 Mbps','12.3M'],
+['download.example.com','download.xxx.cloudfront','AWS','大文件下载',tg('正常','g'),'512 Mbps','2.1M'],
+['video.example.com','video.example.com.cdn','腾讯云','音视频点播',tg('正常','g'),'1.2 Gbps','890K'],
+['api-cdn.example.com','api-cdn.xxx.w.cdn','阿里云','全站加速',tg('配置中','o'),'—','—'],
+])}`;
+
+// WAF
+pages.waf=()=>`
+${pageHeader('WAF 防火墙','管理所有云平台的Web应用防火墙',[{label:'防护域名',value:'12',color:'ac'},{label:'今日拦截',value:'3,456',color:'rd'},{label:'月费用',value:'¥12K',color:'og'}])}
+${toolbar('防护域名列表',[{label:'添加域名',primary:true}],['全部云平台'])}
+${tbl(['防护域名','云平台','防护模式','今日请求','今日拦截','拦截率','状态'],[
+['www.example.com','阿里云',tg('拦截','r'),'1,234,567','2,345','0.19%',tg('防护中','g')],
+['api.example.com','阿里云',tg('观察','o'),'567,890','890','0.16%',tg('防护中','g')],
+['app.example.com','AWS',tg('拦截','r'),'345,678','221','0.06%',tg('防护中','g')],
+])}`;
+// 数据库
+pages.rds=()=>`
+${pageHeader('RDS 云数据库','管理所有云平台的关系型数据库实例',[{label:'实例总数',value:'24',color:'ac'},{label:'运行中',value:'22',color:'gn'},{label:'月费用',value:'¥45.6K',color:'og'}])}
+${toolbar('RDS 实例列表',[{label:'创建实例',primary:true}],['全部云平台','全部引擎','全部状态'])}
+${tbl(['实例名称','实例ID','云平台','引擎','规格','存储','状态','地域'],[
+['rds-main-master','rm-2ze8f0k3','阿里云','MySQL 8.0','4C16G','500 GB SSD',tg('运行中','g'),'华东1'],
+['rds-main-slave','rm-0a3b7c9d','阿里云','MySQL 8.0','4C16G','500 GB SSD',tg('运行中','g'),'华东1'],
+['rds-analytics','db-k8s02m','AWS','PostgreSQL 15','8C32G','1 TB gp3',tg('运行中','g'),'us-east-1'],
+['rds-user-center','cdb-qw9r3t','腾讯云','MySQL 5.7','2C8G','200 GB SSD',tg('运行中','g'),'广州'],
+])}`;
+
+pages.redis=()=>`
+${pageHeader('Redis','管理所有云平台的Redis缓存实例',[{label:'实例总数',value:'16',color:'ac'},{label:'运行中',value:'16',color:'gn'},{label:'月费用',value:'¥12.3K',color:'og'}])}
+${toolbar('Redis 实例列表',[{label:'创建实例',primary:true}],['全部云平台','全部架构'])}
+${tbl(['实例名称','实例ID','云平台','版本','架构','内存','连接数','状态'],[
+['redis-session','r-2ze8f0k3','阿里云','7.0','集群版','16 GB','8,432 / 10,000',tg('运行中','g')],
+['redis-cache','r-0a3b7c9d','阿里云','7.0','标准版','8 GB','3,210 / 10,000',tg('运行中','g')],
+['elasticache-prod','redis-08f3','AWS','7.0','集群版','32 GB','12,345 / 65,000',tg('运行中','g')],
+['redis-queue','crs-k8s02m','腾讯云','6.2','标准版','4 GB','1,024 / 10,000',tg('运行中','g')],
+])}`;
+
+pages.mongodb=()=>`
+${pageHeader('MongoDB','管理所有云平台的MongoDB数据库实例',[{label:'实例总数',value:'6',color:'ac'},{label:'运行中',value:'6',color:'gn'}])}
+${toolbar('MongoDB 实例列表',[{label:'创建实例',primary:true}],['全部云平台'])}
+${tbl(['实例名称','实例ID','云平台','版本','架构','规格','存储','状态'],[
+['mongo-log-store','dds-2ze8f0','阿里云','6.0','副本集','4C8G','500 GB',tg('运行中','g')],
+['mongo-user-profile','dds-0a3b7c','阿里云','6.0','分片集群','8C16G','1 TB',tg('运行中','g')],
+['docdb-analytics','cluster-08f3','AWS','6.0','集群','4C16G','200 GB',tg('运行中','g')],
+])}`;
+
+// 中间件
+pages.kafka=()=>`
+${pageHeader('Kafka','管理所有云平台的Kafka消息队列实例',[{label:'实例总数',value:'4',color:'ac'},{label:'Topic数',value:'128',color:'pp'},{label:'日消息量',value:'2.3亿',color:'gn'}])}
+${toolbar('Kafka 实例列表',[{label:'创建实例',primary:true}],['全部云平台'])}
+${tbl(['实例名称','实例ID','云平台','版本','规格','Topic数','日消息量','状态'],[
+['kafka-prod','alikafka-2ze8','阿里云','3.6.1','16C64G x3','86','1.8亿',tg('运行中','g')],
+['kafka-log','alikafka-0a3b','阿里云','3.6.1','8C32G x3','32','4,200万',tg('运行中','g')],
+['msk-analytics','msk-08f3a2','AWS','3.5.1','kafka.m5.2xl x3','10','1,200万',tg('运行中','g')],
+])}`;
+
+pages.es=()=>`
+${pageHeader('Elasticsearch','管理所有云平台的Elasticsearch集群',[{label:'集群总数',value:'5',color:'ac'},{label:'总节点',value:'28',color:'pp'},{label:'总存储',value:'8.5 TB',color:'og'}])}
+${toolbar('集群列表',[{label:'创建集群',primary:true}],['全部云平台'])}
+${tbl(['集群名称','集群ID','云平台','版本','节点数','存储','索引数','状态'],[
+['es-log-prod','es-2ze8f0k3','阿里云','8.9','12','4.2 TB','156',tg('绿色','g')],
+['es-search','es-0a3b7c9d','阿里云','8.9','6','1.8 TB','42',tg('绿色','g')],
+['es-analytics','es-08f3a2','AWS','8.11','8','2.1 TB','68',tg('黄色','o')],
+['es-test','es-k8s02m','腾讯云','7.17','2','400 GB','12',tg('绿色','g')],
+])}`;
+// 服务树
+pages['svc-overview']=()=>`
+${pageHeader('服务树总览','以树形结构管理业务、应用与服务的层级关系',[{label:'业务线',value:'8',color:'ac'},{label:'应用',value:'45',color:'pp'},{label:'服务',value:'128',color:'gn'}])}
+<div class="tree-view">
+  <div class="tree-card">
+    <div class="tree-node root">📦 全部业务</div>
+    <div class="tree-children">
+      <div class="tree-node"><span class="tree-dot" style="background:var(--ac)"></span>电商平台<span class="tree-count">12 服务</span></div>
+      <div class="tree-node"><span class="tree-dot" style="background:var(--gn)"></span>用户中心<span class="tree-count">8 服务</span></div>
+      <div class="tree-node"><span class="tree-dot" style="background:var(--pp)"></span>数据平台<span class="tree-count">15 服务</span></div>
+      <div class="tree-node"><span class="tree-dot" style="background:var(--og)"></span>基础设施<span class="tree-count">23 服务</span></div>
+      <div class="tree-node"><span class="tree-dot" style="background:var(--cy)"></span>AI/ML平台<span class="tree-count">6 服务</span></div>
+    </div>
+  </div>
+  <div class="tree-card">
+    <div class="ch-t">资源绑定概况</div>
+    ${tbl(['业务线','绑定ECS','绑定RDS','绑定Redis','绑定LB'],[
+    ['电商平台','42','6','4','3'],['用户中心','18','4','3','2'],['数据平台','28','8','2','1'],['基础设施','56','4','6','4'],['AI/ML平台','12','2','1','0'],
+    ])}
+  </div>
+</div>`;
+
+pages['svc-env']=()=>`
+${pageHeader('环境管理','管理服务树中的部署环境配置',[{label:'环境总数',value:'5',color:'ac'}])}
+${toolbar('环境列表',[{label:'创建环境',primary:true}])}
+${tbl(['环境名称','环境标识','描述','关联服务数','创建时间'],[
+['生产环境',tg('prod','r'),'线上生产环境','128','2024-01-01'],
+['预发布环境',tg('staging','o'),'预发布验证环境','45','2024-01-01'],
+['测试环境',tg('test','b'),'功能测试环境','86','2024-01-01'],
+['开发环境',tg('dev','p'),'开发调试环境','92','2024-01-01'],
+['灰度环境',tg('canary','g'),'灰度发布环境','12','2025-06-15'],
+])}`;
+
+pages['svc-rules']=()=>`
+${pageHeader('绑定规则','配置资源自动绑定到服务树节点的规则',[{label:'规则总数',value:'32',color:'ac'},{label:'已启用',value:'28',color:'gn'}])}
+${toolbar('规则列表',[{label:'创建规则',primary:true}])}
+${tbl(['规则名称','匹配条件','目标节点','优先级','状态','匹配资源数'],[
+['Web服务器自动绑定','标签: role=web','电商平台/Web层','1',tg('已启用','g'),'42'],
+['数据库实例绑定','资源类型: RDS','数据平台/存储层','2',tg('已启用','g'),'24'],
+['GPU实例绑定','规格: *gpu*','AI/ML平台/训练','3',tg('已启用','g'),'12'],
+['测试环境绑定','标签: env=test','测试环境','5',tg('已禁用','r'),'0'],
+])}`;
+
+// 任务管理
+pages.tasks=()=>`
+${pageHeader('任务管理','管理资产同步、巡检等自动化任务',[{label:'任务总数',value:'18',color:'ac'},{label:'运行中',value:'3',color:'gn'},{label:'今日完成',value:'12',color:'pp'},{label:'失败',value:'1',color:'rd'}])}
+${toolbar('任务列表',[{label:'创建任务',primary:true},{label:'批量执行'}],['全部类型','全部状态'])}
+${tbl(['任务名称','任务类型','云账号','状态','进度','开始时间','耗时'],[
+['阿里云ECS全量同步',tg('资产同步','b'),'aliyun-prod',tg('运行中','g'),'<div class="progress"><div class="progress-bar" style="width:68%"></div></div>','10:30:00','12分钟'],
+['AWS资源同步',tg('资产同步','b'),'aws-main',tg('已完成','g'),'<div class="progress"><div class="progress-bar" style="width:100%"></div></div>','09:00:00','8分钟'],
+['安全组规则巡检',tg('安全巡检','p'),'全部账号',tg('已完成','g'),'<div class="progress"><div class="progress-bar" style="width:100%"></div></div>','08:00:00','15分钟'],
+['成本数据采集',tg('成本采集','o'),'aliyun-prod',tg('失败','r'),'<div class="progress"><div class="progress-bar err" style="width:45%"></div></div>','07:30:00','—'],
+['腾讯云资源同步',tg('资产同步','b'),'tencent-prod',tg('等待中','o'),'—','—','—'],
+])}`;
+
+// 标签管理
+pages.tags=()=>`
+${pageHeader('标签管理','统一管理所有云资源的标签',[{label:'标签键',value:'45',color:'ac'},{label:'标签值',value:'312',color:'pp'},{label:'已标记资源',value:'2,847',color:'gn'}])}
+${toolbar('标签列表',[{label:'创建标签',primary:true},{label:'批量打标'}],['全部云平台'])}
+${tbl(['标签键','标签值数','关联资源数','云平台覆盖','描述'],[
+['env','5','1,234','阿里云、AWS、腾讯云','环境标识'],
+['team','12','986','阿里云、AWS','团队归属'],
+['project','18','756','阿里云、AWS、腾讯云','项目名称'],
+['cost-center','8','542','阿里云','成本中心'],
+['owner','24','1,123','阿里云、AWS','资源负责人'],
+])}`;
+// FinOps
+pages['fin-cost']=()=>`
+${pageHeader('FinOps 成本概览','多云成本统一分析与可视化',[{label:'本月成本',value:'¥284K',color:'og'},{label:'环比',value:'↓8.2%',color:'gn'},{label:'预测月底',value:'¥310K',color:'pp'},{label:'预算使用',value:'78%',color:'ac'}])}
+<div class="charts">
+  <div class="ch"><div class="ch-t">月度成本趋势<small>近 12 个月</small></div><div class="line-ch"><div class="grid"></div><div class="area"><svg viewBox="0 0 600 200" preserveAspectRatio="none"><defs><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24" stop-opacity=".3"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></linearGradient></defs><path d="M0,140 C50,130 100,120 150,110 C200,100 250,95 300,80 C350,70 400,60 450,55 C500,50 550,45 600,40 L600,200 L0,200Z" fill="url(#gc)"/><path d="M0,140 C50,130 100,120 150,110 C200,100 250,95 300,80 C350,70 400,60 450,55 C500,50 550,45 600,40" fill="none" stroke="#fbbf24" stroke-width="2.5"/></svg></div></div></div>
+  <div class="ch"><div class="ch-t">云厂商成本占比<small>本月</small></div><div class="donut-wrap"><div class="donut" style="background:conic-gradient(var(--ac) 0deg 155deg,var(--pp) 155deg 235deg,var(--gn) 235deg 310deg,var(--og) 310deg 360deg)"></div><div class="donut-info"><div>阿里云 <b>¥122K</b></div><div>AWS <b>¥68K</b></div><div>腾讯云 <b>¥58K</b></div><div>华为云 <b>¥36K</b></div></div></div></div>
+</div>
+<div class="ch" style="margin-top:14px"><div class="ch-t">产品成本 TOP 10<small>本月</small></div>
+${tbl(['产品','云平台','本月成本','环比','占比'],[
+['ECS 云服务器','阿里云','¥89,200','↓5.3%','31.4%'],['RDS 数据库','阿里云','¥45,600','↑2.1%','16.1%'],['EC2','AWS','¥38,400','↓12.0%','13.5%'],['CDN','阿里云','¥28,500','↑8.7%','10.0%'],['Redis','阿里云','¥12,300','→0%','4.3%'],
+])}</div>`;
+
+pages['fin-alloc']=()=>`
+${pageHeader('成本分摊','按业务线、团队、项目维度分摊云成本',[{label:'已分摊',value:'92%',color:'gn'},{label:'未分摊',value:'¥22.7K',color:'rd'}])}
+${toolbar('分摊规则',[{label:'创建规则',primary:true}],['按业务线','本月'])}
+${tbl(['业务线','ECS','RDS','Redis','网络','存储','合计','占比'],[
+['电商平台','¥42K','¥18K','¥6K','¥12K','¥3K','¥81K','28.5%'],
+['用户中心','¥18K','¥12K','¥4K','¥5K','¥1K','¥40K','14.1%'],
+['数据平台','¥35K','¥22K','¥2K','¥3K','¥8K','¥70K','24.6%'],
+['基础设施','¥28K','¥4K','¥6K','¥15K','¥2K','¥55K','19.4%'],
+['AI/ML','¥24K','¥2K','¥1K','¥1K','¥10K','¥38K','13.4%'],
+])}`;
+
+pages['fin-budget']=()=>`
+${pageHeader('预算管理','设置和监控云成本预算',[{label:'预算总数',value:'8',color:'ac'},{label:'超预算',value:'1',color:'rd'},{label:'预警中',value:'2',color:'og'}])}
+${toolbar('预算列表',[{label:'创建预算',primary:true}])}
+${tbl(['预算名称','周期','预算额度','已使用','使用率','状态','负责人'],[
+['总体月度预算','月度','¥400K','¥284K','<div class="progress"><div class="progress-bar" style="width:71%"></div></div>',tg('正常','g'),'张三'],
+['阿里云月度','月度','¥180K','¥165K','<div class="progress"><div class="progress-bar warn" style="width:92%"></div></div>',tg('预警','o'),'李四'],
+['AWS月度','月度','¥120K','¥68K','<div class="progress"><div class="progress-bar" style="width:57%"></div></div>',tg('正常','g'),'王五'],
+['GPU算力预算','月度','¥50K','¥52K','<div class="progress"><div class="progress-bar err" style="width:100%"></div></div>',tg('超预算','r'),'赵六'],
+])}`;
+
+pages['fin-anomaly']=()=>`
+${pageHeader('异常与优化','检测成本异常并提供优化建议',[{label:'异常告警',value:'3',color:'rd'},{label:'优化建议',value:'12',color:'gn'},{label:'预计节省',value:'¥18.5K/月',color:'og'}])}
+<div class="charts">
+  <div class="ch"><div class="ch-t">成本异常<small>近 7 天</small></div>
+  ${tbl(['时间','资源','异常类型','异常金额','状态'],[
+  ['03-28','ecs-ml-training','费用突增','¥2,340 → ¥8,900',tg('待处理','r')],
+  ['03-26','cdn-video','流量异常','带宽突增 300%',tg('已确认','o')],
+  ['03-25','rds-analytics','存储增长','日增 50GB',tg('已处理','g')],
+  ])}</div>
+  <div class="ch"><div class="ch-t">优化建议<small>预计月省 ¥18.5K</small></div>
+  ${tbl(['建议','资源','当前费用','优化后','节省'],[
+  ['降配闲置实例','7 台 ECS','¥8,400/月','¥3,200/月',tg('¥5.2K','g')],
+  ['释放未挂载云盘','12 块','¥2,400/月','¥0',tg('¥2.4K','g')],
+  ['预留实例折扣','15 台 ECS','¥45K/月','¥34.1K/月',tg('¥10.9K','g')],
+  ])}</div>
+</div>`;
+
+pages['fin-collect']=()=>`
+${pageHeader('采集管理','管理成本数据的采集任务与数据源',[{label:'数据源',value:'6',color:'ac'},{label:'今日采集',value:'4',color:'gn'},{label:'失败',value:'0',color:'rd'}])}
+${toolbar('采集任务',[{label:'创建任务',primary:true},{label:'立即采集'}])}
+${tbl(['数据源','云账号','采集类型','最近采集','数据范围','状态','下次采集'],[
+['阿里云-账单','aliyun-prod','账单明细',tg('成功','g'),'2026-03','06:00 今天','明天 06:00'],
+['AWS-CUR','aws-main','Cost Report',tg('成功','g'),'2026-03','06:30 今天','明天 06:30'],
+['腾讯云-账单','tencent-prod','账单明细',tg('成功','g'),'2026-03','07:00 今天','明天 07:00'],
+['华为云-账单','huawei-prod','账单明细',tg('成功','g'),'2026-03','07:30 今天','明天 07:30'],
+])}`;
+// 告警中心
+pages['alert-events']=()=>`
+${pageHeader('告警事件','查看和处理所有告警事件',[{label:'未处理',value:'5',color:'rd'},{label:'处理中',value:'3',color:'og'},{label:'今日新增',value:'12',color:'ac'},{label:'今日恢复',value:'8',color:'gn'}])}
+${toolbar('告警事件列表',[{label:'批量确认'},{label:'导出'}],['全部级别','全部状态','全部来源'])}
+${tbl(['告警名称','级别','资源','来源','触发时间','持续时间','状态'],[
+['CPU使用率过高',tg('严重','r'),'ecs-prod-01','Prometheus','10:28:00','2分钟',tg('告警中','r')],
+['磁盘使用率>90%',tg('严重','r'),'rds-main','CloudMonitor','09:45:00','45分钟',tg('告警中','r')],
+['连接数接近上限',tg('警告','o'),'rds-main','CloudMonitor','09:30:00','1小时',tg('处理中','o')],
+['内存使用率85%',tg('警告','o'),'redis-cache','CloudMonitor','08:15:00','2小时',tg('处理中','o')],
+['证书即将过期',tg('信息','b'),'*.example.com','系统','00:00:00','—',tg('未处理','r')],
+['备份任务完成',tg('信息','b'),'rds-main','系统','06:00:00','—',tg('已恢复','g')],
+])}`;
+
+pages['alert-rules']=()=>`
+${pageHeader('告警规则','配置告警触发条件与通知策略',[{label:'规则总数',value:'32',color:'ac'},{label:'已启用',value:'28',color:'gn'},{label:'已禁用',value:'4',color:'rd'}])}
+${toolbar('规则列表',[{label:'创建规则',primary:true}],['全部状态'])}
+${tbl(['规则名称','监控指标','触发条件','通知渠道','状态','最近触发'],[
+['ECS CPU告警','CPU使用率','> 90% 持续5分钟','钉钉群 + 邮件',tg('已启用','g'),'10:28'],
+['RDS连接数告警','连接数','> 80% 持续3分钟','钉钉群',tg('已启用','g'),'09:30'],
+['磁盘空间告警','磁盘使用率','> 85% 持续10分钟','钉钉群 + 短信',tg('已启用','g'),'09:45'],
+['Redis内存告警','内存使用率','> 80%','钉钉群',tg('已启用','g'),'08:15'],
+['SSL证书过期','证书有效期','< 30天','邮件',tg('已禁用','r'),'—'],
+])}`;
+
+pages['alert-channels']=()=>`
+${pageHeader('通知渠道','管理告警通知的发送渠道',[{label:'渠道总数',value:'8',color:'ac'},{label:'已启用',value:'6',color:'gn'}])}
+${toolbar('渠道列表',[{label:'创建渠道',primary:true}])}
+${tbl(['渠道名称','类型','接收方','关联规则数','状态','最近发送'],[
+['运维钉钉群',tg('钉钉','b'),'Webhook','18',tg('已启用','g'),'10:28'],
+['核心告警短信',tg('短信','p'),'张三、李四、王五','4',tg('已启用','g'),'09:45'],
+['运维邮件组',tg('邮件','o'),'ops@example.com','12',tg('已启用','g'),'06:00'],
+['Slack #alerts',tg('Slack','g'),'Webhook','6',tg('已启用','g'),'08:15'],
+['PagerDuty',tg('PagerDuty','r'),'API Key','2',tg('已禁用','r'),'—'],
+])}`;
+
+// CMDB
+pages['cmdb-models']=()=>`
+${pageHeader('资源模型','定义和管理CMDB中的资源模型',[{label:'模型总数',value:'24',color:'ac'},{label:'字段总数',value:'186',color:'pp'}])}
+${toolbar('模型列表',[{label:'创建模型',primary:true}])}
+<div class="card-grid">
+  <div class="model-card"><div class="mc-icon" style="background:rgba(99,144,255,.1);color:var(--ac)">🖥️</div><div class="mc-info"><div class="mc-name">ECS 云服务器</div><div class="mc-meta">12 字段 · 320 实例</div></div></div>
+  <div class="model-card"><div class="mc-icon" style="background:rgba(167,139,250,.1);color:var(--pp)">🗄️</div><div class="mc-info"><div class="mc-name">RDS 数据库</div><div class="mc-meta">15 字段 · 24 实例</div></div></div>
+  <div class="model-card"><div class="mc-icon" style="background:rgba(52,211,153,.1);color:var(--gn)">📦</div><div class="mc-info"><div class="mc-name">Redis 缓存</div><div class="mc-meta">10 字段 · 16 实例</div></div></div>
+  <div class="model-card"><div class="mc-icon" style="background:rgba(34,211,238,.1);color:var(--cy)">🌐</div><div class="mc-info"><div class="mc-name">VPC 网络</div><div class="mc-meta">8 字段 · 18 实例</div></div></div>
+  <div class="model-card"><div class="mc-icon" style="background:rgba(251,191,36,.1);color:var(--og)">⚖️</div><div class="mc-info"><div class="mc-name">负载均衡</div><div class="mc-meta">11 字段 · 15 实例</div></div></div>
+  <div class="model-card"><div class="mc-icon" style="background:rgba(248,113,113,.1);color:var(--rd)">💾</div><div class="mc-info"><div class="mc-name">云盘</div><div class="mc-meta">9 字段 · 487 实例</div></div></div>
+</div>`;
+
+pages['cmdb-instances']=()=>`
+${pageHeader('资源实例','浏览和管理CMDB中的所有资源实例',[{label:'实例总数',value:'3,847',color:'ac'}])}
+${toolbar('实例列表',[{label:'导出'}],['全部模型','全部云平台'])}
+${tbl(['实例名称','模型','云平台','地域','状态','更新时间'],[
+['web-prod-01','ECS 云服务器','阿里云','华东1',tg('运行中','g'),'2026-03-30 10:00'],
+['rds-main-master','RDS 数据库','阿里云','华东1',tg('运行中','g'),'2026-03-30 09:30'],
+['redis-session','Redis 缓存','阿里云','华东1',tg('运行中','g'),'2026-03-30 09:30'],
+['VPC-prod','VPC 网络','阿里云','华东1',tg('可用','g'),'2026-03-29 18:00'],
+['slb-web-prod','负载均衡','阿里云','华东1',tg('运行中','g'),'2026-03-30 10:00'],
+])}`;
+
+pages['cmdb-relations']=()=>`
+${pageHeader('模型关系','定义资源模型之间的关联关系',[{label:'关系总数',value:'18',color:'ac'}])}
+${toolbar('关系列表',[{label:'创建关系',primary:true}])}
+${tbl(['关系名称','源模型','目标模型','关系类型','实例关联数'],[
+['ECS → VPC','ECS 云服务器','VPC 网络','属于','320'],
+['ECS → 安全组','ECS 云服务器','安全组','关联','456'],
+['RDS → VPC','RDS 数据库','VPC 网络','属于','24'],
+['LB → ECS','负载均衡','ECS 云服务器','包含','86'],
+['云盘 → ECS','云盘','ECS 云服务器','挂载','412'],
+])}`;
+
+pages['cmdb-topology']=()=>`
+${pageHeader('拓扑视图','可视化展示资源之间的拓扑关系',[])}
+<div class="topo-placeholder">
+  <div class="topo-node" style="top:20px;left:50%;transform:translateX(-50%);background:rgba(99,144,255,.15);border-color:var(--ac)">🌐 VPC-prod<br><small>10.0.0.0/8</small></div>
+  <div class="topo-line" style="top:80px;left:50%;height:40px"></div>
+  <div class="topo-row" style="top:120px">
+    <div class="topo-node" style="background:rgba(52,211,153,.15);border-color:var(--gn)">⚖️ SLB<br><small>slb-web-prod</small></div>
+  </div>
+  <div class="topo-line" style="top:200px;left:50%;height:40px"></div>
+  <div class="topo-row" style="top:240px">
+    <div class="topo-node" style="background:rgba(99,144,255,.1);border-color:var(--ac)">🖥️ ECS x6<br><small>Web 集群</small></div>
+    <div class="topo-node" style="background:rgba(99,144,255,.1);border-color:var(--ac)">🖥️ ECS x4<br><small>API 集群</small></div>
+  </div>
+  <div class="topo-line" style="top:320px;left:50%;height:40px"></div>
+  <div class="topo-row" style="top:360px">
+    <div class="topo-node" style="background:rgba(167,139,250,.15);border-color:var(--pp)">🗄️ RDS<br><small>主从集群</small></div>
+    <div class="topo-node" style="background:rgba(248,113,113,.15);border-color:var(--rd)">📦 Redis<br><small>集群版</small></div>
+  </div>
+</div>`;
+// 审计
+pages.audit=()=>`
+${pageHeader('操作审计','记录所有用户操作和系统事件',[{label:'今日操作',value:'1,234',color:'ac'},{label:'高危操作',value:'3',color:'rd'}])}
+${toolbar('审计日志',[{label:'导出'}],['全部操作类型','全部用户','今天'])}
+${tbl(['时间','用户','操作','资源','结果','IP地址'],[
+['10:28:15','张三','重启实例','ecs-prod-01',tg('成功','g'),'10.0.1.100'],
+['10:15:30','李四','修改安全组规则','sg-web-prod',tg('成功','g'),'10.0.1.101'],
+['09:45:00','系统','自动扩容','rds-main',tg('成功','g'),'—'],
+['09:30:22','王五','删除快照','snap-old-001',tg('成功','g'),'10.0.1.102'],
+['09:15:10','张三','创建ECS实例','—',tg('失败','r'),'10.0.1.100'],
+['08:00:00','系统','定时备份','rds-main',tg('成功','g'),'—'],
+])}`;
+
+pages.changes=()=>`
+${pageHeader('变更历史','追踪所有资产的配置变更记录',[{label:'今日变更',value:'45',color:'ac'},{label:'本周变更',value:'312',color:'pp'}])}
+${toolbar('变更记录',[{label:'导出'}],['全部资源类型','全部变更类型','今天'])}
+${tbl(['时间','资源','变更类型','变更字段','变更前','变更后','来源'],[
+['10:30','ecs-prod-01',tg('配置变更','o'),'CPU使用率','45%','96%','监控采集'],
+['10:15','sg-web-prod',tg('规则变更','b'),'入方向规则','允许 22/TCP','允许 22,443/TCP','用户操作'],
+['09:45','rds-main',tg('扩容','g'),'存储空间','400 GB','500 GB','自动扩容'],
+['09:00','web-prod-03',tg('新增','g'),'—','—','ecs.c6.xlarge','资产同步'],
+['08:30','eip-unused1',tg('状态变更','p'),'绑定状态','已绑定','未绑定','用户操作'],
+])}`;
+
+// 云账号管理
+pages.accounts=()=>`
+${pageHeader('云账号管理','管理所有云平台的接入账号',[{label:'账号总数',value:'12',color:'ac'},{label:'正常',value:'10',color:'gn'},{label:'异常',value:'2',color:'rd'}])}
+${toolbar('账号列表',[{label:'添加账号',primary:true}],['全部云平台','全部状态'])}
+<div class="card-grid">
+  <div class="account-card"><div class="ac-header"><span class="ac-provider ali">阿里云</span><span class="tag tag-g">正常</span></div><div class="ac-name">aliyun-prod</div><div class="ac-desc">生产环境主账号</div><div class="ac-stats"><span>ECS: 186</span><span>RDS: 12</span><span>费用: ¥122K/月</span></div></div>
+  <div class="account-card"><div class="ac-header"><span class="ac-provider aws">AWS</span><span class="tag tag-g">正常</span></div><div class="ac-name">aws-main</div><div class="ac-desc">AWS 主账号</div><div class="ac-stats"><span>EC2: 42</span><span>RDS: 8</span><span>费用: ¥68K/月</span></div></div>
+  <div class="account-card"><div class="ac-header"><span class="ac-provider tc">腾讯云</span><span class="tag tag-g">正常</span></div><div class="ac-name">tencent-prod</div><div class="ac-desc">腾讯云生产账号</div><div class="ac-stats"><span>CVM: 28</span><span>CDB: 4</span><span>费用: ¥58K/月</span></div></div>
+  <div class="account-card"><div class="ac-header"><span class="ac-provider hw">华为云</span><span class="tag tag-r">异常</span></div><div class="ac-name">huawei-prod</div><div class="ac-desc">华为云生产账号 · AK过期</div><div class="ac-stats"><span>ECS: 15</span><span>RDS: 2</span><span>费用: ¥36K/月</span></div></div>
+</div>`;
+
+// 数据字典
+pages.dict=()=>`
+${pageHeader('数据字典','管理系统中的枚举值和配置项',[{label:'字典类型',value:'18',color:'ac'},{label:'字典项',value:'156',color:'pp'}])}
+<div class="dict-layout">
+  <div class="dict-left">
+    <div class="dict-header">字典类型</div>
+    <div class="dict-item on">cloud_provider <small>4项</small></div>
+    <div class="dict-item">region <small>24项</small></div>
+    <div class="dict-item">instance_status <small>6项</small></div>
+    <div class="dict-item">env_type <small>5项</small></div>
+    <div class="dict-item">alert_level <small>4项</small></div>
+    <div class="dict-item">cost_center <small>8项</small></div>
+  </div>
+  <div class="dict-right">
+    <div class="ch-t">cloud_provider · 云平台<div class="tb-btn primary" style="margin-left:auto;font-size:11px">添加字典项</div></div>
+    ${tbl(['键值','标签','排序','状态','描述'],[
+    ['aliyun','阿里云','1',tg('启用','g'),'阿里云平台'],
+    ['aws','AWS','2',tg('启用','g'),'Amazon Web Services'],
+    ['tencent','腾讯云','3',tg('启用','g'),'腾讯云平台'],
+    ['huawei','华为云','4',tg('启用','g'),'华为云平台'],
+    ])}
+  </div>
+</div>`;
+// IAM
+pages['iam-users']=()=>`
+${pageHeader('用户管理','管理平台用户账号与权限',[{label:'用户总数',value:'86',color:'ac'},{label:'活跃用户',value:'72',color:'gn'},{label:'已禁用',value:'4',color:'rd'}])}
+${toolbar('用户列表',[{label:'创建用户',primary:true},{label:'同步LDAP'}],['全部状态','全部角色'])}
+${tbl(['用户名','姓名','邮箱','角色','用户组','状态','最近登录'],[
+['zhangsan','张三','zhangsan@example.com',tg('管理员','r'),'运维组',tg('活跃','g'),'10:28 今天'],
+['lisi','李四','lisi@example.com',tg('运维','b'),'运维组',tg('活跃','g'),'09:15 今天'],
+['wangwu','王五','wangwu@example.com',tg('开发','p'),'开发组',tg('活跃','g'),'昨天 18:30'],
+['zhaoliu','赵六','zhaoliu@example.com',tg('只读','o'),'访客组',tg('已禁用','r'),'30天前'],
+])}`;
+
+pages['iam-groups']=()=>`
+${pageHeader('用户组管理','管理用户组及其权限策略',[{label:'用户组',value:'8',color:'ac'},{label:'总成员',value:'86',color:'pp'}])}
+${toolbar('用户组列表',[{label:'创建用户组',primary:true}])}
+${tbl(['用户组名称','描述','成员数','策略数','创建时间'],[
+['超级管理员','拥有所有权限','3','1 (全部权限)','2024-01-01'],
+['运维组','基础设施运维管理','12','4','2024-01-01'],
+['开发组','开发环境资源管理','28','3','2024-01-15'],
+['DBA组','数据库管理','6','2','2024-02-01'],
+['财务组','成本查看权限','8','1','2024-03-01'],
+['访客组','只读权限','15','1','2024-01-01'],
+])}`;
+
+pages['iam-templates']=()=>`
+${pageHeader('策略模板','管理权限策略模板',[{label:'模板总数',value:'12',color:'ac'},{label:'系统内置',value:'5',color:'pp'},{label:'自定义',value:'7',color:'gn'}])}
+${toolbar('策略模板列表',[{label:'创建模板',primary:true}])}
+${tbl(['模板名称','类型','描述','关联用户组','权限数'],[
+['全部权限',tg('系统','p'),'拥有所有资源的完全控制权限','超级管理员','全部'],
+['资源只读',tg('系统','p'),'所有资源的只读权限','访客组','48'],
+['ECS管理',tg('自定义','b'),'ECS实例的完全管理权限','运维组','12'],
+['RDS管理',tg('自定义','b'),'RDS实例的完全管理权限','DBA组','10'],
+['成本查看',tg('自定义','b'),'FinOps模块的只读权限','财务组','6'],
+])}`;
+
+pages['iam-tenants']=()=>`
+${pageHeader('租户管理','管理多租户隔离与配置',[{label:'租户总数',value:'3',color:'ac'}])}
+${toolbar('租户列表',[{label:'创建租户',primary:true}])}
+${tbl(['租户名称','租户ID','描述','用户数','资源数','创建时间'],[
+['默认租户','default','系统默认租户','86','3,847','2024-01-01'],
+['测试租户','test-tenant','测试环境隔离','12','156','2025-06-15'],
+['演示租户','demo','产品演示用','3','42','2025-09-01'],
+])}`;
+// ===== STATE =====
+let currentPage = 'dashboard';
+let expanded = new Set(['assets','svc-tree','host','storage','network','database','middleware']);
+
+// ===== BREADCRUMB =====
+function getBreadcrumb(id){
+  const bc=[{label:'首页',id:'dashboard'}];
+  for(const g of menu){
+    for(const item of g.items){
+      if(item.id===id){bc.push({label:item.label,id:item.id});return bc;}
+      if(item.children){
+        for(const c of item.children){
+          if(c.id===id){bc.push({label:item.label});bc.push({label:c.label,id:c.id});return bc;}
+          if(c.children){
+            for(const gc of c.children){
+              if(gc.id===id){bc.push({label:item.label});bc.push({label:c.label});bc.push({label:gc.label,id:gc.id});return bc;}
+            }
+          }
+        }
+      }
+    }
+  }
+  return bc;
+}
+
+function getLabel(id){
+  for(const g of menu) for(const i of g.items){
+    if(i.id===id) return i.label;
+    if(i.children) for(const c of i.children){
+      if(c.id===id) return c.label;
+      if(c.children) for(const gc of c.children) if(gc.id===id) return gc.label;
+    }
+  }
+  return id;
+}
+
+// ===== RENDER =====
+function render(){
+  const app=document.getElementById('app');
+  const bc=getBreadcrumb(currentPage);
+  const bcHtml=bc.map((b,i)=>`<span class="${i===bc.length-1?'cur':''}" ${b.id?`onclick="nav('${b.id}')" style="cursor:pointer"`:''} >${b.label}</span>`).join('<span class="sep">/</span>');
+
+  app.innerHTML=`
+  <div class="proto">PROTOTYPE</div>
+  <aside class="S">
+    <div class="S-logo" onclick="nav('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5L12 2Z" fill="#6490ff"/><path d="M2 17l10 5 10-5" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/><path d="M2 12l10 5 10-5" stroke="#6490ff" stroke-width="2" stroke-linecap="round"/></svg>
+      <b>CloudMux</b>
+    </div>
+    <nav class="S-nav">${renderMenu()}</nav>
+    <div class="S-ft"><div>⚙</div></div>
+  </aside>
+  <div class="MA">
+    <header class="NB">
+      <div class="NB-l">
+        <div class="btn">${ico('grid',17)}</div>
+        <div class="bc">${bcHtml}</div>
+        <div class="srch">${ico('search',14)}<em>搜索资产、IP、实例ID...</em><kbd>⌘K</kbd></div>
+      </div>
+      <div class="NB-r">
+        <div class="tn">${ico('cloud',15)} 默认租户 <span style="opacity:.35;font-size:10px">▾</span></div>
+        <div class="btn">${ico('bell',17)}<span class="badge"></span></div>
+        <div class="btn">${ico('grid',17)}</div>
+        <div class="av">A</div>
+      </div>
+    </header>
+    <div class="CT">${(pages[currentPage]||defaultPage)()}</div>
+  </div>`;
+}
+
+function defaultPage(){
+  return `<div class="empty-page"><div class="empty-icon">🚧</div><div class="empty-text">页面建设中</div><div class="empty-desc">${getLabel(currentPage)} 功能正在开发中</div></div>`;
+}
+// ===== MENU RENDER =====
+function renderMenu(){
+  let html='';
+  for(const g of menu){
+    html+=`<div class="G"><div class="G-t">${g.group}</div>`;
+    for(const item of g.items) html+=renderL1(item);
+    html+=`</div>`;
+  }
+  return html;
+}
+
+function renderL1(item){
+  if(item.children){
+    const ex=expanded.has(item.id);
+    const hasActive=isChildActive(item);
+    let h=`<div class="M${ex?' ex':''}${hasActive?' child-active':''}" onclick="toggle('${item.id}')">${ico(item.icon||'grid')} <span>${item.label}</span><i>▸</i></div>`;
+    h+=`<div class="L2${ex?'':' h'}">`;
+    for(const c of item.children) h+=renderL2(c);
+    h+=`</div>`;
+    return h;
+  }
+  return `<div class="M${currentPage===item.id?' on':''}" onclick="nav('${item.id}')">${ico(item.icon||'grid')} <span>${item.label}</span></div>`;
+}
+
+function renderL2(item){
+  if(item.disabled) return `<div class="L2-i" style="opacity:.35;cursor:default">${ico(item.icon||'grid',15)} <span>${item.label}</span></div>`;
+  if(item.children){
+    const ex=expanded.has(item.id);
+    const hasActive=isChildActive(item);
+    let h=`<div class="L2-i${ex?' ex':''}${hasActive?' child-active':''}" onclick="toggle('${item.id}')">${ico(item.icon||'grid',15)} <span>${item.label}</span><i>▸</i></div>`;
+    h+=`<div class="L3${ex?'':' h'}">`;
+    for(const gc of item.children) h+=`<div class="L3-i${currentPage===gc.id?' on':''}" onclick="event.stopPropagation();nav('${gc.id}')">${gc.label}</div>`;
+    h+=`</div>`;
+    return h;
+  }
+  return `<div class="L2-i${currentPage===item.id?' on':''}" onclick="event.stopPropagation();nav('${item.id}')"><div class="dot"></div><span>${item.label}</span></div>`;
+}
+
+function isChildActive(item){
+  if(!item.children) return item.id===currentPage;
+  return item.children.some(c=>c.id===currentPage||(c.children&&c.children.some(gc=>gc.id===currentPage)));
+}
+
+// ===== NAV =====
+function nav(id){
+  currentPage=id;
+  // auto expand parents
+  for(const g of menu) for(const item of g.items){
+    if(item.children) for(const c of item.children){
+      if(c.children) for(const gc of c.children){
+        if(gc.id===id){expanded.add(item.id);expanded.add(c.id);}
+      }
+      if(c.id===id) expanded.add(item.id);
+    }
+  }
+  render();
+  document.querySelector('.CT').scrollTop=0;
+}
+
+function toggle(id){
+  if(expanded.has(id)) expanded.delete(id); else expanded.add(id);
+  render();
+}
+
+// ===== SEARCH ICON (reuse) =====
+icons.search=`<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>`;
+
+// ===== INIT =====
+render();
+</script>

@@ -12,6 +12,7 @@ import {
   Expand,
   Fold,
   FullScreen,
+  Grid,
   Loading,
   Moon,
   OfficeBuilding,
@@ -49,6 +50,7 @@ const assetTypeMap: Record<string, { label: string; icon: string; route: string 
   lb: { label: '负载均衡', icon: 'caise-network_devices', route: '/network/lb' },
   cdn: { label: 'CDN 加速', icon: 'caise-network_devices', route: '/network/cdn' },
   waf: { label: 'WAF 防火墙', icon: 'caise-network_devices', route: '/network/waf' },
+  dns: { label: 'DNS 管理', icon: 'caise-network_devices', route: '/network/dns' },
   nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
   oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
   kafka: { label: 'Kafka', icon: 'caise-middleware', route: '/middleware/kafka' },
@@ -141,6 +143,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
 // 侧边栏折叠状态
 const isCollapsed = ref(false)
+
+// 平台导航
+const showPlatformNav = ref(false)
 
 // 租户列表
 const tenantList = ref<Tenant[]>([])
@@ -334,6 +339,7 @@ const menuGroups = ref<MenuGroup[]>([
     title: '概览',
     items: [
       { key: 'dashboard', path: '/dashboard', title: '仪表盘', icon: 'ops-oneterm-dashboard' },
+      { key: 'topology', path: '/topology', title: '资源拓扑', icon: 'icon-xianxing-luyouqi' },
     ]
   },
   {
@@ -377,6 +383,7 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
               { key: 'assets-cdn', path: '/network/cdn', title: 'CDN 加速' },
               { key: 'assets-waf', path: '/network/waf', title: 'WAF 防火墙' },
+              { key: 'assets-dns', path: '/network/dns', title: 'DNS 管理' },
             ]
           },
           {
@@ -763,6 +770,17 @@ onUnmounted(() => {
             </el-breadcrumb-item>
           </el-breadcrumb>
 
+          <!-- 平台导航 -->
+          <div 
+            class="platform-nav-trigger" 
+            :class="{ active: showPlatformNav }"
+            @click="showPlatformNav = !showPlatformNav"
+          >
+            <el-icon :size="14"><Grid /></el-icon>
+            <span>平台导航</span>
+            <el-icon :size="12" class="trigger-arrow"><ArrowDown /></el-icon>
+          </div>
+
           <!-- 搜索框 -->
           <div class="search-box" :class="{ 'is-focused': showSearchResults }">
             <el-icon class="search-icon"><Search /></el-icon>
@@ -899,6 +917,9 @@ onUnmounted(() => {
           <span class="user-name">Admin</span>
         </div>
       </header>
+
+      <!-- 平台导航面板 -->
+      <PlatformNav v-model:visible="showPlatformNav" />
 
       <!-- 页面内容 -->
       <main class="main-content">
@@ -1676,6 +1697,38 @@ $navbar-height: 56px;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.platform-nav-trigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  height: 30px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+  flex-shrink: 0;
+
+  &:hover,
+  &.active {
+    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(59, 130, 246, 0.35);
+  }
+
+  .trigger-arrow {
+    transition: transform 200ms ease;
+  }
+
+  &.active .trigger-arrow {
+    transform: rotate(180deg);
+  }
 }
 
 .tenant-selector {

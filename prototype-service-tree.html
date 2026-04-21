@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多云资源服务树 - 原型设计</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0a;--bg-elevated:#111;--bg-surface:#171717;--bg-hover:#262626;
+    --border:rgba(255,255,255,.1);--border-subtle:rgba(255,255,255,.06);
+    --text-primary:#fafafa;--text-secondary:#a1a1aa;--text-tertiary:#71717a;--text-muted:#52525b;
+    --accent:#3b82f6;--accent-hover:#2563eb;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--cyan:#06b6d4;
+    --glass:rgba(255,255,255,.03);--glass-hover:rgba(255,255,255,.06);--glass-border:rgba(255,255,255,.08);
+    --radius:12px;--radius-sm:8px;--radius-xs:6px;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono','Fira Code',monospace;
+  }
+  body{font-family:var(--font);background:var(--bg);color:var(--text-primary);height:100vh;overflow:hidden;display:flex}
+</style>
+</head>
+<body>
+
+<!-- 左侧边栏 -->
+<aside id="sidebar" style="width:280px;background:var(--bg-elevated);border-right:1px solid var(--border-subtle);display:flex;flex-direction:column;flex-shrink:0">
+  <div style="padding:20px;border-bottom:1px solid var(--border-subtle)">
+    <h2 style="font-size:16px;font-weight:600;margin-bottom:4px">服务树</h2>
+    <p style="font-size:12px;color:var(--text-tertiary)">多云资源拓扑管理</p>
+  </div>
+  <div style="padding:12px 16px">
+    <div style="position:relative">
+      <input id="treeSearch" type="text" placeholder="搜索服务节点..." style="width:100%;height:34px;background:var(--glass);border:1px solid var(--border-subtle);border-radius:var(--radius-xs);padding:0 12px 0 32px;color:var(--text-primary);font-size:13px;outline:none;transition:border .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-subtle)'">
+      <svg style="position:absolute;left:10px;top:9px;opacity:.4" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </div>
+  </div>
+  <div id="treeContainer" style="flex:1;overflow-y:auto;padding:0 8px 16px"></div>
+  <div style="padding:12px 16px;border-top:1px solid var(--border-subtle)">
+    <button onclick="showCreateDialog()" style="width:100%;height:36px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-xs);font-size:13px;font-weight:500;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.background='var(--accent-hover)'" onmouseout="this.style.background='var(--accent)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      新建节点
+    </button>
+  </div>
+</aside>
+
+<!-- 主内容区 -->
+<main style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- 顶部导航 -->
+  <header style="height:56px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;background:var(--bg-elevated)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;color:var(--text-tertiary)">服务树</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      <span id="breadcrumb" style="font-size:13px;color:var(--text-primary);font-weight:500">电商平台</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button onclick="toggleView('tree')" id="btnTree" class="view-btn active" title="树形视图">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
+      </button>
+      <button onclick="toggleView('topo')" id="btnTopo" class="view-btn" title="拓扑视图">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 8v4M8.5 16.5 11 13M15.5 16.5 13 13"/></svg>
+      </button>
+      <div style="width:1px;height:20px;background:var(--border-subtle)"></div>
+      <button class="icon-btn" title="刷新"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg></button>
+      <button class="icon-btn" title="设置"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></button>
+    </div>
+  </header>
+
+  <!-- 节点详情头部 -->
+  <div id="nodeHeader" style="padding:24px;border-bottom:1px solid var(--border-subtle);background:var(--bg-elevated);flex-shrink:0">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div id="nodeIcon" style="width:48px;height:48px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:20px"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <h1 id="nodeName" style="font-size:20px;font-weight:600"></h1>
+            <span id="nodeLevel" style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500"></span>
+          </div>
+          <p id="nodeDesc" style="font-size:13px;color:var(--text-tertiary);margin-top:4px"></p>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="action-btn secondary" onclick="showEditDialog()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          编辑
+        </button>
+        <button class="action-btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          绑定资源
+        </button>
+      </div>
+    </div>
+    <!-- 统计卡片 -->
+    <div id="statsCards" style="display:flex;gap:16px;margin-top:20px"></div>
+  </div>
+
+  <!-- Tab 内容区 -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+    <div style="padding:0 24px;border-bottom:1px solid var(--border-subtle);display:flex;gap:0;flex-shrink:0">
+      <button class="tab-btn active" onclick="switchTab(this,'resources')">绑定资源</button>
+      <button class="tab-btn" onclick="switchTab(this,'children')">子节点</button>
+      <button class="tab-btn" onclick="switchTab(this,'members')">负责人</button>
+      <button class="tab-btn" onclick="switchTab(this,'alerts')">告警</button>
+      <button class="tab-btn" onclick="switchTab(this,'changelog')">变更记录</button>
+    </div>
+    <div id="tabContent" style="flex:1;overflow-y:auto;padding:24px"></div>
+  </div>
+</main>
+
+<!-- 创建/编辑对话框 -->
+<div id="dialogOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.5)">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center">
+      <h3 id="dialogTitle" style="font-size:16px;font-weight:600">新建节点</h3>
+      <button onclick="closeDialog()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px">
+      <div class="form-group">
+        <label class="form-label">节点名称 <span style="color:var(--red)">*</span></label>
+        <input id="formName" class="form-input" placeholder="如：订单服务、用户中心">
+      </div>
+      <div class="form-group">
+        <label class="form-label">英文标识</label>
+        <input id="formCode" class="form-input" placeholder="如：order-service" style="font-family:var(--mono)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">节点层级</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="levelPicker"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">父节点</label>
+        <select id="formParent" class="form-input" style="appearance:auto"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">负责人</label>
+        <input id="formOwner" class="form-input" placeholder="搜索成员...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea id="formDesc" class="form-input" rows="3" placeholder="节点描述信息..." style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid var(--border-subtle);display:flex;justify-content:flex-end;gap:8px">
+      <button class="action-btn secondary" onclick="closeDialog()">取消</button>
+      <button class="action-btn primary" onclick="closeDialog()">确认创建</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 按钮样式 */
+  .view-btn{width:32px;height:32px;border:1px solid var(--border-subtle);border-radius:var(--radius-xs);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .view-btn:hover{background:var(--glass-hover);color:var(--text-primary);border-color:var(--border)}
+  .view-btn.active{background:rgba(59,130,246,.1);color:var(--accent);border-color:rgba(59,130,246,.3)}
+  .icon-btn{width:32px;height:32px;border:none;border-radius:var(--radius-xs);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .icon-btn:hover{background:var(--glass-hover);color:var(--text-primary)}
+  .action-btn{height:34px;padding:0 14px;border-radius:var(--radius-xs);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;border:none}
+  .action-btn.primary{background:var(--accent);color:#fff}
+  .action-btn.primary:hover{background:var(--accent-hover)}
+  .action-btn.secondary{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}
+  .action-btn.secondary:hover{background:var(--glass-hover);color:var(--text-primary);border-color:var(--border)}
+  /* Tab 样式 */
+  .tab-btn{height:42px;padding:0 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-tertiary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+  .tab-btn:hover{color:var(--text-primary)}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  /* 表单样式 */
+  .form-group{margin-bottom:18px}
+  .form-label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px}
+  .form-input{width:100%;height:36px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-xs);padding:0 12px;color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font)}
+  .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.15)}
+  textarea.form-input{height:auto;padding:10px 12px}
+  select.form-input{cursor:pointer}
+  /* 层级选择器 */
+  .level-chip{height:30px;padding:0 12px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+  .level-chip:hover{border-color:var(--border);background:var(--glass-hover)}
+  .level-chip.active{background:rgba(59,130,246,.1);color:var(--accent);border-color:rgba(59,130,246,.3)}
+  /* 树节点样式 */
+  .tree-node{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--radius-xs);cursor:pointer;transition:all .12s;margin:1px 0;user-select:none}
+  .tree-node:hover{background:var(--glass-hover)}
+  .tree-node.active{background:rgba(59,130,246,.1)}
+  .tree-node .node-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+  .tree-node .node-label{font-size:13px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tree-node.active .node-label{color:var(--text-primary);font-weight:500}
+  .tree-node .node-count{font-size:11px;color:var(--text-muted);background:var(--glass);padding:1px 6px;border-radius:99px}
+  .tree-node .expand-btn{width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:transform .2s;flex-shrink:0}
+  .tree-node .expand-btn.expanded{transform:rotate(90deg)}
+  /* 资源卡片 */
+  .resource-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;transition:all .15s;cursor:pointer}
+  .resource-card:hover{background:var(--glass-hover);border-color:var(--border)}
+  /* 滚动条 */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15)}
+</style>
+
+<script>
+// 模拟数据
+const levels = [
+  {name:'组织',color:'#8b5cf6',bg:'rgba(139,92,246,.15)'},
+  {name:'产品线',color:'#3b82f6',bg:'rgba(59,130,246,.15)'},
+  {name:'应用',color:'#06b6d4',bg:'rgba(6,182,212,.15)'},
+  {name:'模块',color:'#10b981',bg:'rgba(16,185,129,.15)'},
+  {name:'集群',color:'#f59e0b',bg:'rgba(245,158,11,.15)'}
+];
+
+const treeData = [
+  {id:1,name:'嘉立创集团',code:'jlc-group',level:0,desc:'嘉立创集团总部',expanded:true,children:[
+    {id:2,name:'电商平台',code:'ecommerce',level:1,desc:'电商业务产品线',expanded:true,children:[
+      {id:5,name:'订单服务',code:'order-svc',level:2,desc:'订单核心服务，处理下单、支付、退款',owner:'张三',resources:{ecs:12,rds:3,redis:2,slb:2,vpc:1},children:[
+        {id:10,name:'订单API',code:'order-api',level:3,desc:'订单对外API模块',resources:{ecs:4,rds:1}},
+        {id:11,name:'支付网关',code:'pay-gateway',level:3,desc:'支付渠道对接',resources:{ecs:3,redis:1}},
+      ]},
+      {id:6,name:'用户中心',code:'user-center',level:2,desc:'用户注册、登录、权限管理',owner:'李四',resources:{ecs:8,rds:2,redis:3,cdn:1}},
+      {id:7,name:'商品服务',code:'product-svc',level:2,desc:'商品信息管理与搜索',owner:'王五',resources:{ecs:6,rds:2,es:1,oss:2}},
+    ]},
+    {id:3,name:'EDA平台',code:'eda-platform',level:1,desc:'EDA设计工具平台',children:[
+      {id:8,name:'设计引擎',code:'design-engine',level:2,desc:'PCB设计核心引擎',resources:{ecs:20,gpu:4,rds:2}},
+      {id:9,name:'协作服务',code:'collab-svc',level:2,desc:'多人实时协作',resources:{ecs:6,redis:4,mq:2}},
+    ]},
+    {id:4,name:'基础设施',code:'infrastructure',level:1,desc:'公共基础设施服务',children:[
+      {id:12,name:'监控平台',code:'monitor',level:2,desc:'全链路监控与告警',resources:{ecs:10,es:3,kafka:2}},
+      {id:13,name:'日志中心',code:'log-center',level:2,desc:'统一日志采集与分析',resources:{ecs:6,es:5,kafka:3}},
+    ]},
+  ]}
+];
+
+let selectedNode = null;
+
+function renderTree() {
+  const container = document.getElementById('treeContainer');
+  container.innerHTML = '';
+  treeData.forEach(node => renderNode(container, node, 0));
+  // 默认选中第一个二级节点
+  if (!selectedNode) selectNode(treeData[0].children[0]);
+}
+
+function renderNode(container, node, depth) {
+  const hasChildren = node.children && node.children.length > 0;
+  const div = document.createElement('div');
+  div.className = 'tree-node' + (selectedNode && selectedNode.id === node.id ? ' active' : '');
+  div.style.paddingLeft = (12 + depth * 16) + 'px';
+  div.setAttribute('data-id', node.id);
+
+  const lv = levels[node.level] || levels[0];
+  const childCount = hasChildren ? node.children.length : 0;
+  const resCount = node.resources ? Object.values(node.resources).reduce((a,b)=>a+b,0) : 0;
+
+  div.innerHTML = `
+    ${hasChildren ? `<span class="expand-btn ${node.expanded?'expanded':''}" onclick="event.stopPropagation();toggleExpand(${node.id})">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </span>` : '<span style="width:16px;flex-shrink:0"></span>'}
+    <span class="node-icon" style="background:${lv.bg};color:${lv.color}">${node.name[0]}</span>
+    <span class="node-label">${node.name}</span>
+    ${childCount > 0 ? `<span class="node-count">${childCount}</span>` : ''}
+    ${resCount > 0 ? `<span class="node-count" style="color:var(--accent)">${resCount}</span>` : ''}
+  `;
+  div.onclick = () => selectNode(node);
+  container.appendChild(div);
+
+  if (hasChildren && node.expanded) {
+    node.children.forEach(child => renderNode(container, child, depth + 1));
+  }
+}
+
+function findNode(nodes, id) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) { const f = findNode(n.children, id); if (f) return f; }
+  }
+  return null;
+}
+
+function toggleExpand(id) {
+  const node = findNode(treeData, id);
+  if (node) { node.expanded = !node.expanded; renderTree(); }
+}
+
+function selectNode(node) {
+  selectedNode = node;
+  renderTree();
+  renderDetail(node);
+}
+</script>
+
+<script>
+function renderDetail(node) {
+  const lv = levels[node.level] || levels[0];
+  document.getElementById('breadcrumb').textContent = node.name;
+  document.getElementById('nodeName').textContent = node.name;
+  document.getElementById('nodeDesc').textContent = node.desc || '暂无描述';
+  const iconEl = document.getElementById('nodeIcon');
+  iconEl.style.background = lv.bg;
+  iconEl.style.color = lv.color;
+  iconEl.textContent = node.name[0];
+  const levelEl = document.getElementById('nodeLevel');
+  levelEl.textContent = lv.name;
+  levelEl.style.background = lv.bg;
+  levelEl.style.color = lv.color;
+
+  // 统计卡片
+  const res = node.resources || {};
+  const totalRes = Object.values(res).reduce((a,b)=>a+b,0);
+  const childCount = node.children ? node.children.length : 0;
+  const stats = [
+    {label:'绑定资源',value:totalRes,color:'var(--accent)',icon:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'},
+    {label:'子节点',value:childCount,color:'var(--purple)',icon:'<circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 8v4M8.5 16.5 11 13M15.5 16.5 13 13"/>'},
+    {label:'告警',value:node.level===2?Math.floor(Math.random()*5):0,color:'var(--yellow)',icon:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/>'},
+    {label:'负责人',value:node.owner?1:0,color:'var(--green)',icon:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'}
+  ];
+  document.getElementById('statsCards').innerHTML = stats.map(s => `
+    <div style="flex:1;background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;transition:all .15s;cursor:default" onmouseover="this.style.borderColor='var(--border)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--text-tertiary)">${s.label}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${s.color}" stroke-width="2" opacity=".6">${s.icon}</svg>
+      </div>
+      <div style="font-size:24px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums">${s.value}</div>
+    </div>
+  `).join('');
+
+  renderResourcesTab(node);
+}
+
+function renderResourcesTab(node) {
+  const res = node.resources || {};
+  const typeMap = {
+    ecs:{name:'云服务器',icon:'🖥️',color:'var(--accent)'},
+    rds:{name:'云数据库',icon:'🗄️',color:'var(--purple)'},
+    redis:{name:'Redis',icon:'⚡',color:'var(--red)'},
+    slb:{name:'负载均衡',icon:'⚖️',color:'var(--cyan)'},
+    vpc:{name:'VPC',icon:'🌐',color:'var(--green)'},
+    cdn:{name:'CDN',icon:'🚀',color:'var(--yellow)'},
+    es:{name:'Elasticsearch',icon:'🔍',color:'var(--purple)'},
+    oss:{name:'对象存储',icon:'📦',color:'var(--cyan)'},
+    gpu:{name:'GPU实例',icon:'🎮',color:'var(--red)'},
+    mq:{name:'消息队列',icon:'📨',color:'var(--yellow)'},
+    kafka:{name:'Kafka',icon:'📡',color:'var(--green)'}
+  };
+
+  const content = document.getElementById('tabContent');
+  if (Object.keys(res).length === 0) {
+    content.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--text-muted)">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <p style="margin-top:16px;font-size:14px">暂无绑定资源</p>
+        <p style="font-size:12px;margin-top:4px">点击「绑定资源」将云资源关联到此节点</p>
+      </div>`;
+    return;
+  }
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+  for (const [type, count] of Object.entries(res)) {
+    const t = typeMap[type] || {name:type,icon:'📋',color:'var(--text-muted)'};
+    const instances = [];
+    for (let i = 0; i < Math.min(count, 3); i++) {
+      instances.push({id:`i-${Math.random().toString(36).substr(2,10)}`,name:`${node.code}-${type}-${String(i+1).padStart(2,'0')}`,status:Math.random()>.15?'running':'stopped',ip:`10.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`});
+    }
+    html += `
+      <div class="resource-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">${t.icon}</span>
+            <span style="font-size:14px;font-weight:500">${t.name}</span>
+          </div>
+          <span style="font-size:20px;font-weight:600;color:${t.color};font-variant-numeric:tabular-nums">${count}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${instances.map(inst => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-elevated);border-radius:var(--radius-xs);font-size:12px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="width:6px;height:6px;border-radius:50%;background:${inst.status==='running'?'var(--green)':'var(--text-muted)'};flex-shrink:0"></span>
+                <span style="color:var(--text-secondary);font-family:var(--mono)">${inst.id.substring(0,14)}</span>
+              </div>
+              <span style="color:var(--text-muted);font-family:var(--mono)">${inst.ip}</span>
+            </div>
+          `).join('')}
+          ${count > 3 ? `<div style="text-align:center;font-size:12px;color:var(--accent);padding:4px;cursor:pointer">查看全部 ${count} 个实例 →</div>` : ''}
+        </div>
+      </div>`;
+  }
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+function switchTab(btn, tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const content = document.getElementById('tabContent');
+  if (tab === 'resources') { renderResourcesTab(selectedNode); return; }
+  if (tab === 'children') { renderChildrenTab(); return; }
+  if (tab === 'members') { renderMembersTab(); return; }
+  content.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-muted);font-size:13px">${tab === 'alerts' ? '暂无告警' : '暂无变更记录'}</div>`;
+}
+
+function renderChildrenTab() {
+  const children = selectedNode.children || [];
+  const content = document.getElementById('tabContent');
+  if (children.length === 0) {
+    content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-muted);font-size:13px">暂无子节点</div>';
+    return;
+  }
+  content.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">' +
+    children.map(c => {
+      const lv = levels[c.level] || levels[0];
+      const resCount = c.resources ? Object.values(c.resources).reduce((a,b)=>a+b,0) : 0;
+      return `<div class="resource-card" onclick="selectNode(findNode(treeData,${c.id}))">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="width:28px;height:28px;border-radius:6px;background:${lv.bg};color:${lv.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${c.name[0]}</span>
+          <div><div style="font-size:14px;font-weight:500">${c.name}</div><div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">${c.code}</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${c.desc||''}</div>
+        <div style="display:flex;gap:12px;font-size:12px">
+          <span style="color:var(--text-muted)">资源 <span style="color:var(--accent);font-weight:500">${resCount}</span></span>
+          ${c.owner?`<span style="color:var(--text-muted)">负责人 <span style="color:var(--text-secondary)">${c.owner}</span></span>`:''}
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function renderMembersTab() {
+  const content = document.getElementById('tabContent');
+  const members = [{name:'张三',role:'负责人',avatar:'Z',color:'var(--accent)'},{name:'李四',role:'开发',avatar:'L',color:'var(--green)'},{name:'王五',role:'运维',avatar:'W',color:'var(--purple)'}];
+  content.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
+    members.map(m => `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-xs)">
+      <span style="width:32px;height:32px;border-radius:50%;background:${m.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">${m.avatar}</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${m.name}</div></div>
+      <span style="font-size:12px;color:var(--text-tertiary);padding:2px 8px;background:var(--glass-hover);border-radius:99px">${m.role}</span>
+    </div>`).join('') + '</div>';
+}
+
+function toggleView(view) {
+  document.getElementById('btnTree').classList.toggle('active', view==='tree');
+  document.getElementById('btnTopo').classList.toggle('active', view==='topo');
+}
+
+function showCreateDialog() {
+  document.getElementById('dialogTitle').textContent = '新建节点';
+  document.getElementById('dialogOverlay').style.display = 'flex';
+  renderLevelPicker();
+  renderParentSelect();
+}
+function showEditDialog() {
+  document.getElementById('dialogTitle').textContent = '编辑节点';
+  document.getElementById('dialogOverlay').style.display = 'flex';
+  if (selectedNode) {
+    document.getElementById('formName').value = selectedNode.name;
+    document.getElementById('formCode').value = selectedNode.code || '';
+    document.getElementById('formDesc').value = selectedNode.desc || '';
+  }
+  renderLevelPicker();
+  renderParentSelect();
+}
+function closeDialog() { document.getElementById('dialogOverlay').style.display = 'none'; }
+
+function renderLevelPicker() {
+  document.getElementById('levelPicker').innerHTML = levels.map((l,i) =>
+    `<button class="level-chip ${selectedNode&&selectedNode.level===i?'active':''}" style="${selectedNode&&selectedNode.level===i?`background:${l.bg};color:${l.color};border-color:${l.color}`:''}" onclick="this.parentElement.querySelectorAll('.level-chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">
+      <span style="width:8px;height:8px;border-radius:50%;background:${l.color}"></span>${l.name}
+    </button>`
+  ).join('');
+}
+function renderParentSelect() {
+  const sel = document.getElementById('formParent');
+  sel.innerHTML = '<option value="">无（顶级节点）</option>';
+  function addOpts(nodes, depth) {
+    nodes.forEach(n => {
+      sel.innerHTML += `<option value="${n.id}">${'　'.repeat(depth)}${n.name}</option>`;
+      if (n.children) addOpts(n.children, depth+1);
+    });
+  }
+  addOpts(treeData, 0);
+}
+
+// 搜索
+document.getElementById('treeSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.tree-node').forEach(n => {
+    const label = n.querySelector('.node-label');
+    n.style.display = !q || (label && label.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+});
+
+// 初始化
+renderTree();
+</script>
+</body>
+</html>

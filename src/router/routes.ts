@@ -21,6 +21,15 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
+                path: '/topology',
+                name: 'Topology',
+                component: () => import('@/views/topology/index.vue'),
+                meta: {
+                    title: '资源拓扑',
+                    icon: 'Share',
+                },
+            },
+            {
                 path: '/accounts',
                 name: 'Accounts',
                 component: () => import('@/views/accounts/index.vue'),
@@ -492,6 +501,24 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: 'WAF 防火墙',
                     icon: 'Shield',
+                },
+            },
+            {
+                path: '/network/dns',
+                name: 'DnsManagement',
+                component: () => import('@/views/network/dns/index.vue'),
+                meta: {
+                    title: 'DNS 管理',
+                    icon: 'Connection',
+                },
+            },
+            {
+                path: '/network/dns/:domain/records',
+                name: 'DnsRecords',
+                component: () => import('@/views/network/dns/records.vue'),
+                meta: {
+                    title: '解析记录',
+                    hideInMenu: true,
                 },
             },
             // ==================== 存储管理路由 ====================

@@ -768,12 +768,13 @@ const renderModelGraph = () => {
       category: categories.findIndex(c => c.name === node.category),
       x: pos?.x,
       y: pos?.y,
-      fixed: isGrouped,
+      fixed: false,
+      draggable: true,
       label: {
         show: true,
         position: 'bottom' as const,
         fontSize: filteredNodes.length > 30 ? 9 : 11,
-        color: isIsolated ? 'var(--text-muted)' : 'var(--text-primary)',
+        color: isIsolated ? getCssVar('--text-muted') || '#71717a' : getCssVar('--text-primary') || '#fafafa',
         overflow: 'truncate' as const,
         width: 80,
       },
@@ -866,8 +867,8 @@ const renderModelGraph = () => {
         show: false,
         formatter: edge.relation_name,
         fontSize: 10,
-        color: 'var(--text-tertiary)',
-        backgroundColor: 'var(--bg-overlay)',
+        color: getCssVar('--text-tertiary') || '#a1a1aa',
+        backgroundColor: getCssVar('--bg-overlay') || '#1a1a1a',
         padding: [2, 6],
         borderRadius: 3,
       },
@@ -876,7 +877,7 @@ const renderModelGraph = () => {
         lineStyle: { width: 2.5, color: '#3b82f6' },
       },
       lineStyle: {
-        color: 'var(--border-strong)',
+        color: getCssVar('--border-strong') || 'rgba(255,255,255,0.15)',
         width: 1,
         type: edge.relation_type === 'belongs_to' ? 'dashed' as const : 'solid' as const,
         curveness,
@@ -888,7 +889,7 @@ const renderModelGraph = () => {
   const seriesConfig: any = {
     type: 'graph',
     roam: true,
-    draggable: !isGrouped,
+    draggable: true,
     zoom: isGrouped ? 0.85 : 1,
     categories,
     data: graphNodes,
@@ -903,8 +904,22 @@ const renderModelGraph = () => {
   }
 
   if (isGrouped) {
-    // 固定坐标布局，不用力导向
-    seriesConfig.layout = 'none'
+    // 用 force 布局 + fixed:true 保持分层位置，ECharts 原生支持拖拽 fixed 节点
+    seriesConfig.layout = 'force'
+    seriesConfig.force = {
+      initLayout: 'none',
+      repulsion: 0,
+      gravity: 0,
+      edgeLength: 0,
+      friction: 1,
+      layoutAnimation: true,
+    }
+    // 将所有有坐标的节点设为 fixed，force 引擎不会移动它们，但拖拽时会临时解除
+    graphNodes.forEach(n => {
+      if (n.x !== undefined && n.y !== undefined) {
+        n.fixed = true
+      }
+    })
   } else {
     seriesConfig.layout = 'force'
     seriesConfig.force = {
@@ -919,17 +934,16 @@ const renderModelGraph = () => {
   c.setOption({
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(23,23,23,0.95)',
-      borderColor: 'rgba(255,255,255,0.1)',
-      textStyle: { color: '#fafafa', fontSize: 12 },
+      ...getTooltipStyle(),
       formatter: (params: any) => {
+        const sc = getTooltipSubColor()
         if (params.dataType === 'node') {
           const v = params.data.value as ModelTopologyNode
-          if (!v) return '' // 标签节点
+          if (!v) return ''
           return `<div style="font-weight:600;margin-bottom:4px">${v.name}</div>
-            <div style="color:#a1a1aa;font-size:11px">UID: ${v.uid}</div>
-            <div style="color:#a1a1aa;font-size:11px">分类: ${CATEGORY_LABELS[v.category] || v.category}</div>
-            <div style="color:#a1a1aa;font-size:11px">厂商: ${v.provider === 'all' ? '通用' : v.provider}</div>`
+            <div style="color:${sc};font-size:11px">UID: ${v.uid}</div>
+            <div style="color:${sc};font-size:11px">分类: ${CATEGORY_LABELS[v.category] || v.category}</div>
+            <div style="color:${sc};font-size:11px">厂商: ${v.provider === 'all' ? '通用' : v.provider}</div>`
         }
         if (params.dataType === 'edge') {
           return `<div style="font-weight:500">${params.data.label?.formatter || ''}</div>`
@@ -1003,7 +1017,7 @@ const renderInstanceGraph = () => {
         position: 'bottom' as const,
         fontSize: isCenter ? 12 : 10,
         fontWeight: isCenter ? 'bold' as const : 'normal' as const,
-        color: 'var(--text-primary)',
+        color: getCssVar('--text-primary') || '#fafafa',
         overflow: 'truncate' as const,
         width: 80,
       },
@@ -1025,8 +1039,8 @@ const renderInstanceGraph = () => {
       show: false,
       formatter: edge.relation_name,
       fontSize: 10,
-      color: 'var(--text-tertiary)',
-      backgroundColor: 'var(--bg-overlay)',
+      color: getCssVar('--text-tertiary') || '#a1a1aa',
+      backgroundColor: getCssVar('--bg-overlay') || '#1a1a1a',
       padding: [2, 6],
       borderRadius: 3,
     },
@@ -1035,7 +1049,7 @@ const renderInstanceGraph = () => {
       lineStyle: { width: 2.5, color: '#3b82f6' },
     },
     lineStyle: {
-      color: 'var(--border-strong)',
+      color: getCssVar('--border-strong') || 'rgba(255,255,255,0.15)',
       width: 1,
       type: edge.relation_type === 'belongs_to' ? 'dashed' as const : 'solid' as const,
       curveness: 0.15,
@@ -1046,21 +1060,20 @@ const renderInstanceGraph = () => {
   c.setOption({
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(23,23,23,0.95)',
-      borderColor: 'rgba(255,255,255,0.1)',
-      textStyle: { color: '#fafafa', fontSize: 12 },
+      ...getTooltipStyle(),
       formatter: (params: any) => {
+        const sc = getTooltipSubColor()
         if (params.dataType === 'node') {
           const v = params.data.value as TopologyNode
           let html = `<div style="font-weight:600;margin-bottom:4px">${v.asset_name || v.asset_id}</div>
-            <div style="color:#a1a1aa;font-size:11px">模型: ${v.model_name}</div>
-            <div style="color:#a1a1aa;font-size:11px">资产ID: ${v.asset_id}</div>`
+            <div style="color:${sc};font-size:11px">模型: ${v.model_name}</div>
+            <div style="color:${sc};font-size:11px">资产ID: ${v.asset_id}</div>`
           if (v.attributes) {
             const attrs = v.attributes
-            if (attrs.status) html += `<div style="color:#a1a1aa;font-size:11px">状态: ${attrs.status}</div>`
-            if (attrs.private_ip) html += `<div style="color:#a1a1aa;font-size:11px">内网IP: ${attrs.private_ip}</div>`
-            if (attrs.ip_address) html += `<div style="color:#a1a1aa;font-size:11px">IP: ${attrs.ip_address}</div>`
-            if (attrs.cidr_block) html += `<div style="color:#a1a1aa;font-size:11px">CIDR: ${attrs.cidr_block}</div>`
+            if (attrs.status) html += `<div style="color:${sc};font-size:11px">状态: ${attrs.status}</div>`
+            if (attrs.private_ip) html += `<div style="color:${sc};font-size:11px">内网IP: ${attrs.private_ip}</div>`
+            if (attrs.ip_address) html += `<div style="color:${sc};font-size:11px">IP: ${attrs.ip_address}</div>`
+            if (attrs.cidr_block) html += `<div style="color:${sc};font-size:11px">CIDR: ${attrs.cidr_block}</div>`
           }
           return html
         }
@@ -1163,6 +1176,37 @@ const handleZoomOut = () => {
 const handleResize = () => {
   chart.value?.resize()
 }
+
+const appStore = useAppStore()
+
+// 读取当前主题下的 CSS 变量实际值
+const getCssVar = (name: string): string => {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+// 获取当前主题的 tooltip 样式
+const getTooltipStyle = () => ({
+  backgroundColor: getCssVar('--bg-overlay') || 'rgba(23,23,23,0.95)',
+  borderColor: getCssVar('--border-base') || 'rgba(255,255,255,0.1)',
+  textStyle: { color: getCssVar('--text-primary') || '#fafafa', fontSize: 12 },
+})
+
+const getTooltipSubColor = () => getCssVar('--text-tertiary') || '#a1a1aa'
+
+// 主题切换时重新渲染图表
+watch(() => appStore.theme, () => {
+  nextTick(() => {
+    if (chart.value) {
+      chart.value.dispose()
+      chart.value = null
+    }
+    if (viewMode.value === 'model') {
+      renderModelGraph()
+    } else {
+      renderInstanceGraph()
+    }
+  })
+})
 
 onMounted(() => {
   fetchModelTopology()

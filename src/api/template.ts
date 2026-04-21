@@ -5,7 +5,19 @@ import type { AxiosResponse } from 'axios'
 import instance, { API_SERVICE } from './request/service'
 import type {
     CreateTemplateReq,
-    VMTemplate
+    DirectProvisionReq,
+    ImageInfo,
+    InstanceTypeInfo,
+    ProvisionReq,
+    ProvisionResponse,
+    ProvisionTask,
+    ProvisionTaskFilter,
+    SecurityGroupInfo,
+    SubnetInfo,
+    TemplateFilter,
+    UpdateTemplateReq,
+    VMTemplate,
+    VPCInfo
 } from './types/template'
 
 // CAM API 响应拦截器
