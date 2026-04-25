@@ -164,7 +164,7 @@ const rules: FormRules = {
 // 加载云账号列表
 const loadCloudAccounts = async () => {
   try {
-    const res = await listCloudAccountsApi({ size: 100 })
+    const res = await listCloudAccountsApi({ limit: 100, size: 100 })
     cloudAccounts.value = res.data.accounts || []
   } catch (error) {
     console.error('加载云账号列表失败:', error)

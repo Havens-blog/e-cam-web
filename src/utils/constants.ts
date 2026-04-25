@@ -534,7 +534,7 @@ export function getAssetStatus(value: string) {
         { value: 'error', label: '异常', color: 'danger' },
         { value: 'unknown', label: '未知', color: 'info' }
     ]
-    return ASSET_STATUS_FALLBACK.find((s) => s.value === value) || ASSET_STATUS_FALLBACK[ASSET_STATUS_FALLBACK.length - 1]
+    return ASSET_STATUS_FALLBACK.find((s) => s.value === value) ?? { value: 'unknown', label: '未知', color: 'info' }
 }
 
 export function getEnvironmentConfig(value: string): EnvironmentConfig | undefined {
@@ -565,7 +565,7 @@ export function getAccountStatus(value: string) {
         { value: 'testing', label: '测试中', color: 'warning' },
         { value: 'inactive', label: '未激活', color: 'info' }
     ]
-    return ACCOUNT_STATUS_FALLBACK.find((s) => s.value === value) || ACCOUNT_STATUS_FALLBACK[ACCOUNT_STATUS_FALLBACK.length - 1]
+    return ACCOUNT_STATUS_FALLBACK.find((s) => s.value === value) ?? { value: 'unknown', label: value, color: 'info' }
 }
 
 /** @deprecated 建议迁移到 useDictionary composable 从 'tenant_status' 字典获取。 */
@@ -627,7 +627,7 @@ export function getUserStatus(value: string) {
         { value: 'inactive', label: '未激活', color: 'info' },
         { value: 'deleted', label: '已删除', color: 'danger' }
     ]
-    return USER_STATUS_FALLBACK.find((s) => s.value === value) || USER_STATUS_FALLBACK[USER_STATUS_FALLBACK.length - 1]
+    return USER_STATUS_FALLBACK.find((s) => s.value === value) ?? { value: 'unknown', label: value, color: 'info' }
 }
 
 /** @deprecated 建议迁移到 useDictionary composable 从 'template_category' 字典获取。 */
@@ -673,7 +673,7 @@ export function getSyncTaskStatus(value: string) {
         { value: 'completed', label: '已完成', color: 'success' },
         { value: 'failed', label: '失败', color: 'danger' }
     ]
-    return SYNC_TASK_STATUS_FALLBACK.find((s) => s.value === value) ?? SYNC_TASK_STATUS_FALLBACK[SYNC_TASK_STATUS_FALLBACK.length - 1]
+    return SYNC_TASK_STATUS_FALLBACK.find((s) => s.value === value) ?? { value: 'unknown', label: value, color: 'info' }
 }
 
 export function getSyncTaskStatusLabel(value: string): string {

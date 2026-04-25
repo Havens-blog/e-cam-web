@@ -221,12 +221,12 @@ import type { SyncTask } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
 import TenantSelector from '@/components/TenantSelector.vue'
 import {
-  CLOUD_PROVIDERS,
-  getSyncTaskStatusColor,
-  getSyncTaskStatusLabel,
-  getSyncTaskTypeLabel,
-  SYNC_TASK_STATUS,
-  SYNC_TASK_TYPES
+    CLOUD_PROVIDERS,
+    getSyncTaskStatusColor,
+    getSyncTaskStatusLabel,
+    getSyncTaskTypeLabel,
+    SYNC_TASK_STATUS,
+    SYNC_TASK_TYPES
 } from '@/utils/constants'
 import { Plus, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -278,7 +278,7 @@ const loadSyncTasks = async () => {
       size: pagination.size
     }
     const res = await listSyncTasksApi(params)
-    taskList.value = res.data.data || res.data.tasks || []
+    taskList.value = res.data.data ?? res.data.tasks ?? []
     pagination.total = res.data.total || 0
 
     // 如果有正在运行的任务,启动自动刷新

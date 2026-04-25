@@ -276,7 +276,7 @@ const loadAuditLogs = async () => {
       size: pagination.size
     }
     const res = await listAuditLogsApi(params)
-    logList.value = res.data.data || res.data.logs || []
+    logList.value = res.data.data ?? res.data.logs ?? []
     pagination.total = res.data.total || 0
   } catch (error) {
     console.error('加载审计日志失败:', error)

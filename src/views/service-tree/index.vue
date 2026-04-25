@@ -507,26 +507,26 @@
 <script setup lang="ts">
 import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
-  bindResourceApi,
-  deleteNodeApi,
-  getNodeAssetStatsApi,
-  listEnvironmentsApi,
-  listNodeAssetsApi,
-  listNodeBindingsApi,
-  listNodesApi,
-  unbindResourceApi
+    bindResourceApi,
+    deleteNodeApi,
+    getNodeAssetStatsApi,
+    listEnvironmentsApi,
+    listNodeAssetsApi,
+    listNodeBindingsApi,
+    listNodesApi,
+    unbindResourceApi
 } from '@/api/service-tree'
 import type { AssetStatsVO, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
-  Delete,
-  Document,
-  Edit,
-  Folder,
-  Link,
-  Plus,
-  Rank,
-  Refresh,
-  Search
+    Delete,
+    Document,
+    Edit,
+    Folder,
+    Link,
+    Plus,
+    Rank,
+    Refresh,
+    Search
 } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -1011,9 +1011,10 @@ const filterNode = (value: string, data: any) => {
 }
 
 // 节点点击
-const handleNodeClick = (data: ServiceTreeNode) => {
-  selectedNode.value = data
-  buildNodePath(data)
+const handleNodeClick = (data: any) => {
+  const nodeData = data as ServiceTreeNode
+  selectedNode.value = nodeData
+  buildNodePath(nodeData)
   activeTab.value = 'bindings'
   assetStats.value = null
   nodeAssetList.value = []

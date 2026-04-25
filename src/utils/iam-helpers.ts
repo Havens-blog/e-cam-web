@@ -75,15 +75,16 @@ export function calculateUserPermissionLevel(user: CloudUser): number {
     let level = 0
 
     // 基于用户类型
-    if (user.user_type === 'root_user') {
+    if ((user.user_type as string) === 'root_user') {
         level += 100
     } else if (user.user_type === 'iam_user' || user.user_type === 'ram_user') {
         level += 50
     }
 
     // 基于权限组数量
-    if (user.groups && user.groups.length > 0) {
-        level += Math.min(user.groups.length * 10, 50)
+    const groups = user.groups ?? user.permission_groups
+    if (groups && groups.length > 0) {
+        level += Math.min(groups.length * 10, 50)
     }
 
     return Math.min(level, 100)
@@ -95,12 +96,13 @@ export function calculateUserPermissionLevel(user: CloudUser): number {
  * @returns 是否有管理员权限
  */
 export function isAdminUser(user: CloudUser): boolean {
-    if (user.user_type === 'root_user') {
+    if ((user.user_type as string) === 'root_user') {
         return true
     }
 
-    if (user.groups) {
-        return user.groups.some(group =>
+    const groups = user.groups ?? user.permission_groups
+    if (groups) {
+        return groups.some((group: PermissionGroup) =>
             group.name.toLowerCase().includes('admin') ||
             group.name.toLowerCase().includes('管理员')
         )
@@ -147,11 +149,12 @@ export function formatGroupPolicyCount(group: PermissionGroup): string {
  * @returns 进度百分比 (0-100)
  */
 export function calculateSyncProgress(task: SyncTask): number {
-    if (task.status === 'success') {
+    const status = task.status as string
+    if (status === 'success' || status === 'completed') {
         return 100
-    } else if (task.status === 'failed' || task.status === 'cancelled') {
+    } else if (status === 'failed' || status === 'cancelled') {
         return 0
-    } else if (task.status === 'running') {
+    } else if (status === 'running') {
         // 如果有进度信息,使用实际进度
         if (task.progress !== undefined) {
             return task.progress
@@ -173,7 +176,7 @@ export function formatSyncDuration(task: SyncTask): string {
     }
 
     const startTime = new Date(task.start_time).getTime()
-    const endTime = task.end_time ? new Date(task.end_time).getTime() : Date.now()
+    const endTime = (task.end_time ?? task.complete_time) ? new Date((task.end_time ?? task.complete_time)!).getTime() : Date.now()
     const duration = endTime - startTime
 
     const seconds = Math.floor(duration / 1000)

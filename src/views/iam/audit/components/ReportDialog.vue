@@ -167,7 +167,7 @@ const rules: FormRules = {
 const loadTenants = async () => {
   try {
     const res = await listTenantsApi({ size: 100 })
-    tenants.value = res.data.tenants || []
+    tenants.value = res.data.data ?? res.data.tenants ?? []
   } catch (error) {
     console.error('加载租户列表失败:', error)
   }

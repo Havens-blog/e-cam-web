@@ -151,23 +151,21 @@ const handleExport = async () => {
 
   try {
     // 构建导出参数
-    const exportParams: Record<string, any> = {
-      format: formData.format,
+    const exportParams: ExportAuditLogsParams = {
+      format: formData.format === 'excel' ? 'csv' : formData.format,
       start_time: formData.dateRange?.[0].toISOString(),
       end_time: formData.dateRange?.[1].toISOString(),
-      fields: formData.fields,
-      max_records: formData.maxRecords
     }
 
     // 应用筛选条件
     formData.includeFilters.forEach(filter => {
       if (props.filters[filter]) {
-        exportParams[filter] = props.filters[filter]
+        ;(exportParams as any)[filter] = props.filters[filter]
       }
     })
 
     // 调用导出 API
-    const response = await exportAuditLogsApi(exportParams as ExportAuditLogsParams)
+    const response = await exportAuditLogsApi(exportParams)
 
     // 下载文件
     const blob = new Blob([response.data], {
