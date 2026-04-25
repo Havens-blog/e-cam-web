@@ -12,6 +12,8 @@ export const useTopologyStore = defineStore('topology', () => {
     const selectedSourceCollectors = ref<string[]>([])
     const hideSilent = ref(false)
     const showBrokenOnly = ref(false)
+    const showInternalCalls = ref(true)
+    const showApmEdges = ref(true)
 
     // 布局模式
     const layoutMode = ref<'dag' | 'force'>('dag')
@@ -81,11 +83,13 @@ export const useTopologyStore = defineStore('topology', () => {
         selectedSourceCollectors.value = []
         hideSilent.value = false
         showBrokenOnly.value = false
+        showInternalCalls.value = true
+        showApmEdges.value = true
     }
 
     return {
         selectedDomain, selectedProviders, selectedSourceCollectors,
-        hideSilent, showBrokenOnly, layoutMode,
+        hideSilent, showBrokenOnly, showInternalCalls, showApmEdges, layoutMode,
         selectedNodeId, detailPanelOpen,
         graphData, domainList, loading,
         queryParams, filteredNodes,

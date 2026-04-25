@@ -50,6 +50,7 @@ const assetTypeMap: Record<string, { label: string; icon: string; route: string 
   lb: { label: '负载均衡', icon: 'caise-network_devices', route: '/network/lb' },
   cdn: { label: 'CDN 加速', icon: 'caise-network_devices', route: '/network/cdn' },
   waf: { label: 'WAF 防火墙', icon: 'caise-network_devices', route: '/network/waf' },
+  eni: { label: '弹性网卡', icon: 'caise-network_devices', route: '/network/eni' },
   dns: { label: 'DNS 管理', icon: 'caise-network_devices', route: '/network/dns' },
   nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
   oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
@@ -383,6 +384,7 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
               { key: 'assets-cdn', path: '/network/cdn', title: 'CDN 加速' },
               { key: 'assets-waf', path: '/network/waf', title: 'WAF 防火墙' },
+              { key: 'assets-eni', path: '/network/eni', title: '弹性网卡' },
               { key: 'assets-dns', path: '/network/dns', title: 'DNS 管理' },
             ]
           },

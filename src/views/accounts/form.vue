@@ -172,10 +172,10 @@ import { createCloudAccountApi, testConnectionApi, updateCloudAccountApi } from 
 import type { CloudAccount } from '@/api/types/account'
 import TenantSelector from '@/components/TenantSelector.vue'
 import {
-  CLOUD_PROVIDERS,
-  ENVIRONMENTS,
-  accountFormRules,
-  getProviderRegions,
+    CLOUD_PROVIDERS,
+    ENVIRONMENTS,
+    accountFormRules,
+    getProviderRegions,
 } from '@/utils/constants'
 import { Connection } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance } from 'element-plus'
@@ -223,17 +223,23 @@ const testingConnection = ref(false)
 
 // 计算可用区域
 const availableRegions = computed(() => {
-  // 如果有真实的区域列表（测试连接获取的），优先使用
+  // 获取硬编码的区域列表（带中文名）
+  const staticRegions = formData.provider ? getProviderRegions(formData.provider) : []
+  const staticMap = new Map(staticRegions.map(r => [r.value, r.label]))
+
+  // 如果有真实的区域列表（测试连接获取的），合并显示
   if (realRegions.value.length > 0) {
-    return realRegions.value.map(r => ({
+    // 真实区域优先，用硬编码的中文名补充 label
+    const merged = realRegions.value.map(r => ({
       value: r,
-      label: r,
+      label: staticMap.get(r) || r,
     }))
+    // 补充硬编码中有但真实列表中没有的区域（可能是新开通的）
+    return merged
   }
   
   // 否则使用默认的区域列表
-  if (!formData.provider) return []
-  return getProviderRegions(formData.provider)
+  return staticRegions
 })
 
 // 测试连接并获取区域列表

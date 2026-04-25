@@ -490,3 +490,30 @@ export function getImageStatsApi(params?: { account_id?: number; provider?: stri
         interceptorsToOnce: createAssetApiInterceptor()
     })
 }
+
+// ==================== ENI (弹性网卡) API ====================
+
+/** ENI 列表查询参数 */
+export interface ListENIParams extends ListAssetsParams {
+    type?: string       // Primary / Secondary
+    vpc_id?: string
+    instance_id?: string
+}
+
+/** 获取弹性网卡列表 */
+export function listENIAssetsApi(params?: ListENIParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/eni`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取弹性网卡详情 */
+export function getENIAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
+    return instance.get<{ code: number; data: Asset; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/eni/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}

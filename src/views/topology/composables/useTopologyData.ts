@@ -27,11 +27,6 @@ export function useTopologyData() {
 
     async function loadTopology(params?: TopologyQueryParams) {
         const p = params || queryParams.value
-        // 未选择域名时不加载全量拓扑（太多节点不可读）
-        if (!p.domain) {
-            graphData.value = null
-            return
-        }
         loading.value = true
         try {
             const res = await getTopologyApi(p)
@@ -51,13 +46,14 @@ export function useTopologyData() {
 
     async function refresh() {
         await loadDomains()
-        await loadTopology()
+        // 强制刷新：传 refresh=true，后端会清除缓存数据并重新从云 API 构建
+        const p = { ...queryParams.value, refresh: true }
+        await loadTopology(p)
     }
 
-    // 仅在有域名筛选时自动加载
-    watch(queryParams, (p) => {
-        if (p.domain) loadTopology()
-        else graphData.value = null
+    // 筛选条件变化时自动加载
+    watch(queryParams, () => {
+        loadTopology()
     }, { deep: true })
 
     return { loadDomains, loadTopology, refresh }

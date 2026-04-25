@@ -31,6 +31,7 @@ export interface TopoEdge {
     request_count?: number
     latency_p99?: number
     updated_at?: string
+    attributes?: Record<string, any>
 }
 
 /** 拓扑统计信息 */
@@ -59,6 +60,7 @@ export interface TopologyQueryParams {
     type?: string
     source_collector?: string
     hide_silent?: boolean
+    refresh?: boolean
 }
 
 /** DNS 入口域名列表项 */
@@ -176,10 +178,22 @@ export const SOURCE_COLLECTORS = {
     LOG: 'log',
     MANUAL: 'manual',
     DNS_API: 'dns_api',
+    APM: 'apm',
 } as const
 
 /** 边状态 */
 export const EDGE_STATUS = {
     ACTIVE: 'active',
     PENDING: 'pending',
+} as const
+
+/** 边关系类型 */
+export const EDGE_RELATIONS = {
+    BELONGS_TO: 'belongs_to',
+    BIND_TO: 'bindto',
+    CONNECTS: 'connects',
+    DEPENDS_ON: 'depends_on',
+    ROUTE: 'route',
+    RESOLVE: 'resolve',
+    CALLS: 'calls',
 } as const

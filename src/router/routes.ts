@@ -504,6 +504,15 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
+                path: '/network/eni',
+                name: 'ENI',
+                component: () => import('@/views/network/eni/index.vue'),
+                meta: {
+                    title: '弹性网卡',
+                    icon: 'Connection',
+                },
+            },
+            {
                 path: '/network/dns',
                 name: 'DnsManagement',
                 component: () => import('@/views/network/dns/index.vue'),

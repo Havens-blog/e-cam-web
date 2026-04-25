@@ -64,7 +64,7 @@ import TopologyCanvas from './components/TopologyCanvas.vue'
 import { useTopologyData } from './composables/useTopologyData'
 
 const store = useTopologyStore()
-const { loadDomains, loadTopology } = useTopologyData()
+const { loadDomains, loadTopology, refresh } = useTopologyData()
 const route = useRoute()
 const canvasRef = ref<InstanceType<typeof TopologyCanvas> | null>(null)
 
@@ -72,8 +72,7 @@ function handleSelectNode(nodeId: string) {
   store.selectNode(nodeId)
 }
 function handleRefresh() {
-  loadDomains()
-  if (store.selectedDomain) loadTopology()
+  refresh()
 }
 function handleZoomIn() { canvasRef.value?.zoomIn() }
 function handleZoomOut() { canvasRef.value?.zoomOut() }

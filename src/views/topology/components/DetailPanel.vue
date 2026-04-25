@@ -7,7 +7,10 @@
           {{ typeIcon }}
         </span>
         <div>
-          <div class="dp-title">{{ displayName }}</div>
+          <div class="dp-title" :class="{ 'dp-title-link': isCmdbInstance }" @click="isCmdbInstance && goAssetDetail()">
+            {{ displayName }}
+            <el-icon v-if="isCmdbInstance" :size="12" style="margin-left: 4px; vertical-align: middle;"><Link /></el-icon>
+          </div>
           <div class="dp-subtitle">{{ displayType }}</div>
         </div>
       </div>
@@ -72,11 +75,23 @@
         <div class="dp-section-title">
           <el-icon><Bottom /></el-icon> 下游 ({{ downstreamNodes.length }})
         </div>
-        <div v-for="n in downstreamNodes" :key="n.id" class="dp-rel-card" @click="emit('close'); store.selectNode(n.id)">
-          <span class="dp-rel-dot" :style="{ background: getNodeColor(n) }"></span>
+        <div v-for="item in downstreamItems" :key="item.node.id" class="dp-rel-card" @click="emit('close'); store.selectNode(item.node.id)">
+          <span class="dp-rel-dot" :style="{ background: getNodeColor(item.node) }"></span>
           <div class="dp-rel-info">
-            <span class="dp-rel-name">{{ n.name }}</span>
-            <span class="dp-rel-type">{{ typeLabel(n.type) }}{{ n.provider ? ' · ' + providerName(n.provider) : '' }}</span>
+            <span class="dp-rel-name">{{ item.node.name }}</span>
+            <span class="dp-rel-type">{{ typeLabel(item.node.type) }}{{ item.node.provider ? ' · ' + providerName(item.node.provider) : '' }}</span>
+            <!-- APM 边指标 -->
+            <div v-if="item.edge && item.edge.source_collector === 'apm' && item.edge.attributes" class="dp-apm-metrics">
+              <span class="dp-metric">QPS: {{ formatNum(item.edge.attributes.qps) }}</span>
+              <span class="dp-metric">P99: {{ formatNum(item.edge.attributes.latency_p99) }}ms</span>
+              <span class="dp-metric" :class="{ 'dp-metric-error': Number(item.edge.attributes.error_rate || 0) > 5 }">
+                错误率: {{ formatNum(item.edge.attributes.error_rate) }}%
+              </span>
+            </div>
+            <!-- APM 边关联域名 -->
+            <div v-if="item.edge && item.edge.attributes?.domains?.length > 0" class="dp-domains">
+              <el-tag v-for="d in (item.edge.attributes?.domains || []).filter((i: any) => i != null)" :key="d" size="small" type="info">{{ d }}</el-tag>
+            </div>
           </div>
           <el-icon class="dp-rel-arrow"><ArrowRight /></el-icon>
         </div>
@@ -104,13 +119,14 @@
 <script setup lang="ts">
 import type { NodeDetail, TopoNode } from '@/api/types/topology'
 import { useTopologyStore } from '@/stores/topology'
-import { ArrowRight, Bottom, Close, Top } from '@element-plus/icons-vue'
+import { ArrowRight, Bottom, Close, Link, Top } from '@element-plus/icons-vue'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { getNodeColor, getProviderColor } from '../composables/useTopologyChart'
 
-const TN: Record<string, string> = { dns_record: 'DNS', cdn: 'CDN', waf: 'WAF', slb: 'SLB', alb: 'ALB', nlb: 'NLB', elb: 'ELB', gateway: '网关', k8s_ingress: 'Ingress', k8s_service: 'Service', k8s_deployment: 'Deployment', ecs: 'ECS', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB', oss: 'OSS', external: '外部', unknown: '未知' }
+const TN: Record<string, string> = { dns_record: 'DNS', cdn: 'CDN', waf: 'WAF', slb: 'SLB', alb: 'ALB', nlb: 'NLB', elb: 'ELB', eni: 'ENI', gateway: '网关', k8s_ingress: 'Ingress', k8s_service: 'Service', k8s_deployment: 'Deployment', ecs: 'ECS', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB', oss: 'OSS', external: '外部', unknown: '未知' }
 const PNMap: Record<string, string> = { aliyun: '阿里云', aws: 'AWS', tencent: '腾讯云', huawei: '华为云', volcano: '火山引擎', volcengine: '火山引擎' }
-const TI: Record<string, string> = { dns_record: '🌐', cdn: '⚡', waf: '🛡', slb: '⚖', alb: '⚖', nlb: '⚖', ecs: '🖥', rds: '🗄', redis: '📦', oss: '💾', external: '🔗', unknown: '❓' }
+const TI: Record<string, string> = { dns_record: '🌐', cdn: '⚡', waf: '🛡', slb: '⚖', alb: '⚖', nlb: '⚖', eni: '🔌', ecs: '🖥', rds: '🗄', redis: '📦', oss: '💾', external: '🔗', unknown: '❓' }
 const ST: Record<string, string> = { active: '运行中', error: '异常', inactive: '已停止', pending: '待处理' }
 
 // CDN/WAF 关键属性映射
@@ -166,6 +182,7 @@ const emit = defineEmits<{ close: [] }>()
 const store = useTopologyStore()
 const detail = ref<NodeDetail | null>(null)
 const loading = ref(false)
+const router = useRouter()
 
 function typeLabel(t: string) { return TN[t] || t }
 function providerName(p: string) { return PNMap[p] || p }
@@ -195,6 +212,44 @@ const keyAttrs = computed(() => {
 
 const upstreamNodes = computed(() => (detail.value?.upstream_nodes || []).filter((n: any) => n != null))
 const downstreamNodes = computed(() => (detail.value?.downstream_nodes || []).filter((n: any) => n != null))
+
+/** 下游节点及其关联边（用于展示 APM 指标） */
+const downstreamItems = computed(() => {
+  const graph = store.graphData
+  const nodeId = props.nodeId
+  if (!graph || !nodeId) return []
+  return downstreamNodes.value.map((node: TopoNode) => {
+    const edge = (graph.edges || []).find(
+      (e) => e?.source_id === nodeId && e?.target_id === node.id
+    ) ?? null
+    return { node, edge }
+  })
+})
+
+function formatNum(val: unknown): string {
+  const n = Number(val)
+  if (isNaN(n)) return '0'
+  return n % 1 === 0 ? String(n) : n.toFixed(2)
+}
+
+/** 是否是 CMDB 实例节点（可跳转到资产详情） */
+const isCmdbInstance = computed(() => {
+  const id = detail.value?.id
+  return id ? id.startsWith('inst-') : false
+})
+
+/** 跳转到资产详情页 */
+function goAssetDetail() {
+  const d = detail.value
+  if (!d || !d.id?.startsWith('inst-')) return
+  // 用 asset_id 或 asset_name 作为搜索关键词跳转到 CMDB 实例列表
+  const keyword = d.attributes?.asset_id || d.attributes?.domain_name || d.name || ''
+  const modelUID = d.attributes?.model_uid || ''
+  const query: Record<string, string> = {}
+  if (keyword) query.keyword = String(keyword)
+  if (modelUID) query.model_uid = String(modelUID)
+  router.push({ path: '/cmdb/instances', query })
+}
 
 function formatAttrValue(val: unknown): string {
   if (val === null || val === undefined) return '—'
@@ -266,6 +321,8 @@ onMounted(() => loadDetail(props.nodeId))
   font-size: 18px; flex-shrink: 0;
 }
 .dp-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.dp-title-link { cursor: pointer; color: var(--el-color-primary); }
+.dp-title-link:hover { text-decoration: underline; }
 .dp-subtitle { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
 
 /* Body */
@@ -322,6 +379,12 @@ onMounted(() => loadDetail(props.nodeId))
 .dp-rel-name { font-size: 13px; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dp-rel-type { font-size: 11px; color: var(--text-tertiary); }
 .dp-rel-arrow { color: var(--text-tertiary); flex-shrink: 0; }
+
+/* APM metrics in downstream cards */
+.dp-apm-metrics { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.dp-metric { font-size: 11px; color: var(--text-tertiary); }
+.dp-metric-error { color: var(--accent-red); font-weight: 600; }
+.dp-domains { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 
 /* Collapse override */
 .dp-section :deep(.el-collapse) { border: none; }

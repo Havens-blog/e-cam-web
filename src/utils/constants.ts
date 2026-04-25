@@ -41,10 +41,23 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         regions: [
             { value: 'cn-hangzhou', label: '华东1(杭州)' },
             { value: 'cn-shanghai', label: '华东2(上海)' },
+            { value: 'cn-nanjing', label: '华东5(南京)' },
+            { value: 'cn-fuzhou', label: '华东6(福州)' },
             { value: 'cn-beijing', label: '华北2(北京)' },
+            { value: 'cn-zhangjiakou', label: '华北3(张家口)' },
+            { value: 'cn-huhehaote', label: '华北5(呼和浩特)' },
+            { value: 'cn-wulanchabu', label: '华北6(乌兰察布)' },
             { value: 'cn-shenzhen', label: '华南1(深圳)' },
             { value: 'cn-guangzhou', label: '华南2(广州)' },
-            { value: 'cn-chengdu', label: '西南1(成都)' }
+            { value: 'cn-heyuan', label: '华南3(河源)' },
+            { value: 'cn-chengdu', label: '西南1(成都)' },
+            { value: 'cn-hongkong', label: '中国香港' },
+            { value: 'ap-southeast-1', label: '新加坡' },
+            { value: 'ap-southeast-5', label: '印度尼西亚(雅加达)' },
+            { value: 'ap-northeast-1', label: '日本(东京)' },
+            { value: 'us-west-1', label: '美国(硅谷)' },
+            { value: 'us-east-1', label: '美国(弗吉尼亚)' },
+            { value: 'eu-central-1', label: '德国(法兰克福)' }
         ],
         assetTypes: [
             { value: 'ecs', label: '弹性计算服务' },
@@ -64,11 +77,17 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         color: '#ff9900',
         regions: [
             { value: 'us-east-1', label: 'US East (N. Virginia)' },
+            { value: 'us-east-2', label: 'US East (Ohio)' },
+            { value: 'us-west-1', label: 'US West (N. California)' },
             { value: 'us-west-2', label: 'US West (Oregon)' },
             { value: 'eu-west-1', label: 'Europe (Ireland)' },
+            { value: 'eu-central-1', label: 'Europe (Frankfurt)' },
             { value: 'ap-southeast-1', label: 'Asia Pacific (Singapore)' },
             { value: 'ap-northeast-1', label: 'Asia Pacific (Tokyo)' },
-            { value: 'cn-north-1', label: 'China (Beijing)' }
+            { value: 'ap-northeast-2', label: 'Asia Pacific (Seoul)' },
+            { value: 'ap-south-1', label: 'Asia Pacific (Mumbai)' },
+            { value: 'cn-north-1', label: 'China (Beijing)' },
+            { value: 'cn-northwest-1', label: 'China (Ningxia)' }
         ],
         assetTypes: [
             { value: 'ec2', label: 'Elastic Compute Cloud' },
@@ -113,10 +132,19 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         regions: [
             { value: 'ap-beijing', label: '北京' },
             { value: 'ap-shanghai', label: '上海' },
+            { value: 'ap-nanjing', label: '南京' },
             { value: 'ap-guangzhou', label: '广州' },
             { value: 'ap-shenzhen', label: '深圳' },
             { value: 'ap-chengdu', label: '成都' },
-            { value: 'ap-chongqing', label: '重庆' }
+            { value: 'ap-chongqing', label: '重庆' },
+            { value: 'ap-hongkong', label: '中国香港' },
+            { value: 'ap-singapore', label: '新加坡' },
+            { value: 'ap-jakarta', label: '雅加达' },
+            { value: 'ap-tokyo', label: '东京' },
+            { value: 'ap-seoul', label: '首尔' },
+            { value: 'na-siliconvalley', label: '硅谷' },
+            { value: 'na-ashburn', label: '弗吉尼亚' },
+            { value: 'eu-frankfurt', label: '法兰克福' }
         ],
         assetTypes: [
             { value: 'cvm', label: '云服务器' },
@@ -137,10 +165,17 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         regions: [
             { value: 'cn-north-1', label: '华北-北京一' },
             { value: 'cn-north-4', label: '华北-北京四' },
+            { value: 'cn-north-9', label: '华北-乌兰察布一' },
             { value: 'cn-east-2', label: '华东-上海二' },
             { value: 'cn-east-3', label: '华东-上海一' },
             { value: 'cn-south-1', label: '华南-广州' },
-            { value: 'cn-southwest-2', label: '西南-贵阳一' }
+            { value: 'cn-south-4', label: '华南-广州-友好' },
+            { value: 'cn-southwest-2', label: '西南-贵阳一' },
+            { value: 'ap-southeast-1', label: '中国-香港' },
+            { value: 'ap-southeast-2', label: '亚太-曼谷' },
+            { value: 'ap-southeast-3', label: '亚太-新加坡' },
+            { value: 'af-south-1', label: '非洲-约翰内斯堡' },
+            { value: 'la-south-2', label: '拉美-圣地亚哥' }
         ],
         assetTypes: [
             { value: 'ecs', label: '弹性云服务器' },
@@ -161,7 +196,9 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
         regions: [
             { value: 'cn-beijing', label: '华北2(北京)' },
             { value: 'cn-shanghai', label: '华东2(上海)' },
-            { value: 'cn-guangzhou', label: '华南1(广州)' }
+            { value: 'cn-guangzhou', label: '华南1(广州)' },
+            { value: 'cn-langfang', label: '华北-廊坊' },
+            { value: 'ap-southeast-1', label: '亚太东南(柔佛)' }
         ],
         assetTypes: [
             { value: 'ecs', label: '云服务器' },

@@ -63,6 +63,10 @@
         <span>仅显示断链</span>
         <el-switch v-model="store.showBrokenOnly" size="small" />
       </div>
+      <div v-if="store.selectedDomain" class="switch-row">
+        <span>显示内部调用</span>
+        <el-switch v-model="store.showInternalCalls" size="small" />
+      </div>
     </div>
 
     <!-- 统计 -->
@@ -88,6 +92,9 @@
         <div class="legend-item"><span class="legend-line active"></span> 活跃</div>
         <div class="legend-item"><span class="legend-line silent"></span> 沉默</div>
         <div class="legend-item"><span class="legend-line broken"></span> 断链</div>
+        <div class="legend-item" style="cursor:pointer" @click="store.showApmEdges = !store.showApmEdges">
+          <span class="legend-line apm" :style="{ opacity: store.showApmEdges ? 1 : 0.3 }"></span> APM 调用
+        </div>
       </div>
     </div>
   </div>
@@ -137,18 +144,28 @@ async function searchDomains(query: string) {
     }
     // 调跨域名搜索 API
     try {
-      const res = await searchDnsRecordsApi({ keyword: query, limit: 50 })
-      const data = (res as any)?.data || res
-      for (const r of (data?.items || []).filter((i: any) => i != null)) {
-        const rr = r.rr || ''
-        const domain = r.domain || ''
-        const fullDomain = rr === '@' ? domain : `${rr}.${domain}`
-        if (fullDomain && !seen.has(fullDomain)) {
-          seen.add(fullDomain)
-          options.push({
-            value: fullDomain, label: fullDomain, provider: r.provider || '',
-            type: `${r.type || 'A'} → ${(r.value || '').substring(0, 35)}`
-          })
+      // 搜索完整域名和子域名：拆分 query 为 rr + domain 两种搜索
+      const searchKeywords = [query]
+      // 如果 query 包含点号，也用第一段作为 rr 搜索
+      const dotIdx = query.indexOf('.')
+      if (dotIdx > 0) {
+        searchKeywords.push(query.substring(0, dotIdx)) // 用 rr 部分搜索
+      }
+
+      for (const keyword of searchKeywords) {
+        const res = await searchDnsRecordsApi({ keyword, limit: 50 })
+        const data = (res as any)?.data || res
+        for (const r of (data?.items || []).filter((i: any) => i != null)) {
+          const rr = r.rr || ''
+          const domain = r.domain || ''
+          const fullDomain = rr === '@' ? domain : `${rr}.${domain}`
+          if (fullDomain && !seen.has(fullDomain) && fullDomain.includes(query)) {
+            seen.add(fullDomain)
+            options.push({
+              value: fullDomain, label: fullDomain, provider: r.provider || '',
+              type: `${r.type || 'A'} → ${(r.value || '').substring(0, 35)}`
+            })
+          }
         }
       }
     } catch { /* ignore */ }
@@ -170,6 +187,7 @@ const sources = [
   { value: 'k8s_api', label: 'K8s', color: '#10b981' },
   { value: 'log', label: '日志', color: '#f59e0b' },
   { value: 'declaration', label: '声明', color: '#818cf8' },
+  { value: 'apm', label: 'APM', color: '#6366f1' },
 ]
 const nodeLegend = [
   { type: 'dns', label: 'DNS', color: '#a78bfa' },
@@ -219,4 +237,5 @@ function toggleSource(v: string) {
 .legend-line.active { border-top: 2px solid var(--accent-green); }
 .legend-line.silent { border-top: 2px solid var(--text-tertiary); opacity: 0.3; }
 .legend-line.broken { border-top: 2px dashed var(--accent-red); }
+.legend-line.apm { border-top: 2px solid #6366f1; }
 </style>

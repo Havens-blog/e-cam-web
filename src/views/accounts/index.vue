@@ -4,59 +4,40 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <h1 class="page-title">云账号管理</h1>
-          <p class="page-subtitle">管理多云平台的访问账号和配置</p>
+          <h1 class="page-title">☁️ 云账号管理</h1>
+          <p class="page-subtitle">管理多云平台的接入账号、凭证配置与资产同步</p>
         </div>
-        <div class="header-actions">
-          <ConnectionStatus />
-          <el-button class="action-btn" @click="handleRefresh">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
-          <el-button type="primary" class="action-btn primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon>
-            添加账号
-          </el-button>
+        <div class="header-stats">
+          <div class="ph-stat">
+            <div class="ph-stat-v" style="color: var(--accent-blue)">{{ pagination.total }}</div>
+            <div class="ph-stat-l">账号总数</div>
+          </div>
+          <div class="ph-stat">
+            <div class="ph-stat-v" style="color: var(--accent-green)">{{ activeCount }}</div>
+            <div class="ph-stat-l">正常连接</div>
+          </div>
+          <div class="ph-stat">
+            <div class="ph-stat-v" style="color: var(--accent-red)">{{ errorCount }}</div>
+            <div class="ph-stat-l">异常账号</div>
+          </div>
+          <div class="ph-stat">
+            <div class="ph-stat-v" style="color: var(--accent-yellow)">{{ totalAssets }}</div>
+            <div class="ph-stat-l">资产总量</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 统计卡片 -->
+    <!-- 按云厂商统计卡片 -->
     <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <el-icon :size="20"><Cloudy /></el-icon>
+      <div v-for="provider in providerStats" :key="provider.id" class="stat-card">
+        <div class="stat-icon" :style="{ background: provider.bgColor }">
+          <ProviderIcon :provider="provider.id" size="small" />
         </div>
         <div class="stat-body">
-          <div class="stat-value">{{ pagination.total }}</div>
-          <div class="stat-label">账号总数</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon green">
-          <el-icon :size="20"><CircleCheck /></el-icon>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ activeCount }}</div>
-          <div class="stat-label">正常运行</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon purple">
-          <el-icon :size="20"><Box /></el-icon>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ totalAssets }}</div>
-          <div class="stat-label">资产总数</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <el-icon :size="20"><Warning /></el-icon>
-        </div>
-        <div class="stat-body">
-          <div class="stat-value">{{ errorCount }}</div>
-          <div class="stat-label">异常账号</div>
+          <div class="stat-value" :style="{ color: provider.color }">{{ provider.count }}</div>
+          <div class="stat-label">{{ provider.name }}账号</div>
+          <div v-if="provider.note" class="stat-change" :class="provider.noteType">{{ provider.note }}</div>
         </div>
       </div>
     </div>
@@ -78,89 +59,177 @@
     <!-- 筛选区域 -->
     <div v-if="!errorInfo" class="filter-section">
       <div class="filter-row">
-        <div class="search-box">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input
-            v-model="searchKeyword"
-            type="text"
-            class="search-input"
-            placeholder="搜索账号名称..."
-            @input="handleSearchInput"
-          />
-          <el-icon v-if="searchKeyword" class="clear-icon" @click="searchKeyword = ''; handleFilterChange()">
-            <Close />
-          </el-icon>
-        </div>
-        <div class="filter-controls">
-          <div class="filter-item">
-            <span class="filter-label">租户</span>
-            <TenantSelector
-              v-model="filters.tenant_id"
-              class="filter-select"
-              @update:model-value="handleFilterChange"
+        <div class="filter-left">
+          <span class="toolbar-title">账号列表</span>
+          <div class="search-box">
+            <el-icon class="search-icon"><Search /></el-icon>
+            <input
+              v-model="searchKeyword"
+              type="text"
+              class="search-input"
+              placeholder="搜索账号名称..."
+              @input="handleSearchInput"
             />
+            <el-icon v-if="searchKeyword" class="clear-icon" @click="searchKeyword = ''; handleFilterChange()">
+              <Close />
+            </el-icon>
           </div>
-          <div class="filter-item">
-            <span class="filter-label">云厂商</span>
-            <el-select
-              v-model="filters.provider"
-              placeholder="全部"
-              clearable
-              class="filter-select"
-              @change="handleFilterChange"
-            >
-              <el-option
-                v-for="p in CLOUD_PROVIDERS"
-                :key="p.value"
-                :label="p.label"
-                :value="p.value"
-              />
-            </el-select>
-          </div>
-          <div class="filter-item">
-            <span class="filter-label">环境</span>
-            <el-select
-              v-model="filters.environment"
-              placeholder="全部"
-              clearable
-              class="filter-select"
-              @change="handleFilterChange"
-            >
-              <el-option
-                v-for="e in ENVIRONMENTS"
-                :key="e.value"
-                :label="e.label"
-                :value="e.value"
-              />
-            </el-select>
-          </div>
-          <div class="filter-item">
-            <span class="filter-label">状态</span>
-            <el-select
-              v-model="filters.status"
-              placeholder="全部"
-              clearable
-              class="filter-select"
-              @change="handleFilterChange"
-            >
-              <el-option
-                v-for="s in ACCOUNT_STATUS"
-                :key="s.value"
-                :label="s.label"
-                :value="s.value"
-              />
-            </el-select>
+          <el-select
+            v-model="filters.provider"
+            placeholder="全部云平台"
+            clearable
+            class="filter-select"
+            @change="handleFilterChange"
+          >
+            <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
+          </el-select>
+          <el-select
+            v-model="filters.environment"
+            placeholder="全部环境"
+            clearable
+            class="filter-select"
+            @change="handleFilterChange"
+          >
+            <el-option v-for="e in ENVIRONMENTS" :key="e.value" :label="e.label" :value="e.value" />
+          </el-select>
+          <el-select
+            v-model="filters.status"
+            placeholder="全部状态"
+            clearable
+            class="filter-select"
+            @change="handleFilterChange"
+          >
+            <el-option v-for="s in ACCOUNT_STATUS" :key="s.value" :label="s.label" :value="s.value" />
+          </el-select>
+        </div>
+        <div class="filter-right">
+          <!-- 视图切换 -->
+          <div class="view-toggle">
+            <button class="vt-btn" :class="{ active: viewMode === 'card' }" title="卡片视图" @click="viewMode = 'card'">
+              <el-icon :size="14"><Grid /></el-icon>
+            </button>
+            <button class="vt-btn" :class="{ active: viewMode === 'list' }" title="列表视图" @click="viewMode = 'list'">
+              <el-icon :size="14"><List /></el-icon>
+            </button>
           </div>
           <el-button v-if="hasFilters" text class="reset-btn" @click="clearFilters">
             <el-icon><RefreshLeft /></el-icon>
             重置
           </el-button>
+          <el-button @click="handleRefresh">
+            <el-icon><Refresh /></el-icon>
+            批量同步
+          </el-button>
+          <el-button @click="handleRefresh">
+            导出
+          </el-button>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加账号
+          </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 账号列表 -->
-    <div v-if="!errorInfo" class="accounts-list" v-loading="loading" :element-loading-text="loadingMessage">
+    <!-- 卡片视图 -->
+    <div v-if="!errorInfo && viewMode === 'card'" v-loading="loading" :element-loading-text="loadingMessage">
+      <div v-if="filteredAccounts.length > 0" class="accounts-grid">
+        <div
+          v-for="account in filteredAccounts"
+          :key="account.id"
+          class="account-card"
+          @click="handleViewDetail(account)"
+        >
+          <div class="card-accent" :class="getProviderAccentClass(account.provider)" />
+          <div class="card-body">
+            <div class="card-top">
+              <div class="card-top-left">
+                <div class="card-avatar" :class="getProviderClass(account.provider)">
+                  <ProviderIcon :provider="account.provider || ''" size="small" />
+                </div>
+                <div>
+                  <div class="card-name">{{ account.name }}</div>
+                  <div class="card-provider-label">{{ getProviderName(account.provider || '') }}</div>
+                </div>
+              </div>
+              <span class="card-status" :class="getStatusClass(account.status)">
+                <span class="dot" />
+                {{ getStatusLabel(account.status) }}
+              </span>
+            </div>
+
+            <div class="card-desc">{{ account.description || getProviderName(account.provider || '') + ' · ' + getEnvironmentLabel(account.environment) }}</div>
+
+            <div class="card-meta">
+              <div class="meta-item">
+                <span class="meta-label">Access Key</span>
+                <span class="meta-value mono">{{ maskAccessKey(account.access_key_id) }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">环境</span>
+                <span class="meta-value">
+                  <span class="env-badge" :class="getEnvClass(account.environment)">
+                    {{ getEnvironmentLabel(account.environment) }}
+                  </span>
+                </span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">月费用</span>
+                <span class="meta-value" style="color: var(--accent-yellow)">-</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">最近同步</span>
+                <span class="meta-value">{{ formatSyncTime(account.last_sync_time) }}</span>
+              </div>
+            </div>
+
+            <div v-if="account.regions && account.regions.length > 0" class="card-regions">
+              <span
+                v-for="region in account.regions.slice(0, 3)"
+                :key="region"
+                class="region-chip"
+              >{{ region }}</span>
+              <span v-if="account.regions.length > 3" class="region-chip more">+{{ account.regions.length - 3 }}</span>
+            </div>
+
+            <div class="card-footer">
+              <div class="card-footer-left">
+                <span class="card-asset-tag">资产 <strong>{{ account.asset_count || 0 }}</strong></span>
+              </div>
+              <div class="card-footer-right" @click.stop>
+                <el-dropdown trigger="click" @command="(cmd: string) => handleAction(cmd, account)">
+                  <button class="card-action-btn">
+                    <el-icon><MoreFilled /></el-icon>
+                  </button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="view"><el-icon><View /></el-icon>查看详情</el-dropdown-item>
+                      <el-dropdown-item command="edit"><el-icon><Edit /></el-icon>编辑</el-dropdown-item>
+                      <el-dropdown-item command="test" divided><el-icon><Connection /></el-icon>测试连接</el-dropdown-item>
+                      <el-dropdown-item command="sync"><el-icon><Refresh /></el-icon>同步资产</el-dropdown-item>
+                      <el-dropdown-item command="toggle" divided><el-icon><Switch /></el-icon>{{ account.status === 'active' ? '禁用' : '启用' }}</el-dropdown-item>
+                      <el-dropdown-item command="delete"><el-icon><Delete /></el-icon><span style="color: var(--accent-red)">删除</span></el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片视图空状态 -->
+      <div v-if="!loading && filteredAccounts.length === 0" class="empty-state-card">
+        <el-icon :size="48" color="var(--text-muted)"><Cloudy /></el-icon>
+        <div class="empty-title">{{ hasFilters ? '没有符合条件的账号' : '暂无云账号' }}</div>
+        <div class="empty-desc">{{ hasFilters ? '尝试调整筛选条件' : '点击上方按钮添加第一个云账号' }}</div>
+        <el-button v-if="hasFilters" @click="clearFilters">清除筛选</el-button>
+        <el-button v-else type="primary" @click="handleAdd"><el-icon><Plus /></el-icon>添加账号</el-button>
+      </div>
+    </div>
+
+    <!-- 列表视图 -->
+    <div v-if="!errorInfo && viewMode === 'list'" class="accounts-list" v-loading="loading" :element-loading-text="loadingMessage">
       <!-- 列表头部 -->
       <div class="list-header">
         <div class="col-account">账号信息</div>
@@ -326,6 +395,7 @@
       :title="dialogTitle"
       width="600px"
       :close-on-click-modal="false"
+      append-to-body
       class="modern-dialog"
       @closed="handleDialogClosed"
     >
@@ -342,6 +412,7 @@
       title="同步资产"
       width="500px"
       :close-on-click-modal="false"
+      append-to-body
       class="modern-dialog"
       @closed="handleSyncDialogClosed"
     >
@@ -370,10 +441,13 @@
           </div>
           <div class="sync-select">
             <span class="sync-label">区域</span>
-            <el-select v-model="syncForm.regions" multiple placeholder="留空表示全部" style="width: 100%">
-              <el-option label="华北-北京" value="cn-beijing" />
-              <el-option label="华东-上海" value="cn-shanghai" />
-              <el-option label="华南-广州" value="cn-guangzhou" />
+            <el-select v-model="syncForm.regions" multiple placeholder="留空表示全部" filterable style="width: 100%">
+              <el-option
+                v-for="r in syncRegionOptions"
+                :key="r.value"
+                :label="r.label"
+                :value="r.value"
+              />
             </el-select>
           </div>
         </template>
@@ -413,7 +487,6 @@ import {
 import type { CloudAccount } from '@/api/types/account'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import TenantSelector from '@/components/TenantSelector.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
 import { cacheManager } from '@/utils/cache-manager'
 import { ACCOUNT_STATUS, CLOUD_PROVIDERS, ENVIRONMENTS, PROVIDER_CONFIGS } from '@/utils/constants'
@@ -422,14 +495,14 @@ import { logApiConfig, logError } from '@/utils/error-logger'
 import {
   ArrowLeft,
   ArrowRight,
-  Box,
-  CircleCheck,
   Close,
   Cloudy,
   Connection,
   Delete,
   Edit,
+  Grid,
   InfoFilled,
+  List,
   MoreFilled,
   Plus,
   Refresh,
@@ -442,10 +515,10 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import AccountDetailDrawer from './components/AccountDetailDrawer.vue'
-import ConnectionStatus from './components/ConnectionStatus.vue'
 import AccountForm from './form.vue'
 
 // 状态
+const viewMode = ref<'card' | 'list'>('card')
 const loading = ref(false)
 const submitting = ref(false)
 const syncing = ref(false)
@@ -480,9 +553,17 @@ const pagination = reactive({
 const syncForm = reactive({
   accountId: 0,
   accountName: '',
+  accountProvider: '',
   syncType: 'all' as 'all' | 'custom',
   assetTypes: [] as string[],
   regions: [] as string[],
+})
+
+// 同步对话框的区域选项（根据选中账号的云厂商动态获取）
+const syncRegionOptions = computed(() => {
+  if (!syncForm.accountProvider) return []
+  const config = PROVIDER_CONFIGS[syncForm.accountProvider as keyof typeof PROVIDER_CONFIGS]
+  return config?.regions || []
 })
 
 // 计算属性
@@ -495,6 +576,26 @@ const totalPages = computed(() => Math.ceil(pagination.total / pagination.size) 
 const activeCount = computed(() => accounts.value.filter(a => a.status === 'active').length)
 const errorCount = computed(() => accounts.value.filter(a => a.status === 'error' || a.status === 'disabled').length)
 const totalAssets = computed(() => accounts.value.reduce((sum, a) => sum + (a.asset_count || 0), 0))
+
+// 按云厂商统计
+const providerStats = computed(() => {
+  const providers = [
+    { id: 'aliyun', name: '阿里云', color: '#ff6a00', bgColor: 'rgba(255, 106, 0, 0.12)' },
+    { id: 'aws', name: 'AWS', color: '#ff9900', bgColor: 'rgba(255, 153, 0, 0.12)' },
+    { id: 'tencent', name: '腾讯云', color: '#0052d9', bgColor: 'rgba(0, 82, 217, 0.12)' },
+    { id: 'huawei', name: '华为云', color: '#cf000f', bgColor: 'rgba(207, 0, 15, 0.12)' },
+  ] as const
+  return providers.map(p => {
+    const list = accounts.value.filter(a => a.provider === p.id)
+    const errCount = list.filter(a => a.status === 'error' || a.status === 'disabled').length
+    return {
+      ...p,
+      count: list.length,
+      note: errCount > 0 ? `⚠ ${errCount} 凭证异常` : '',
+      noteType: errCount > 0 ? 'dn' : 'up',
+    }
+  })
+})
 
 // 过滤后的账号列表
 const filteredAccounts = computed(() => {
@@ -547,6 +648,18 @@ const getProviderClass = (provider: string | undefined) => {
     'aws': 'provider-aws',
     'huawei': 'provider-huawei',
     'azure': 'provider-azure'
+  }
+  return map[provider] || ''
+}
+
+const getProviderAccentClass = (provider: string | undefined) => {
+  if (!provider) return ''
+  const map: Record<string, string> = {
+    'aliyun': 'accent-aliyun',
+    'tencent': 'accent-tencent',
+    'aws': 'accent-aws',
+    'huawei': 'accent-huawei',
+    'azure': 'accent-azure'
   }
   return map[provider] || ''
 }
@@ -748,9 +861,10 @@ const handleTestConnection = async (account: CloudAccount) => {
 const handleSync = (account: CloudAccount) => {
   syncForm.accountId = account.id
   syncForm.accountName = account.name
-  syncForm.syncType = 'all'
+  syncForm.accountProvider = account.provider
+  syncForm.syncType = (account.regions && account.regions.length > 0) ? 'custom' : 'all'
   syncForm.assetTypes = []
-  syncForm.regions = []
+  syncForm.regions = account.regions || []
   syncDialogVisible.value = true
 }
 
@@ -787,6 +901,7 @@ const handleConfirmSync = async () => {
 const handleSyncDialogClosed = () => {
   syncForm.accountId = 0
   syncForm.accountName = ''
+  syncForm.accountProvider = ''
   syncForm.syncType = 'all'
   syncForm.assetTypes = []
   syncForm.regions = []
@@ -850,7 +965,23 @@ onMounted(() => {
 
 // 页面头部
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
+  padding: 22px 26px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+  }
 
   .header-content {
     display: flex;
@@ -865,54 +996,39 @@ onMounted(() => {
 
   .header-info {
     .page-title {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--text-primary);
-      margin: 0 0 6px 0;
+      margin: 0 0 4px 0;
       letter-spacing: -0.02em;
     }
 
     .page-subtitle {
-      font-size: 14px;
+      font-size: 12.5px;
       color: var(--text-tertiary);
       margin: 0;
     }
   }
 
-  .header-actions {
+  .header-stats {
     display: flex;
-    gap: 10px;
+    gap: 28px;
     flex-shrink: 0;
-    align-items: center;
+  }
 
-    .action-btn {
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 10px;
-      font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      color: var(--text-primary);
-      transition: all 200ms ease;
+  .ph-stat {
+    text-align: center;
 
-      &:hover {
-        background: var(--glass-bg-hover);
-        border-color: var(--border-strong);
-      }
+    .ph-stat-v {
+      font-size: 24px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
 
-      &.primary {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
-        color: white;
-
-        &:hover {
-          background: #2563eb;
-          border-color: #2563eb;
-        }
-      }
+    .ph-stat-l {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
     }
   }
 }
@@ -921,8 +1037,8 @@ onMounted(() => {
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 22px;
 
   @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
   @media (max-width: 640px) { grid-template-columns: 1fr; }
@@ -942,36 +1058,38 @@ onMounted(() => {
   &:hover {
     background: var(--glass-bg-hover);
     border-color: var(--border-strong);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .stat-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
-    &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-    &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
-    &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
   }
 
   .stat-body {
     .stat-value {
       font-size: 26px;
       font-weight: 700;
-      color: var(--text-primary);
       line-height: 1;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       font-variant-numeric: tabular-nums;
     }
 
     .stat-label {
-      font-size: 13px;
+      font-size: 11.5px;
       color: var(--text-tertiary);
+    }
+
+    .stat-change {
+      font-size: 10.5px;
+      margin-top: 2px;
+
+      &.up { color: var(--accent-green); }
+      &.dn { color: var(--accent-red); }
     }
   }
 }
@@ -996,46 +1114,45 @@ onMounted(() => {
   backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 12px 20px;
   margin-bottom: 16px;
 }
 
 .filter-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
 
   @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: wrap;
   }
 }
 
 .search-box {
   position: relative;
-  flex: 1;
-  min-width: 240px;
-  max-width: 320px;
+  width: 180px;
+  flex-shrink: 0;
 
-  @media (max-width: 1024px) { max-width: none; }
+  @media (max-width: 1024px) { flex: 1; min-width: 160px; }
 
   .search-icon {
     position: absolute;
-    left: 14px;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-tertiary);
+    font-size: 13px;
   }
 
   .search-input {
     width: 100%;
-    height: 40px;
-    padding: 0 36px 0 42px;
+    height: 32px;
+    padding: 0 28px 0 32px;
     background: var(--bg-hover);
     border: 1px solid transparent;
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
     color: var(--text-primary);
     transition: all 200ms ease;
 
@@ -1049,13 +1166,14 @@ onMounted(() => {
 
   .clear-icon {
     position: absolute;
-    right: 12px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-tertiary);
     cursor: pointer;
-    padding: 4px;
+    padding: 2px;
     border-radius: 4px;
+    font-size: 12px;
     transition: all 200ms ease;
 
     &:hover {
@@ -1065,20 +1183,13 @@ onMounted(() => {
   }
 }
 
-.filter-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .filter-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 
   .filter-label {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-tertiary);
     white-space: nowrap;
   }
@@ -1091,15 +1202,317 @@ onMounted(() => {
       border: none;
       box-shadow: none;
       border-radius: 8px;
-      height: 36px;
+      height: 32px;
+      font-size: 12.5px;
     }
+  }
+}
+
+// 工具栏内直接放置的 el-select（不在 .filter-item 内）
+.filter-left > .filter-select {
+  width: 120px;
+  flex-shrink: 0;
+
+  :deep(.el-select__wrapper) {
+    background: var(--bg-hover);
+    border: none;
+    box-shadow: none;
+    border-radius: 8px;
+    height: 32px;
+    font-size: 12.5px;
   }
 }
 
 .reset-btn {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   &:hover { color: var(--accent-blue); }
+}
+
+// 筛选区域布局
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toolbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+// 视图切换
+.view-toggle {
+  display: flex;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-left: 8px;
+
+  .vt-btn {
+    width: 34px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-subtle);
+    transition: all 150ms ease;
+    padding: 0;
+
+    &:last-child { border-right: none; }
+    &:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
+    &.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); }
+  }
+}
+
+// 卡片视图
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.account-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 200ms ease;
+
+  &:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.card-accent {
+  height: 3px;
+  width: 100%;
+
+  &.accent-aliyun { background: linear-gradient(90deg, #ff6a00, #ff9500); }
+  &.accent-aws { background: linear-gradient(90deg, #ff9900, #ffb84d); }
+  &.accent-tencent { background: linear-gradient(90deg, #0052d9, #4d8fff); }
+  &.accent-huawei { background: linear-gradient(90deg, #cf000f, #ff4d4d); }
+  &.accent-azure { background: linear-gradient(90deg, #0078d4, #50a0e6); }
+}
+
+.card-body {
+  padding: 18px 20px 16px;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-hover);
+
+  &.provider-aliyun { background: rgba(255, 106, 0, 0.12); }
+  &.provider-aws { background: rgba(255, 153, 0, 0.12); }
+  &.provider-tencent { background: rgba(0, 82, 217, 0.12); }
+  &.provider-huawei { background: rgba(207, 0, 15, 0.12); }
+  &.provider-azure { background: rgba(0, 120, 212, 0.12); }
+}
+
+.card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.card-provider-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.card-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.status-active { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); .dot { background: var(--accent-green); } }
+  &.status-error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); .dot { background: var(--accent-red); } }
+  &.status-disabled { background: rgba(255, 255, 255, 0.05); color: var(--text-tertiary); .dot { background: var(--text-tertiary); } }
+  &.status-testing { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); .dot { background: var(--accent-blue); } }
+  &.status-inactive { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); .dot { background: var(--text-muted); } }
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+  line-height: 1.5;
+  min-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg-hover);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+
+  .meta-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .meta-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+
+    &.mono {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+  }
+}
+
+.card-regions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.region-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-subtle);
+
+  &.more {
+    color: var(--text-muted);
+  }
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-asset-tag {
+  font-size: 12px;
+  color: var(--text-tertiary);
+
+  strong {
+    color: var(--accent-blue);
+    font-weight: 600;
+    font-size: 14px;
+  }
+}
+
+.card-footer-right {
+  display: flex;
+  gap: 4px;
+}
+
+.card-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  transition: all 150ms ease;
+  padding: 0;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 12px;
+
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .empty-desc { font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px; }
 }
 
 // 账号列表

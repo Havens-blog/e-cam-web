@@ -238,9 +238,14 @@
                     <span class="mono">{{ row.serverid || row.server_id || row.ServerId || '-' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="服务器名称" min-width="200" show-overflow-tooltip>
+                <el-table-column label="服务器名称" min-width="160" show-overflow-tooltip>
                   <template #default="{ row }">
                     {{ row.servername || row.server_name || row.ServerName || '-' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="IP地址" min-width="140" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span class="mono">{{ row.serverip || row.server_ip || row.ServerIp || row.ip || row.private_ip || row.private_ip_address || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="类型" width="80" align="center">
@@ -332,6 +337,12 @@ interface BackendServerItem {
   servername?: string
   server_name?: string
   ServerName?: string
+  serverip?: string
+  server_ip?: string
+  ServerIp?: string
+  ip?: string
+  private_ip?: string
+  private_ip_address?: string
   type?: string
   Type?: string
   port?: number
