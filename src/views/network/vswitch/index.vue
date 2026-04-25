@@ -171,7 +171,8 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 
-const filters = reactive({ provider: '', region: '', status: '', name: '', vpc_id: '' })
+const filters = reactive({ provider: '', region: '', status: '', name: '' })
+const vpcIdFilter = ref('')
 const pagination = reactive({ page: 1, size: 20, total: 0 })
 const vswitchList = ref<Asset[]>([])
 const detailVisible = ref(false)
@@ -217,7 +218,7 @@ const fetchData = async () => {
     if (filters.region) params.region = filters.region
     if (filters.status) params.status = filters.status
     if (filters.name) params.name = filters.name
-    if (filters.vpc_id) params.vpc_id = filters.vpc_id
+    if (vpcIdFilter.value) params.vpc_id = vpcIdFilter.value
 
     const res = await listVSwitchAssetsApi(params)
     const responseData = (res as any).data || res
@@ -234,7 +235,6 @@ const fetchData = async () => {
 
 const handleFiltersUpdate = (newFilters: typeof filters) => { Object.assign(filters, newFilters) }
 const handleSearch = () => { pagination.page = 1; fetchData() }
-const handleReset = () => { Object.assign(filters, { provider: '', name: '', region: '', status: '', vpc_id: '' }); handleSearch() }
 const handleSizeChange = () => { pagination.page = 1; fetchData() }
 const handlePageChange = () => { fetchData() }
 const handleRowClick = (row: Asset) => { detailInstance.value = row; detailVisible.value = true }
@@ -268,7 +268,7 @@ onMounted(() => {
   // 从 URL query 读取 vpc_id 过滤参数（从 VPC 详情跳转过来）
   const queryVpcId = route.query.vpc_id
   if (typeof queryVpcId === 'string' && queryVpcId) {
-    filters.vpc_id = queryVpcId
+    vpcIdFilter.value = queryVpcId
   }
   fetchData()
 })

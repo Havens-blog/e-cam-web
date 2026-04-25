@@ -30,7 +30,10 @@ export function computeDagPositions(
         const totalHeight = (group.length - 1) * ROW_GAP
         const startY = PADDING_TOP + (400 - totalHeight / 2)
         for (let i = 0; i < group.length; i++) {
-            positions.set(group[i].id, { x, y: startY + i * ROW_GAP })
+            const node = group[i]
+            if (node) {
+                positions.set(node.id, { x, y: startY + i * ROW_GAP })
+            }
         }
     }
     return positions
@@ -40,7 +43,7 @@ export function getDepthColumnTitle(nodes: TopoNode[], depth: number): string | 
     const group = nodes.filter(n => (n.dag_depth ?? 0) === depth)
     if (group.length === 0) return null
     const types = new Set(group.map(n => n.type))
-    if (types.size === 1) return typeDisplayName(group[0].type)
+    if (types.size === 1) return typeDisplayName(group[0]?.type ?? '')
     return null
 }
 
@@ -85,13 +88,14 @@ export function aggregateNodes(
 
     for (const [key, group] of groups) {
         if (group.length > threshold) {
+            const firstNode = group[0]!
             const aggNode: TopoNode = {
                 id: `agg-${key}`,
-                name: `${typeDisplayName(group[0].type)} ×${group.length}`,
-                type: group[0].type,
-                category: group[0].category,
+                name: `${typeDisplayName(firstNode.type)} ×${group.length}`,
+                type: firstNode.type,
+                category: firstNode.category,
                 provider: '', region: '', status: 'active', source_collector: '',
-                dag_depth: group[0].dag_depth,
+                dag_depth: firstNode.dag_depth,
                 attributes: { is_aggregated: true, count: group.length },
             }
             resultNodes.push(aggNode)

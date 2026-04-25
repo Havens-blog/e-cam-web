@@ -220,34 +220,35 @@
 <script setup lang="ts">
 import { createModelRelationApi, getInstanceTopologyApi, getModelTopologyApi, listCmdbInstancesApi } from '@/api'
 import type {
-  CreateModelRelationReq,
-  InstanceVO,
-  ModelTopologyEdge,
-  ModelTopologyGraph,
-  ModelTopologyNode,
-  RelationDirection,
-  RelationType,
-  TopologyEdge,
-  TopologyGraph,
-  TopologyNode
+    CreateModelRelationReq,
+    InstanceVO,
+    ModelTopologyEdge,
+    ModelTopologyGraph,
+    ModelTopologyNode,
+    RelationDirection,
+    RelationType,
+    TopologyEdge,
+    TopologyGraph,
+    TopologyNode
 } from '@/api/types/cmdb'
+import { useAppStore } from '@/stores/app'
 import {
-  Box,
-  Close,
-  Coin,
-  Connection,
-  FullScreen,
-  Monitor,
-  Refresh,
-  Right,
-  Share,
-  ZoomIn,
-  ZoomOut
+    Box,
+    Close,
+    Coin,
+    Connection,
+    FullScreen,
+    Monitor,
+    Refresh,
+    Right,
+    Share,
+    ZoomIn,
+    ZoomOut
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, shallowRef } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
 
 // ==================== 常量 ====================
 const CATEGORY_COLORS: Record<string, string> = {

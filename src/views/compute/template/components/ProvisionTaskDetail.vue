@@ -14,7 +14,7 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType(task?.status)" size="small">{{ statusLabel(task?.status) }}</el-tag>
+          <el-tag :type="safeTagType(statusTagType(task?.status))" size="small">{{ statusLabel(task?.status) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="进度">{{ task?.progress || 0 }}%</el-descriptions-item>
         <el-descriptions-item label="创建数量">{{ task?.count || 0 }}</el-descriptions-item>
@@ -46,7 +46,7 @@
         </el-table-column>
         <el-table-column label="同步" width="80">
           <template #default="{ row }">
-            <el-tag :type="syncTagType(row?.sync_status)" size="small">
+            <el-tag :type="safeTagType(syncTagType(row?.sync_status))" size="small">
               {{ row?.sync_status || '-' }}
             </el-tag>
           </template>
@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import type { ProvisionTask } from '@/api/types/template';
+import { safeTagType } from '@/utils/constants';
 import { computed } from 'vue';
 
 const props = defineProps<{

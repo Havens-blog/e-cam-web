@@ -34,6 +34,7 @@ export interface VMTemplate {
     charge_type: string
     key_pair_name: string
     tags: Record<string, string>
+    usage_count?: number
     created_at: number
     updated_at: number
 }

@@ -82,6 +82,23 @@
 </template>
 
 <script setup lang="ts">
+import {
+    createDictItemApi,
+    createDictTypeApi,
+    deleteDictItemApi,
+    deleteDictTypeApi,
+    updateDictItemApi,
+    updateDictItemStatusApi,
+    updateDictTypeApi
+} from '@/api/dictionary'
+import type {
+    CreateDictItemReq,
+    CreateDictTypeReq,
+    DictItem,
+    DictType,
+    UpdateDictItemReq,
+    UpdateDictTypeReq
+} from '@/api/types/dictionary'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { Plus } from '@element-plus/icons-vue'

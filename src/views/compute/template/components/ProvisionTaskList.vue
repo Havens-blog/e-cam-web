@@ -30,7 +30,7 @@
       <el-table-column prop="count" label="数量" width="70" />
       <el-table-column label="状态" width="110">
         <template #default="{ row }">
-          <el-tag :type="statusTagType(row?.status)" size="small">{{ statusLabel(row?.status) }}</el-tag>
+          <el-tag :type="safeTagType(statusTagType(row?.status))" size="small">{{ statusLabel(row?.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="进度" width="100">
@@ -69,6 +69,7 @@
 <script setup lang="ts">
 import { listProvisionTasksApi } from '@/api/template'
 import type { ProvisionTask } from '@/api/types/template'
+import { safeTagType } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'

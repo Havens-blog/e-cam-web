@@ -83,7 +83,7 @@ const trends = computed(() => ({
   keys: Math.max(0, Math.round((props.stats.total_keys || 0) * 0.03)),
   values: Math.max(0, Math.round((props.stats.total_values || 0) * 0.05)),
   tagged: Math.max(0, Math.round((props.stats.tagged_resources || 0) * 0.03)),
-  coverage: Math.max(0, ((props.stats.coverage_percent || 0) * 0.03).toFixed(1)),
+  coverage: Math.max(0, parseFloat(((props.stats.coverage_percent || 0) * 0.03).toFixed(1))),
 }))
 </script>
 

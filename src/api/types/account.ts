@@ -21,6 +21,7 @@ export interface CloudAccount {
     user_count?: number // IAM 用户数量
     group_count?: number // 权限组数量
     error_message?: string
+    is_default?: boolean
     create_time: string
     update_time: string
 }

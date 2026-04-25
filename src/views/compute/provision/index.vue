@@ -620,7 +620,6 @@ interface ImageWithOwner extends ImageInfo {
   owner_alias?: string // system, self, others
 }
 const images = ref<ImageWithOwner[]>([])
-const vpcs = ref<VPCInfo[]>([])
 const subnets = ref<SubnetInfo[]>([])
 const securityGroups = ref<SecurityGroupInfo[]>([])
 const templates = ref<VMTemplate[]>([])

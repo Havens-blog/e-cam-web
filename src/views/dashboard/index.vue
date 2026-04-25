@@ -133,11 +133,11 @@
 
 <script setup lang="ts">
 import {
-  getByRegionApi, getExpiringApi,
-  getOverviewApi,
-  type ExpiringAsset,
-  type KeyCount,
-  type OverviewData
+    getByRegionApi, getExpiringApi,
+    getOverviewApi,
+    type ExpiringAsset,
+    type KeyCount,
+    type OverviewData
 } from '@/api/dashboard'
 import { getCostDistributionApi } from '@/api/finops'
 import { getGlobalAssetStatsApi } from '@/api/service-tree'
@@ -339,6 +339,7 @@ const initCostByProductChart = () => {
       formatter: (params: unknown) => {
         const list = params as Array<{ name: string; value: number }>
         const p = list[0]
+        if (!p) return ''
         return `${p.name}<br/>¥${p.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       },
     },
