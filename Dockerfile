@@ -33,8 +33,8 @@ ENV TZ=Asia/Shanghai
 # 复制简化版 nginx 配置（API 代理由 ecmdb-web 统一处理）
 COPY nginx.cam.conf /etc/nginx/nginx.conf
 
-# 从构建阶段复制构建产物
-COPY --from=builder /app/dist /usr/share/nginx/html
+# 从构建阶段复制构建产物到 /cam/ 子目录（对应 vite base: '/cam/'）
+COPY --from=builder /app/dist /usr/share/nginx/html/cam
 
 # 创建日志目录
 RUN mkdir -p /var/log/nginx
