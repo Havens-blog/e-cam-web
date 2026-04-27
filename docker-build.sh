@@ -84,6 +84,7 @@ do_build() {
 
     log_step "构建镜像: ${tag}"
     docker build \
+        --no-cache \
         -t "${tag}" \
         -t "${IMAGE_NAME}:latest" \
         "${DEPLOY_DIR}"
