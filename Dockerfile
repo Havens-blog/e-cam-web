@@ -30,8 +30,8 @@ RUN apk add --no-cache tzdata
 # 设置时区为上海
 ENV TZ=Asia/Shanghai
 
-# 复制自定义 nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
+# 复制简化版 nginx 配置（API 代理由 ecmdb-web 统一处理）
+COPY nginx.cam.conf /etc/nginx/nginx.conf
 
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
