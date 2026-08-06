@@ -207,7 +207,7 @@ localStorage.clear();
 sessionStorage.clear();
 
 // 清除特定 store 的数据
-localStorage.removeItem("cam-user");
+localStorage.removeItem("cam-user-v2");
 sessionStorage.removeItem("cam-accounts");
 ```
 
