@@ -24,8 +24,8 @@ if (userStore.hasPermission("account:create")) {
   // 有权限
 }
 
-// 检查角色
-if (userStore.hasRole("admin")) {
+// 检查是否管理员
+if (userStore.isAdmin) {
   // 是管理员
 }
 ```

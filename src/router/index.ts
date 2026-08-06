@@ -59,7 +59,6 @@ router.beforeEach(
                 redirectToLogin()
                 return
             }
-            await userStore.fetchPermissions()
         }
 
         next()
