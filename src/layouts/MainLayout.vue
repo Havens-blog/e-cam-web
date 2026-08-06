@@ -5,6 +5,7 @@ import type { SearchResultItem } from '@/api/types/asset'
 import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
 import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
 import {
   ArrowDown,
   ArrowRight,
@@ -27,6 +28,26 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
+const userStore = useUserStore()
+
+// 当前登录用户：数据来自 eiam 的 /api/user/profile，经 stores/user-mapper 映射
+// （此前 header 里的 "Admin" 与头像 "A" 是硬编码，与实际登录者无关）
+const displayName = computed(() => {
+  const info = userStore.userInfo
+  return info?.displayName || info?.username || '未登录'
+})
+const avatarText = computed(() => displayName.value.charAt(0).toUpperCase())
+
+/**
+ * 用户下拉菜单命令分发。
+ * 只有「退出登录」带 command，其余项不带（点击时 command 为 undefined，此处忽略），
+ * 保持它们与接线前一致的行为。
+ */
+async function handleUserCommand(command: string | number | object) {
+  if (command === 'logout') {
+    await userStore.logout()
+  }
+}
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -903,19 +924,19 @@ onUnmounted(() => {
           </div>
           
           <!-- 用户 -->
-          <el-dropdown trigger="click">
+          <el-dropdown trigger="click" @command="handleUserCommand">
             <div class="user-avatar">
-              <span>A</span>
+              <span>{{ avatarText }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item>个人设置</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          
-          <span class="user-name">Admin</span>
+
+          <span class="user-name">{{ displayName }}</span>
         </div>
       </header>
 
