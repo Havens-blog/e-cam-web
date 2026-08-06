@@ -17,8 +17,9 @@ export function redirectToLogin() {
     isRedirectingToLogin = true
     // 注意：这里不清除 ecmdb-token-key。
     // 该 cookie 是 ecmdb / eiam / e-cam-service 共用的平台凭证，注销它是 eiam
-    // logout 的职责。本函数只在单次请求 401 时触发，若在此删除 cookie，会把
-    // 其他服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
+    // logout 的职责。本函数的触发条件（单次请求 401、或路由守卫判定无 token /
+    // 拉取用户信息失败）全都只是本应用的局部判断；若在此删除 cookie，会把其他
+    // 服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
     ElMessage.warning('登录状态已失效，请重新登录')
     const ecmdbLoginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
     const currentUrl = window.location.href
