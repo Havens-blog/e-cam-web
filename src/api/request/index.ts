@@ -1,4 +1,4 @@
-import { getEcmdbToken, removeEcmdbToken } from '@/utils/cookie'
+import { getEcmdbToken } from '@/utils/cookie'
 import { handleApiError } from '@/utils/error-handler'
 import { logError, logInfo, logWarn } from '@/utils/error-logger'
 import type { AxiosInstance } from 'axios'
@@ -15,8 +15,11 @@ let isRedirectingToLogin = false
 export function redirectToLogin() {
     if (isRedirectingToLogin) return
     isRedirectingToLogin = true
-    removeEcmdbToken()
-    ElMessage.warning('登录已过期，请重新登录')
+    // 注意：这里不清除 ecmdb-token-key。
+    // 该 cookie 是 ecmdb / eiam / e-cam-service 共用的平台凭证，注销它是 eiam
+    // logout 的职责。本函数只在单次请求 401 时触发，若在此删除 cookie，会把
+    // 其他服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
+    ElMessage.warning('登录状态已失效，请重新登录')
     const ecmdbLoginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
     const currentUrl = window.location.href
     window.location.href = `${ecmdbLoginUrl}?redirect=${encodeURIComponent(currentUrl)}`
