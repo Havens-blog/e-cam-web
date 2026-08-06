@@ -33,7 +33,7 @@ if (userStore.isAdmin) {
 **持久化配置**：
 
 - 存储位置：localStorage
-- 持久化字段：token, userInfo, isLoggedIn
+- 持久化字段：userInfo（授权态每次从 eiam 获取，不落盘）
 
 ### 2. Account Store (云账号状态)
 

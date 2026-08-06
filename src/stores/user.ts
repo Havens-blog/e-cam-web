@@ -76,10 +76,22 @@ export const useUserStore = defineStore(
                 const res = await eiamAxios.get('/api/iam/user/profile')
                 const body = res.data
                 // eiam 使用 ginx 信封：{code, msg, data}，成功时 code === 0
-                if (body?.code !== 0) return false
+                if (body?.code !== 0) {
+                    // 三条失败路径都只向调用方返回 false，而调用方（路由守卫）会据此
+                    // 跳登录页。本 store 无自动化测试覆盖（node 环境无法导入），
+                    // 控制台是唯一的可观测手段，故三处必须各自留痕、可区分。
+                    console.warn('[user] eiam profile 返回非成功信封', {
+                        code: body?.code,
+                        msg: body?.msg,
+                    })
+                    return false
+                }
 
                 const mapped = mapEiamProfile(body.data)
-                if (!mapped) return false
+                if (!mapped) {
+                    console.warn('[user] eiam profile 载荷无法解析，已按未登录处理')
+                    return false
+                }
 
                 setUserInfo(mapped.userInfo)
                 permissions.value = mapped.permissions
@@ -88,7 +100,9 @@ export const useUserStore = defineStore(
                 isAdmin.value = mapped.isAdmin
                 mustSelectTenant.value = mapped.mustSelectTenant
                 return true
-            } catch {
+            } catch (err) {
+                // 网络失败 / 超时 / 非 2xx 都落到这里，与上面两条业务失败区分开
+                console.warn('[user] 请求 eiam profile 失败', err)
                 return false
             }
         }
@@ -134,8 +148,15 @@ export const useUserStore = defineStore(
     },
     {
         persist: {
-            key: 'cam-user',
+            // key 从 'cam-user' 提升为 v2：本任务把 store 的 ref 从 3 个增至 7 个，
+            // 旧 blob 带 isLoggedIn:true 复原后会让路由守卫跳过 profile 拉取（见下方说明）
+            key: 'cam-user-v2',
             storage: localStorage,
+            // 只持久化 userInfo（仅为冷启动时即时渲染用户名）。
+            // 授权派生字段 permissions / isAdmin / tenants / currentTenantId /
+            // mustSelectTenant 一律不落盘：它们必须每次从 eiam 取，
+            // 否则用户可编辑 localStorage 伪造 isAdmin，且撤权无法生效。
+            pick: ['userInfo'],
         },
     }
 )
