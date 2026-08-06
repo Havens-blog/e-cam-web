@@ -57,7 +57,10 @@ async function handleUserCommand(command: string | number | object) {
   // "点了没反应"的症状无法区分。故给出即时反馈，并防止重复点击。
   if (loggingOut.value) return
   loggingOut.value = true
-  ElMessage.info('正在退出登录…')
+  // duration: 0 表示不自动关闭（element-plus 的 startTimer 对 duration === 0 直接
+  // return）。默认 3s 会在上述 15s 超时窗口内提前消失，使页面再度陷入静默；该提示
+  // 应当一直留到页面跳转把它连同整个文档一起卸载。
+  ElMessage.info({ message: '正在退出登录…', duration: 0 })
   // logout() 内部无论接口成功与否都会清理本地状态并跳转，故无需复位 loggingOut
   await userStore.logout()
 }
