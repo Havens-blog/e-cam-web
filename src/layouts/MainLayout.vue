@@ -38,15 +38,28 @@ const displayName = computed(() => {
 })
 const avatarText = computed(() => displayName.value.charAt(0).toUpperCase())
 
+// 退出登录进行中，用于防抖与反馈
+const loggingOut = ref(false)
+
 /**
  * 用户下拉菜单命令分发。
- * 只有「退出登录」带 command，其余项不带（点击时 command 为 undefined，此处忽略），
- * 保持它们与接线前一致的行为。
+ *
+ * 只有「退出登录」显式带 command。未声明 command 的项（如「个人设置」）并非发出
+ * undefined —— Element Plus 的 dropdownItemProps 对 command 声明了
+ * `default: () => ({})`，故点击时发出的是一个空对象。下面用严格相等判断，
+ * 因此这类项被忽略、行为与接线前一致。
+ * 注意不要"简化"成 `if (command)`：空对象是 truthy，会误入分支。
  */
 async function handleUserCommand(command: string | number | object) {
-  if (command === 'logout') {
-    await userStore.logout()
-  }
+  if (command !== 'logout') return
+  // logout() 会 await 一次 POST /api/iam/user/logout，而 eiamAxios 的 timeout 是
+  // 15s。若 eiam 响应慢，用户看到的就是"菜单关闭、页面不动"—— 与本次修复前那个
+  // "点了没反应"的症状无法区分。故给出即时反馈，并防止重复点击。
+  if (loggingOut.value) return
+  loggingOut.value = true
+  ElMessage.info('正在退出登录…')
+  // logout() 内部无论接口成功与否都会清理本地状态并跳转，故无需复位 loggingOut
+  await userStore.logout()
 }
 
 // 搜索关键词
@@ -925,8 +938,8 @@ onUnmounted(() => {
           
           <!-- 用户 -->
           <el-dropdown trigger="click" @command="handleUserCommand">
-            <div class="user-avatar">
-              <span>{{ avatarText }}</span>
+            <div class="user-avatar" title="用户菜单" aria-label="用户菜单">
+              <span aria-hidden="true">{{ avatarText }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
