@@ -5,6 +5,7 @@ import type { SearchResultItem } from '@/api/types/asset'
 import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
 import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
 import {
   ArrowDown,
   ArrowRight,
@@ -27,6 +28,42 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
+const userStore = useUserStore()
+
+// 当前登录用户：数据来自 eiam 的 /api/user/profile，经 stores/user-mapper 映射
+// （此前 header 里的 "Admin" 与头像 "A" 是硬编码，与实际登录者无关）
+const displayName = computed(() => {
+  const info = userStore.userInfo
+  return info?.displayName || info?.username || '未登录'
+})
+const avatarText = computed(() => displayName.value.charAt(0).toUpperCase())
+
+// 退出登录进行中，用于防抖与反馈
+const loggingOut = ref(false)
+
+/**
+ * 用户下拉菜单命令分发。
+ *
+ * 只有「退出登录」显式带 command。未声明 command 的项（如「个人设置」）并非发出
+ * undefined —— Element Plus 的 dropdownItemProps 对 command 声明了
+ * `default: () => ({})`，故点击时发出的是一个空对象。下面用严格相等判断，
+ * 因此这类项被忽略、行为与接线前一致。
+ * 注意不要"简化"成 `if (command)`：空对象是 truthy，会误入分支。
+ */
+async function handleUserCommand(command: string | number | object) {
+  if (command !== 'logout') return
+  // logout() 会 await 一次 POST /api/iam/user/logout，而 eiamAxios 的 timeout 是
+  // 15s。若 eiam 响应慢，用户看到的就是"菜单关闭、页面不动"—— 与本次修复前那个
+  // "点了没反应"的症状无法区分。故给出即时反馈，并防止重复点击。
+  if (loggingOut.value) return
+  loggingOut.value = true
+  // duration: 0 表示不自动关闭（element-plus 的 startTimer 对 duration === 0 直接
+  // return）。默认 3s 会在上述 15s 超时窗口内提前消失，使页面再度陷入静默；该提示
+  // 应当一直留到页面跳转把它连同整个文档一起卸载。
+  ElMessage.info({ message: '正在退出登录…', duration: 0 })
+  // logout() 内部无论接口成功与否都会清理本地状态并跳转，故无需复位 loggingOut
+  await userStore.logout()
+}
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -903,19 +940,19 @@ onUnmounted(() => {
           </div>
           
           <!-- 用户 -->
-          <el-dropdown trigger="click">
-            <div class="user-avatar">
-              <span>A</span>
+          <el-dropdown trigger="click" @command="handleUserCommand">
+            <div class="user-avatar" title="用户菜单" aria-label="用户菜单">
+              <span aria-hidden="true">{{ avatarText }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item>个人设置</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          
-          <span class="user-name">Admin</span>
+
+          <span class="user-name">{{ displayName }}</span>
         </div>
       </header>
 

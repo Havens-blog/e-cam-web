@@ -24,8 +24,8 @@ if (userStore.hasPermission("account:create")) {
   // 有权限
 }
 
-// 检查角色
-if (userStore.hasRole("admin")) {
+// 检查是否管理员
+if (userStore.isAdmin) {
   // 是管理员
 }
 ```
@@ -33,7 +33,7 @@ if (userStore.hasRole("admin")) {
 **持久化配置**：
 
 - 存储位置：localStorage
-- 持久化字段：token, userInfo, isLoggedIn
+- 持久化字段：userInfo（授权态每次从 eiam 获取，不落盘）
 
 ### 2. Account Store (云账号状态)
 
@@ -207,7 +207,7 @@ localStorage.clear();
 sessionStorage.clear();
 
 // 清除特定 store 的数据
-localStorage.removeItem("cam-user");
+localStorage.removeItem("cam-user-v2");
 sessionStorage.removeItem("cam-accounts");
 ```
 
