@@ -1,83 +1,68 @@
 <template>
   <el-select
-    :model-value="modelValue"
+    v-if="tenants.length > 1"
+    :model-value="userStore.currentTenantId"
     placeholder="选择租户"
-    filterable
-    clearable
     :style="{ width }"
-    @update:model-value="handleChange"
+    :loading="switching"
+    @change="onSwitch"
   >
     <el-option
-      v-for="tenant in tenants"
-      :key="tenant.id"
-      :label="tenant.display_name || tenant.name"
-      :value="tenant.id"
-    >
-      <div class="tenant-option">
-        <span class="tenant-name">{{ tenant.display_name || tenant.name }}</span>
-        <span class="tenant-id">{{ tenant.id }}</span>
-      </div>
-    </el-option>
+      v-for="t in tenants"
+      :key="t.id"
+      :label="t.name"
+      :value="t.id"
+    />
   </el-select>
+  <span v-else class="tenant-current" :style="{ width }">
+    {{ currentName }}
+  </span>
 </template>
 
 <script setup lang="ts">
-import { listTenantsApi } from '@/api/iam'
-import type { Tenant } from '@/api/types/iam'
-import { onMounted, ref } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { switchTenant } from '@/api/eiam-tenant'
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 
 interface Props {
-  modelValue?: string
   width?: string
 }
+withDefaults(defineProps<Props>(), { width: '200px' })
 
-interface Emits {
-  (e: 'update:modelValue', value: string | undefined): void
-}
+const userStore = useUserStore()
+const switching = ref(false)
 
-withDefaults(defineProps<Props>(), {
-  width: '200px'
+const tenants = computed(() => userStore.tenants)
+const currentName = computed(() => {
+  const t = tenants.value.find((x) => x.id === userStore.currentTenantId)
+  return t?.name || `租户 #${userStore.currentTenantId}`
 })
 
-const emit = defineEmits<Emits>()
-
-const tenants = ref<Tenant[]>([])
-
-const loadTenants = async () => {
+const onSwitch = async (targetId: number | string) => {
+  const id = typeof targetId === 'number' ? targetId : Number(targetId)
+  if (!id || id === userStore.currentTenantId) return
+  switching.value = true
   try {
-    const res = await listTenantsApi({ page: 1, size: 100 })
-    tenants.value = res.data.data || []
-  } catch (error) {
-    console.error('加载租户列表失败:', error)
+    await switchTenant(id)
+    // eiam 已重签 JWT（session 租户变更）；reload 触发路由守卫重新 fetchUserInfo，
+    // 后续 cam 数据自动落到新租户。
+    window.location.reload()
+  } catch (e: any) {
+    ElMessage.error(e?.message || '切换租户失败')
+  } finally {
+    switching.value = false
   }
 }
-
-const handleChange = (value: string | undefined) => {
-  emit('update:modelValue', value)
-}
-
-onMounted(() => {
-  loadTenants()
-})
 </script>
 
 <style scoped lang="scss">
-.tenant-option {
-  display: flex;
-  justify-content: space-between;
+.tenant-current {
+  display: inline-flex;
   align-items: center;
-
-  .tenant-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tenant-id {
-    margin-left: 8px;
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-  }
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--el-text-color-primary);
 }
 </style>
