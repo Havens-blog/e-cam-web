@@ -104,7 +104,6 @@ import { onMounted, reactive, ref } from 'vue'
 interface Props {
   user?: CloudUser | null
   isEdit: boolean
-  tenantId?: string
 }
 
 const props = defineProps<Props>()
@@ -121,7 +120,6 @@ const formData = reactive({
   email: '',
   status: 'active' as any,
   permission_groups: [] as number[],
-  tenant_id: 'default',
 })
 
 const rules: FormRules = {
@@ -149,15 +147,8 @@ const fetchCloudAccounts = async () => {
 
 // 获取权限组列表
 const fetchPermissionGroups = async () => {
-  if (!props.tenantId) {
-    return
-  }
-  
   try {
-    const { data } = await listGroupsApi({ 
-      tenant_id: props.tenantId,
-      size: 100 
-    })
+    const { data } = await listGroupsApi({ size: 100 })
     permissionGroups.value = data.data || []
   } catch (error) {
     console.error('获取权限组列表失败:', error)
@@ -179,7 +170,6 @@ const initFormData = () => {
     formData.email = props.user.email
     formData.status = props.user.status
     formData.permission_groups = props.user.permission_groups?.map((g) => g.id) || []
-    formData.tenant_id = props.user.tenant_id
   }
 }
 
@@ -204,7 +194,6 @@ const submit = async () => {
       cloud_account_id: formData.cloud_account_id!,
       email: formData.email,
       permission_groups: formData.permission_groups,
-      tenant_id: formData.tenant_id,
     })
   }
 }
@@ -219,7 +208,6 @@ const reset = () => {
   formData.email = ''
   formData.status = 'active'
   formData.permission_groups = []
-  formData.tenant_id = 'default'
 }
 
 // 暴露方法

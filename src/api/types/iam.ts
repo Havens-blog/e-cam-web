@@ -152,7 +152,7 @@ export interface CreateUserRequest {
     cloud_account_id: number
     email: string
     permission_groups: number[]
-    tenant_id: string
+    tenant_id?: string
 }
 
 export interface UpdateUserRequest {

@@ -256,14 +256,6 @@ export const ACCOUNT_STATUS = [
     { value: 'inactive', label: '未激活', color: 'info' }
 ]
 
-/** @deprecated 请使用 useDictionary composable 从 'tenant_status' 字典获取。 */
-export const TENANT_STATUS = [
-    { value: 'active', label: '活跃', color: 'success' },
-    { value: 'inactive', label: '非活跃', color: 'info' },
-    { value: 'suspended', label: '暂停', color: 'warning' },
-    { value: 'deleted', label: '已删除', color: 'danger' }
-]
-
 /** @deprecated 请使用 useDictionary composable 从 'user_type' 字典获取。 */
 export const USER_TYPES = [
     { value: 'api_key', label: 'API Key' },
@@ -545,17 +537,6 @@ export function getAccountStatus(value: string) {
         { value: 'inactive', label: '未激活', color: 'info' }
     ]
     return ACCOUNT_STATUS_FALLBACK.find((s) => s.value === value) ?? { value: 'unknown', label: value, color: 'info' }
-}
-
-/** @deprecated 建议迁移到 useDictionary composable 从 'tenant_status' 字典获取。 */
-export function getTenantStatus(value: string) {
-    const TENANT_STATUS_FALLBACK = [
-        { value: 'active', label: '活跃', color: 'success' },
-        { value: 'inactive', label: '非活跃', color: 'info' },
-        { value: 'suspended', label: '暂停', color: 'warning' },
-        { value: 'deleted', label: '已删除', color: 'danger' }
-    ]
-    return TENANT_STATUS_FALLBACK.find((s) => s.value === value) || TENANT_STATUS_FALLBACK[0]
 }
 
 /** @deprecated 建议迁移到 useDictionary composable 从 'user_type' 字典获取。 */

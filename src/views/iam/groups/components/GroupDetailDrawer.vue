@@ -179,7 +179,6 @@ import { ref, watch } from 'vue'
 const props = defineProps<{
   visible: boolean
   group: PermissionGroup | null
-  tenantId?: string
 }>()
 
 defineEmits<{
@@ -227,7 +226,7 @@ const fetchMembers = async () => {
   
   membersLoading.value = true
   try {
-    const response = await getGroupMembersApi(props.group.id, props.tenantId)
+    const response = await getGroupMembersApi(props.group.id)
     groupMembers.value = Array.isArray(response.data) ? response.data : []
   } catch {
     groupMembers.value = []
