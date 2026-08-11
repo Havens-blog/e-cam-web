@@ -30,23 +30,6 @@
         />
       </el-form-item>
 
-      <el-form-item label="租户" prop="tenantIds">
-        <el-select
-          v-model="formData.tenantIds"
-          multiple
-          filterable
-          placeholder="请选择租户（不选则包含所有租户）"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="tenant in tenants"
-            :key="tenant.id"
-            :label="tenant.display_name || tenant.name"
-            :value="tenant.id"
-          />
-        </el-select>
-      </el-form-item>
-
       <el-form-item label="报告类型" prop="reportType">
         <el-radio-group v-model="formData.reportType">
           <el-radio value="summary">汇总报告</el-radio>
@@ -103,11 +86,10 @@
 </template>
 
 <script setup lang="ts">
-import { generateAuditReportApi, listTenantsApi } from '@/api/iam'
-import type { Tenant } from '@/api/types/iam'
+import { generateAuditReportApi } from '@/api/iam'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 interface Props {
   visible: boolean
@@ -125,7 +107,6 @@ const formRef = ref<FormInstance>()
 const generating = ref(false)
 const progress = ref(0)
 const progressText = ref('')
-const tenants = ref<Tenant[]>([])
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -141,7 +122,6 @@ const progressStatus = computed(() => {
 const formData = reactive({
   name: `审计报告_${new Date().toLocaleDateString()}`,
   dateRange: null as [Date, Date] | null,
-  tenantIds: [] as string[],
   reportType: 'summary' as 'summary' | 'detailed',
   format: 'pdf' as 'pdf' | 'html' | 'excel',
   sections: ['overview', 'operations', 'users', 'errors', 'trends']
@@ -161,16 +141,6 @@ const rules: FormRules = {
   format: [
     { required: true, message: '请选择报告格式', trigger: 'change' }
   ]
-}
-
-// 加载租户列表
-const loadTenants = async () => {
-  try {
-    const res = await listTenantsApi({ size: 100 })
-    tenants.value = res.data.data ?? res.data.tenants ?? []
-  } catch (error) {
-    console.error('加载租户列表失败:', error)
-  }
 }
 
 // 生成报告
@@ -193,7 +163,6 @@ const handleGenerate = async () => {
       name: formData.name,
       start_time: formData.dateRange![0].toISOString(),
       end_time: formData.dateRange![1].toISOString(),
-      tenant_ids: formData.tenantIds.length > 0 ? formData.tenantIds : undefined,
       report_type: formData.reportType,
       format: formData.format,
       sections: formData.sections
@@ -254,17 +223,12 @@ const handleClose = () => {
     ElMessage.warning('正在生成报告,请稍候...')
     return
   }
-  
+
   formRef.value?.resetFields()
   progress.value = 0
   progressText.value = ''
   emit('update:visible', false)
 }
-
-// 初始化
-onMounted(() => {
-  loadTenants()
-})
 </script>
 
 <style scoped lang="scss">

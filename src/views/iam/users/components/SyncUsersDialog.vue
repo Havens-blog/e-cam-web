@@ -9,14 +9,6 @@
     <div v-loading="loading" class="sync-users-dialog">
       <!-- 云账号选择 -->
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="租户" prop="tenant_id">
-          <TenantSelector
-            v-model="formData.tenant_id"
-            placeholder="请选择租户"
-            style="width: 100%"
-          />
-        </el-form-item>
-
         <el-form-item label="云账号" prop="cloud_account_id">
           <el-select
             v-model="formData.cloud_account_id"
@@ -123,14 +115,12 @@
 
 <script setup lang="ts">
 import { listCloudAccountsApi, syncUsersApi } from '@/api'
-import TenantSelector from '@/components/TenantSelector.vue'
 import { getProviderLabel, safeTagType } from '@/utils/constants'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 
 interface Props {
   visible: boolean
-  tenantId?: string
 }
 
 interface Emits {
@@ -158,15 +148,11 @@ const syncResult = ref<{
 const cloudAccounts = ref<any[]>([])
 
 const formData = ref({
-  tenant_id: '',
   cloud_account_id: null as number | null,
   options: ['create_new', 'update_existing', 'sync_permissions'] as string[]
 })
 
 const rules: FormRules = {
-  tenant_id: [
-    { required: true, message: '请选择租户', trigger: 'change' }
-  ],
   cloud_account_id: [
     { required: true, message: '请选择云账号', trigger: 'change' }
   ]
@@ -258,7 +244,6 @@ const handleSubmit = async () => {
 
     // 调用同步 API
     const response = await syncUsersApi({
-      tenant_id: formData.value.tenant_id,
       cloud_account_id: formData.value.cloud_account_id!
     })
 
@@ -307,7 +292,6 @@ const handleClose = () => {
 
   // 重置表单
   formRef.value?.resetFields()
-  formData.value.tenant_id = ''
   formData.value.cloud_account_id = null
   formData.value.options = ['create_new', 'update_existing', 'sync_permissions']
   progress.value = 0
@@ -320,10 +304,6 @@ const handleClose = () => {
 // 监听对话框打开
 watch(() => props.visible, (visible) => {
   if (visible) {
-    // 如果父组件传递了租户ID，自动填充
-    if (props.tenantId) {
-      formData.value.tenant_id = props.tenantId
-    }
     fetchCloudAccounts()
   }
 })

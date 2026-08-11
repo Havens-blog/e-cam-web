@@ -87,24 +87,6 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="租户">
-            <el-select
-              v-model="filters.tenant_id"
-              placeholder="全部租户"
-              clearable
-              filterable
-              style="width: 200px"
-              @change="handleSearch"
-            >
-              <el-option
-                v-for="tenant in tenants"
-                :key="tenant.id"
-                :label="tenant.display_name || tenant.name"
-                :value="tenant.id"
-              />
-            </el-select>
-          </el-form-item>
-
           <el-form-item label="时间范围">
             <el-date-picker
               v-model="dateRange"
@@ -215,8 +197,8 @@
 </template>
 
 <script setup lang="ts">
-import { listAuditLogsApi, listTenantsApi } from '@/api/iam'
-import type { AuditLog, Tenant } from '@/api/types/iam'
+import { listAuditLogsApi } from '@/api/iam'
+import type { AuditLog } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType } from '@/utils/constants'
 import { Document, Download, RefreshLeft, Search } from '@element-plus/icons-vue'
@@ -232,7 +214,6 @@ const filters = reactive({
   operation_type: '',
   target_type: '',
   provider: '',
-  tenant_id: '',
   start_time: '',
   end_time: ''
 })
@@ -251,9 +232,6 @@ const pagination = reactive({
 const logList = ref<AuditLog[]>([])
 const loading = ref(false)
 
-// 租户列表
-const tenants = ref<Tenant[]>([])
-
 // 对话框
 const detailDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
@@ -269,7 +247,6 @@ const loadAuditLogs = async () => {
       operation_type: filters.operation_type || undefined,
       target_type: filters.target_type || undefined,
       provider: filters.provider || undefined,
-      tenant_id: filters.tenant_id || undefined,
       start_time: filters.start_time || undefined,
       end_time: filters.end_time || undefined,
       page: pagination.page,
@@ -286,16 +263,6 @@ const loadAuditLogs = async () => {
   }
 }
 
-// 加载租户列表
-const loadTenants = async () => {
-  try {
-    const res = await listTenantsApi({ size: 100 })
-    tenants.value = res.data.data || []
-  } catch (error) {
-    console.error('加载租户列表失败:', error)
-  }
-}
-
 // 搜索
 const handleSearch = () => {
   pagination.page = 1
@@ -308,7 +275,6 @@ const handleReset = () => {
   filters.operation_type = ''
   filters.target_type = ''
   filters.provider = ''
-  filters.tenant_id = ''
   filters.start_time = ''
   filters.end_time = ''
   dateRange.value = null
@@ -395,7 +361,6 @@ const getProviderLabel = (provider: string): string => {
 
 // 初始化
 onMounted(() => {
-  loadTenants()
   loadAuditLogs()
 })
 </script>

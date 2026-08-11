@@ -90,14 +90,6 @@
         </div>
         <div class="filter-controls">
           <div class="filter-item">
-            <span class="filter-label">租户</span>
-            <TenantSelector
-              v-model="filters.tenant_id"
-              class="filter-select"
-              @update:model-value="handleFilterChange"
-            />
-          </div>
-          <div class="filter-item">
             <span class="filter-label">云平台</span>
             <el-select
               v-model="filters.provider"
@@ -265,7 +257,6 @@
     <!-- 同步用户组对话框 -->
     <SyncGroupsDialog
       v-model:visible="syncDialogVisible"
-      :tenant-id="filters.tenant_id"
       @success="handleSyncSuccess"
     />
 
@@ -300,7 +291,6 @@
     <GroupDetailDrawer
       v-model:visible="detailDrawerVisible"
       :group="detailGroup"
-      :tenant-id="filters.tenant_id"
       @edit="handleEdit"
       @delete="handleDelete"
     />
@@ -313,7 +303,6 @@ import { deleteGroupApi, listGroupsApi } from '@/api'
 import type { ListGroupsParams, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
-import TenantSelector from '@/components/TenantSelector.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'
 import {
@@ -353,7 +342,6 @@ const submitting = ref(false)
 const formRef = ref<InstanceType<typeof GroupForm>>()
 
 const filters = reactive<ListGroupsParams>({
-  tenant_id: undefined,
   provider: undefined,
   keyword: undefined,
   page: 1,
@@ -411,15 +399,9 @@ const visiblePages = computed(() => {
 })
 
 const fetchGroups = async () => {
-  if (!filters.tenant_id) {
-    ElMessage.warning('请先选择租户')
-    loading.value = false
-    return
-  }
-
   loading.value = true
   errorInfo.value = null
-  
+
   try {
     const params = { ...filters, page: pagination.page, size: pagination.size }
     const response = await listGroupsApi(params)
@@ -573,22 +555,8 @@ const handleDialogClosed = () => {
   currentGroup.value = null
 }
 
-// 初始化默认租户
-const initDefaultTenant = async () => {
-  try {
-    const { listTenantsApi } = await import('@/api/iam')
-    const res = await listTenantsApi({ page: 1, size: 1 })
-    const tenants = res.data?.data || []
-    if (tenants.length > 0 && tenants[0]) {
-      filters.tenant_id = tenants[0].id
-    }
-  } catch (error) {
-    console.error('获取默认租户失败:', error)
-  }
-}
-
+// 初始化
 onMounted(async () => {
-  await initDefaultTenant()
   fetchGroups()
 })
 </script>

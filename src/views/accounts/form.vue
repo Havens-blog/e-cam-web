@@ -1,12 +1,7 @@
 <template>
   <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px">
-    <el-form-item label="租户" prop="tenant_id">
-      <TenantSelector
-        v-model="formData.tenant_id"
-        placeholder="请选择租户"
-        style="width: 100%"
-      />
-      <span class="form-tip">选择该云账号所属的租户</span>
+    <el-form-item label="租户">
+      <span class="form-tip">当前租户：{{ currentTenantName }}</span>
     </el-form-item>
 
     <el-form-item label="账号名称" prop="name">
@@ -170,13 +165,13 @@
 <script setup lang="ts">
 import { createCloudAccountApi, testConnectionApi, updateCloudAccountApi } from '@/api'
 import type { CloudAccount } from '@/api/types/account'
-import TenantSelector from '@/components/TenantSelector.vue'
 import {
     CLOUD_PROVIDERS,
     ENVIRONMENTS,
     accountFormRules,
     getProviderRegions,
 } from '@/utils/constants'
+import { useUserStore } from '@/stores/user'
 import { Connection } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
@@ -193,9 +188,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const formRef = ref<FormInstance>()
 
+// 当前租户名（只读展示，租户由后端 session 决定）
+const userStore = useUserStore()
+const currentTenantName = computed(() => {
+  const t = userStore.tenants.find(x => x.id === userStore.currentTenantId)
+  return t?.name || `#${userStore.currentTenantId}`
+})
+
 // 表单数据
 const formData = reactive({
-  tenant_id: '',
   name: '',
   provider: '',
   environment: '',
@@ -314,7 +315,6 @@ watch(
   () => props.account,
   async (account) => {
     if (account) {
-      formData.tenant_id = account.tenant_id || ''
       formData.name = account.name
       formData.provider = account.provider
       formData.environment = account.environment
@@ -356,7 +356,6 @@ const submit = async () => {
   if (props.isEdit && props.account) {
     // 更新账号 - 构建更新数据
     const updateData: any = {
-      tenant_id: formData.tenant_id,
       name: formData.name,
       environment: formData.environment,
       // 使用第一个区域作为主区域，或者使用 regions 数组
@@ -380,7 +379,6 @@ const submit = async () => {
   } else {
     // 创建账号
     const createData: any = {
-      tenant_id: formData.tenant_id || 'default',
       name: formData.name,
       provider: formData.provider,
       environment: formData.environment,

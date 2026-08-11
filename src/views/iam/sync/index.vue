@@ -18,13 +18,6 @@
       <!-- 筛选区域 -->
       <el-card class="filter-card" shadow="never">
         <el-form :model="filters" inline>
-          <el-form-item label="租户">
-            <TenantSelector
-              v-model="filters.tenant_id"
-              @update:model-value="handleSearch"
-            />
-          </el-form-item>
-
           <el-form-item label="任务类型">
             <el-select
               v-model="filters.task_type"
@@ -219,7 +212,6 @@ import { listSyncTasksApi, retrySyncTaskApi } from '@/api/iam'
 import type { CloudAccount } from '@/api/types/account'
 import type { SyncTask } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
-import TenantSelector from '@/components/TenantSelector.vue'
 import {
     CLOUD_PROVIDERS,
     getSyncTaskStatusColor,
@@ -236,7 +228,6 @@ import TaskFormDialog from './components/TaskFormDialog.vue'
 
 // 筛选条件
 const filters = reactive({
-  tenant_id: '',
   task_type: '',
   status: '',
   cloud_account_id: '',

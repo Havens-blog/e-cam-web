@@ -90,14 +90,6 @@
         </div>
         <div class="filter-controls">
           <div class="filter-item">
-            <span class="filter-label">租户</span>
-            <TenantSelector
-              v-model="filters.tenant_id"
-              class="filter-select"
-              @update:model-value="handleFilterChange"
-            />
-          </div>
-          <div class="filter-item">
             <span class="filter-label">云厂商</span>
             <el-select
               v-model="filters.provider"
@@ -359,7 +351,7 @@
       class="modern-dialog"
       @closed="handleDialogClosed"
     >
-      <UserForm ref="formRef" :user="currentUser" :is-edit="isEdit" :tenant-id="filters.tenant_id" />
+      <UserForm ref="formRef" :user="currentUser" :is-edit="isEdit" />
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">
@@ -371,7 +363,6 @@
     <!-- 同步用户对话框 -->
     <SyncUsersDialog
       v-model:visible="syncDialogVisible"
-      :tenant-id="filters.tenant_id"
       @success="handleSyncSuccess"
     />
 
@@ -442,7 +433,6 @@ import {
 import type { CloudUser } from '@/api/types/iam'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import TenantSelector from '@/components/TenantSelector.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
 import {
   CLOUD_PROVIDERS,
@@ -546,7 +536,6 @@ const permissionGroups = ref<any[]>([])
 const selectedGroupIds = ref<number[]>([])
 
 const filters = reactive({
-  tenant_id: '' as string,
   keyword: '' as string,
   provider: '' as string,
   user_type: '' as string,
@@ -627,19 +616,12 @@ const clearSelection = () => {
 
 // 获取用户列表
 const fetchUsers = async () => {
-  if (!filters.tenant_id) {
-    ElMessage.warning('请先选择租户')
-    loading.value = false
-    return
-  }
-
   loading.value = true
   errorInfo.value = null
   loadingMessage.value = ''
 
   try {
     const params = {
-      tenant_id: filters.tenant_id,
       keyword: filters.keyword || undefined,
       provider: filters.provider as any,
       user_type: filters.user_type as any,
@@ -684,10 +666,8 @@ const fetchUsers = async () => {
 
 // 获取用户组列表
 const fetchPermissionGroups = async () => {
-  if (!filters.tenant_id) return
-  
   try {
-    const { data } = await listGroupsApi({ tenant_id: filters.tenant_id, size: 100 })
+    const { data } = await listGroupsApi({ size: 100 })
     permissionGroups.value = data.data || []
   } catch (error: any) {
     logError(error, 'fetchPermissionGroups')
@@ -804,10 +784,6 @@ const handleSyncSuccess = () => {
 
 // 批量分配用户组
 const handleBatchAssign = () => {
-  if (!filters.tenant_id) {
-    ElMessage.warning('请先选择租户')
-    return
-  }
   batchAssignDialogVisible.value = true
   selectedGroupIds.value = []
   if (permissionGroups.value.length === 0) fetchPermissionGroups()
@@ -818,15 +794,10 @@ const handleConfirmBatchAssign = async () => {
     ElMessage.warning('请选择用户组')
     return
   }
-  if (!filters.tenant_id) {
-    ElMessage.warning('请先选择租户')
-    return
-  }
 
   batchAssigning.value = true
   try {
     await batchAssignGroupsApi({
-      tenant_id: filters.tenant_id,
       user_ids: selectedUsers.value.map((u) => u.id),
       group_ids: selectedGroupIds.value,
     })
@@ -895,22 +866,8 @@ const handleExportSuccess = () => {
 }
 
 // 初始化
-const initDefaultTenant = async () => {
-  try {
-    const { listTenantsApi } = await import('@/api/iam')
-    const res = await listTenantsApi({ page: 1, size: 1 })
-    const tenants = res.data?.data || []
-    if (tenants.length > 0 && tenants[0]) {
-      filters.tenant_id = tenants[0].id
-    }
-  } catch (error) {
-    console.error('获取默认租户失败:', error)
-  }
-}
-
 onMounted(async () => {
   logApiConfig()
-  await initDefaultTenant()
   fetchUsers()
 })
 </script>
