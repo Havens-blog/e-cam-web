@@ -28,7 +28,6 @@ export interface ExpiringAsset {
     asset_id: string
     asset_name: string
     asset_type: string
-    tenant_id: string
     account_id: number
     provider: string
     region: string

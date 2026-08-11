@@ -13,7 +13,6 @@ export interface AuditLog {
     operation_type: string
     operator_id: string
     operator_name: string
-    tenant_id: string
     http_method: string
     api_path: string
     request_body: string
@@ -42,7 +41,6 @@ export interface AuditLogParams {
 
 /** 审计报告 */
 export interface AuditReport {
-    tenant_id: string
     start_time: number
     end_time: number
     total_operations: number
@@ -60,7 +58,6 @@ export interface AssetChange {
     asset_id: string
     asset_name: string
     model_uid: string
-    tenant_id: string
     account_id: number
     provider: string
     region: string

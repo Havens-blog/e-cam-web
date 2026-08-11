@@ -16,7 +16,6 @@ export interface AlertChannel {
     name: string
     type: ChannelType
     config: Record<string, any>
-    tenant_id: string
     enabled: boolean
     create_time: string
     update_time: string
@@ -38,7 +37,6 @@ export interface AlertRule {
     escalate_after: number
     escalate_channels: number[]
     condition: Record<string, any>
-    tenant_id: string
     enabled: boolean
     create_time: string
     update_time: string
@@ -59,7 +57,6 @@ export interface AlertEvent {
     title: string
     content: Record<string, any>
     source: string
-    tenant_id: string
     status: AlertEventStatus
     retry_count: number
     create_time: string

@@ -55,12 +55,6 @@ class HttpRequest {
                     config.headers.Authorization = `Bearer ${token}`
                 }
 
-                // 添加租户 ID（优先从 localStorage 读取，由 store 同步）
-                const tenantId = localStorage.getItem('tenantId')
-                if (tenantId && config.headers) {
-                    config.headers['X-Tenant-ID'] = tenantId
-                }
-
                 // 添加请求 ID 用于追踪
                 const requestId = this.generateRequestId()
                 if (config.headers) {
