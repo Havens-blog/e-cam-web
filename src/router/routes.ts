@@ -118,16 +118,7 @@ const routes: RouteRecordRaw[] = [
             // ==================== IAM 管理路由 ====================
             {
                 path: '/iam',
-                redirect: '/iam/tenants',
-            },
-            {
-                path: '/iam/tenants',
-                name: 'IAMTenants',
-                component: () => import('@/views/iam/tenants/index.vue'),
-                meta: {
-                    title: '租户管理',
-                    icon: 'office-building',
-                },
+                redirect: '/iam/users',
             },
             {
                 path: '/iam/users',

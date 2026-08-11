@@ -140,7 +140,6 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
             <div class="pnav-it" @click="go('/iam/users')"><IconFont :type="ic('users')" :size="18" /><span>用户管理</span><i :class="{on:isF('users')}" @click.stop="togF('users','用户管理','用户与权限','/iam/users')">{{ isF('users') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/iam/groups')"><IconFont :type="ic('groups')" :size="18" /><span>用户组</span><i :class="{on:isF('groups')}" @click.stop="togF('groups','用户组','用户与权限','/iam/groups')">{{ isF('groups') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/iam/templates')"><IconFont :type="ic('tpls')" :size="18" /><span>策略模板</span><i :class="{on:isF('tpls')}" @click.stop="togF('tpls','策略模板','用户与权限','/iam/templates')">{{ isF('tpls') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/iam/tenants')"><IconFont :type="ic('tenants')" :size="18" /><span>租户管理</span><i :class="{on:isF('tenants')}" @click.stop="togF('tenants','租户管理','用户与权限','/iam/tenants')">{{ isF('tenants') ? '★' : '☆' }}</i></div>
           </div>
         </div>
       </div>
