@@ -1,42 +1,11 @@
-import { redirectToLogin } from '@/api/request/index'
-import { getEcmdbToken, removeEcmdbToken } from '@/utils/cookie'
-import axios from 'axios'
+import { removeEcmdbToken } from '@/utils/cookie'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { mapEiamProfile } from './user-mapper'
 import type { EiamTenant, UserInfo } from './user-mapper'
+import { eiamAxios } from '@/api/request/eiam'
 
 export type { UserInfo } from './user-mapper'
-
-/**
- * eiam 统一身份服务专用 axios 实例。
- * 经 nginx: /api/iam/* -> eiam :9000 /api/*
- */
-const eiamAxios = axios.create({
-    timeout: 15000,
-    withCredentials: true,
-    headers: { 'Content-Type': 'application/json' },
-})
-
-// 请求拦截：注入 session token（从 cookie 读取）
-eiamAxios.interceptors.request.use((config) => {
-    const token = getEcmdbToken()
-    if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-})
-
-// 响应拦截：401 跳转登录
-eiamAxios.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            redirectToLogin()
-        }
-        return Promise.reject(error)
-    }
-)
 
 /**
  * eiam 统一鉴权下的用户状态管理
