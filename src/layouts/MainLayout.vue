@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { searchAssetsApi } from '@/api/asset'
-import { createTenantApi, listTenantsApi } from '@/api/iam'
 import type { SearchResultItem } from '@/api/types/asset'
-import type { Tenant } from '@/api/types/iam'
 import IconFont from '@/components/IconFont/index.vue'
+import TenantSelector from '@/components/TenantSelector.vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import {
@@ -16,7 +15,6 @@ import {
   Grid,
   Loading,
   Moon,
-  Plus,
   Search,
   Setting,
   Sunny
@@ -183,94 +181,6 @@ const isCollapsed = ref(false)
 
 // 平台导航
 const showPlatformNav = ref(false)
-
-// 租户列表
-const tenantList = ref<Tenant[]>([])
-const currentTenantId = ref(appStore.currentTenantId || '')
-const tenantsLoaded = ref(false)
-
-// 创建租户对话框
-const showCreateTenantDialog = ref(false)
-const createTenantForm = ref({
-  name: '',
-  display_name: '',
-  description: ''
-})
-const creatingTenant = ref(false)
-
-// 加载租户列表
-const loadTenants = async () => {
-  try {
-    const res = await listTenantsApi({ page: 1, size: 100 })
-    tenantList.value = res.data?.data || []
-    tenantsLoaded.value = true
-    
-    if (tenantList.value.length === 0) {
-      // 没有租户，弹出创建对话框
-      showCreateTenantDialog.value = true
-    } else {
-      // 如果当前租户ID不在列表中，选择第一个
-      const exists = tenantList.value.some(t => t.id === currentTenantId.value)
-      if (!exists && tenantList.value[0]) {
-        currentTenantId.value = tenantList.value[0].id
-        appStore.setCurrentTenantId(currentTenantId.value)
-      } else if (currentTenantId.value) {
-        appStore.setCurrentTenantId(currentTenantId.value)
-      }
-    }
-  } catch (error) {
-    console.error('加载租户列表失败:', error)
-    tenantsLoaded.value = true
-  }
-}
-
-// 创建租户
-const handleCreateTenant = async () => {
-  if (!createTenantForm.value.name) {
-    ElMessage.warning('请输入租户名称')
-    return
-  }
-  
-  creatingTenant.value = true
-  try {
-    // 生成租户ID（使用名称作为ID，或生成UUID）
-    const tenantId = createTenantForm.value.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    
-    const res = await createTenantApi({
-      id: tenantId,
-      name: createTenantForm.value.name,
-      display_name: createTenantForm.value.display_name || createTenantForm.value.name,
-      description: createTenantForm.value.description
-    })
-    
-    ElMessage.success('租户创建成功')
-    showCreateTenantDialog.value = false
-    
-    // 设置新创建的租户为当前租户
-    const newTenantId = res.data?.id || tenantId
-    if (newTenantId) {
-      currentTenantId.value = newTenantId
-      appStore.setCurrentTenantId(newTenantId)
-    }
-    
-    // 重新加载租户列表
-    await loadTenants()
-    
-    // 重置表单
-    createTenantForm.value = { name: '', display_name: '', description: '' }
-  } catch (error: any) {
-    ElMessage.error(error.message || '创建租户失败')
-  } finally {
-    creatingTenant.value = false
-  }
-}
-
-// 切换租户
-const handleTenantChange = (tenantId: string) => {
-  appStore.setCurrentTenantId(tenantId)
-  // 刷新当前页面数据
-  window.location.reload()
-}
 
 // 当前主题 - 使用 store 的 theme 值判断
 const isDarkTheme = computed(() => {
@@ -510,7 +420,6 @@ const menuGroups = ref<MenuGroup[]>([
           { key: 'users', path: '/iam/users', title: '用户管理', icon: 'ops-oneterm-authorization' },
           { key: 'groups', path: '/iam/groups', title: '用户组管理', icon: 'icon-xianxing-bumen' },
           { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'icon-xianxing-chanpin' },
-          { key: 'tenants', path: '/iam/tenants', title: '租户管理', icon: 'icon-xianxing-yingyong' },
         ]
       },
     ]
@@ -634,7 +543,6 @@ const toggleFullscreen = () => {
 
 // 初始化
 onMounted(() => {
-  loadTenants()
   document.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', handleClickOutside)
 })
@@ -881,29 +789,7 @@ onUnmounted(() => {
         <div class="navbar-right">
           <!-- 租户选择 -->
           <div class="tenant-selector">
-            <el-select
-              v-model="currentTenantId"
-              placeholder="选择租户"
-              size="small"
-              style="width: 160px"
-              @change="handleTenantChange"
-            >
-              <el-option
-                v-for="tenant in tenantList"
-                :key="tenant.id"
-                :label="tenant.display_name || tenant.name"
-                :value="tenant.id"
-              />
-            </el-select>
-            <el-button
-              v-if="tenantsLoaded"
-              type="primary"
-              size="small"
-              :icon="Plus"
-              circle
-              title="创建租户"
-              @click="showCreateTenantDialog = true"
-            />
+            <TenantSelector />
           </div>
 
           <!-- 主题切换 -->
@@ -965,127 +851,6 @@ onUnmounted(() => {
       </main>
     </div>
   </div>
-
-  <!-- 创建租户对话框 -->
-  <el-dialog
-    v-model="showCreateTenantDialog"
-    width="520px"
-    :close-on-click-modal="false"
-    :close-on-press-escape="tenantList.length > 0"
-    :show-close="tenantList.length > 0"
-    class="tenant-create-dialog"
-    :show-header="false"
-  >
-    <div class="tenant-dialog-modern">
-      <!-- 顶部视觉区域 -->
-      <div class="dialog-hero">
-        <div class="hero-glow"></div>
-        <div class="hero-icon">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="14" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2.5" fill="none" />
-            <path d="M6 22h36" stroke="currentColor" stroke-width="2.5" />
-            <rect x="12" y="28" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="2" fill="none" />
-            <rect x="28" y="28" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="2" fill="none" />
-            <path d="M18 14V10a6 6 0 0 1 12 0v4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-          </svg>
-        </div>
-        <h2 class="hero-title">
-          {{ tenantList.length === 0 ? '欢迎使用 CloudMux' : '创建新租户' }}
-        </h2>
-        <p class="hero-subtitle">
-          {{ tenantList.length === 0 
-            ? '创建您的第一个租户，开始管理多云资源' 
-            : '租户是资源隔离的基本单元，用于组织和管理云资源' }}
-        </p>
-      </div>
-
-      <!-- 表单区域 -->
-      <div class="dialog-form">
-        <div class="form-field">
-          <label class="field-label">
-            租户标识 <span class="required">*</span>
-          </label>
-          <div class="field-input-wrapper">
-            <el-input
-              v-model="createTenantForm.name"
-              placeholder="my-company"
-              maxlength="64"
-              class="modern-input"
-            >
-              <template #prefix>
-                <span class="input-prefix-icon">
-                  <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
-                    <path d="M8 1L1 5l7 4 7-4-7-4z" fill="currentColor" opacity="0.3"/>
-                    <path d="M1 11l7 4 7-4M1 8l7 4 7-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </template>
-            </el-input>
-          </div>
-          <p class="field-hint">英文标识，用于 API 调用和系统内部引用</p>
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">显示名称</label>
-          <div class="field-input-wrapper">
-            <el-input
-              v-model="createTenantForm.display_name"
-              placeholder="我的公司"
-              maxlength="128"
-              class="modern-input"
-            >
-              <template #prefix>
-                <span class="input-prefix-icon">
-                  <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
-                    <path d="M2 3h12M2 7h8M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                </span>
-              </template>
-            </el-input>
-          </div>
-          <p class="field-hint">界面上展示的友好名称</p>
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">描述</label>
-          <el-input
-            v-model="createTenantForm.description"
-            type="textarea"
-            :rows="3"
-            placeholder="简要描述该租户的用途..."
-            maxlength="512"
-            class="modern-input modern-textarea"
-            resize="none"
-          />
-        </div>
-      </div>
-
-      <!-- 底部操作区 -->
-      <div class="dialog-actions">
-        <el-button 
-          v-if="tenantList.length > 0" 
-          class="action-btn cancel-btn"
-          @click="showCreateTenantDialog = false"
-        >
-          取消
-        </el-button>
-        <el-button 
-          type="primary" 
-          :loading="creatingTenant" 
-          class="action-btn create-btn"
-          @click="handleCreateTenant"
-        >
-          <template #loading>
-            <el-icon class="is-loading"><Loading /></el-icon>
-          </template>
-          <svg v-if="!creatingTenant" viewBox="0 0 16 16" fill="none" width="16" height="16" style="margin-right: 6px;">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          {{ creatingTenant ? '创建中...' : '创建租户' }}
-        </el-button>
-      </div>
-    </div>
-  </el-dialog>
 </template>
 
 
@@ -1929,148 +1694,6 @@ $navbar-height: 56px;
   transition: background-color 0.3s ease;
 }
 
-// 创建租户对话框 - 现代化设计
-.tenant-dialog-modern {
-  margin: -20px -20px 0;
-  
-  .dialog-hero {
-    position: relative;
-    text-align: center;
-    padding: 40px 32px 28px;
-    overflow: hidden;
-    
-    .hero-glow {
-      position: absolute;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 260px;
-      height: 180px;
-      background: radial-gradient(ellipse, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    
-    .hero-icon {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
-      border: 1px solid rgba(59, 130, 246, 0.2);
-      margin-bottom: 20px;
-      
-      svg {
-        width: 36px;
-        height: 36px;
-        color: #3b82f6;
-      }
-    }
-    
-    .hero-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 8px;
-      letter-spacing: -0.02em;
-    }
-    
-    .hero-subtitle {
-      font-size: 14px;
-      color: var(--text-tertiary);
-      margin: 0;
-      line-height: 1.6;
-      max-width: 320px;
-      margin-inline: auto;
-    }
-  }
-  
-  .dialog-form {
-    padding: 0 32px;
-    
-    .form-field {
-      margin-bottom: 20px;
-      
-      &:last-child {
-        margin-bottom: 8px;
-      }
-      
-      .field-label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
-        margin-bottom: 8px;
-        
-        .required {
-          color: #ef4444;
-          margin-left: 2px;
-        }
-      }
-      
-      .field-hint {
-        font-size: 12px;
-        color: var(--text-quaternary, var(--text-tertiary));
-        margin: 6px 0 0;
-        opacity: 0.8;
-      }
-      
-      .input-prefix-icon {
-        display: inline-flex;
-        align-items: center;
-        color: var(--text-tertiary);
-      }
-    }
-  }
-  
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 24px 32px 32px;
-    
-    .action-btn {
-      height: 40px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      padding: 0 24px;
-      transition: all 200ms ease;
-    }
-    
-    .cancel-btn {
-      background: var(--bg-subtle, var(--bg-elevated));
-      border-color: var(--border-base);
-      color: var(--text-secondary);
-      
-      &:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-      }
-    }
-    
-    .create-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-      border: none;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-      min-width: 140px;
-      
-      &:hover {
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
-        transform: translateY(-1px);
-      }
-      
-      &:active {
-        transform: translateY(0);
-      }
-    }
-  }
-}
 </style>
 
 <style lang="scss">
@@ -2146,69 +1769,4 @@ $navbar-height: 56px;
   transform: translateX(0);
 }
 
-// 创建租户对话框 - 全局样式覆盖
-.tenant-create-dialog {
-  .el-dialog {
-    border-radius: 16px;
-    overflow: hidden;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle, var(--border-base));
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  }
-  
-  .el-dialog__header {
-    display: none;
-  }
-  
-  .el-dialog__body {
-    padding: 0;
-  }
-  
-  .el-dialog__footer {
-    display: none;
-  }
-  
-  // 输入框现代化
-  .modern-input {
-    .el-input__wrapper {
-      border-radius: 10px;
-      padding: 4px 12px;
-      box-shadow: 0 0 0 1px var(--border-base) inset;
-      background: var(--bg-base);
-      transition: all 200ms ease;
-      
-      &:hover {
-        box-shadow: 0 0 0 1px var(--border-hover, var(--border-base)) inset;
-      }
-      
-      &.is-focus {
-        box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
-      }
-    }
-    
-    .el-input__inner {
-      height: 36px;
-      font-size: 14px;
-    }
-  }
-  
-  .modern-textarea {
-    .el-textarea__inner {
-      border-radius: 10px;
-      padding: 10px 14px;
-      box-shadow: 0 0 0 1px var(--border-base) inset;
-      background: var(--bg-base);
-      font-size: 14px;
-      transition: all 200ms ease;
-      
-      &:hover {
-        box-shadow: 0 0 0 1px var(--border-hover, var(--border-base)) inset;
-      }
-      
-      &:focus {
-        box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
-      }
-    }
-  }
-}
 </style>
