@@ -6,53 +6,6 @@
 
 export type CloudProvider = 'aliyun' | 'aws' | 'azure' | 'tencent' | 'huawei'
 
-// ==================== 租户类型 ====================
-
-export type TenantStatus = 'active' | 'inactive' | 'suspended' | 'deleted'
-
-export interface TenantMetadata {
-    company_name: string
-    contact_email: string
-    contact_phone: string
-    owner: string
-    industry: string
-    region: string
-    tags: Record<string, string>
-    user_count: number
-    user_group_count: number
-    cloud_account_count: number
-}
-
-export interface TenantSettings {
-    max_users: number
-    max_user_groups: number
-    max_cloud_accounts: number
-    allowed_providers: CloudProvider[]
-    features: Record<string, boolean>
-    custom_fields: Record<string, string>
-}
-
-export interface Tenant {
-    id: string
-    name: string
-    display_name: string
-    description: string
-    status: TenantStatus
-    metadata: TenantMetadata
-    settings: TenantSettings
-    create_time: string
-    update_time: string
-}
-
-export interface TenantStats {
-    current_users: number
-    max_users: number
-    current_user_groups: number
-    max_user_groups: number
-    current_cloud_accounts: number
-    max_cloud_accounts: number
-}
-
 // ==================== 云用户类型 ====================
 
 export type CloudUserType = 'api_key' | 'access_key' | 'ram_user' | 'iam_user' | 'root_user'
@@ -170,43 +123,6 @@ export interface SyncTask {
     start_time?: string
     end_time?: string
     complete_time?: string
-}
-
-// ==================== 租户管理 API 请求/响应类型 ====================
-
-export interface ListTenantsParams {
-    keyword?: string
-    status?: TenantStatus
-    industry?: string
-    region?: string
-    page?: number
-    size?: number
-}
-
-export interface ListTenantsResponse {
-    data: Tenant[]
-    tenants?: Tenant[]
-    total: number
-    page: number
-    size: number
-}
-
-export interface CreateTenantRequest {
-    id: string
-    name: string
-    display_name?: string
-    description?: string
-    metadata?: Partial<TenantMetadata>
-    settings?: Partial<TenantSettings>
-}
-
-export interface UpdateTenantRequest {
-    name?: string
-    display_name?: string
-    description?: string
-    status?: TenantStatus
-    metadata?: Partial<TenantMetadata>
-    settings?: Partial<TenantSettings>
 }
 
 // ==================== 用户管理 API 请求/响应类型 ====================

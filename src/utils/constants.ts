@@ -264,27 +264,6 @@ export const TENANT_STATUS = [
     { value: 'deleted', label: '已删除', color: 'danger' }
 ]
 
-/** @deprecated 请使用 useDictionary composable 从 'industry' 字典获取。 */
-export const INDUSTRIES = [
-    { value: 'technology', label: '科技' },
-    { value: 'finance', label: '金融' },
-    { value: 'healthcare', label: '医疗' },
-    { value: 'education', label: '教育' },
-    { value: 'retail', label: '零售' },
-    { value: 'manufacturing', label: '制造' },
-    { value: 'other', label: '其他' }
-]
-
-/** @deprecated 请使用 useDictionary composable 从 'region_group' 字典获取。 */
-export const REGIONS = [
-    { value: 'cn-north', label: '华北' },
-    { value: 'cn-east', label: '华东' },
-    { value: 'cn-south', label: '华南' },
-    { value: 'cn-west', label: '华西' },
-    { value: 'cn-central', label: '华中' },
-    { value: 'overseas', label: '海外' }
-]
-
 /** @deprecated 请使用 useDictionary composable 从 'user_type' 字典获取。 */
 export const USER_TYPES = [
     { value: 'api_key', label: 'API Key' },
@@ -577,35 +556,6 @@ export function getTenantStatus(value: string) {
         { value: 'deleted', label: '已删除', color: 'danger' }
     ]
     return TENANT_STATUS_FALLBACK.find((s) => s.value === value) || TENANT_STATUS_FALLBACK[0]
-}
-
-/** @deprecated 建议迁移到 useDictionary composable 从 'industry' 字典获取。 */
-export function getIndustryLabel(value: string): string {
-    const INDUSTRIES_FALLBACK = [
-        { value: 'technology', label: '科技' },
-        { value: 'finance', label: '金融' },
-        { value: 'healthcare', label: '医疗' },
-        { value: 'education', label: '教育' },
-        { value: 'retail', label: '零售' },
-        { value: 'manufacturing', label: '制造' },
-        { value: 'other', label: '其他' }
-    ]
-    const industry = INDUSTRIES_FALLBACK.find((i) => i.value === value)
-    return industry?.label || value
-}
-
-/** @deprecated 建议迁移到 useDictionary composable 从 'region_group' 字典获取。 */
-export function getRegionLabel(value: string): string {
-    const REGIONS_FALLBACK = [
-        { value: 'cn-north', label: '华北' },
-        { value: 'cn-east', label: '华东' },
-        { value: 'cn-south', label: '华南' },
-        { value: 'cn-west', label: '华西' },
-        { value: 'cn-central', label: '华中' },
-        { value: 'overseas', label: '海外' }
-    ]
-    const region = REGIONS_FALLBACK.find((r) => r.value === value)
-    return region?.label || value
 }
 
 /** @deprecated 建议迁移到 useDictionary composable 从 'user_type' 字典获取。 */

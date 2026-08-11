@@ -46,59 +46,6 @@ function createIamApiInterceptor() {
     }
 }
 
-// ==================== 租户管理 API ====================
-
-/** 查询租户列表 */
-export function listTenantsApi(params: iam.ListTenantsParams) {
-    return instance.get<iam.ListTenantsResponse>({
-        url: `${API_SERVICE.CAM}/iam/tenants`,
-        params,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
-/** 创建租户 */
-export function createTenantApi(data: iam.CreateTenantRequest) {
-    return instance.post<iam.Tenant>({
-        url: `${API_SERVICE.CAM}/iam/tenants`,
-        data,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
-/** 获取租户详情 */
-export function getTenantDetailApi(tenantId: string) {
-    return instance.get<iam.Tenant>({
-        url: `${API_SERVICE.CAM}/iam/tenants/${tenantId}`,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
-/** 更新租户信息 */
-export function updateTenantApi(tenantId: string, data: iam.UpdateTenantRequest) {
-    return instance.put<void>({
-        url: `${API_SERVICE.CAM}/iam/tenants/${tenantId}`,
-        data,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
-/** 删除租户 */
-export function deleteTenantApi(tenantId: string) {
-    return instance.delete<void>({
-        url: `${API_SERVICE.CAM}/iam/tenants/${tenantId}`,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
-/** 获取租户统计信息 */
-export function getTenantStatsApi(tenantId: string) {
-    return instance.get<iam.TenantStats>({
-        url: `${API_SERVICE.CAM}/iam/tenants/${tenantId}/stats`,
-        interceptorsToOnce: createIamApiInterceptor()
-    })
-}
-
 // ==================== 用户管理 API ====================
 
 /** 查询用户列表 */
