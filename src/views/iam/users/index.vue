@@ -4,8 +4,8 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <h1 class="page-title">用户管理</h1>
-          <p class="page-subtitle">管理多云平台的用户账号和权限</p>
+          <h1 class="page-title">云账号用户</h1>
+          <p class="page-subtitle">管理从云账号同步的 IAM / RAM 子用户（云账号维度，非平台登录账号）</p>
         </div>
         <div class="header-actions">
           <el-button class="action-btn" @click="handleExport">

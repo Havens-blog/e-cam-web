@@ -47,7 +47,7 @@ const icMap: Record<string, string> = {
   'cmdb-mod': 'caise-resource_pool', 'cmdb-inst': 'caise-computer', 'cmdb-rel': 'caise-network', 'cmdb-topo': 'caise-VPC',
   'audit-log': 'caise-folder', 'audit-chg': 'caise-storage_cluster',
   accounts: 'caise-public_cloud', dict: 'caise-knowledge',
-  users: 'caise-pc', groups: 'caise-host_cluster', tpls: 'caise-data_storage', tenants: 'caise-data_center2',
+  users: 'caise-pc', 'platform-users': 'caise-pc', groups: 'caise-host_cluster', tpls: 'caise-data_storage', tenants: 'caise-data_center2',
 }
 const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
 </script>
@@ -137,7 +137,8 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
             <div class="pnav-it" @click="go('/accounts')"><IconFont :type="ic('accounts')" :size="18" /><span>云账号管理</span><i :class="{on:isF('accounts')}" @click.stop="togF('accounts','云账号管理','系统','/accounts')">{{ isF('accounts') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/system/dictionary')"><IconFont :type="ic('dict')" :size="18" /><span>数据字典</span><i :class="{on:isF('dict')}" @click.stop="togF('dict','数据字典','系统','/system/dictionary')">{{ isF('dict') ? '★' : '☆' }}</i></div>
             <div class="pnav-sub">用户与权限</div>
-            <div class="pnav-it" @click="go('/iam/users')"><IconFont :type="ic('users')" :size="18" /><span>用户管理</span><i :class="{on:isF('users')}" @click.stop="togF('users','用户管理','用户与权限','/iam/users')">{{ isF('users') ? '★' : '☆' }}</i></div>
+            <div class="pnav-it" @click="go('/platform/users')"><IconFont :type="ic('platform-users')" :size="18" /><span>平台用户</span><i :class="{on:isF('platform-users')}" @click.stop="togF('platform-users','平台用户','用户与权限','/platform/users')">{{ isF('platform-users') ? '★' : '☆' }}</i></div>
+            <div class="pnav-it" @click="go('/iam/users')"><IconFont :type="ic('users')" :size="18" /><span>云账号用户</span><i :class="{on:isF('users')}" @click.stop="togF('users','云账号用户','用户与权限','/iam/users')">{{ isF('users') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/iam/groups')"><IconFont :type="ic('groups')" :size="18" /><span>用户组</span><i :class="{on:isF('groups')}" @click.stop="togF('groups','用户组','用户与权限','/iam/groups')">{{ isF('groups') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/iam/templates')"><IconFont :type="ic('tpls')" :size="18" /><span>策略模板</span><i :class="{on:isF('tpls')}" @click.stop="togF('tpls','策略模板','用户与权限','/iam/templates')">{{ isF('tpls') ? '★' : '☆' }}</i></div>
           </div>

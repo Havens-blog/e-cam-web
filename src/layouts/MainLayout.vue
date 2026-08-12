@@ -214,6 +214,8 @@ interface MenuItem {
   icon?: string
   path?: string
   children?: MenuItem[]
+  /** true = 仅管理员可见（useUserStore.isAdmin）。路由本身不做硬守卫。 */
+  requireAdmin?: boolean
 }
 
 interface MenuGroup {
@@ -417,7 +419,8 @@ const menuGroups = ref<MenuGroup[]>([
         title: '用户与权限',
         icon: 'ops-oneterm-authorization',
         children: [
-          { key: 'users', path: '/iam/users', title: '用户管理', icon: 'ops-oneterm-authorization' },
+          { key: 'platform-users', path: '/platform/users', title: '平台用户', icon: 'ops-oneterm-authorization', requireAdmin: true },
+          { key: 'users', path: '/iam/users', title: '云账号用户', icon: 'ops-oneterm-authorization' },
           { key: 'groups', path: '/iam/groups', title: '用户组管理', icon: 'icon-xianxing-bumen' },
           { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'icon-xianxing-chanpin' },
         ]
@@ -425,6 +428,20 @@ const menuGroups = ref<MenuGroup[]>([
     ]
   },
 ])
+
+// 仅渲染层使用：按 requireAdmin && !isAdmin 过滤。activeMenuKey / 搜索仍用完整 menuGroups。
+const visibleMenuGroups = computed<MenuGroup[]>(() => {
+    if (userStore.isAdmin) return menuGroups.value
+    const filterItems = (items: MenuItem[]): MenuItem[] =>
+        items
+            .filter((it) => !it.requireAdmin)
+            .map((it) =>
+                it.children
+                    ? { ...it, children: filterItems(it.children) }
+                    : it,
+            )
+    return menuGroups.value.map((g) => ({ ...g, items: filterItems(g.items) }))
+})
 
 // 当前激活的菜单
 const activeMenuKey = computed(() => {
@@ -574,7 +591,7 @@ onUnmounted(() => {
 
       <!-- 菜单 -->
       <nav class="sidebar-nav">
-        <div v-for="group in menuGroups" :key="group.title" class="menu-group">
+        <div v-for="group in visibleMenuGroups" :key="group.title" class="menu-group">
           <div v-if="!isCollapsed" class="group-title">{{ group.title }}</div>
           <template v-for="item in group.items" :key="item.key">
             <!-- 有子菜单的项 -->
