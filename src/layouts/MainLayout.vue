@@ -42,13 +42,20 @@ const loggingOut = ref(false)
 /**
  * 用户下拉菜单命令分发。
  *
- * 只有「退出登录」显式带 command。未声明 command 的项（如「个人设置」）并非发出
- * undefined —— Element Plus 的 dropdownItemProps 对 command 声明了
- * `default: () => ({})`，故点击时发出的是一个空对象。下面用严格相等判断，
- * 因此这类项被忽略、行为与接线前一致。
- * 注意不要"简化"成 `if (command)`：空对象是 truthy，会误入分支。
+ * 现有两项都显式带 command（profile / logout）。若未来新增未声明 command 的项，
+ * 注意 Element Plus 的 dropdownItemProps 对 command 声明了 `default: () => ({})`，
+ * 点击时发出的是一个空对象（{}）而非 undefined——下面用严格相等判断，这类项会被
+ * 忽略。注意不要"简化"成 `if (command)`：空对象是 truthy，会误入分支。
  */
 async function handleUserCommand(command: string | number | object) {
+  // 个人设置：e-cam-web 无个人页，跳转 ecmdb-web 的「个人中心」(/profile/index)。
+  // 基址复用 VITE_ECMDB_LOGIN_URL（经 nginx :8888 的 ecmdb-web 根），新标签页打开
+  // 以保留当前 e-cam-web 上下文。
+  if (command === 'profile') {
+    const base = (import.meta.env.VITE_ECMDB_LOGIN_URL || window.location.origin).replace(/\/$/, '')
+    window.open(`${base}/profile/index`, '_blank')
+    return
+  }
   if (command !== 'logout') return
   // logout() 会 await 一次 POST /api/iam/user/logout，而 eiamAxios 的 timeout 是
   // 15s。若 eiam 响应慢，用户看到的就是"菜单关闭、页面不动"—— 与本次修复前那个
@@ -849,7 +856,7 @@ onUnmounted(() => {
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>个人设置</el-dropdown-item>
+                <el-dropdown-item command="profile">个人设置</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
