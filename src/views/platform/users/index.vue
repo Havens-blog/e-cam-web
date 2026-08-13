@@ -23,6 +23,14 @@ import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { deleteUser, listUsers, updateUser } from '@/api/eiam-users'
 import type { EiamUser, EiamUserStatus } from '@/api/types/eiam'
 import UserForm from './components/UserForm.vue'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+
+/** eiam 系统根租户 ID（pkg/ctxutil.SystemTenantID = 1） */
+const SYSTEM_TENANT_ID = 1
+/** 平台用户管理属系统级能力：当前会话不在系统管理空间时，租户列表等 system-scope 接口会 403 */
+const isSystemTenant = computed(() => userStore.currentTenantId === SYSTEM_TENANT_ID)
 
 const users = ref<EiamUser[]>([])
 const loading = ref(false)
@@ -208,6 +216,17 @@ onMounted(fetchUsers)
         </div>
       </div>
     </div>
+
+    <!-- 非系统租户提示：平台用户管理的租户分配等系统级操作需在系统管理空间下进行 -->
+    <el-alert
+      v-if="!isSystemTenant"
+      class="tenant-alert"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="当前不在系统管理空间"
+      description="平台用户管理（含租户分配、全量租户列表）属系统级能力，请先在顶部租户切换器选择「系统根管理空间」后再操作。"
+    />
 
     <!-- 统计卡片 -->
     <div class="stats-row">
@@ -398,6 +417,11 @@ onMounted(fetchUsers)
 .platform-users-page {
   padding: 0;
   min-height: 100%;
+}
+
+.tenant-alert {
+  margin-bottom: 16px;
+  border-radius: 10px;
 }
 
 // 页面头部

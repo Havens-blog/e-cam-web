@@ -31,6 +31,8 @@ const mode = ref<'create' | 'edit'>('create')
 const allRoles = ref<EiamRole[]>([])
 const allTenants = ref<EiamTenant[]>([])
 const optionsLoading = ref(false)
+/** 租户选项加载失败（通常是当前会话不在系统管理空间 → tenant/list 403） */
+const tenantsLoadError = ref(false)
 
 /** 编辑态下，打开时快照的角色 code / 租户 id，用于 submit 时 diff */
 const initialRoleCodes = ref<string[]>([])
@@ -88,15 +90,23 @@ function resetForm() {
 
 async function loadOptions() {
     optionsLoading.value = true
+    // 角色 / 租户各自独立加载：租户列表属系统级接口，当前会话不在系统管理空间时会 403，
+    // 不应让租户失败连累已成功加载的角色选项。
+    tenantsLoadError.value = false
+    allRoles.value = []
+    allTenants.value = []
     try {
-        const [roles, tenants] = await Promise.all([
-            listRoles({ offset: 0, limit: 200 }),
-            listTenants({ offset: 0, limit: 200 }),
-        ])
+        const roles = await listRoles({ offset: 0, limit: 200 })
         allRoles.value = roles.roles
-        allTenants.value = tenants.tenants
     } catch (e) {
-        ElMessage.error('加载角色/租户选项失败：' + (e as Error).message)
+        ElMessage.error('加载角色选项失败：' + (e as Error).message)
+    }
+    try {
+        const tenants = await listTenants({ offset: 0, limit: 200 })
+        allTenants.value = tenants.tenants
+    } catch {
+        // tenant/list 仅系统管理空间可调；非系统租户下静默置空，由页面提示条告知用户
+        tenantsLoadError.value = true
     } finally {
         optionsLoading.value = false
     }
@@ -289,9 +299,10 @@ defineExpose({ openCreate, openEdit })
           multiple
           filterable
           clearable
-          placeholder="将该用户加入哪些租户"
+          :placeholder="tenantsLoadError ? '租户列表不可用，需切换到系统管理空间' : '将该用户加入哪些租户'"
           style="width: 100%"
           :loading="optionsLoading"
+          :disabled="tenantsLoadError"
         >
           <el-option
             v-for="t in allTenants"
