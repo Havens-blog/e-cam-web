@@ -5,6 +5,8 @@ import IconFont from '@/components/IconFont/index.vue'
 import TenantSelector from '@/components/TenantSelector.vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import { CERT_MENU_ITEMS } from '@/utils/cert-nav'
+import { hasCertManageAccess } from '@/utils/cert-permission'
 import {
   ArrowDown,
   ArrowRight,
@@ -223,6 +225,11 @@ interface MenuItem {
   children?: MenuItem[]
   /** true = 仅管理员可见（useUserStore.isAdmin）。路由本身不做硬守卫。 */
   requireAdmin?: boolean
+  /**
+   * true = 需证书管理权限（非只读查看者）可见（任务 6.1）。
+   * 只读查看者仅见"到期看板"；对应路由由全局守卫按 certManageOnly 拦截。
+   */
+  requireCertManage?: boolean
 }
 
 interface MenuGroup {
@@ -384,6 +391,12 @@ const menuGroups = ref<MenuGroup[]>([
     ]
   },
   {
+    // 证书管理功能域（任务 6.1）：只读查看者仅见"到期看板"，
+    // 台账/变更管理按 requireCertManage 过滤；详情/配置不经菜单。
+    title: '证书管理',
+    items: [...CERT_MENU_ITEMS]
+  },
+  {
     title: 'FinOps',
     items: [
       { key: 'finops-cost', path: '/finops/cost', title: '成本概览', icon: 'ops-oneterm-dashboard' },
@@ -436,12 +449,16 @@ const menuGroups = ref<MenuGroup[]>([
   },
 ])
 
-// 仅渲染层使用：按 requireAdmin && !isAdmin 过滤。activeMenuKey / 搜索仍用完整 menuGroups。
+// 仅渲染层使用：按 requireAdmin && !isAdmin 与 requireCertManage && !certManageAccess 过滤。
+// activeMenuKey / 搜索仍用完整 menuGroups（与 requireAdmin 同策略）。
+const certManageAccess = computed(() =>
+    hasCertManageAccess({ isAdmin: userStore.isAdmin, permissions: userStore.permissions })
+)
 const visibleMenuGroups = computed<MenuGroup[]>(() => {
     if (userStore.isAdmin) return menuGroups.value
     const filterItems = (items: MenuItem[]): MenuItem[] =>
         items
-            .filter((it) => !it.requireAdmin)
+            .filter((it) => !it.requireAdmin && (!it.requireCertManage || certManageAccess.value))
             .map((it) =>
                 it.children
                     ? { ...it, children: filterItems(it.children) }

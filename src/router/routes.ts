@@ -629,6 +629,82 @@ const routes: RouteRecordRaw[] = [
                     icon: 'monitor-healing',
                 },
             },
+            // ==================== 证书管理路由（任务 6.1 脚手架，页面为占位，6.2-6.6 填充）====================
+            // 只读角色可见性：/certs/dashboard 与 /certs/:id 开放；
+            // 台账/变更管理（含子路由）/配置标记 certManageOnly，由守卫拦截。
+            // 路由排序静态段在前（vue-router 4 评分静态段高于动态参数，此处仅为可读性）。
+            {
+                path: '/certs',
+                name: 'CertLedger',
+                component: () => import('@/views/cert/ledger/index.vue'),
+                meta: {
+                    title: '证书台账',
+                    icon: 'Lock',
+                    certManageOnly: true,
+                },
+            },
+            {
+                path: '/certs/dashboard',
+                name: 'CertDashboard',
+                component: () => import('@/views/cert/dashboard/index.vue'),
+                meta: {
+                    title: '到期看板',
+                    icon: 'Bell',
+                },
+            },
+            {
+                path: '/certs/changes',
+                name: 'CertChanges',
+                component: () => import('@/views/cert/changes/index.vue'),
+                meta: {
+                    title: '变更管理',
+                    icon: 'Connection',
+                    certManageOnly: true,
+                },
+            },
+            {
+                path: '/certs/changes/new',
+                name: 'CertChangeWizard',
+                component: () => import('@/views/cert/changes/new/index.vue'),
+                meta: {
+                    title: '新建变更',
+                    icon: 'Edit',
+                    hideInMenu: true,
+                    certManageOnly: true,
+                },
+            },
+            {
+                path: '/certs/changes/:id',
+                name: 'CertChangeReport',
+                component: () => import('@/views/cert/changes/detail/index.vue'),
+                meta: {
+                    title: '变更报告',
+                    icon: 'Document',
+                    hideInMenu: true,
+                    certManageOnly: true,
+                },
+            },
+            {
+                path: '/certs/:id',
+                name: 'CertDetail',
+                component: () => import('@/views/cert/detail/index.vue'),
+                meta: {
+                    title: '证书详情',
+                    icon: 'Document',
+                    hideInMenu: true,
+                },
+            },
+            {
+                path: '/certs/settings',
+                name: 'CertSettings',
+                component: () => import('@/views/cert/settings/index.vue'),
+                meta: {
+                    title: '证书配置',
+                    icon: 'Setting',
+                    hideInMenu: true,
+                    certManageOnly: true,
+                },
+            },
         ],
     },
     {

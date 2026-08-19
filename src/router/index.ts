@@ -1,8 +1,14 @@
 import { redirectToLogin } from '@/api/request/index'
 import { useUserStore } from '@/stores/user'
 import { getEcmdbToken } from '@/utils/cookie'
+import {
+    CERT_VIEWER_BLOCKED_MESSAGE,
+    CERT_VIEWER_FALLBACK_PATH,
+    hasCertManageAccess,
+} from '@/utils/cert-permission'
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import routes from './routes'
 
 const router = createRouter({
@@ -59,6 +65,18 @@ router.beforeEach(
                 redirectToLogin()
                 return
             }
+        }
+
+        // 证书域只读角色拦截（任务 6.1）：只读查看者仅可访问 /certs/dashboard 与
+        // /certs/:id；台账/变更管理（含子路由）/配置直接访问时提示并回退到期看板。
+        // 前端拦截仅为体验层——接口由 EIAM 在后端同步拦截（Hard Rule：双侧拦截）。
+        if (to.meta.certManageOnly && !hasCertManageAccess({
+            isAdmin: userStore.isAdmin,
+            permissions: userStore.permissions,
+        })) {
+            ElMessage.warning(CERT_VIEWER_BLOCKED_MESSAGE)
+            next(CERT_VIEWER_FALLBACK_PATH)
+            return
         }
 
         next()
