@@ -344,7 +344,7 @@ const collapsed = ref<Set<string>>(new Set())
 
 // ===== 确认导入与进度轮询（任务 7） =====
 
-/** 导入会话（POST 202 初始快照起，轮询整体替换保持不可变更新��� */
+/** 导入会话（POST 202 初始快照起，轮询整体替换保持不可变更新） */
 const importSession = ref<DiscoveryImportSession | null>(null)
 /** 确认导入提交中（POST /discovery/import 在途窗口） */
 const importing = ref(false)
@@ -361,7 +361,7 @@ const triggering = ref(false)
 const scanStartedAtText = ref('')
 const scanFailReason = ref('')
 const scanFailures = ref<ScanChannelFailure[]>([])
-/** idle 态内联提示（空台账无法挂载既有触发端点等非错误堆栈信息��� */
+/** idle 态内联提示（空台账无法挂载既有触发端点等非错误堆栈信息） */
 const scanNotice = ref('')
 let statusTimer: ReturnType<typeof setInterval> | null = null
 let statusPollInFlight = false
@@ -630,7 +630,7 @@ function resetScanGuide() {
 }
 
 function onClosed() {
-    // 重开时 loadPreview 会整体重置；关闭即丢弃当前预览/导入态���快照时点数据
+    // 重开时 loadPreview 会整体重置；关闭即丢弃当前预览/导入态（快照时点数据
     // 不跨会话驻留；导入会话由服务端持久化，重开按最新台账口径重取预览）
     resetScanGuide()
     stopImportPolling()
