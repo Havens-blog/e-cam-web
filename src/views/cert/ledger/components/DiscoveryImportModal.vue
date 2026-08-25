@@ -19,19 +19,60 @@
       <div class="ds-loading-line" />
     </div>
 
-    <!-- 无 done 快照引导占位（任务 8 接管：触发扫描 → 轮询 snapshot-status → 重进预览） -->
+    <!-- 无 done 快照引导（任务 8：触发扫描 → 轮询 snapshot-status → done 重进预览 / failed 明细+重试） -->
     <div v-else-if="state === 'no-snapshot'" class="ds-state" data-testid="discovery-no-snapshot">
       <div class="ds-state-icon" aria-hidden="true">📡</div>
       <div class="ds-state-title">暂无可用的扫描快照</div>
       <div class="ds-state-desc">
-        云端发现导入基于最近一次完成的证书引用扫描结果生成清单。请先执行一次引用扫描并等待完成，再返回此处预览可导入证书。
+        云端发现导入基于最近一次完成的证书引用扫描结果生成清单，请先执行扫描并等待完成，再返回此处预览可导入证书。
       </div>
-      <div class="ds-state-hint">「触发扫描并进入预览」引导即将上线。</div>
-      <!-- 任务 8 引导流程触发点：将替换为触发扫描 + 轮询快照状态交互 -->
-      <el-button type="primary" disabled data-testid="discovery-trigger-scan-placeholder">
-        触发扫描并进入预览（即将上线）
-      </el-button>
-      <el-button data-testid="discovery-reload" @click="loadPreview">重新检查</el-button>
+
+      <!-- idle：触发前引导（进入分支时已查一次快照状态，非 running/failed 落在此态） -->
+      <template v-if="scanState === 'idle'">
+        <div v-if="scanNotice" class="ds-scan-notice" role="status" data-testid="discovery-scan-notice">
+          {{ scanNotice }}
+        </div>
+        <el-button
+          type="primary"
+          :loading="triggering"
+          data-testid="discovery-trigger-scan"
+          @click="triggerScan"
+        >
+          触发扫描并等待完成
+        </el-button>
+        <el-button data-testid="discovery-reload" :disabled="triggering" @click="loadPreview">重新检查</el-button>
+      </template>
+
+      <!-- running：扫描进行中（触发即转轮询，不依赖触发请求同步返回终态） -->
+      <div
+        v-else-if="scanState === 'running'"
+        class="ds-scan-running"
+        aria-live="polite"
+        data-testid="discovery-scan-running"
+      >
+        <div class="ds-scan-spinner" aria-hidden="true" />
+        <div class="ds-state-title">扫描进行中</div>
+        <div class="ds-state-desc">
+          正在五云与 K8s 上发现证书引用{{ scanStartedAtText ? `（开始于 ${scanStartedAtText}）` : '' }}，完成后将自动进入预览，无需手动刷新。
+        </div>
+      </div>
+
+      <!-- failed：partialFailures 明细 + 重试入口 -->
+      <div v-else class="ds-scan-failed" data-testid="discovery-scan-failed">
+        <div class="ds-state-title">扫描未完成</div>
+        <div class="ds-state-desc" data-testid="discovery-scan-failreason">
+          {{ scanFailReason || '上次扫描未生成可用快照。' }}
+        </div>
+        <ul v-if="scanFailures.length > 0" class="ds-failures" data-testid="discovery-scan-failures">
+          <li v-for="(f, i) in scanFailures" :key="i">{{ formatScanFailureEntry(f) }}</li>
+        </ul>
+        <div class="ds-scan-actions">
+          <el-button type="primary" :loading="triggering" data-testid="discovery-retry-scan" @click="triggerScan">
+            重试扫描
+          </el-button>
+          <el-button data-testid="discovery-reload" :disabled="triggering" @click="loadPreview">重新检查</el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 加载失败 -->
@@ -161,11 +202,14 @@
 
 <script setup lang="ts">
 /**
- * 从云端导入预览 Modal（cert-cloud-discovery-import 任务 6）。
+ * 从云端导入预览 Modal（cert-cloud-discovery-import 任务 6 + 任务 8 无快照引导）。
  *
  * 数据源：最近 done 扫描快照的纯 DB 聚合（GET /certs/discovery/preview），
- * 无 done 快照 → 409 NO_SNAPSHOT 进入引导占位分支（触发扫描/轮询引导在
- * 任务 8 接管，本组件暴露 data-testid 触发点与占位按钮）。
+ * 无 done 快照 → 409 NO_SNAPSHOT 进入引导分支（任务 8）：先查一次
+ * snapshot-status 区分「从未扫描→触发首次扫描 / running→轮询 / failed→
+ * partialFailures 明细+重试」，触发扫描沿用既有 POST /certs/:id/scan
+ * （同步至终态语义——不等待其响应体，触发即转 snapshot-status 轮询，
+ * 409 SCAN_IN_PROGRESS 防重与请求超时/中断均由轮询兜底）。
  * 交互：按云分组（组折叠承载大清单）、已在台账灰选不可勾、不可解析组
  * （华为云/AWS IAM-hosted）整组不可选并提示、默认全选未登记可选项、
  * 快照超 7 天显著提示建议重扫、未登记 notAfter 占位「—（导入后补全）」。
@@ -173,16 +217,23 @@
  * 确认导入与进度轮询在任务 7 接入（footer 触发点预留）。
  * 视图逻辑收敛在 ../discovery.ts 纯函数层（分组/判定/过期计算）。
  */
-import type { DiscoveryPreviewEntry, DiscoveryPreviewResponse } from '@/api/cert'
-import { getDiscoveryPreviewApi } from '@/api/cert'
+import type {
+    DiscoveryPreviewEntry,
+    DiscoveryPreviewResponse,
+    DiscoverySnapshotStatus,
+    ScanChannelFailure,
+} from '@/api/cert'
+import { getDiscoveryPreviewApi, getDiscoverySnapshotStatusApi, listCertsApi, triggerCertScanApi } from '@/api/cert'
 import { ElAlert, ElButton, ElCheckbox, ElDialog } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import {
     DISCOVERY_NOT_AFTER_PENDING,
+    DISCOVERY_SCAN_POLL_INTERVAL_MS,
     DISCOVERY_SNAPSHOT_STALE_DAYS,
     defaultSelection,
     discoveryEntryKey,
     formatNotAfter,
+    formatScanFailureEntry,
     formatSnapshotTime,
     groupPreviewEntries,
     groupSelectableKeys,
@@ -199,6 +250,9 @@ const NOT_AFTER_PENDING = DISCOVERY_NOT_AFTER_PENDING
 
 type ModalState = 'loading' | 'loaded' | 'no-snapshot' | 'error'
 
+/** 无快照引导子状态（进入分支时先查一次 snapshot-status 收敛到此态机） */
+type ScanGuideState = 'idle' | 'running' | 'failed'
+
 const visible = ref(false)
 const state = ref<ModalState>('loading')
 const errorMsg = ref('')
@@ -207,6 +261,19 @@ const preview = ref<DiscoveryPreviewResponse | null>(null)
 const selected = ref<Set<string>>(new Set())
 /** 折叠的分组 cloud 键集（默认全展开） */
 const collapsed = ref<Set<string>>(new Set())
+
+// ===== 无快照引导（任务 8） =====
+
+const scanState = ref<ScanGuideState>('idle')
+/** 触发中（解析触发入口 + 发出触发请求的短暂窗口；轮询期按钮退化为不可重复触发） */
+const triggering = ref(false)
+const scanStartedAtText = ref('')
+const scanFailReason = ref('')
+const scanFailures = ref<ScanChannelFailure[]>([])
+/** idle 态内联提示（空台账无法挂载既有触发端点等非错误堆栈信息��� */
+const scanNotice = ref('')
+let statusTimer: ReturnType<typeof setInterval> | null = null
+let statusPollInFlight = false
 
 const groups = computed(() => (preview.value ? groupPreviewEntries(preview.value.items) : []))
 const summary = computed(() => summarizePreview(preview.value?.items ?? []))
@@ -221,6 +288,7 @@ function open() {
 }
 
 async function loadPreview() {
+    resetScanGuide()
     state.value = 'loading'
     errorMsg.value = ''
     selected.value = new Set()
@@ -233,8 +301,9 @@ async function loadPreview() {
         state.value = 'loaded'
     } catch (err) {
         if (isNoSnapshotError(err)) {
-            // 409 NO_SNAPSHOT → 引导占位（任务 8 接管触发扫描/轮询流程）
+            // 409 NO_SNAPSHOT → 引导分支：先查一次快照状态收敛子状态
             state.value = 'no-snapshot'
+            void checkSnapshotStatus()
         } else {
             state.value = 'error'
             errorMsg.value = err instanceof Error ? err.message : '云端发现预览加载失败'
@@ -242,14 +311,157 @@ async function loadPreview() {
     }
 }
 
+/**
+ * 进入引导分支时的快照状态首查：区分「从未扫描（hasSnapshot=false）→
+ * 触发首次扫描」/「running → 直接轮询」/「failed → 明细+重试」/「done →
+ * 预览 409 与本次查询之间快照恰好完成（竞态）→ 重取预览」。
+ */
+async function checkSnapshotStatus() {
+    try {
+        const st = await getDiscoverySnapshotStatusApi()
+        if (state.value !== 'no-snapshot') return
+        applySnapshotStatus(st)
+    } catch {
+        /* 首查失败保持 idle 引导（触发按钮仍可用，触发后由轮询兜底） */
+    }
+}
+
+function applySnapshotStatus(st: DiscoverySnapshotStatus) {
+    if (!st.hasSnapshot || !st.status) {
+        scanState.value = 'idle'
+        return
+    }
+    if (st.status === 'running') {
+        enterRunning(st)
+        return
+    }
+    if (st.status === 'failed') {
+        enterFailed(st)
+        return
+    }
+    // done：竞态下快照刚完成 → 直接重取预览进入列表
+    void loadPreview()
+}
+
+/**
+ * 触发扫描（idle 引导按钮 / failed 重试共用）。既有 POST /certs/:id/scan 为
+ * 同步至终态语义——不等待其响应体（多账号规模下分钟级返回或被网关/浏览器
+ * 超时中断），触发即转 snapshot-status 轮询；409 SCAN_IN_PROGRESS（running
+ * 防重）与请求中断同样由轮询兜底。该端点需挂载一张台账证书（存在性校验
+ * 404），空台账时给出定时扫描提示（后端每日 02:00 天级全量扫描）。
+ */
+async function triggerScan() {
+    if (triggering.value || scanState.value === 'running') return
+    triggering.value = true
+    scanNotice.value = ''
+    try {
+        const res = await listCertsApi({ page: 1, pageSize: 1 })
+        const certId = res.items[0]?.id
+        if (!certId) {
+            scanNotice.value =
+                '台账暂无证书可挂载扫描触发：系统每日 02:00 定时执行全量扫描，可稍后重试，或先手工导入证书后再次触发。'
+            return
+        }
+        // fire-and-forget：不 await 响应体终态，立即进入轮询视图
+        void triggerCertScanApi(certId).catch(() => {
+            /* 触发请求失败/中断由轮询兜底（后端 running 防重 + 15 分钟超时恢复） */
+        })
+        enterRunning()
+    } catch {
+        scanNotice.value = '暂时无法触发扫描，请稍后重试。'
+    } finally {
+        triggering.value = false
+    }
+}
+
+/** 进入 running 子状态并启动 snapshot-status 轮询（幂等：重复调用先停旧定时器） */
+function enterRunning(st?: DiscoverySnapshotStatus) {
+    scanState.value = 'running'
+    scanNotice.value = ''
+    scanFailReason.value = ''
+    scanFailures.value = []
+    scanStartedAtText.value = st?.startedAt ? formatSnapshotTime(st.startedAt) : ''
+    startStatusPolling()
+}
+
+/** 进入 failed 子状态（partialFailures 明细 + failReason） */
+function enterFailed(st: Pick<DiscoverySnapshotStatus, 'failReason' | 'partialFailures'>) {
+    stopStatusPolling()
+    scanState.value = 'failed'
+    scanNotice.value = ''
+    scanFailReason.value = st.failReason ?? ''
+    scanFailures.value = [...st.partialFailures]
+}
+
+/**
+ * snapshot-status 轮询（与批量导入进度轮询同族：2s setInterval + in-flight
+ * 防重入 + 单次失败退避下个周期）。done → 停轮询并自动重取预览进入列表；
+ * failed → 停轮询进明细视图；hasSnapshot=false（快照被清理等漂移）→ 回 idle。
+ */
+function startStatusPolling() {
+    stopStatusPolling()
+    statusTimer = setInterval(async () => {
+        if (!visible.value || statusPollInFlight) return
+        statusPollInFlight = true
+        try {
+            const st = await getDiscoverySnapshotStatusApi()
+            if (state.value !== 'no-snapshot') return
+            if (!st.hasSnapshot || !st.status) {
+                // 快照消失（漂移）：回 idle 引导，等待用户重新触发
+                stopStatusPolling()
+                scanState.value = 'idle'
+                return
+            }
+            if (st.status === 'running') {
+                if (!scanStartedAtText.value && st.startedAt) {
+                    scanStartedAtText.value = formatSnapshotTime(st.startedAt)
+                }
+                return
+            }
+            stopStatusPolling()
+            if (st.status === 'done') {
+                // done → 自动拉取预览进入列表（AC：不依赖手动刷新）
+                await loadPreview()
+            } else {
+                enterFailed(st)
+            }
+        } catch {
+            /* 单次轮询失败退避到下个周期，不打断引导 */
+        } finally {
+            statusPollInFlight = false
+        }
+    }, DISCOVERY_SCAN_POLL_INTERVAL_MS)
+}
+
+function stopStatusPolling() {
+    if (statusTimer) clearInterval(statusTimer)
+    statusTimer = null
+    statusPollInFlight = false
+}
+
+/** 重置无快照引导子状态（重取预览 / 关闭 Modal 时；同时停轮询） */
+function resetScanGuide() {
+    stopStatusPolling()
+    scanState.value = 'idle'
+    triggering.value = false
+    scanStartedAtText.value = ''
+    scanFailReason.value = ''
+    scanFailures.value = []
+    scanNotice.value = ''
+}
+
 function onClosed() {
     // 重开时 loadPreview 会整体重置；关闭即丢弃当前预览态（快照时点数据不跨会话驻留）
+    resetScanGuide()
     preview.value = null
     selected.value = new Set()
     collapsed.value = new Set()
     state.value = 'loading'
     errorMsg.value = ''
 }
+
+// 组件卸载兜底停轮询（测试 unmount / 页面离开）
+onBeforeUnmount(stopStatusPolling)
 
 // ===== 分组折叠（大清单性能：分组折叠即可，无需虚拟滚动） =====
 
@@ -397,6 +609,83 @@ defineExpose({ open })
   font-size: 12px;
   color: var(--text-secondary);
   margin-bottom: 4px;
+}
+
+// ===== 无快照引导子状态（任务 8：触发前提示 / 扫描进行中 / 失败明细） =====
+.ds-scan-notice {
+  font-size: 12px;
+  color: var(--cert-warning-deep, #d98c0a);
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.ds-scan-running {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ds-scan-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-base);
+  border-top-color: var(--cert-accent, #0070f3);
+  animation: ds-scan-spin 0.8s linear infinite;
+  margin: 4px 0 2px;
+}
+
+@keyframes ds-scan-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-scan-spinner {
+    animation: none;
+  }
+}
+
+.ds-scan-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ds-failures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 180px;
+  overflow-y: auto;
+  text-align: left;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+
+  li {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 5px 10px;
+    line-height: 1.5;
+    word-break: break-all;
+
+    & + li {
+      border-top: 1px solid var(--border-subtle);
+    }
+  }
+}
+
+.ds-scan-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 // ===== 快照过期提示 =====

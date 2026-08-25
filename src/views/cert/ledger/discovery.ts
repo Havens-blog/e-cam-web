@@ -7,13 +7,20 @@
  * 契约对齐后端 internal/cert/web/discovery_handler.go 的 VO json tag。
  */
 
-import { CertRequestError, type DiscoveryPreviewEntry } from '@/api/cert'
+import { CertRequestError, type DiscoveryPreviewEntry, type ScanChannelFailure } from '@/api/cert'
 
 /** 未登记条目 notAfter 占位显示（与后端 DiscoveryNotAfterPending 文案一致；空值兜底同文案） */
 export const DISCOVERY_NOT_AFTER_PENDING = '—（导入后补全）'
 
 /** 快照新鲜度阈值（天）：snapshotStartedAt 距今超此值显著提示建议重扫（提案 Constraints） */
 export const DISCOVERY_SNAPSHOT_STALE_DAYS = 7
+
+/**
+ * 无快照引导的快照状态轮询间隔（ms）。与批量导入会话进度轮询同族
+ * （BatchImportModal 2000ms setInterval + in-flight 防重入 + 单次失败退避），
+ * 任务 7 发现导入进度轮询按实现注记与本配置保持同族。
+ */
+export const DISCOVERY_SCAN_POLL_INTERVAL_MS = 2000
 
 /** 无 done 快照错误码（预览 409 → 前端引导入口触发点，任务 8 接管引导流程） */
 export const DISCOVERY_ERR_NO_SNAPSHOT = 'NO_SNAPSHOT'
@@ -172,6 +179,17 @@ export function groupSelectableKeys(group: Pick<DiscoveryGroup, 'entries'>): str
 /** NO_SNAPSHOT 错误判定（预览 409 → 引导入口触发点） */
 export function isNoSnapshotError(err: unknown): boolean {
     return err instanceof CertRequestError && err.code === DISCOVERY_ERR_NO_SNAPSHOT
+}
+
+/**
+ * 扫描通道部分失败单条展示文案（failed 引导明细）：云 · 产品 · 账号：原因。
+ * 缺省字段（cloud/account）省略不占位，云展示名复用 cloudDisplayName。
+ */
+export function formatScanFailureEntry(f: ScanChannelFailure): string {
+    const where = [f.cloud ? cloudDisplayName(f.cloud) : '', f.product, f.account ?? '']
+        .filter((s) => s !== '')
+        .join(' · ')
+    return `${where}：${f.reason}`
 }
 
 function pad2(n: number): string {

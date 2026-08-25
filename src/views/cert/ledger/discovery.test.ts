@@ -4,11 +4,13 @@ import type { DiscoveryPreviewEntry } from '@/api/cert'
 import {
     DISCOVERY_ERR_NO_SNAPSHOT,
     DISCOVERY_NOT_AFTER_PENDING,
+    DISCOVERY_SCAN_POLL_INTERVAL_MS,
     DISCOVERY_SNAPSHOT_STALE_DAYS,
     cloudDisplayName,
     defaultSelection,
     discoveryEntryKey,
     formatNotAfter,
+    formatScanFailureEntry,
     formatSnapshotTime,
     groupPreviewEntries,
     groupSelectableKeys,
@@ -251,5 +253,28 @@ describe('isNoSnapshotError（NO_SNAPSHOT 错误码分支，AC4）', () => {
         expect(isNoSnapshotError(new CertRequestError('CERT_HAS_REFS', 'x'))).toBe(false)
         expect(isNoSnapshotError(new Error('Network Error'))).toBe(false)
         expect(isNoSnapshotError(undefined)).toBe(false)
+    })
+})
+
+// ==================== 任务 8：无快照引导轮询配置与失败明细格式化 ====================
+
+describe('无快照引导轮询配置（任务 8）', () => {
+    it('快照状态轮询间隔与批量导入进度轮询同族（2s）', () => {
+        expect(DISCOVERY_SCAN_POLL_INTERVAL_MS).toBe(2000)
+    })
+})
+
+describe('formatScanFailureEntry（failed 引导 partialFailures 明细文案，任务 8）', () => {
+    it('全字段：云展示名 · 产品 · 账号：原因', () => {
+        expect(formatScanFailureEntry({ cloud: 'aliyun', product: 'slb', account: 'acc-a', reason: '凭证失效' })).toBe(
+            '阿里云 · slb · acc-a：凭证失效',
+        )
+        expect(formatScanFailureEntry({ cloud: 'tencent', product: 'cdn', account: 'acc-t', reason: '权限不足' })).toBe(
+            '腾讯云 · cdn · acc-t：权限不足',
+        )
+    })
+    it('缺省字段省略不占位（无账号 / 无云；未知云原值）', () => {
+        expect(formatScanFailureEntry({ product: 'k8s', reason: '集群不可达' })).toBe('k8s：集群不可达')
+        expect(formatScanFailureEntry({ cloud: 'gcp', product: 'cdn', reason: 'x' })).toBe('gcp · cdn：x')
     })
 })

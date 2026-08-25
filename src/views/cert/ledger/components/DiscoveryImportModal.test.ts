@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 /**
- * DiscoveryImportModal 组件用例（cert-cloud-discovery-import 任务 6）。
+ * DiscoveryImportModal 组件用例（cert-cloud-discovery-import 任务 6 + 任务 8）。
  * 覆盖 AC：分组展示/灰选/不可选组提示/默认全选未登记（AC2）、
- * 快照超 7 天提示与 notAfter 占位（AC3）、NO_SNAPSHOT 引导占位触发点（AC4）、
- * 分组折叠（实现注记：分组折叠承载大清单）。
+ * 快照超 7 天提示与 notAfter 占位（AC3）、NO_SNAPSHOT 引导流程（任务 8）：
+ * 先执行扫描引导文案+触发按钮、触发即转 snapshot-status 轮询（不依赖触发
+ * 请求同步返回终态）、running→done 自动进预览、failed 展示 partialFailures
+ * 明细+重试入口、分组折叠（实现注记：分组折叠承载大清单）。
  * ElDialog 以渲染函数 stub 替身（规避 overlay 过渡/传送门不确定性），
  * 其余 Element Plus 组件用真实实现，交互断言落在原生 input 上。
  */
@@ -11,15 +13,29 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CertRequestError } from '@/api/cert'
-import { getDiscoveryPreviewApi } from '@/api/cert'
+import {
+    getDiscoveryPreviewApi,
+    getDiscoverySnapshotStatusApi,
+    listCertsApi,
+    triggerCertScanApi,
+} from '@/api/cert'
 import DiscoveryImportModal from './DiscoveryImportModal.vue'
 
 vi.mock('@/api/cert', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/api/cert')>()
-    return { ...actual, getDiscoveryPreviewApi: vi.fn() }
+    return {
+        ...actual,
+        getDiscoveryPreviewApi: vi.fn(),
+        getDiscoverySnapshotStatusApi: vi.fn(),
+        listCertsApi: vi.fn(),
+        triggerCertScanApi: vi.fn(),
+    }
 })
 
 const previewApi = vi.mocked(getDiscoveryPreviewApi)
+const statusApi = vi.mocked(getDiscoverySnapshotStatusApi)
+const listApi = vi.mocked(listCertsApi)
+const triggerApi = vi.mocked(triggerCertScanApi)
 
 /** ElDialog 替身：modelValue=true 时渲染三个 slot（header/default/footer） */
 const DialogStub = defineComponent({
@@ -109,8 +125,22 @@ function checkOf(rowEl: { find: (sel: string) => { element: Element } }) {
     return rowEl.find('input[type="checkbox"]').element as HTMLInputElement
 }
 
+/** 空态快照状态（hasSnapshot=false → idle 引导首查缺省返回值） */
+function noSnapshotStatus() {
+    return { hasSnapshot: false, partialFailures: [] }
+}
+
+/** 台账首条证书（触发端点挂载证书解析用，pageSize=1 轻量查询形态） */
+function oneCertList() {
+    return { items: [{ id: 'cert-mount-1' }], total: 1, page: 1, pageSize: 1 }
+}
+
 afterEach(() => {
     previewApi.mockReset()
+    statusApi.mockReset()
+    listApi.mockReset()
+    triggerApi.mockReset()
+    vi.useRealTimers()
 })
 
 // ==================== AC2：分组列表、灰选、不可选组、默认全选 ====================
@@ -222,27 +252,106 @@ describe('DiscoveryImportModal（快照时效与 notAfter 展示，AC3）', () =
     })
 })
 
-// ==================== AC4：NO_SNAPSHOT 引导占位触发点 ====================
+// ==================== 任务 8：NO_SNAPSHOT 引导流程（AC1-AC4） ====================
 
-describe('DiscoveryImportModal（NO_SNAPSHOT 分支，AC4）', () => {
-    it('预览 409 NO_SNAPSHOT → 引导占位视图 + 禁用的触发按钮（任务 8 触发点），非错误态', async () => {
+describe('DiscoveryImportModal（NO_SNAPSHOT 引导分支，任务 8）', () => {
+    /** 打开 Modal 并落入引导分支（预览 409 + 首查快照状态返回指定形态） */
+    async function openNoSnapshot(statusPayload: object) {
         previewApi.mockRejectedValueOnce(new CertRequestError('NO_SNAPSHOT', 'no done snapshot') as never)
+        statusApi.mockResolvedValueOnce(statusPayload as never)
         const wrapper = mount(DiscoveryImportModal, { global: { stubs: { ElDialog: DialogStub } } })
         ;(wrapper.vm as unknown as { open: () => void }).open()
         await flushPromises()
+        return wrapper
+    }
+
+    it('NO_SNAPSHOT → 「先执行扫描」引导（说明文案 + 可用触发按钮），不展示错误堆栈', async () => {
+        const wrapper = await openNoSnapshot(noSnapshotStatus())
         const branch = wrapper.find('[data-testid="discovery-no-snapshot"]')
         expect(branch.exists()).toBe(true)
         expect(branch.text()).toContain('暂无可用的扫描快照')
-        expect(branch.text()).toContain('引用扫描')
-        const trigger = wrapper.find('[data-testid="discovery-trigger-scan-placeholder"]')
+        expect(branch.text()).toContain('先执行扫描')
+        // 进入分支即首查一次快照状态（区分从未扫描/进行中/失败）
+        expect(statusApi).toHaveBeenCalledTimes(1)
+        // 触发按钮可用（任务 6 占位禁用态由任务 8 接管为真实引导）
+        const trigger = wrapper.find('[data-testid="discovery-trigger-scan"]')
         expect(trigger.exists()).toBe(true)
-        expect(trigger.attributes('disabled')).toBeDefined()
+        expect(trigger.attributes('disabled')).toBeUndefined()
+        // 非错误态（无错误堆栈/错误分支）
         expect(wrapper.find('[data-testid="discovery-error"]').exists()).toBe(false)
-        // 占位分支提供重新检查入口（重试预览）
+        expect(wrapper.find('[data-testid="discovery-scan-running"]').exists()).toBe(false)
+        expect(wrapper.find('[data-testid="discovery-scan-failed"]').exists()).toBe(false)
+    })
+
+    it('重新检查入口：重取预览成功后进入列表', async () => {
+        const wrapper = await openNoSnapshot(noSnapshotStatus())
         previewApi.mockResolvedValueOnce(makePreview() as never)
         await wrapper.find('[data-testid="discovery-reload"]').trigger('click')
         await flushPromises()
         expect(wrapper.find('[data-testid="discovery-group"]').exists()).toBe(true)
+    })
+
+    it('进入分支时快照已在 running → 直接进入进行中态并挂轮询（无需触发）', async () => {
+        vi.useFakeTimers()
+        const wrapper = await openNoSnapshot({
+            hasSnapshot: true,
+            snapshotId: 'snap-r1',
+            status: 'running',
+            startedAt: '2026-08-25T02:00:00Z',
+            partialFailures: [],
+        })
+        const running = wrapper.find('[data-testid="discovery-scan-running"]')
+        expect(running.exists()).toBe(true)
+        expect(running.text()).toContain('扫描进行中')
+        expect(running.text()).toContain('2026-08-25 02:00 UTC')
+        expect(running.text()).toContain('自动进入预览')
+        // 触发按钮不展示（已在进行中，防重复触发）
+        expect(wrapper.find('[data-testid="discovery-trigger-scan"]').exists()).toBe(false)
+        // 轮询已挂载：推进一个周期即再次查询状态
+        statusApi.mockResolvedValue({ hasSnapshot: true, status: 'running', partialFailures: [] } as never)
+        await vi.advanceTimersByTimeAsync(2000)
+        expect(statusApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('进入分支时上次扫描 failed → 展示 failReason + partialFailures 明细 + 重试入口', async () => {
+        const wrapper = await openNoSnapshot({
+            hasSnapshot: true,
+            snapshotId: 'snap-f1',
+            status: 'failed',
+            startedAt: '2026-08-25T01:00:00Z',
+            failReason: '全部扫描通道失败',
+            partialFailures: [
+                { cloud: 'aliyun', product: 'slb', account: 'acc-a', reason: '凭证失效' },
+                { cloud: 'tencent', product: 'cdn', reason: '权限不足' },
+            ],
+        })
+        const failed = wrapper.find('[data-testid="discovery-scan-failed"]')
+        expect(failed.exists()).toBe(true)
+        expect(failed.text()).toContain('扫描未完成')
+        expect(failed.find('[data-testid="discovery-scan-failreason"]').text()).toContain('全部扫描通道失败')
+        const items = failed.findAll('[data-testid="discovery-scan-failures"] li')
+        expect(items).toHaveLength(2)
+        expect(items[0]?.text()).toBe('阿里云 · slb · acc-a：凭证失效')
+        expect(items[1]?.text()).toBe('腾讯云 · cdn：权限不足')
+        expect(failed.find('[data-testid="discovery-retry-scan"]').exists()).toBe(true)
+    })
+
+    it('failed 重试 → 走触发路径（解析挂载证书 + fire-and-forget 触发 + 转轮询）', async () => {
+        vi.useFakeTimers()
+        const wrapper = await openNoSnapshot({
+            hasSnapshot: true,
+            status: 'failed',
+            failReason: 'x',
+            partialFailures: [{ product: 'k8s', reason: '集群不可达' }],
+        })
+        listApi.mockResolvedValueOnce(oneCertList() as never)
+        triggerApi.mockImplementation(() => new Promise(() => {}) as never)
+        statusApi.mockResolvedValue({ hasSnapshot: true, status: 'running', partialFailures: [] } as never)
+        await wrapper.find('[data-testid="discovery-retry-scan"]').trigger('click')
+        await flushPromises()
+        expect(listApi).toHaveBeenCalledWith({ page: 1, pageSize: 1 })
+        expect(triggerApi).toHaveBeenCalledWith('cert-mount-1')
+        expect(wrapper.find('[data-testid="discovery-scan-running"]').exists()).toBe(true)
     })
 
     it('其他错误 → 内联错误态展示 message（不误入引导分支）', async () => {
@@ -254,5 +363,104 @@ describe('DiscoveryImportModal（NO_SNAPSHOT 分支，AC4）', () => {
         expect(err.exists()).toBe(true)
         expect(err.text()).toContain('服务暂不可用')
         expect(wrapper.find('[data-testid="discovery-no-snapshot"]').exists()).toBe(false)
+    })
+})
+
+describe('DiscoveryImportModal（触发扫描与状态轮询收敛，任务 8）', () => {
+    /** 打开至 idle 引导并触发扫描（fire-and-forget：触发请求永不返回也不阻塞） */
+    async function openAndTrigger() {
+        vi.useFakeTimers()
+        previewApi.mockRejectedValueOnce(new CertRequestError('NO_SNAPSHOT', 'no done snapshot') as never)
+        statusApi.mockResolvedValueOnce(noSnapshotStatus() as never)
+        const wrapper = mount(DiscoveryImportModal, { global: { stubs: { ElDialog: DialogStub } } })
+        ;(wrapper.vm as unknown as { open: () => void }).open()
+        await flushPromises()
+        listApi.mockResolvedValueOnce(oneCertList() as never)
+        // 同步至终态语义：触发请求挂起（永不 resolve）也不得阻塞引导转轮询
+        triggerApi.mockImplementation(() => new Promise(() => {}) as never)
+        await wrapper.find('[data-testid="discovery-trigger-scan"]').trigger('click')
+        await flushPromises()
+        return wrapper
+    }
+
+    it('触发即转 running 轮询视图：不等待触发请求响应体（挂起 Promise 不阻塞）', async () => {
+        const wrapper = await openAndTrigger()
+        expect(triggerApi).toHaveBeenCalledTimes(1)
+        expect(triggerApi).toHaveBeenCalledWith('cert-mount-1')
+        expect(listApi).toHaveBeenCalledWith({ page: 1, pageSize: 1 })
+        // 预览未再次拉取（终态由轮询收敛，非触发请求）
+        expect(previewApi).toHaveBeenCalledTimes(1)
+        const running = wrapper.find('[data-testid="discovery-scan-running"]')
+        expect(running.exists()).toBe(true)
+        expect(running.text()).toContain('扫描进行中')
+    })
+
+    it('running → done 收敛：轮询到 done 停轮询并自动拉取预览进入列表', async () => {
+        const wrapper = await openAndTrigger()
+        statusApi.mockResolvedValueOnce({ hasSnapshot: true, status: 'running', partialFailures: [] } as never)
+        await vi.advanceTimersByTimeAsync(2000)
+        expect(wrapper.find('[data-testid="discovery-scan-running"]').exists()).toBe(true)
+        // done → 自动进预览（无需手动刷新）
+        statusApi.mockResolvedValueOnce({ hasSnapshot: true, status: 'done', partialFailures: [] } as never)
+        previewApi.mockResolvedValueOnce(makePreview() as never)
+        await vi.advanceTimersByTimeAsync(2000)
+        await flushPromises()
+        expect(previewApi).toHaveBeenCalledTimes(2)
+        expect(wrapper.find('[data-testid="discovery-group"]').exists()).toBe(true)
+        expect(wrapper.find('[data-testid="discovery-no-snapshot"]').exists()).toBe(false)
+        // 终态后停止轮询
+        const calls = statusApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(statusApi.mock.calls.length).toBe(calls)
+    })
+
+    it('running → failed 收敛：展示 partialFailures 明细 + 重试入口，并停止轮询', async () => {
+        const wrapper = await openAndTrigger()
+        statusApi.mockResolvedValueOnce({
+            hasSnapshot: true,
+            status: 'failed',
+            failReason: '多数通道失败',
+            partialFailures: [{ cloud: 'aws', product: 'acm', account: 'acc-w', reason: '限流' }],
+        } as never)
+        await vi.advanceTimersByTimeAsync(2000)
+        await flushPromises()
+        const failed = wrapper.find('[data-testid="discovery-scan-failed"]')
+        expect(failed.exists()).toBe(true)
+        expect(failed.text()).toContain('多数通道失败')
+        expect(failed.findAll('[data-testid="discovery-scan-failures"] li')).toHaveLength(1)
+        expect(failed.find('[data-testid="discovery-retry-scan"]').exists()).toBe(true)
+        const calls = statusApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(statusApi.mock.calls.length).toBe(calls)
+    })
+
+    it('空台账无法挂载既有触发端点：不调触发 API，内联提示定时扫描（非错误堆栈）', async () => {
+        vi.useFakeTimers()
+        previewApi.mockRejectedValueOnce(new CertRequestError('NO_SNAPSHOT', 'no done snapshot') as never)
+        statusApi.mockResolvedValueOnce(noSnapshotStatus() as never)
+        const wrapper = mount(DiscoveryImportModal, { global: { stubs: { ElDialog: DialogStub } } })
+        ;(wrapper.vm as unknown as { open: () => void }).open()
+        await flushPromises()
+        listApi.mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 1 } as never)
+        await wrapper.find('[data-testid="discovery-trigger-scan"]').trigger('click')
+        await flushPromises()
+        expect(triggerApi).not.toHaveBeenCalled()
+        const notice = wrapper.find('[data-testid="discovery-scan-notice"]')
+        expect(notice.exists()).toBe(true)
+        expect(notice.text()).toContain('每日 02:00')
+        // 保持 idle 引导态（未进入 running/failed，无错误堆栈）
+        expect(wrapper.find('[data-testid="discovery-trigger-scan"]').exists()).toBe(true)
+        expect(wrapper.find('[data-testid="discovery-scan-running"]').exists()).toBe(false)
+        expect(wrapper.find('[data-testid="discovery-error"]').exists()).toBe(false)
+    })
+
+    it('组件卸载停止轮询（不泄漏定时器）', async () => {
+        const wrapper = await openAndTrigger()
+        statusApi.mockResolvedValue({ hasSnapshot: true, status: 'running', partialFailures: [] } as never)
+        wrapper.unmount()
+        await vi.advanceTimersByTimeAsync(6000)
+        const calls = statusApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(statusApi.mock.calls.length).toBe(calls)
     })
 })
