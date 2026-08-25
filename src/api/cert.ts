@@ -621,6 +621,83 @@ export interface TestAlertResult {
     reason?: string
 }
 
+// ==================== 云端发现导入类型 ====================
+
+/** 发现预览可解析降级原因（parseable=false 不可选；deferred_parse 仍可选） */
+export type DiscoveryParseReason = 'deferred_parse' | 'unsupported_cloud' | 'iam_hosted'
+
+/** 发现预览唯一证书条目（七字段；cloud+accountKey+cloudCertId 三元组定位） */
+export interface DiscoveryPreviewEntry {
+    cloud: string
+    accountKey: string
+    cloudCertId: string
+    refCount: number
+    inLedger: boolean
+    /** 台账 RFC3339；未登记为占位文案「—（导入后补全）」（后端 DiscoveryNotAfterPending） */
+    notAfter: string
+    parseable: boolean
+    parseReason?: DiscoveryParseReason
+}
+
+/** 发现预览响应（snapshotStartedAt 供前端按超 7 天提示重扫） */
+export interface DiscoveryPreviewResponse {
+    snapshotId: string
+    snapshotStartedAt: string
+    count: number
+    items: DiscoveryPreviewEntry[]
+}
+
+/** 扫描通道部分失败记录（快照状态/failed 引导展示） */
+export interface ScanChannelFailure {
+    cloud?: string
+    product: string
+    account?: string
+    reason: string
+}
+
+/** 最近快照状态（引导轮询：running→done 进预览 / failed 展示 partialFailures） */
+export interface DiscoverySnapshotStatus {
+    hasSnapshot: boolean
+    snapshotId?: string
+    status?: 'running' | 'done' | 'failed'
+    startedAt?: string
+    failReason?: string
+    partialFailures: ScanChannelFailure[]
+}
+
+/** 发现导入请求条目（勾选项三元组） */
+export interface DiscoveryImportItemInput {
+    cloud: string
+    accountKey: string
+    cloudCertId: string
+}
+
+/** 发现导入单条目结果（pending→success/failed；失败记因不中断会话） */
+export type DiscoveryItemResult = 'pending' | 'success' | 'failed'
+
+/** 发现导入会话条目（三元组定位，区别于批量导入的 fileName 主键语义） */
+export interface DiscoveryImportItem {
+    cloud: string
+    accountKey: string
+    cloudCertId: string
+    result: DiscoveryItemResult
+    mappedCertId?: string
+    errorReason?: string
+}
+
+/** 发现导入会话状态（轮询终态 completed/partial_failed，对齐批量导入语义） */
+export type DiscoveryImportStatus = 'running' | 'completed' | 'partial_failed'
+
+/** 发现导入会话（POST 创建响应与进度 GET 同构） */
+export interface DiscoveryImportSession {
+    sessionId: string
+    status: DiscoveryImportStatus
+    items: DiscoveryImportItem[]
+    progress: { total: number; succeeded: number; failed: number }
+    createdAt: string
+    finishedAt?: string
+}
+
 /** 自定义 CRD 登记载荷 */
 export interface CrdRegistrationPayload {
     clusterId: string
@@ -730,6 +807,39 @@ export function reverseLookupCertsApi(domain: string) {
 export function triggerCertScanApi(id: string) {
     return unwrapCertEnvelope<TriggerScanResult>(
         certAxios.post<CertEnvelope<TriggerScanResult>>(`/certs/${id}/scan`)
+    )
+}
+
+// ==================== 云端发现导入 ====================
+
+/**
+ * 发现预览（GET /certs/discovery/preview）：基于最近 done 快照的唯一证书清单
+ * 纯 DB 聚合。无 done 快照 → 409 NO_SNAPSHOT（CertRequestError.code 分支引导）。
+ */
+export function getDiscoveryPreviewApi() {
+    return unwrapCertEnvelope<DiscoveryPreviewResponse>(
+        certAxios.get<CertEnvelope<DiscoveryPreviewResponse>>('/certs/discovery/preview')
+    )
+}
+
+/** 最近快照状态（GET /certs/discovery/snapshot-status；无快照引导轮询数据源） */
+export function getDiscoverySnapshotStatusApi() {
+    return unwrapCertEnvelope<DiscoverySnapshotStatus>(
+        certAxios.get<CertEnvelope<DiscoverySnapshotStatus>>('/certs/discovery/snapshot-status')
+    )
+}
+
+/** 创建发现导入会话（勾选条目三元组异步逐条导入；会话先持久化再执行） */
+export function startDiscoveryImportApi(items: DiscoveryImportItemInput[]) {
+    return unwrapCertEnvelope<DiscoveryImportSession>(
+        certAxios.post<CertEnvelope<DiscoveryImportSession>>('/certs/discovery/import', { items })
+    )
+}
+
+/** 发现导入会话进度轮询（终态 completed/partial_failed） */
+export function getDiscoveryImportApi(sessionId: string) {
+    return unwrapCertEnvelope<DiscoveryImportSession>(
+        certAxios.get<CertEnvelope<DiscoveryImportSession>>(`/certs/discovery/import/${sessionId}`)
     )
 }
 

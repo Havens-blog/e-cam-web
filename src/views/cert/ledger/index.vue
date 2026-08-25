@@ -3,6 +3,7 @@
     <div class="page-header">
       <h1 id="cert-ledger-title" class="page-title">证书台账</h1>
       <div class="page-actions">
+        <el-button @click="discoveryModal?.open()">从云端导入</el-button>
         <el-button @click="batchModal?.open()">批量导入</el-button>
         <el-button type="primary" @click="importModal?.open()">导入证书</el-button>
       </div>
@@ -20,13 +21,16 @@
         <div v-else class="loading-placeholder" aria-label="加载中" />
       </template>
 
-      <!-- Empty：空态引导批量导入 -->
+      <!-- Empty：空态引导（从云端导入存量证书优先 + 批量上传兜底） -->
       <div v-else-if="pageState === 'empty'" class="state-card">
         <div class="empty-state">
           <div class="state-icon" aria-hidden="true">🔐</div>
           <div class="state-title">暂无证书</div>
-          <div class="state-desc">尚未导入任何证书，可批量导入存量证书完成首次登记。</div>
-          <el-button type="primary" class="state-cta" @click="batchModal?.open()">批量导入存量证书</el-button>
+          <div class="state-desc">尚未导入任何证书，可从云端发现并导入存量证书，或批量上传 PEM 文件完成首次登记。</div>
+          <div class="state-cta-group">
+            <el-button type="primary" class="state-cta" @click="discoveryModal?.open()">从云端导入存量证书</el-button>
+            <el-button class="state-cta" @click="batchModal?.open()">批量上传 PEM 文件</el-button>
+          </div>
         </div>
       </div>
 
@@ -65,6 +69,8 @@
     <ImportCertModal ref="importModal" @imported="onImported" />
     <BatchImportModal ref="batchModal" @completed="refreshAll" />
     <UploadKeyModal ref="keyModal" @upgraded="refreshAll" />
+    <!-- 从云端导入：预览/勾选在 DiscoveryImportModal（独立组件，任务 6）；导入进度与完成刷新在任务 7 接入 -->
+    <DiscoveryImportModal ref="discoveryModal" />
 
     <!-- 删除拦截 Modal：仅说明原因（N 个引用 / 保护期至 X 日），无删除按钮 -->
     <el-dialog
@@ -141,6 +147,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BatchImportModal from './components/BatchImportModal.vue'
 import CertTable from './components/CertTable.vue'
+import DiscoveryImportModal from './components/DiscoveryImportModal.vue'
 import ImportCertModal from './components/ImportCertModal.vue'
 import StatsCards from './components/StatsCards.vue'
 import UploadKeyModal from './components/UploadKeyModal.vue'
@@ -164,6 +171,7 @@ const skeletonVisible = ref(false)
 const importModal = ref<InstanceType<typeof ImportCertModal> | null>(null)
 const batchModal = ref<InstanceType<typeof BatchImportModal> | null>(null)
 const keyModal = ref<InstanceType<typeof UploadKeyModal> | null>(null)
+const discoveryModal = ref<InstanceType<typeof DiscoveryImportModal> | null>(null)
 
 const deleteIntercept = reactive({ visible: false, summary: '' })
 const deleteConfirm = reactive({ visible: false, row: null as CertListItem | null, deleting: false })
@@ -486,6 +494,14 @@ onUnmounted(() => {
 
 .state-cta {
   margin-top: 8px;
+}
+
+.state-cta-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 // ===== 删除拦截 / 二次确认横幅 =====
