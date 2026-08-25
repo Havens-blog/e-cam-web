@@ -7,7 +7,14 @@
  * 契约对齐后端 internal/cert/web/discovery_handler.go 的 VO json tag。
  */
 
-import { CertRequestError, type DiscoveryPreviewEntry, type ScanChannelFailure } from '@/api/cert'
+import {
+    CertRequestError,
+    type DiscoveryImportSession,
+    type DiscoveryImportStatus,
+    type DiscoveryItemResult,
+    type DiscoveryPreviewEntry,
+    type ScanChannelFailure,
+} from '@/api/cert'
 
 /** 未登记条目 notAfter 占位显示（与后端 DiscoveryNotAfterPending 文案一致；空值兜底同文案） */
 export const DISCOVERY_NOT_AFTER_PENDING = '—（导入后补全）'
@@ -21,6 +28,12 @@ export const DISCOVERY_SNAPSHOT_STALE_DAYS = 7
  * 任务 7 发现导入进度轮询按实现注记与本配置保持同族。
  */
 export const DISCOVERY_SCAN_POLL_INTERVAL_MS = 2000
+
+/**
+ * 发现导入会话进度轮询间隔（ms）。与批量导入会话进度轮询一致（AC：
+ * 间隔与批量导入一致，BatchImportModal 2000ms 同族交互模式，不改其内部）。
+ */
+export const DISCOVERY_IMPORT_POLL_INTERVAL_MS = 2000
 
 /** 无 done 快照错误码（预览 409 → 前端引导入口触发点，任务 8 接管引导流程） */
 export const DISCOVERY_ERR_NO_SNAPSHOT = 'NO_SNAPSHOT'
@@ -194,4 +207,44 @@ export function formatScanFailureEntry(f: ScanChannelFailure): string {
 
 function pad2(n: number): string {
     return n < 10 ? `0${n}` : String(n)
+}
+
+// ==================== 任务 7：导入会话进度纯逻辑 ====================
+
+/**
+ * 发现导入会话终态判定。后端 status 口径 running → completed/partial_failed
+ * （对齐批量导入 isBatchTerminal 语义，供进度轮询停止与完成事件触发判断）。
+ */
+export function isDiscoveryImportTerminal(status: DiscoveryImportStatus): boolean {
+    return status === 'completed' || status === 'partial_failed'
+}
+
+/**
+ * 导入会话进度计数派生。服务端 progress 为 {total, succeeded, failed}
+ * 权威口径；done = succeeded + failed，pending = total - done（钳非负）。
+ */
+export interface DiscoveryImportSummary {
+    total: number
+    done: number
+    succeeded: number
+    failed: number
+    pending: number
+}
+
+export function summarizeImportSession(s: Pick<DiscoveryImportSession, 'progress'>): DiscoveryImportSummary {
+    const { total, succeeded, failed } = s.progress
+    const done = succeeded + failed
+    return { total, done, succeeded, failed, pending: Math.max(0, total - done) }
+}
+
+/** 逐条结果徽章元数据（pending 待处理 / success 已登记 / failed 失败） */
+export interface DiscoveryItemResultMeta {
+    label: string
+    tone: 'accent' | 'secondary' | 'error'
+}
+
+export function discoveryItemResultMeta(result: DiscoveryItemResult): DiscoveryItemResultMeta {
+    if (result === 'success') return { label: '已登记', tone: 'accent' }
+    if (result === 'failed') return { label: '失败', tone: 'error' }
+    return { label: '待处理', tone: 'secondary' }
 }

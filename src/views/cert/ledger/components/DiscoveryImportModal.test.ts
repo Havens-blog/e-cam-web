@@ -14,11 +14,14 @@ import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CertRequestError } from '@/api/cert'
 import {
+    getDiscoveryImportApi,
     getDiscoveryPreviewApi,
     getDiscoverySnapshotStatusApi,
     listCertsApi,
+    startDiscoveryImportApi,
     triggerCertScanApi,
 } from '@/api/cert'
+import type { DiscoveryImportItem, DiscoveryImportSession } from '@/api/cert'
 import DiscoveryImportModal from './DiscoveryImportModal.vue'
 
 vi.mock('@/api/cert', async (importOriginal) => {
@@ -29,6 +32,8 @@ vi.mock('@/api/cert', async (importOriginal) => {
         getDiscoverySnapshotStatusApi: vi.fn(),
         listCertsApi: vi.fn(),
         triggerCertScanApi: vi.fn(),
+        startDiscoveryImportApi: vi.fn(),
+        getDiscoveryImportApi: vi.fn(),
     }
 })
 
@@ -36,6 +41,8 @@ const previewApi = vi.mocked(getDiscoveryPreviewApi)
 const statusApi = vi.mocked(getDiscoverySnapshotStatusApi)
 const listApi = vi.mocked(listCertsApi)
 const triggerApi = vi.mocked(triggerCertScanApi)
+const startImportApi = vi.mocked(startDiscoveryImportApi)
+const importApi = vi.mocked(getDiscoveryImportApi)
 
 /** ElDialog 替身：modelValue=true 时渲染三个 slot（header/default/footer） */
 const DialogStub = defineComponent({
@@ -140,6 +147,8 @@ afterEach(() => {
     statusApi.mockReset()
     listApi.mockReset()
     triggerApi.mockReset()
+    startImportApi.mockReset()
+    importApi.mockReset()
     vi.useRealTimers()
 })
 
@@ -462,5 +471,210 @@ describe('DiscoveryImportModal（触发扫描与状态轮询收敛，任务 8）
         const calls = statusApi.mock.calls.length
         await vi.advanceTimersByTimeAsync(6000)
         expect(statusApi.mock.calls.length).toBe(calls)
+    })
+})
+
+// ==================== 任务 7：确认导入与进度轮询收敛 ====================
+
+describe('DiscoveryImportModal（确认导入与进度轮询收敛，任务 7）', () => {
+    /** 发现导入会话条目（三元组 + 结果） */
+    function importItem(p: {
+        cloud: string
+        cloudCertId: string
+        accountKey?: string
+        result: DiscoveryImportItem['result']
+        mappedCertId?: string
+        errorReason?: string
+    }): DiscoveryImportItem {
+        return {
+            cloud: p.cloud,
+            accountKey: p.accountKey ?? 'acc-1',
+            cloudCertId: p.cloudCertId,
+            result: p.result,
+            ...(p.mappedCertId ? { mappedCertId: p.mappedCertId } : {}),
+            ...(p.errorReason ? { errorReason: p.errorReason } : {}),
+        }
+    }
+
+    /** 会话夹具（POST 202 初始快照 / 轮询响应同构） */
+    function makeSession(p: {
+        status: DiscoveryImportSession['status']
+        items: DiscoveryImportItem[]
+        succeeded: number
+        failed: number
+        sessionId?: string
+        finishedAt?: string
+    }): DiscoveryImportSession {
+        return {
+            sessionId: p.sessionId ?? 'ds-1',
+            status: p.status,
+            items: p.items,
+            progress: { total: p.items.length, succeeded: p.succeeded, failed: p.failed },
+            createdAt: '2026-08-25T10:00:00Z',
+            ...(p.finishedAt ? { finishedAt: p.finishedAt } : {}),
+        }
+    }
+
+    /** 默认勾选两条（cert-new-1 + tx-defer）的 202 初始快照（全 pending） */
+    function initialSession(): DiscoveryImportSession {
+        return makeSession({
+            status: 'running',
+            items: [
+                importItem({ cloud: 'aliyun', cloudCertId: 'cert-new-1', accountKey: 'acc-a', result: 'pending' }),
+                importItem({ cloud: 'tencent', cloudCertId: 'tx-defer', accountKey: 'acc-t', result: 'pending' }),
+            ],
+            succeeded: 0,
+            failed: 0,
+        })
+    }
+
+    /** 打开预览（默认勾选 2 条）并点击确认导入（POST 已 mock） */
+    async function openAndConfirm(postResponse: DiscoveryImportSession = initialSession()) {
+        vi.useFakeTimers()
+        const wrapper = await openWith(makePreview())
+        startImportApi.mockResolvedValueOnce(postResponse as never)
+        await wrapper.find('[data-testid="discovery-import-submit"]').trigger('click')
+        await flushPromises()
+        return wrapper
+    }
+
+    it('确认导入：以勾选三元组 POST 创建会话，切换进度视图并按批量导入同族间隔（2s）轮询', async () => {
+        const wrapper = await openAndConfirm()
+        // POST 载荷 = 默认勾选的两条（预览序，已在台账/不可选组不含）
+        expect(startImportApi).toHaveBeenCalledTimes(1)
+        expect(startImportApi).toHaveBeenCalledWith([
+            { cloud: 'aliyun', accountKey: 'acc-a', cloudCertId: 'cert-new-1' },
+            { cloud: 'tencent', accountKey: 'acc-t', cloudCertId: 'tx-defer' },
+        ])
+        // 切换进度视图（预览清单不再渲染）
+        const progress = wrapper.find('[data-testid="discovery-import-progress"]')
+        expect(progress.exists()).toBe(true)
+        expect(wrapper.find('[data-testid="discovery-group"]').exists()).toBe(false)
+        // 进度计数展示（running 初始 0/2）
+        expect(progress.find('[data-testid="discovery-import-progress-text"]').text()).toContain('0/2')
+        // 轮询未即时触发；推一个周期（2000ms）即 GET 会话进度
+        expect(importApi).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(2000)
+        expect(importApi).toHaveBeenCalledTimes(1)
+        expect(importApi).toHaveBeenCalledWith('ds-1')
+    })
+
+    it('running → completed 收敛：逐条结果与计数可见，终态停止轮询并触发完成事件（台账刷新）', async () => {
+        const wrapper = await openAndConfirm()
+        // 第一轮：部分完成（1 成功 1 待处理）
+        importApi.mockResolvedValueOnce(
+            makeSession({
+                status: 'running',
+                items: [
+                    importItem({ cloud: 'aliyun', cloudCertId: 'cert-new-1', accountKey: 'acc-a', result: 'success', mappedCertId: 'cert-ledger-1' }),
+                    importItem({ cloud: 'tencent', cloudCertId: 'tx-defer', accountKey: 'acc-t', result: 'pending' }),
+                ],
+                succeeded: 1,
+                failed: 0,
+            }) as never,
+        )
+        await vi.advanceTimersByTimeAsync(2000)
+        expect(wrapper.find('[data-testid="discovery-import-progress-text"]').text()).toContain('成功 1')
+        // 第二轮：completed 全部登记
+        importApi.mockResolvedValueOnce(
+            makeSession({
+                status: 'completed',
+                items: [
+                    importItem({ cloud: 'aliyun', cloudCertId: 'cert-new-1', accountKey: 'acc-a', result: 'success', mappedCertId: 'cert-ledger-1' }),
+                    importItem({ cloud: 'tencent', cloudCertId: 'tx-defer', accountKey: 'acc-t', result: 'success', mappedCertId: 'cert-ledger-2' }),
+                ],
+                succeeded: 2,
+                failed: 0,
+                finishedAt: '2026-08-25T10:01:00Z',
+            }) as never,
+        )
+        await vi.advanceTimersByTimeAsync(2000)
+        await flushPromises()
+        // 终态摘要与逐条结果（成功徽章 + 台账证书 ID）
+        const summary = wrapper.find('[data-testid="discovery-import-summary"]')
+        expect(summary.text()).toContain('全部完成')
+        expect(summary.text()).toContain('成功 2 / 失败 0')
+        const items = wrapper.findAll('[data-testid="discovery-import-item"]')
+        expect(items).toHaveLength(2)
+        expect(items[0]?.text()).toContain('已登记')
+        expect(items[0]?.text()).toContain('cert-ledger-1')
+        // footer 出现「完成」入口
+        expect(wrapper.text()).toContain('完成')
+        // 终态停止轮询
+        const calls = importApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(importApi.mock.calls.length).toBe(calls)
+        // 完成事件已触发（父级刷新台账列表）
+        expect(wrapper.emitted('completed')).toHaveLength(1)
+    })
+
+    it('running → partial_failed 收敛：逐条失败原因（errorReason）可见，停止轮询并触发完成事件', async () => {
+        const wrapper = await openAndConfirm()
+        importApi.mockResolvedValueOnce(
+            makeSession({
+                status: 'partial_failed',
+                items: [
+                    importItem({ cloud: 'aliyun', cloudCertId: 'cert-new-1', accountKey: 'acc-a', result: 'success', mappedCertId: 'cert-ledger-1' }),
+                    importItem({ cloud: 'tencent', cloudCertId: 'tx-defer', accountKey: 'acc-t', result: 'failed', errorReason: '云侧已不存在' }),
+                ],
+                succeeded: 1,
+                failed: 1,
+                finishedAt: '2026-08-25T10:01:00Z',
+            }) as never,
+        )
+        await vi.advanceTimersByTimeAsync(2000)
+        await flushPromises()
+        // 终态摘要：部分失败 + 计数
+        const summary = wrapper.find('[data-testid="discovery-import-summary"]')
+        expect(summary.text()).toContain('部分失败')
+        expect(summary.text()).toContain('成功 1 / 失败 1')
+        // 逐条失败原因可见（errorReason 就地展示于失败行）
+        const errors = wrapper.findAll('[data-testid="discovery-import-item-error"]')
+        expect(errors).toHaveLength(1)
+        expect(errors[0]?.text()).toBe('云侧已不存在')
+        const items = wrapper.findAll('[data-testid="discovery-import-item"]')
+        expect(items[1]?.text()).toContain('失败')
+        // 终态停止轮询 + 完成事件（成功条目登记仍需列表刷新可见）
+        const calls = importApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(importApi.mock.calls.length).toBe(calls)
+        expect(wrapper.emitted('completed')).toHaveLength(1)
+    })
+
+    it('空选择禁用提交按钮（不发起 POST）', async () => {
+        const wrapper = await openWith(makePreview())
+        // 取消仅有的两条勾选 → 导入所选（0 张）禁用
+        await rowBy(wrapper, 'cert-new-1').find('input[type="checkbox"]').setValue(false)
+        await rowBy(wrapper, 'tx-defer').find('input[type="checkbox"]').setValue(false)
+        const submit = wrapper.find('[data-testid="discovery-import-submit"]')
+        expect(submit.attributes('disabled')).toBeDefined()
+        expect(wrapper.text()).toContain('导入所选（0 张）')
+        await submit.trigger('click')
+        await flushPromises()
+        expect(startImportApi).not.toHaveBeenCalled()
+        // 仍停留在预览视图
+        expect(wrapper.find('[data-testid="discovery-group"]').exists()).toBe(true)
+    })
+
+    it('POST 失败：留在预览视图并 Toast 错误（会话未创建，可重试）', async () => {
+        const wrapper = await openWith(makePreview())
+        startImportApi.mockRejectedValueOnce(new Error('导入会话创建失败') as never)
+        await wrapper.find('[data-testid="discovery-import-submit"]').trigger('click')
+        await flushPromises()
+        expect(startImportApi).toHaveBeenCalledTimes(1)
+        // 未切换进度视图（预览仍在），无轮询
+        expect(wrapper.find('[data-testid="discovery-group"]').exists()).toBe(true)
+        expect(wrapper.find('[data-testid="discovery-import-progress"]').exists()).toBe(false)
+        expect(importApi).not.toHaveBeenCalled()
+    })
+
+    it('组件卸载停止导入轮询（不泄漏定时器）', async () => {
+        const wrapper = await openAndConfirm()
+        importApi.mockResolvedValue(initialSession() as never)
+        wrapper.unmount()
+        await vi.advanceTimersByTimeAsync(6000)
+        const calls = importApi.mock.calls.length
+        await vi.advanceTimersByTimeAsync(6000)
+        expect(importApi.mock.calls.length).toBe(calls)
     })
 })

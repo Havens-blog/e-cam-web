@@ -69,8 +69,8 @@
     <ImportCertModal ref="importModal" @imported="onImported" />
     <BatchImportModal ref="batchModal" @completed="refreshAll" />
     <UploadKeyModal ref="keyModal" @upgraded="refreshAll" />
-    <!-- 从云端导入：预览/勾选在 DiscoveryImportModal（独立组件，任务 6）；导入进度与完成刷新在任务 7 接入 -->
-    <DiscoveryImportModal ref="discoveryModal" />
+    <!-- 从云端导入（独立组件）：预览/勾选/引导（任务 6/8）+ 导入进度轮询（任务 7）；终态完成即刷新台账（新增登记项立即可见） -->
+    <DiscoveryImportModal ref="discoveryModal" @completed="refreshAll" />
 
     <!-- 删除拦截 Modal：仅说明原因（N 个引用 / 保护期至 X 日），无删除按钮 -->
     <el-dialog

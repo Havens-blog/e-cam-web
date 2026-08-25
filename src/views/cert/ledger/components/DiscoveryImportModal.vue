@@ -83,6 +83,49 @@
       <el-button @click="loadPreview">重试</el-button>
     </div>
 
+    <!-- 导入进度（任务 7：确认后切换；进度计数 + 逐条结果 + 终态失败原因可见） -->
+    <div v-else-if="state === 'importing'" class="ds-import" data-testid="discovery-import-progress">
+      <template v-if="importRunning">
+        <el-progress :percentage="importPercent" :stroke-width="8" :show-text="false" aria-label="云端发现导入进度" />
+        <div class="ds-import-progresstext" data-testid="discovery-import-progress-text" aria-live="polite">
+          导入中：{{ importSummary.done }}/{{ importSummary.total }} · 成功 {{ importSummary.succeeded }} · 失败
+          {{ importSummary.failed }}
+        </div>
+      </template>
+      <div v-else class="ds-import-summary" aria-live="polite" data-testid="discovery-import-summary">
+        <span v-if="importStatus === 'completed'" class="ds-import-flag ds-import-flag-ok">✓ 全部完成</span>
+        <span v-else class="ds-import-flag ds-import-flag-err">✗ 部分失败</span>
+        <span class="ds-import-meta">成功 {{ importSummary.succeeded }} / 失败 {{ importSummary.failed }}</span>
+      </div>
+
+      <div class="ds-import-list">
+        <div
+          v-for="it in importItems"
+          :key="discoveryEntryKey(it)"
+          class="ds-import-row"
+          :class="{ 'ds-import-row-muted': it.result === 'pending' }"
+          data-testid="discovery-import-item"
+        >
+          <span class="ds-cert-id" :title="it.cloudCertId">{{ it.cloudCertId }}</span>
+          <span class="ds-account">{{ cloudDisplayName(it.cloud) }} · {{ it.accountKey }}</span>
+          <span class="ds-tag" :class="`ds-import-tone-${discoveryItemResultMeta(it.result).tone}`">
+            {{ discoveryItemResultMeta(it.result).label }}
+          </span>
+          <span v-if="it.result === 'success' && it.mappedCertId" class="ds-import-note">{{ it.mappedCertId }}</span>
+          <span
+            v-else-if="it.errorReason"
+            class="ds-import-note ds-import-note-error"
+            data-testid="discovery-import-item-error"
+          >
+            {{ it.errorReason }}
+          </span>
+        </div>
+      </div>
+      <p v-if="!importRunning && importSummary.failed > 0" class="ds-import-hint">
+        失败条目不中断会话；可重新打开预览仅重跑剩余项（已在台账项自动跳过，幂等）。
+      </p>
+    </div>
+
     <!-- 预览清单 -->
     <template v-else-if="state === 'loaded'">
       <el-alert
@@ -186,23 +229,33 @@
     </template>
 
     <template #footer>
-      <el-button :disabled="state === 'loading'" @click="visible = false">关闭</el-button>
-      <!-- 任务 7 接入点：确认后 POST /discovery/import 并切换进度视图轮询 -->
-      <el-button
-        type="primary"
-        :disabled="true"
-        :title="'导入所选（' + selectedCount + ' 张）：确认导入交互即将上线'"
-        data-testid="discovery-import-submit"
-      >
-        导入所选（{{ selectedCount }} 张）
-      </el-button>
+      <!-- 进度视图：running 期间仍可关闭（会话服务端持久化，浏览器中断不丢结果；重开预览即最新台账口径） -->
+      <template v-if="state === 'importing'">
+        <el-button @click="visible = false">关闭</el-button>
+        <el-button v-if="importRunning" type="primary" disabled>导入中…</el-button>
+        <el-button v-else type="primary" @click="visible = false">完成</el-button>
+      </template>
+      <template v-else>
+        <el-button :disabled="state === 'loading' || importing" @click="visible = false">关闭</el-button>
+        <!-- 确认导入：POST /discovery/import → 切换进度视图轮询（任务 7） -->
+        <el-button
+          type="primary"
+          :loading="importing"
+          :disabled="selectedCount === 0"
+          data-testid="discovery-import-submit"
+          @click="onConfirmImport"
+        >
+          导入所选（{{ selectedCount }} 张）
+        </el-button>
+      </template>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
 /**
- * 从云端导入预览 Modal（cert-cloud-discovery-import 任务 6 + 任务 8 无快照引导）。
+ * 从云端导入预览 Modal（cert-cloud-discovery-import 任务 6 + 任务 8 无快照引导 +
+ * 任务 7 确认导入与进度轮询）。
  *
  * 数据源：最近 done 扫描快照的纯 DB 聚合（GET /certs/discovery/preview），
  * 无 done 快照 → 409 NO_SNAPSHOT 进入引导分支（任务 8）：先查一次
@@ -213,34 +266,56 @@
  * 交互：按云分组（组折叠承载大清单）、已在台账灰选不可勾、不可解析组
  * （华为云/AWS IAM-hosted）整组不可选并提示、默认全选未登记可选项、
  * 快照超 7 天显著提示建议重扫、未登记 notAfter 占位「—（导入后补全）」。
- * 独立新组件：不修改 BatchImportModal/进度组件内部实现（Hard Rule）；
- * 确认导入与进度轮询在任务 7 接入（footer 触发点预留）。
- * 视图逻辑收敛在 ../discovery.ts 纯函数层（分组/判定/过期计算）。
+ * 确认导入（任务 7）：勾选三元组 POST /discovery/import（202 初始快照）→
+ * 切换进度视图按批量导入同族间隔（2s setInterval + in-flight 防重入 + 单次
+ * 失败退避）轮询 GET 会话进度直至终态（completed/partial_failed），进度计数
+ * 与逐条结果/失败原因（errorReason）可见；终态停轮询并 emit completed 供
+ * 父级刷新台账列表（新增登记项立即可见）。浏览器中断不丢结果（会话服务端
+ * 持久化）：running 期关闭仅停本地轮询，不做复杂恢复 UI（重开预览即最新
+ * 台账口径，重跑入口保留、幂等）。
+ * 独立新组件：不修改 BatchImportModal/进度组件内部实现（Hard Rule）。
+ * 视图逻辑收敛在 ../discovery.ts 纯函数层（分组/判定/过期计算/进度派生）。
  */
 import type {
+    DiscoveryImportItem,
+    DiscoveryImportSession,
+    DiscoveryImportStatus,
     DiscoveryPreviewEntry,
     DiscoveryPreviewResponse,
     DiscoverySnapshotStatus,
     ScanChannelFailure,
 } from '@/api/cert'
-import { getDiscoveryPreviewApi, getDiscoverySnapshotStatusApi, listCertsApi, triggerCertScanApi } from '@/api/cert'
-import { ElAlert, ElButton, ElCheckbox, ElDialog } from 'element-plus'
-import { computed, onBeforeUnmount, ref } from 'vue'
 import {
+    getDiscoveryImportApi,
+    getDiscoveryPreviewApi,
+    getDiscoverySnapshotStatusApi,
+    listCertsApi,
+    startDiscoveryImportApi,
+    triggerCertScanApi,
+} from '@/api/cert'
+import { ElAlert, ElButton, ElCheckbox, ElDialog, ElMessage, ElProgress } from 'element-plus'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { batchProgressPercent } from '../format'
+import {
+    DISCOVERY_IMPORT_POLL_INTERVAL_MS,
     DISCOVERY_NOT_AFTER_PENDING,
     DISCOVERY_SCAN_POLL_INTERVAL_MS,
     DISCOVERY_SNAPSHOT_STALE_DAYS,
+    cloudDisplayName,
     defaultSelection,
     discoveryEntryKey,
+    discoveryItemResultMeta,
     formatNotAfter,
     formatScanFailureEntry,
     formatSnapshotTime,
     groupPreviewEntries,
     groupSelectableKeys,
+    isDiscoveryImportTerminal,
     isEntrySelectable,
     isNoSnapshotError,
     isSnapshotStale,
     parseReasonHint,
+    summarizeImportSession,
     summarizePreview,
 } from '../discovery'
 
@@ -248,10 +323,15 @@ import {
 const SNAPSHOT_STALE_DAYS = DISCOVERY_SNAPSHOT_STALE_DAYS
 const NOT_AFTER_PENDING = DISCOVERY_NOT_AFTER_PENDING
 
-type ModalState = 'loading' | 'loaded' | 'no-snapshot' | 'error'
+type ModalState = 'loading' | 'loaded' | 'no-snapshot' | 'error' | 'importing'
 
 /** 无快照引导子状态（进入分支时先查一次 snapshot-status 收敛到此态机） */
 type ScanGuideState = 'idle' | 'running' | 'failed'
+
+const emit = defineEmits<{
+    /** 导入会话到达终态（completed/partial_failed）：父级刷新台账列表与统计 */
+    (e: 'completed'): void
+}>()
 
 const visible = ref(false)
 const state = ref<ModalState>('loading')
@@ -261,6 +341,17 @@ const preview = ref<DiscoveryPreviewResponse | null>(null)
 const selected = ref<Set<string>>(new Set())
 /** 折叠的分组 cloud 键集（默认全展开） */
 const collapsed = ref<Set<string>>(new Set())
+
+// ===== 确认导入与进度轮询（任务 7） =====
+
+/** 导入会话（POST 202 初始快照起，轮询整体替换保持不可变更新��� */
+const importSession = ref<DiscoveryImportSession | null>(null)
+/** 确认导入提交中（POST /discovery/import 在途窗口） */
+const importing = ref(false)
+let importTimer: ReturnType<typeof setInterval> | null = null
+let importPollInFlight = false
+/** 终态完成事件已发标记（同一会话至多 emit 一次 completed） */
+let importCompletedEmitted = false
 
 // ===== 无快照引导（任务 8） =====
 
@@ -280,6 +371,94 @@ const summary = computed(() => summarizePreview(preview.value?.items ?? []))
 const stale = computed(() => isSnapshotStale(preview.value?.snapshotStartedAt))
 const snapshotTimeText = computed(() => formatSnapshotTime(preview.value?.snapshotStartedAt))
 const selectedCount = computed(() => selected.value.size)
+
+// ===== 确认导入与进度轮询（任务 7） =====
+
+const importItems = computed<DiscoveryImportItem[]>(() => importSession.value?.items ?? [])
+const importStatus = computed<DiscoveryImportStatus>(() => importSession.value?.status ?? 'running')
+const importRunning = computed(() => state.value === 'importing' && !isDiscoveryImportTerminal(importStatus.value))
+const importSummary = computed(() =>
+    importSession.value
+        ? summarizeImportSession(importSession.value)
+        : { total: 0, done: 0, succeeded: 0, failed: 0, pending: 0 },
+)
+const importPercent = computed(() => batchProgressPercent(importSummary.value.done, importSummary.value.total))
+
+/**
+ * 确认导入：勾选条目三元组 POST /discovery/import（202 初始快照）→ 切换
+ * 进度视图并启动会话进度轮询。POST 失败留在预览视图 Toast 错误（可重试）。
+ */
+async function onConfirmImport() {
+    if (importing.value || importRunning.value || selectedCount.value === 0) return
+    const items = (preview.value?.items ?? [])
+        .filter((e) => selected.value.has(discoveryEntryKey(e)))
+        .map((e) => ({ cloud: e.cloud, accountKey: e.accountKey, cloudCertId: e.cloudCertId }))
+    if (items.length === 0) return
+    importing.value = true
+    try {
+        const s = await startDiscoveryImportApi(items)
+        // 关闭竞态：POST 在途期间用户已关闭 Modal → 丢弃本地跟踪（服务端会话
+        // 照常执行，结果由重开预览/父级刷新体现，不做复杂恢复 UI）
+        if (!visible.value) return
+        importSession.value = s
+        state.value = 'importing'
+        if (isDiscoveryImportTerminal(s.status)) {
+            notifyImportFinished(s)
+        } else {
+            startImportPolling()
+        }
+    } catch (err) {
+        ElMessage.error(err instanceof Error ? err.message : '云端导入会话创建失败')
+    } finally {
+        importing.value = false
+    }
+}
+
+/**
+ * 会话进度轮询（与批量导入进度轮询同族交互模式，不改其内部）：2s
+ * setInterval + in-flight 防重入 + 单次失败退避下个周期；终态
+ * （completed/partial_failed）停轮询并触发完成通告与列表刷新事件。
+ */
+function startImportPolling() {
+    stopImportPolling()
+    importTimer = setInterval(async () => {
+        const id = importSession.value?.sessionId
+        if (!id || importPollInFlight) return
+        importPollInFlight = true
+        try {
+            const s = await getDiscoveryImportApi(id)
+            if (importSession.value?.sessionId === id) importSession.value = s
+            if (isDiscoveryImportTerminal(s.status)) {
+                stopImportPolling()
+                notifyImportFinished(s)
+            }
+        } catch {
+            /* 单次轮询失败退避到下个周期（会话服务端持久化，不中断跟踪） */
+        } finally {
+            importPollInFlight = false
+        }
+    }, DISCOVERY_IMPORT_POLL_INTERVAL_MS)
+}
+
+function stopImportPolling() {
+    if (importTimer) clearInterval(importTimer)
+    importTimer = null
+    importPollInFlight = false
+}
+
+/** 终态通告（一次）+ 完成事件（父级刷新台账：新增登记项立即可见） */
+function notifyImportFinished(s: DiscoveryImportSession) {
+    const sum = summarizeImportSession(s)
+    if (s.status === 'completed') {
+        ElMessage.success(`云端导入完成：${sum.succeeded} 成功 / ${sum.failed} 失败`)
+    } else {
+        ElMessage.warning(`云端导入部分失败：${sum.succeeded} 成功 / ${sum.failed} 失败，失败原因见逐条结果`)
+    }
+    if (!importCompletedEmitted) {
+        importCompletedEmitted = true
+        emit('completed')
+    }
+}
 
 /** 打开 Modal 并加载预览（台账页空态 CTA / 工具栏按钮双入口调用） */
 function open() {
@@ -451,8 +630,13 @@ function resetScanGuide() {
 }
 
 function onClosed() {
-    // 重开时 loadPreview 会整体重置；关闭即丢弃当前预览态（快照时点数据不跨会话驻留）
+    // 重开时 loadPreview 会整体重置；关闭即丢弃当前预览/导入态���快照时点数据
+    // 不跨会话驻留；导入会话由服务端持久化，重开按最新台账口径重取预览）
     resetScanGuide()
+    stopImportPolling()
+    importSession.value = null
+    importing.value = false
+    importCompletedEmitted = false
     preview.value = null
     selected.value = new Set()
     collapsed.value = new Set()
@@ -460,8 +644,11 @@ function onClosed() {
     errorMsg.value = ''
 }
 
-// 组件卸载兜底停轮询（测试 unmount / 页面离开）
-onBeforeUnmount(stopStatusPolling)
+// 组件卸载兜底停轮询（测试 unmount / 页面离开；含快照状态与导入进度两类轮询）
+onBeforeUnmount(() => {
+    stopStatusPolling()
+    stopImportPolling()
+})
 
 // ===== 分组折叠（大清单性能：分组折叠即可，无需虚拟滚动） =====
 
@@ -848,5 +1035,99 @@ defineExpose({ open })
     color: var(--text-secondary);
     border-color: var(--border-base);
   }
+}
+
+// ===== 导入进度视图（任务 7：进度计数 + 逐条结果 + 终态失败原因） =====
+.ds-import {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ds-import-progresstext {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ds-import-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.ds-import-flag {
+  font-weight: 600;
+  color: var(--text-primary);
+
+  &.ds-import-flag-ok {
+    color: var(--cert-success, #50e3c2);
+  }
+
+  &.ds-import-flag-err {
+    color: var(--cert-error, #ee0000);
+  }
+}
+
+.ds-import-meta {
+  color: var(--text-secondary);
+}
+
+.ds-import-list {
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ds-import-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+.ds-import-row-muted {
+  opacity: 0.55;
+}
+
+.ds-import-tone-accent {
+  color: var(--cert-accent, #0070f3);
+  border-color: color-mix(in srgb, var(--cert-accent, #0070f3) 40%, transparent);
+}
+
+.ds-import-tone-secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-base);
+}
+
+.ds-import-tone-error {
+  color: var(--cert-error, #ee0000);
+  border-color: color-mix(in srgb, var(--cert-error, #ee0000) 40%, transparent);
+}
+
+.ds-import-note {
+  font-family: var(--cert-font-mono, monospace);
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.ds-import-note-error {
+    color: var(--cert-error, #ee0000);
+  }
+}
+
+.ds-import-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 </style>

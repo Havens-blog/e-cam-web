@@ -27,13 +27,16 @@ vi.mock('vue-router', () => ({
 const listApi = vi.mocked(listCertsApi)
 const statsApi = vi.mocked(getCertStatsApi)
 
-/** DiscoveryImportModal 替身：暴露 open() 间谍（父级经模板 ref 调用） */
+/** DiscoveryImportModal 替身：暴露 open() 间谍（父级经模板 ref 调用）；
+ * 渲染 completed 触发按钮（DOM 桥接 emit，供完成刷新挂接断言） */
 const openSpy = vi.fn()
 const DiscoveryModalStub = defineComponent({
     name: 'DiscoveryImportModal',
-    setup(_, { expose }) {
+    emits: ['completed'],
+    setup(_, { expose, emit }) {
         expose({ open: openSpy })
-        return () => h('div', { 'data-testid': 'discovery-modal-stub' })
+        return () =>
+            h('button', { 'data-testid': 'discovery-modal-complete', onClick: () => emit('completed') })
     },
 })
 
@@ -54,9 +57,9 @@ const ElDialogStub = defineComponent({
     },
 })
 
-async function mountEmptyLedger() {
-    listApi.mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 20 } as never)
-    statsApi.mockResolvedValueOnce({
+/** 统计载荷（空台账形态；刷新断言复用） */
+function emptyStats() {
+    return {
         total: 0,
         complete: 0,
         fingerprintOnly: 0,
@@ -66,7 +69,12 @@ async function mountEmptyLedger() {
         fingerprintOnlyRate: 0,
         denominator: 0,
         denominatorSources: { scannedUniqueFingerprints: 0, manualOnlyFingerprints: 0 },
-    } as never)
+    }
+}
+
+async function mountEmptyLedger() {
+    listApi.mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 20 } as never)
+    statsApi.mockResolvedValueOnce(emptyStats() as never)
     const wrapper = mount(LedgerIndex, {
         global: {
             // 页面模板依赖 unplugin 自动注册的 el-button/el-dialog（vitest 无该插件），
@@ -117,5 +125,21 @@ describe('台账页「从云端导入」双入口（AC1）', () => {
         // 批量上传 CTA 不打开云端导入 Modal（仍走 BatchImportModal 替身）
         await batchCta!.trigger('click')
         expect(openSpy).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('云端导入完成刷新挂接（任务 7 AC3）', () => {
+    it('导入完成事件触发台账列表与统计重取（新增登记项立即可见）', async () => {
+        const wrapper = await mountEmptyLedger()
+        const listCalls = listApi.mock.calls.length
+        const statsCalls = statsApi.mock.calls.length
+        // 刷新请求的持久返回值（refreshAll 不阻塞断言）
+        listApi.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 } as never)
+        statsApi.mockResolvedValue(emptyStats() as never)
+        // Modal 到达终态（completed/partial_failed）→ emit completed（经替身触发按钮桥接）
+        await wrapper.find('[data-testid="discovery-modal-complete"]').trigger('click')
+        await flushPromises()
+        expect(listApi.mock.calls.length).toBe(listCalls + 1)
+        expect(statsApi.mock.calls.length).toBe(statsCalls + 1)
     })
 })

@@ -278,3 +278,39 @@ describe('formatScanFailureEntry（failed 引导 partialFailures 明细文案，
         expect(formatScanFailureEntry({ cloud: 'gcp', product: 'cdn', reason: 'x' })).toBe('gcp · cdn：x')
     })
 })
+
+// ==================== 任务 7：导入进度纯逻辑（终态判定/计数派生/条目结果元数据） ====================
+
+describe('发现导入轮询配置（任务 7）', () => {
+    it('导入进度轮询间隔与批量导入进度轮询同族（2s）', async () => {
+        const { DISCOVERY_IMPORT_POLL_INTERVAL_MS } = await import('./discovery')
+        expect(DISCOVERY_IMPORT_POLL_INTERVAL_MS).toBe(2000)
+    })
+})
+
+describe('isDiscoveryImportTerminal（终态判定，任务 7）', () => {
+    it('running 非终态；completed/partial_failed 终态', async () => {
+        const { isDiscoveryImportTerminal } = await import('./discovery')
+        expect(isDiscoveryImportTerminal('running')).toBe(false)
+        expect(isDiscoveryImportTerminal('completed')).toBe(true)
+        expect(isDiscoveryImportTerminal('partial_failed')).toBe(true)
+    })
+})
+
+describe('summarizeImportSession（进度计数派生，任务 7）', () => {
+    it('done = succeeded + failed（服务端 progress 口径），待处理 = total - done', async () => {
+        const { summarizeImportSession } = await import('./discovery')
+        const s = summarizeImportSession({ progress: { total: 5, succeeded: 2, failed: 1 } })
+        expect(s).toEqual({ total: 5, done: 3, succeeded: 2, failed: 1, pending: 2 })
+    })
+})
+
+describe('discoveryItemResultMeta（逐条结果徽章，任务 7）', () => {
+    it('pending/success/failed 三态文案（success 为台账登记成功口径）', async () => {
+        const { discoveryItemResultMeta } = await import('./discovery')
+        expect(discoveryItemResultMeta('pending').label).toBe('待处理')
+        expect(discoveryItemResultMeta('success').label).toBe('已登记')
+        expect(discoveryItemResultMeta('failed').label).toBe('失败')
+        expect(discoveryItemResultMeta('failed').tone).toBe('error')
+    })
+})
