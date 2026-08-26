@@ -41,6 +41,13 @@
               <span class="cert-badge" :class="`tone-${hostingStatusMeta(detail.hostingStatus).tone}`">
                 {{ hostingStatusMeta(detail.hostingStatus).label }}
               </span>
+              <span
+                v-if="materialIssueMeta(detail.materialIssue)"
+                class="cert-badge"
+                :class="`tone-${materialIssueMeta(detail.materialIssue)!.tone}`"
+              >
+                {{ materialIssueMeta(detail.materialIssue)!.label }}
+              </span>
               <span class="title-meta">证书 ID <span class="mono">{{ detail.id }}</span></span>
             </div>
           </div>
@@ -70,7 +77,7 @@ import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import { getCertApi } from '@/api/cert'
-import { hostingStatusMeta } from '../ledger/format'
+import { hostingStatusMeta, materialIssueMeta } from '../ledger/format'
 import { filterChangeOrders } from './format'
 import ElementCard from './components/ElementCard.vue'
 import ReferenceCard from './components/ReferenceCard.vue'

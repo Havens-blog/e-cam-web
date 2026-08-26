@@ -94,10 +94,17 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="托管状态" width="110">
+      <el-table-column label="托管状态" width="130">
         <template #default="{ row }">
           <span class="ledger-badge" :class="`tone-${hostingStatusMeta(row.hostingStatus).tone}`">
             {{ hostingStatusMeta(row.hostingStatus).label }}
+          </span>
+          <span
+            v-if="materialIssueMeta(row.materialIssue)"
+            class="ledger-badge material-badge"
+            :class="`tone-${materialIssueMeta(row.materialIssue)!.tone}`"
+          >
+            {{ materialIssueMeta(row.materialIssue)!.label }}
           </span>
         </template>
       </el-table-column>
@@ -164,7 +171,7 @@ import { CopyDocument, MoreFilled, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { computed, ref } from 'vue'
-import { copyText, daysLeftBadge, foldSans, hostingStatusMeta, protectDaysLeft, truncateFingerprint } from '../format'
+import { copyText, daysLeftBadge, foldSans, hostingStatusMeta, materialIssueMeta, protectDaysLeft, truncateFingerprint } from '../format'
 
 const props = defineProps<{
     rows: CertListItem[]
