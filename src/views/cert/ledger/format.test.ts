@@ -14,7 +14,6 @@ import {
     importErrorItems,
     isBatchTerminal,
     loadLastBatchId,
-    materialIssueMeta,
     pairBaseName,
     protectDaysLeft,
     resolvePageState,
@@ -308,23 +307,5 @@ describe('resolvePageState（loading/empty/error/populated 四态判定，AC6）
     })
     it('error 但已有数据（刷新失败）维持 populated 避免整页塌陷', () => {
         expect(resolvePageState({ loading: false, error: true, total: 60 })).toBe('populated')
-    })
-})
-
-// ==================== 材料异常徽章（盘点容忍标记） ====================
-
-describe('materialIssueMeta', () => {
-    it('expired 映射 error 徽章', () => {
-        expect(materialIssueMeta('expired')).toEqual({ label: '材料异常：已过期', tone: 'error' })
-    })
-
-    it('chain_incomplete 映射 warning 徽章', () => {
-        expect(materialIssueMeta('chain_incomplete')).toEqual({ label: '材料异常：链不完整', tone: 'warning' })
-    })
-
-    it('缺省/未知值为 null（正常证书不渲染徽章）', () => {
-        expect(materialIssueMeta(undefined)).toBeNull()
-        expect(materialIssueMeta('')).toBeNull()
-        expect(materialIssueMeta('weird')).toBeNull()
     })
 })

@@ -56,20 +56,6 @@ export function hostingStatusMeta(s: HostingStatus): HostingStatusMeta {
         : { label: '仅指纹登记', tone: 'secondary' }
 }
 
-// ==================== 材料异常徽章（盘点容忍标记） ====================
-
-export interface MaterialIssueMeta {
-    label: string
-    tone: 'error' | 'warning'
-}
-
-/** expired=error（处置动作是换证）；chain_incomplete=warning（材料缺陷随换证解决） */
-export function materialIssueMeta(issue?: string): MaterialIssueMeta | null {
-    if (issue === 'expired') return { label: '材料异常：已过期', tone: 'error' }
-    if (issue === 'chain_incomplete') return { label: '材料异常：链不完整', tone: 'warning' }
-    return null
-}
-
 // ==================== 保护期（锁徽章 / 删除拦截依据） ====================
 
 const MS_PER_DAY = 86_400_000

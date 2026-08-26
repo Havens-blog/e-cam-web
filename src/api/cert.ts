@@ -145,9 +145,6 @@ export type CloudProduct = 'cdn' | 'dcdn' | 'waf' | 'alb' | 'clb' | 'nlb'
 // ==================== 台账类型 ====================
 
 /** 台账列表行 */
-/** 盘点容忍材料异常标记（发现导入容忍登记写入；缺省=正常） */
-export type MaterialIssue = 'expired' | 'chain_incomplete'
-
 export interface CertListItem {
     id: string
     fingerprint: string
@@ -157,7 +154,6 @@ export interface CertListItem {
     notAfter: string
     daysLeft: number
     hostingStatus: HostingStatus
-    materialIssue?: MaterialIssue
     protectUntil: string | null
     refCount: number
 }
@@ -175,7 +171,6 @@ export interface CertDetail {
     daysLeft: number
     keyAlgorithm: string
     hostingStatus: HostingStatus
-    materialIssue?: MaterialIssue
     hasKey: boolean
     expectedDomain?: string
     protectUntil: string | null
