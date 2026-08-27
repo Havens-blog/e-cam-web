@@ -21,12 +21,10 @@
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
-        <el-tooltip content="DNS 通过云账号同步网络资源时自动同步" placement="top">
-          <el-button type="primary" @click="router.push('/account')">
-            <el-icon><Refresh /></el-icon>
-            同步实例
-          </el-button>
-        </el-tooltip>
+        <el-button type="primary" @click="handleSync">
+          <el-icon><Refresh /></el-icon>
+          同步实例
+        </el-button>
       </div>
     </div>
 
@@ -83,6 +81,21 @@
 
     <el-empty v-if="!loading && domainList.length === 0" description="暂无数据" />
 
+    <!-- 同步对话框 -->
+    <el-dialog v-model="syncDialogVisible" title="同步 DNS" width="480px">
+      <el-form :model="syncForm" label-width="100px">
+        <el-form-item label="云厂商">
+          <el-select v-model="syncForm.provider" placeholder="全部云厂商（留空同步全部）" style="width: 100%" clearable>
+            <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="syncing" @click="submitSync">开始同步</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 分页 -->
     <div v-if="total > 0" class="pagination-bar">
       <span class="pagination-info">共 {{ total }} 条</span>
@@ -100,13 +113,14 @@
 </template>
 
 <script setup lang="ts">
+import { submitSyncAssetsTaskApi } from '@/api'
 import { getDnsDomainsApi } from '@/api/dns'
 import type { DnsDomain } from '@/api/types/dns'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { List, Refresh, Search, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -169,6 +183,35 @@ const handlePageChange = () => {
 
 const handleViewRecords = (row: DnsDomain) => {
   router.push(`/network/dns/${row?.domain_name}/records`)
+}
+
+// 同步对话框
+const syncDialogVisible = ref(false)
+const syncing = ref(false)
+const syncForm = reactive({
+  provider: '',
+})
+
+const handleSync = () => {
+  syncForm.provider = provider.value || ''
+  syncDialogVisible.value = true
+}
+
+const submitSync = async () => {
+  syncing.value = true
+  try {
+    const { data } = await submitSyncAssetsTaskApi({
+      provider: syncForm.provider,
+      asset_types: ['dns'],
+    })
+    ElMessage.success(`同步任务已提交，任务ID: ${data.task_id}`)
+    syncDialogVisible.value = false
+    router.push(`/tasks/${data.task_id}`)
+  } catch (error: any) {
+    ElMessage.error(error?.message || '提交同步任务失败')
+  } finally {
+    syncing.value = false
+  }
 }
 
 const handleViewTopo = (row: DnsDomain) => {
