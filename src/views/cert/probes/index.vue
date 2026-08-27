@@ -52,6 +52,14 @@
             <el-option v-for="o in PROBE_LINK_FILTERS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
           <div class="toolbar-spacer" />
+          <el-button
+            class="scan-btn"
+            :disabled="scanning"
+            @click="triggerScan"
+          >
+            <span v-if="scanning" class="spinner" aria-hidden="true" />
+            {{ scanning ? '探测中' : '立即探测' }}
+          </el-button>
           <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
         </div>
 
@@ -111,10 +119,11 @@
  * 全角色只读（与到期看板同级，不标 certManageOnly）。
  */
 import type { CertProbeResult, ProbeStatus } from '@/api/cert'
-import { getCertProbesApi } from '@/api/cert'
+import { getCertProbesApi, triggerCertProbeScanApi } from '@/api/cert'
+import { CertRequestError } from '@/api/cert'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { probeBadge, relativeTimeDash } from '../dashboard/format'
 import { copyText, truncateFingerprint } from '../ledger/format'
 import { PROBE_LINK_FILTERS, PROBE_STATUS_FILTERS, linkedResourceLabel, matchDomain, probeBadgeClass } from './format'
@@ -125,6 +134,8 @@ const error = ref('')
 const keyword = ref('')
 const statusFilter = ref('')
 const linkFilter = ref('')
+const scanning = ref(false)
+let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const filtered = computed(() =>
     rows.value.filter((r) => {
@@ -157,7 +168,67 @@ async function onCopy(fp: string, domain: string) {
     else ElMessage.error(`复制失败，请手动复制 ${domain} 的指纹`)
 }
 
+/** 触发前最大的 probeAt（ms）——轮询到此值推进即本轮完成 */
+function maxProbeAtMs(): number {
+    return rows.value.reduce((m, r) => {
+        const t = Date.parse(r.probeAt)
+        return Number.isNaN(t) ? m : Math.max(m, t)
+    }, 0)
+}
+
+const SCAN_POLL_INTERVAL_MS = 5_000
+const SCAN_POLL_MAX_MS = 6 * 60_000
+
+/** 立即触发 DNS 源探测：202 后轮询 /probes 至 probeAt 推进或超时 */
+async function triggerScan() {
+    if (scanning.value) return
+    scanning.value = true
+    const baseline = maxProbeAtMs()
+    try {
+        await triggerCertProbeScanApi()
+        startPolling(baseline)
+    } catch (err) {
+        scanning.value = false
+        const code = err instanceof CertRequestError ? err.code : ''
+        if (code === 'SCAN_IN_PROGRESS') {
+            ElMessage.warning('探测正在进行中，稍后自动刷新')
+            startPolling(baseline)
+            return
+        }
+        ElMessage.error(err instanceof Error ? err.message : '触发探测失败，请重试')
+    }
+}
+
+function startPolling(baseline: number) {
+    stopPolling()
+    const startedAt = Date.now()
+    const tick = async () => {
+        await load()
+        // 本轮完成：出现比 baseline 更新的 probeAt
+        if (maxProbeAtMs() > baseline) {
+            scanning.value = false
+            ElMessage.success('探测完成，结果已刷新')
+            return
+        }
+        if (Date.now() - startedAt > SCAN_POLL_MAX_MS) {
+            scanning.value = false
+            ElMessage.info('探测仍在后台进行，已停止自动刷新，请稍后手动刷新')
+            return
+        }
+        pollTimer = setTimeout(tick, SCAN_POLL_INTERVAL_MS)
+    }
+    pollTimer = setTimeout(tick, SCAN_POLL_INTERVAL_MS)
+}
+
+function stopPolling() {
+    if (pollTimer) {
+        clearTimeout(pollTimer)
+        pollTimer = null
+    }
+}
+
 onMounted(load)
+onUnmounted(stopPolling)
 </script>
 
 <style lang="scss" scoped>
@@ -271,6 +342,27 @@ onMounted(load)
 
 .refresh-btn {
   min-width: 80px;
+}
+
+.scan-btn {
+  min-width: 96px;
+}
+
+.spinner {
+  width: 11px;
+  height: 11px;
+  margin-right: 4px;
+  border-radius: 50%;
+  border: 1.5px solid currentcolor;
+  border-top-color: transparent;
+  display: inline-block;
+  animation: cert-spin 0.8s linear infinite;
+}
+
+@keyframes cert-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .table-wrap {
