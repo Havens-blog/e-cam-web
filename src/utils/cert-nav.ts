@@ -23,9 +23,10 @@ export interface CertMenuItem {
     requireCertManage?: boolean
 }
 
-/** 证书管理功能域三个一级菜单项（顺序即渲染顺序） */
+/** 证书管理功能域一级菜单项（顺序即渲染顺序） */
 export const CERT_MENU_ITEMS: readonly CertMenuItem[] = [
     { key: 'cert-ledger', path: '/certs', title: '证书台账', icon: 'icon-xianxing-yirenzheng', requireCertManage: true },
     { key: 'cert-dashboard', path: '/certs/dashboard', title: '到期看板', icon: 'icon-xianxing-baojing' },
+    { key: 'cert-probes', path: '/certs/probes', title: '探测结果', icon: 'icon-xianxing-leidatu' },
     { key: 'cert-changes', path: '/certs/changes', title: '变更管理', icon: 'icon-xianxing-qiehuanyonghu', requireCertManage: true },
 ]
