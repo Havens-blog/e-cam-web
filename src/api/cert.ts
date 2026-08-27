@@ -311,7 +311,8 @@ export interface ReverseLookupResponse {
     items: ReverseLookupCert[]
 }
 
-/** 立即扫描响应（同步至终态返回；防重 409 SCAN_IN_PROGRESS 走 CertRequestError.meta） */
+/** 立即扫描响应（异步：status=running + snapshotId/startedAt，前端轮询 /references 至完成；
+ *  防重 409 SCAN_IN_PROGRESS 走 CertRequestError.meta；空范围同步失败 status=failed） */
 export interface TriggerScanResult {
     snapshotId: string
     status: string
@@ -319,6 +320,8 @@ export interface TriggerScanResult {
     referencesWritten?: number
     channelsAttempted?: number
     channelsFailed?: number
+    /** running 态：快照启动时点（ISO），前端转 ms 作轮询完成基线 */
+    startedAt?: string
 }
 
 // ==================== 到期看板类型 ====================
@@ -785,6 +788,25 @@ export function deleteCertApi(id: string) {
 /** 台账统计（覆盖率双指标，查询时实时聚合） */
 export function getCertStatsApi() {
     return unwrapCertEnvelope<CertStats>(certAxios.get<CertEnvelope<CertStats>>('/certs/stats'))
+}
+
+// ==================== 探测结果列表 ====================
+
+/** 探测结果行（GET /certs/probes；LatestPerDomain，含 DNS 源子域名行） */
+export interface CertProbeResult {
+    domain: string
+    status: string
+    onlineFingerprint?: string
+    onlineNotAfter?: string
+    probeAt: string
+    tenantId?: number
+    /** 链路关联资源类型：cdn/waf/external（DNS 源探测链路分层；SAN 探测缺省） */
+    linkedResource?: string
+}
+
+/** 探测结果列表（每域最近一次；含 DNS 源探测的子域名行） */
+export function getCertProbesApi() {
+    return unwrapCertEnvelope<CertProbeResult[]>(certAxios.get<CertEnvelope<CertProbeResult[]>>('/certs/probes'))
 }
 
 // ==================== 引用关系 ====================

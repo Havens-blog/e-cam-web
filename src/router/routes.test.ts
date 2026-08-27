@@ -19,6 +19,7 @@ describe('证书管理路由注册（任务 6.1 AC#1）', () => {
     const expected: { path: string; title: string; hideInMenu: boolean }[] = [
         { path: '/certs', title: '证书台账', hideInMenu: false },
         { path: '/certs/dashboard', title: '到期看板', hideInMenu: false },
+        { path: '/certs/probes', title: '探测结果', hideInMenu: false },
         { path: '/certs/changes', title: '变更管理', hideInMenu: false },
         { path: '/certs/changes/new', title: '新建变更', hideInMenu: true },
         { path: '/certs/changes/:id', title: '变更报告', hideInMenu: true },
@@ -26,7 +27,7 @@ describe('证书管理路由注册（任务 6.1 AC#1）', () => {
         { path: '/certs/settings', title: '证书配置', hideInMenu: true },
     ]
 
-    it('注册全部 7 条路由（懒加载 + meta.title/icon）', () => {
+    it('注册全部 8 条路由（懒加载 + meta.title/icon）', () => {
         for (const e of expected) {
             const r = findRoute(e.path)
             expect(r.meta?.title).toBe(e.title)
@@ -55,17 +56,18 @@ describe('只读角色路由拦截标记（任务 6.1 AC#3）', () => {
     })
 
     it('到期看板与证书详情对只读角色开放（无 certManageOnly 标记）', () => {
-        for (const p of ['/certs/dashboard', '/certs/:id']) {
+        for (const p of ['/certs/dashboard', '/certs/probes', '/certs/:id']) {
             expect(findRoute(p).meta?.certManageOnly, p).toBeUndefined()
         }
     })
 })
 
 describe('Page Composition 全页落地（任务 6.7 AC#1）', () => {
-    it('7 条路由的懒加载组件均指向磁盘上真实存在的页面文件（非占位页）', () => {
+    it('8 条路由的懒加载组件均指向磁盘上真实存在的页面文件（非占位页）', () => {
         const pages = [
             '/certs',
             '/certs/dashboard',
+            '/certs/probes',
             '/certs/changes',
             '/certs/changes/new',
             '/certs/changes/:id',
@@ -100,6 +102,7 @@ describe('Page Composition 全页落地（任务 6.7 AC#1）', () => {
                 '/certs/changes/:id',
                 '/certs/changes/new',
                 '/certs/dashboard',
+                '/certs/probes',
                 '/certs/settings',
             ].sort(),
         )

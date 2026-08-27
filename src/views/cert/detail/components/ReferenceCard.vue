@@ -87,6 +87,9 @@ let pollTimer: ReturnType<typeof setTimeout> | null = null
 /** 连续轮询失败计数（超过阈值放弃恢复态，避免永久「扫描中」） */
 let pollFailures = 0
 const MAX_POLL_FAILURES = 5
+/** 轮询总时长上限（ms）：异步扫描后台收敛可能较久，超限停止自动刷新并提示手动查看 */
+const MAX_POLL_DURATION_MS = 10 * 60_000
+let pollStartedAt = 0
 
 async function loadReferences() {
     refsLoading.value = !view.value
@@ -125,6 +128,7 @@ function finishScan(success: boolean, message: string) {
     clearScanSession(props.certId)
     scanning.value = false
     pollFailures = 0
+    pollStartedAt = 0
     if (success) ElMessage.success(message)
     else ElMessage.error(message)
 }
@@ -132,7 +136,13 @@ function finishScan(success: boolean, message: string) {
 /** 轮询引用视图：新成功快照落库（lastScanAt >= startedAt）即完成并刷新元数据 */
 function startPolling(session: ScanSession) {
     stopPolling()
+    pollStartedAt = Date.now()
     const tick = async () => {
+        // 总时长兜底：异步扫描后台收敛超限，停止自动刷新，避免永久「扫描中」
+        if (Date.now() - pollStartedAt > MAX_POLL_DURATION_MS) {
+            finishScan(false, '扫描仍在后台进行，已停止自动刷新，请稍后手动刷新查看结果')
+            return
+        }
         try {
             const v = await getCertReferencesApi(props.certId)
             pollFailures = 0
@@ -157,10 +167,20 @@ async function onTriggerScan() {
     if (scanning.value || props.readonly) return
     scanning.value = true
     pollFailures = 0
-    // 先落会话（重入/刷新恢复依据），再触发
-    saveScanSession({ certId: props.certId, startedAt: Date.now() })
     try {
         const res = await triggerCertScanApi(props.certId)
+        // 异步触发：服务端已建 running 快照、后台收敛，据 startedAt 轮询 /references
+        if (res.status === 'running') {
+            const startedAt = res.startedAt ? Date.parse(res.startedAt) : Date.now()
+            const session: ScanSession = {
+                certId: props.certId,
+                snapshotId: res.snapshotId,
+                startedAt: Number.isNaN(startedAt) ? Date.now() : startedAt,
+            }
+            saveScanSession(session)
+            startPolling(session)
+            return
+        }
         if (res.status === 'failed') {
             finishScan(false, `引用扫描失败：${res.failReason || '未知原因'}`)
         } else {

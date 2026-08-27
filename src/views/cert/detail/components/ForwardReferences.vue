@@ -118,7 +118,17 @@
                     @keydown.enter.prevent="emit('open-resource', { group: g, item })"
                     @keydown.space.prevent="emit('open-resource', { group: g, item })"
                   >
-                    <td class="cell-mono">{{ item.resourceId }}</td>
+                    <td class="cell-mono">
+                      <!-- 复合资源 ID（LB 类 "{实例}/{监听}"）拆两行：实例 ID 供控制台对账，监听行弱化 -->
+                      <div
+                        v-for="(line, li) in resourceIdLines(item.resourceId)"
+                        :key="li"
+                        class="res-id"
+                        :class="{ 'res-id-sub': li > 0 }"
+                      >
+                        {{ line }}
+                      </div>
+                    </td>
                     <td class="cell-mono">{{ item.referencedCloudCertId }}</td>
                     <td>{{ accountCell(item) }}</td>
                   </tr>
@@ -157,6 +167,7 @@ import {
     noRefsNotice,
     productLabel,
     relativeTime,
+    resourceIdLines,
     scanStale,
 } from '../format'
 
@@ -522,6 +533,16 @@ const announceText = computed(() => {
 .cell-mono {
   font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+}
+
+.res-id {
+  word-break: break-all;
+
+  &.res-id-sub {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-top: 2px;
+  }
 }
 
 .clickable-row {

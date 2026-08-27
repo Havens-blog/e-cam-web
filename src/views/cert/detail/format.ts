@@ -178,6 +178,34 @@ export function blindSpotNotice(reason?: string): string {
         : '引用视图存在盲区：部分云/产品未纳入扫描范围或无成功快照'
 }
 
+// ==================== 复合资源 ID（LB 类产品 "{实例ID}/{监听ID}" 拆分展示） ====================
+
+/** 复合资源 ID 拆分结果（实例 ID / 监听 ID） */
+export interface ScopedResourceId {
+    instanceId: string
+    listenerId: string
+}
+
+/**
+ * 拆分复合资源 ID（腾讯 CLB/华为 ELB/阿里 ALB/NLB 的 "{实例ID}/{监听ID}" 形态）。
+ * 恰含一个 "/" 才拆：多斜杠（AWS 监听 ARN）与无斜杠（CDN 域名/K8s 实例名）原样返回 null。
+ */
+export function splitScopedResourceId(resourceId: string): ScopedResourceId | null {
+    const idx = resourceId.indexOf('/')
+    if (idx <= 0 || idx === resourceId.length - 1) return null
+    if (resourceId.indexOf('/', idx + 1) >= 0) return null
+    return { instanceId: resourceId.slice(0, idx), listenerId: resourceId.slice(idx + 1) }
+}
+
+/**
+ * 资源 ID 展示行：复合形态拆两行（实例 ID / 「监听 {ID}」），其余单行原文。
+ * 供表格单元格与抽屉列表渲染（第二行以弱化样式呈现）。
+ */
+export function resourceIdLines(resourceId: string): string[] {
+    const scoped = splitScopedResourceId(resourceId)
+    return scoped ? [scoped.instanceId, `监听 ${scoped.listenerId}`] : [resourceId]
+}
+
 // ==================== 正向筛选（级联 + 资源名搜索，客户端过滤 refs[]） ====================
 
 export interface ForwardFilters {

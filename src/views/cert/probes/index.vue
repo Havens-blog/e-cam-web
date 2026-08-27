@@ -1,0 +1,357 @@
+<template>
+  <div class="cert-probes-page" aria-labelledby="cert-probes-title">
+    <div class="page-header">
+      <h1 id="cert-probes-title" class="page-title">探测结果</h1>
+      <span class="page-sub">每域最近一次 TLS 拨测（含 DNS 源子域名）</span>
+    </div>
+
+    <div aria-live="polite">
+      <!-- Loading -->
+      <template v-if="loading">
+        <div class="table-skeleton" aria-hidden="true">
+          <div v-for="i in 5" :key="i" class="skeleton-row" />
+        </div>
+      </template>
+
+      <!-- Error -->
+      <div v-else-if="error" class="state-card">
+        <div class="error-state">
+          <div class="state-icon state-icon-error" aria-hidden="true">⚠</div>
+          <div class="state-title">探测结果加载失败</div>
+          <div class="state-desc">{{ error }}</div>
+          <el-button class="state-cta" @click="load">重试</el-button>
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div v-else-if="!filtered.length" class="state-card">
+        <div class="empty-state">
+          <div class="state-icon" aria-hidden="true">🔍</div>
+          <div class="state-title">暂无探测结果</div>
+          <div class="state-desc">
+            {{ rows.length ? '当前筛选无匹配，调整筛选重试。' : '尚未执行 TLS 探测，等待下一次巡检。' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Populated -->
+      <template v-else>
+        <div class="toolbar">
+          <el-input
+            v-model="keyword"
+            class="toolbar-search"
+            type="search"
+            placeholder="搜索域名 / 子域名"
+            aria-label="搜索域名"
+            clearable
+          />
+          <el-select v-model="statusFilter" class="toolbar-select" aria-label="按状态筛选">
+            <el-option v-for="o in PROBE_STATUS_FILTERS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+          <el-select v-model="linkFilter" class="toolbar-select" aria-label="按链路层筛选">
+            <el-option v-for="o in PROBE_LINK_FILTERS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+          <div class="toolbar-spacer" />
+          <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">域名 / 子域名</th>
+                <th scope="col">链路层</th>
+                <th scope="col">探测状态</th>
+                <th scope="col">线上到期</th>
+                <th scope="col">线上指纹</th>
+                <th scope="col">探测时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in filtered" :key="r.domain">
+                <td class="cell-mono">{{ r.domain }}</td>
+                <td>{{ linkedResourceLabel(r.linkedResource) }}</td>
+                <td>
+                  <span class="probe-badge" :class="probeBadgeClass(r.status)">
+                    <span class="badge-icon" aria-hidden="true">{{ probeBadge(r.status as ProbeStatus).icon }}</span>
+                    {{ probeBadge(r.status as ProbeStatus).label }}
+                  </span>
+                </td>
+                <td class="cell-mono">{{ r.onlineNotAfter ? relativeTimeDash(r.onlineNotAfter) : '—' }}</td>
+                <td class="cell-mono">
+                  <template v-if="r.onlineFingerprint">
+                    <span class="fp">{{ truncateFingerprint(r.onlineFingerprint) }}</span>
+                    <el-tooltip content="复制完整指纹" placement="top">
+                      <button
+                        type="button"
+                        class="copy-btn"
+                        :aria-label="`复制 ${r.domain} 的线上指纹`"
+                        @click="onCopy(r.onlineFingerprint!, r.domain)"
+                      >
+                        <el-icon><CopyDocument /></el-icon>
+                      </button>
+                    </el-tooltip>
+                  </template>
+                  <span v-else>—</span>
+                </td>
+                <td class="cell-mono">{{ relativeTimeDash(r.probeAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+/**
+ * 探测结果列表页（GET /certs/probes）：每域最近一次 TLS 拨测，含 DNS 源探测的子域名行。
+ * 域名搜索 + 状态/链路层筛选；状态徽章复用看板 probeBadge；线上到期相对时间展示。
+ * 全角色只读（与到期看板同级，不标 certManageOnly）。
+ */
+import type { CertProbeResult, ProbeStatus } from '@/api/cert'
+import { getCertProbesApi } from '@/api/cert'
+import { CopyDocument } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { probeBadge, relativeTimeDash } from '../dashboard/format'
+import { copyText, truncateFingerprint } from '../ledger/format'
+import { PROBE_LINK_FILTERS, PROBE_STATUS_FILTERS, linkedResourceLabel, matchDomain, probeBadgeClass } from './format'
+
+const rows = ref<CertProbeResult[]>([])
+const loading = ref(false)
+const error = ref('')
+const keyword = ref('')
+const statusFilter = ref('')
+const linkFilter = ref('')
+
+const filtered = computed(() =>
+    rows.value.filter((r) => {
+        if (!matchDomain(r.domain, keyword.value.trim())) return false
+        if (statusFilter.value && r.status !== statusFilter.value) return false
+        if (linkFilter.value === 'san') {
+            if (r.linkedResource) return false
+        } else if (linkFilter.value && r.linkedResource !== linkFilter.value) {
+            return false
+        }
+        return true
+    }),
+)
+
+async function load() {
+    loading.value = true
+    error.value = ''
+    try {
+        rows.value = await getCertProbesApi()
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : '探测结果获取失败，请重试'
+    } finally {
+        loading.value = false
+    }
+}
+
+async function onCopy(fp: string, domain: string) {
+    const ok = await copyText(fp)
+    if (ok) ElMessage.success('已复制')
+    else ElMessage.error(`复制失败，请手动复制 ${domain} 的指纹`)
+}
+
+onMounted(load)
+</script>
+
+<style lang="scss" scoped>
+.cert-probes-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.page-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.state-card {
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+  border: 1px dashed var(--border-base);
+  border-radius: 8px;
+}
+
+.empty-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.state-icon {
+  font-size: 24px;
+}
+
+.state-icon-error {
+  color: #ef4444;
+}
+
+.state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.state-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 420px;
+  text-align: center;
+}
+
+.state-cta {
+  margin-top: 8px;
+}
+
+.table-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-row {
+  height: 44px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-base) 40%, transparent) 25%,
+    color-mix(in srgb, var(--border-base) 60%, transparent) 37%,
+    color-mix(in srgb, var(--border-base) 40%, transparent) 63%
+  );
+  background-size: 400% 100%;
+  animation: cert-skel 1.4s ease infinite;
+}
+
+@keyframes cert-skel {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolbar-search {
+  width: 280px;
+}
+
+.toolbar-select {
+  width: 140px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.refresh-btn {
+  min-width: 80px;
+}
+
+.table-wrap {
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-base);
+    white-space: nowrap;
+  }
+
+  td {
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-base);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.cell-mono {
+  font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.probe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-base);
+
+  &.tone-success { color: #10b981; border-color: color-mix(in srgb, #10b981 40%, transparent); }
+  &.tone-error { color: #ef4444; border-color: color-mix(in srgb, #ef4444 40%, transparent); }
+  &.tone-warning { color: #f5a623; border-color: color-mix(in srgb, #f5a623 40%, transparent); }
+  &.tone-secondary { color: var(--text-secondary); }
+}
+
+.badge-icon {
+  font-size: 11px;
+}
+
+.fp {
+  margin-right: 4px;
+}
+
+.copy-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+
+  &:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+  }
+}
+</style>

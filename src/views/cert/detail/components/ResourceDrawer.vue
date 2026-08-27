@@ -14,8 +14,17 @@
       </div>
       <div class="drawer-body">
         <dl class="kv">
-          <dt>资源 ID</dt>
-          <dd class="mono">{{ item.resourceId }}</dd>
+          <!-- 复合资源 ID（LB 类 "{实例}/{监听}"）拆实例/监听两字段；其余单字段原文 -->
+          <template v-if="scopedId">
+            <dt>实例 ID</dt>
+            <dd class="mono">{{ scopedId.instanceId }}</dd>
+            <dt>监听 ID</dt>
+            <dd class="mono">{{ scopedId.listenerId }}</dd>
+          </template>
+          <template v-else>
+            <dt>资源 ID</dt>
+            <dd class="mono">{{ item.resourceId }}</dd>
+          </template>
           <dt>云 / 产品</dt>
           <dd>{{ groupLabel(group) }}</dd>
           <dt v-if="group.clusterId">集群</dt>
@@ -44,13 +53,17 @@
  * el-drawer 自带焦点陷阱（首入可交互元素、Tab 不溢出）与 Esc 关闭。
  */
 import type { CertReferenceGroup, CertReferenceItem } from '@/api/cert'
-import { groupLabel } from '../format'
+import { computed } from 'vue'
+import { groupLabel, splitScopedResourceId } from '../format'
 
-defineProps<{
+const props = defineProps<{
     visible: boolean
     item: CertReferenceItem | null
     group: CertReferenceGroup | null
 }>()
+
+/** 复合资源 ID 拆分（LB 类 "{实例}/{监听}"；非复合形态为 null，按单字段展示） */
+const scopedId = computed(() => (props.item ? splitScopedResourceId(props.item.resourceId) : null))
 
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void }>()
 

@@ -68,7 +68,15 @@
                 :key="`${r.resourceId}|${r.referencedCloudCertId}|${i}`"
                 class="ref-row"
               >
-                <span class="mono">{{ r.resourceId }}</span>
+                <!-- 复合资源 ID（LB 类 "{实例}/{监听}"）拆两行：实例 ID 供控制台对账，监听行弱化 -->
+                <span class="mono ref-id-cell">
+                  <span
+                    v-for="(line, li) in resourceIdLines(r.resourceId)"
+                    :key="li"
+                    class="ref-id-line"
+                    :class="{ 'ref-id-sub': li > 0 }"
+                  >{{ line }}</span>
+                </span>
                 <span class="ref-meta">{{ refMeta(r) }}</span>
               </div>
             </dd>
@@ -92,7 +100,7 @@ import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
 import { copyText, truncateFingerprint } from '../../ledger/format'
-import { resolveReverseState } from '../format'
+import { resolveReverseState, resourceIdLines } from '../format'
 
 const query = ref('')
 const loading = ref(false)
@@ -296,6 +304,21 @@ async function onCopy(fingerprint: string, label?: string) {
     font-size: 12px;
     color: var(--text-primary);
   }
+}
+
+.ref-id-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ref-id-line {
+  word-break: break-all;
+}
+
+.ref-id-sub {
+  color: var(--text-secondary);
+  font-size: 11px;
 }
 
 .ref-meta {

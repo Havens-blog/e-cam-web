@@ -16,8 +16,10 @@ import {
     parseScanConflict,
     relativeTime,
     resolveReverseState,
+    resourceIdLines,
     saveScanSession,
     scanStale,
+    splitScopedResourceId,
     validityConsumedPercent,
 } from './format'
 
@@ -415,5 +417,38 @@ describe('blindSpotNotice（盲区声明：优先服务端 reason，AC6）', () 
     it('无 reason → 通用盲区说明', () => {
         expect(blindSpotNotice(undefined)).toContain('部分云/产品未纳入扫描范围')
         expect(blindSpotNotice('')).toContain('部分云/产品未纳入扫描范围')
+    })
+})
+
+describe('splitScopedResourceId（复合资源 ID：LB 类 "{实例}/{监听}" 拆分）', () => {
+    it('恰含一个 / -> 拆出实例 ID 与监听 ID', () => {
+        expect(splitScopedResourceId('alb-bp1q8k2z/lsn-abc')).toEqual({
+            instanceId: 'alb-bp1q8k2z',
+            listenerId: 'lsn-abc',
+        })
+    })
+
+    it('多斜杠（AWS 监听 ARN）不拆，返回 null 原样展示', () => {
+        expect(splitScopedResourceId('arn:aws:elasticloadbalancing:cn-north-1:123:listener/app/my-alb/abc')).toBeNull()
+    })
+
+    it('无斜杠（CDN 域名/K8s 实例名/纯监听存量形态）返回 null', () => {
+        expect(splitScopedResourceId('www.example.com')).toBeNull()
+        expect(splitScopedResourceId('lsn-legacy')).toBeNull()
+    })
+
+    it('边界：首尾斜杠视为不可拆', () => {
+        expect(splitScopedResourceId('/lsn-1')).toBeNull()
+        expect(splitScopedResourceId('alb-1/')).toBeNull()
+    })
+})
+
+describe('resourceIdLines（资源 ID 展示行：复合形态拆两行）', () => {
+    it('复合形态 -> [实例 ID, "监听 {监听 ID}"]', () => {
+        expect(resourceIdLines('alb-9/lsn-target')).toEqual(['alb-9', '监听 lsn-target'])
+    })
+
+    it('非复合形态 -> 单行原文', () => {
+        expect(resourceIdLines('www.example.com')).toEqual(['www.example.com'])
     })
 })

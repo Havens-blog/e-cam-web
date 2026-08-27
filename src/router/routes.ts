@@ -653,6 +653,15 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
+                path: '/certs/probes',
+                name: 'CertProbes',
+                component: () => import('@/views/cert/probes/index.vue'),
+                meta: {
+                    title: '探测结果',
+                    icon: 'Aim',
+                },
+            },
+            {
                 path: '/certs/changes',
                 name: 'CertChanges',
                 component: () => import('@/views/cert/changes/index.vue'),
