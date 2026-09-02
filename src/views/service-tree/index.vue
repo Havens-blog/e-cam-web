@@ -58,7 +58,12 @@
                 </div>
               </template>
             </el-tree>
-            <div v-if="!treeLoading && treeData.length === 0" class="tree-empty">
+            <div v-if="!treeLoading && treeLoadError" class="tree-empty">
+              <el-empty description="服务树加载失败" :image-size="80">
+                <el-button type="primary" size="small" @click="loadTree">重试</el-button>
+              </el-empty>
+            </div>
+            <div v-else-if="!treeLoading && treeData.length === 0" class="tree-empty">
               <el-empty description="暂无节点，请创建根节点" :image-size="80" />
             </div>
           </div>
@@ -541,6 +546,7 @@ import UnbindConfirmDialog from './components/UnbindConfirmDialog.vue'
 const treeRef = ref<InstanceType<typeof ElTree>>()
 const treeData = ref<ServiceTreeNode[]>([])
 const treeLoading = ref(false)
+const treeLoadError = ref(false)
 const searchKeyword = ref('')
 
 const treeProps = {
@@ -705,6 +711,7 @@ const buildTree = (nodes: ServiceTreeNode[]): ServiceTreeNode[] => {
 // 加载树数据
 const loadTree = async () => {
   treeLoading.value = true
+  treeLoadError.value = false
   try {
     // 使用 listNodesApi 获取所有节点，然后在前端构建树结构
     const res = await listNodesApi({ page_size: 1000 })
@@ -736,6 +743,8 @@ const loadTree = async () => {
   } catch (error) {
     console.error('加载服务树失败:', error)
     treeData.value = []
+    treeLoadError.value = true
+    ElMessage.error('加载服务树失败')
   } finally {
     treeLoading.value = false
   }
