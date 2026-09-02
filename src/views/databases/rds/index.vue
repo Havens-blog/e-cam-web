@@ -185,6 +185,7 @@ import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
@@ -250,6 +251,9 @@ const fetchInstances = async () => {
     pagination.total = data?.total || 0
   } catch (error) {
     console.error('获取RDS列表失败:', error)
+    ElMessage.error('获取RDS列表失败')
+    instances.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
