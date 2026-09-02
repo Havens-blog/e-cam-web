@@ -76,34 +76,45 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in filtered" :key="r.domain">
-                <td class="cell-mono">{{ r.domain }}</td>
-                <td>{{ linkedResourceLabel(r.linkedResource) }}</td>
-                <td>
-                  <span class="probe-badge" :class="probeBadgeClass(r.status)">
-                    <span class="badge-icon" aria-hidden="true">{{ probeBadge(r.status as ProbeStatus).icon }}</span>
-                    {{ probeBadge(r.status as ProbeStatus).label }}
-                  </span>
-                </td>
-                <td class="cell-mono">{{ r.onlineNotAfter ? relativeTimeDash(r.onlineNotAfter) : '—' }}</td>
-                <td class="cell-mono">
-                  <template v-if="r.onlineFingerprint">
-                    <span class="fp">{{ truncateFingerprint(r.onlineFingerprint) }}</span>
-                    <el-tooltip content="复制完整指纹" placement="top">
-                      <button
-                        type="button"
-                        class="copy-btn"
-                        :aria-label="`复制 ${r.domain} 的线上指纹`"
-                        @click="onCopy(r.onlineFingerprint!, r.domain)"
-                      >
-                        <el-icon><CopyDocument /></el-icon>
-                      </button>
-                    </el-tooltip>
-                  </template>
-                  <span v-else>—</span>
-                </td>
-                <td class="cell-mono">{{ relativeTimeDash(r.probeAt) }}</td>
-              </tr>
+              <template v-for="g in groups" :key="g.root">
+                <tr class="group-row" :aria-expanded="isExpanded(g.root)" @click="toggleGroup(g.root)">
+                  <td colspan="6">
+                    <span class="chevron" :class="{ expanded: isExpanded(g.root) }" aria-hidden="true">▶</span>
+                    <span class="group-root cell-mono">{{ g.root }}</span>
+                    <span class="group-summary">{{ groupSummary(g.rows) }}</span>
+                  </td>
+                </tr>
+                <template v-if="isExpanded(g.root)">
+                  <tr v-for="r in g.rows" :key="r.domain" class="sub-row">
+                    <td class="cell-mono sub-domain">{{ r.domain }}</td>
+                    <td>{{ linkedResourceLabel(r.linkedResource) }}</td>
+                    <td>
+                      <span class="probe-badge" :class="probeBadgeClass(r.status)">
+                        <span class="badge-icon" aria-hidden="true">{{ probeBadge(r.status as ProbeStatus).icon }}</span>
+                        {{ probeBadge(r.status as ProbeStatus).label }}
+                      </span>
+                    </td>
+                    <td class="cell-mono">{{ r.onlineNotAfter ? relativeTimeDash(r.onlineNotAfter) : '—' }}</td>
+                    <td class="cell-mono">
+                      <template v-if="r.onlineFingerprint">
+                        <span class="fp">{{ truncateFingerprint(r.onlineFingerprint) }}</span>
+                        <el-tooltip content="复制完整指纹" placement="top">
+                          <button
+                            type="button"
+                            class="copy-btn"
+                            :aria-label="`复制 ${r.domain} 的线上指纹`"
+                            @click="onCopy(r.onlineFingerprint!, r.domain)"
+                          >
+                            <el-icon><CopyDocument /></el-icon>
+                          </button>
+                        </el-tooltip>
+                      </template>
+                      <span v-else>—</span>
+                    </td>
+                    <td class="cell-mono">{{ relativeTimeDash(r.probeAt) }}</td>
+                  </tr>
+                </template>
+              </template>
             </tbody>
           </table>
         </div>
@@ -126,7 +137,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { probeBadge, relativeTimeDash } from '../dashboard/format'
 import { copyText, truncateFingerprint } from '../ledger/format'
-import { PROBE_LINK_FILTERS, PROBE_STATUS_FILTERS, linkedResourceLabel, matchDomain, probeBadgeClass } from './format'
+import { PROBE_LINK_FILTERS, PROBE_STATUS_FILTERS, groupSummary, groupProbeResults, isProbeFilterActive, linkedResourceLabel, matchDomain, probeBadgeClass, type ProbeResultGroup } from './format'
 
 const rows = ref<CertProbeResult[]>([])
 const loading = ref(false)
@@ -136,6 +147,22 @@ const statusFilter = ref('')
 const linkFilter = ref('')
 const scanning = ref(false)
 let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+const collapsed = ref<Record<string, boolean>>({})
+
+/** 根域分组视图（过滤后的行按根域折叠；搜索/筛选激活时全部展开） */
+const groups = computed<ProbeResultGroup[]>(() => groupProbeResults(filtered.value))
+
+/** 搜索/状态/链路任一筛选激活 → 全部展开（否则命中组被折叠看不见） */
+const filterActive = computed(() => isProbeFilterActive(keyword.value, statusFilter.value, linkFilter.value))
+
+function isExpanded(root: string): boolean {
+    return filterActive.value || !collapsed.value[root]
+}
+
+function toggleGroup(root: string): void {
+    collapsed.value = { ...collapsed.value, [root]: !collapsed.value[root] }
+}
 
 const filtered = computed(() =>
     rows.value.filter((r) => {
@@ -369,6 +396,55 @@ onUnmounted(stopPolling)
   border: 1px solid var(--border-base);
   border-radius: 8px;
   overflow: hidden;
+}
+
+.group-row {
+  cursor: pointer;
+  user-select: none;
+
+  td {
+    background: rgba(255, 255, 255, 0.04);
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-base);
+  }
+
+  &:hover td {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.chevron {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+}
+
+.group-root {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.group-summary {
+  margin-left: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.sub-row .sub-domain {
+  padding-left: 30px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
 }
 
 .data-table {

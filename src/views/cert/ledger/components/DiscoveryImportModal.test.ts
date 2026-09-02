@@ -248,9 +248,15 @@ describe('DiscoveryImportModal（快照时效与 notAfter 展示，AC3）', () =
     })
 
     it('新鲜快照无过期提示，展示快照时间', async () => {
-        const wrapper = await openWith(makePreview('2026-08-24T00:00:00Z'))
-        expect(wrapper.find('[data-testid="discovery-stale-alert"]').exists()).toBe(false)
-        expect(wrapper.text()).toContain('快照时间：2026-08-24 00:00 UTC')
+        // 固定系统时钟：测试不应依赖真实日期（快照 +7 天阈值内即新鲜）
+        vi.useFakeTimers({ now: new Date('2026-08-26T00:00:00Z') })
+        try {
+            const wrapper = await openWith(makePreview('2026-08-24T00:00:00Z'))
+            expect(wrapper.find('[data-testid="discovery-stale-alert"]').exists()).toBe(false)
+            expect(wrapper.text()).toContain('快照时间：2026-08-24 00:00 UTC')
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
     it('notAfter 未登记条目显示「—（导入后补全）」占位，台账条目显示日期', async () => {
