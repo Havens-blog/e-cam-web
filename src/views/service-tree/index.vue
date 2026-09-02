@@ -876,6 +876,7 @@ const loadNodeAssets = async () => {
     console.error('加载关联资产失败:', error)
     nodeAssetList.value = []
     assetTotal.value = 0
+    ElMessage.error('加载关联资产失败')
   } finally {
     assetsLoading.value = false
   }
