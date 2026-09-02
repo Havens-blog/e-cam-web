@@ -159,7 +159,10 @@ const loadRules = async () => {
   try {
     const res = await listRulesApi({ offset: 0, limit: 100 })
     rules.value = (res.data?.items || []).filter(r => r != null)
-  } catch { rules.value = [] } finally { loading.value = false }
+  } catch {
+    ElMessage.error('获取自动打标规则失败')
+    rules.value = []
+  } finally { loading.value = false }
 }
 const openCreateDialog = () => {
   editingRule.value = null
