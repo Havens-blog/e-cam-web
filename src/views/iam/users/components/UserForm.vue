@@ -99,6 +99,7 @@ import { createUserApi, listCloudAccountsApi, listGroupsApi, updateUserApi } fro
 import type { CloudUser } from '@/api/types/iam'
 import { getProviderLabel, USER_STATUS, USER_TYPES } from '@/utils/constants'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 interface Props {
@@ -142,6 +143,7 @@ const fetchCloudAccounts = async () => {
     cloudAccounts.value = data.accounts
   } catch (error) {
     console.error('获取云账号列表失败:', error)
+    ElMessage.error('获取云账号列表失败，云账号选项不可用')
   }
 }
 
