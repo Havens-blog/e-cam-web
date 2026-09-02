@@ -670,7 +670,8 @@ const fetchPermissionGroups = async () => {
     const { data } = await listGroupsApi({ size: 100 })
     permissionGroups.value = data.data || []
   } catch (error: any) {
-    logError(error, 'fetchPermissionGroups')
+    logError('fetchPermissionGroups failed', error, 'users/index')
+    ElMessage.error('获取用户组列表失败，请重新打开对话框重试')
   }
 }
 
