@@ -237,6 +237,7 @@ const fetchPermissionGroups = async () => {
     permissionGroups.value = data.groups ?? data.data ?? []
   } catch (error) {
     console.error('获取权限组列表失败:', error)
+    ElMessage.error('获取权限组列表失败，请重新打开对话框重试')
   }
 }
 
