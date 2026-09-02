@@ -450,10 +450,17 @@ const handlePolicySubmit = async () => {
 const handleDelete = async (policy: TagPolicy) => {
   try {
     await ElMessageBox.confirm(`确定要删除策略"${policy.name}"吗？`, '删除策略', { type: 'warning' })
+  } catch {
+    // user cancelled
+    return
+  }
+  try {
     await deletePolicyApi(policy.id)
     ElMessage.success('删除成功')
     loadPolicies()
-  } catch { /* cancelled */ }
+  } catch (err: any) {
+    ElMessage.error(err?.message || '删除策略失败')
+  }
 }
 
 const formatResourceTypes = (types?: string[]) => {
