@@ -714,6 +714,17 @@ const routes: RouteRecordRaw[] = [
                     certManageOnly: true,
                 },
             },
+            // ==================== 多云统一日志查询(Phase 5)====================
+            // 只读特性:全角色可查,租户边界由后端 RequireTenant 承接。
+            {
+                path: '/logs',
+                name: 'CloudLogs',
+                component: () => import('@/views/logs/index.vue'),
+                meta: {
+                    title: '日志查询',
+                    icon: 'Document',
+                },
+            },
         ],
     },
     {
