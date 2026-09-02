@@ -1,5 +1,22 @@
 <template>
   <div class="dns-stats">
+    <!-- 统计加载失败提示 -->
+    <el-alert
+      v-if="loadError"
+      class="stats-error-alert"
+      type="error"
+      :closable="false"
+      show-icon
+      title="DNS 统计加载失败"
+    >
+      <template #default>
+        <span>统计数据获取失败，可能是网络或服务异常，请稍后重试。</span>
+        <el-button class="retry-btn" size="small" type="primary" text @click="fetchStats">
+          重试
+        </el-button>
+      </template>
+    </el-alert>
+
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card" v-for="card in statCards" :key="card.label">
@@ -31,11 +48,13 @@ import { getDnsStatsApi } from '@/api/dns'
 import type { DnsStats } from '@/api/types/dns'
 import { getProviderLabel } from '@/utils/constants'
 import { Cloudy, Connection, List, WarningFilled } from '@element-plus/icons-vue'
+import { ElButton, ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const stats = ref<DnsStats | null>(null)
 const loading = ref(false)
+const loadError = ref(false)
 const providerChartRef = ref<HTMLElement>()
 const recordTypeChartRef = ref<HTMLElement>()
 let providerChart: echarts.ECharts | null = null
@@ -107,12 +126,15 @@ const statCards = computed(() => {
 
 const fetchStats = async () => {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getDnsStatsApi()
     const data = (res as any).data || res
     stats.value = data
   } catch {
     stats.value = null
+    loadError.value = true
+    ElMessage.error('获取DNS统计失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -198,6 +220,20 @@ defineExpose({ refresh: fetchStats })
 </script>
 
 <style scoped lang="scss">
+.stats-error-alert {
+  margin-bottom: 20px;
+
+  :deep(.el-alert__content) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .retry-btn {
+    margin-left: 8px;
+  }
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
