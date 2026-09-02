@@ -434,7 +434,9 @@ async function loadAccounts() {
     const res = await listCloudAccountsApi({ status: 'active', limit: 100 })
     const data = res?.data
     cloudAccounts.value = data?.accounts || []
-  } catch {
+  } catch (e) {
+    console.error('加载云账号失败:', e)
+    ElMessage.error('加载云账号失败')
     cloudAccounts.value = []
   }
 }

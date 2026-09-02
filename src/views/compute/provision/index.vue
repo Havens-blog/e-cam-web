@@ -56,6 +56,9 @@
               </div>
             </div>
           </div>
+          <div v-if="safeAccounts.length === 0" class="empty-placeholder">
+            暂无可用云账号
+          </div>
         </el-card>
 
         <!-- 2. 网络配置（优先选择，决定地域和可用区） -->
