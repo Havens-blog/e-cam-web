@@ -249,6 +249,7 @@ const fetchAccounts = async () => {
       label: `${a.name} (${getProviderLabel(a.provider)})`
     }))
   } catch {
+    ElMessage.error('获取云账号列表失败')
     accountOptions.value = []
   }
 }
