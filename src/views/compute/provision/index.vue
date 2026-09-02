@@ -827,7 +827,9 @@ async function handleAccountSelect(acc: CloudAccount) {
         await handleVPCChange(form.vpc_id)
       }
     }
-  } catch {
+  } catch (e) {
+    console.error('加载 VPC 列表失败:', e)
+    ElMessage.error('加载 VPC 列表失败，请重试')
     vpcsWithRegion.value = []
   } finally {
     vpcLoading.value = false
@@ -1066,7 +1068,11 @@ async function loadResourcesForTemplate(accountId: number, region: string, vpcId
     const res = await listVPCAssetsApi({ account_id: accountId, limit: 200 })
     const vpcItems = res?.data?.items || res?.data || []
     vpcsWithRegion.value = mapVPCAssets(vpcItems)
-  } catch { vpcsWithRegion.value = [] }
+  } catch (e) {
+    console.error('加载 VPC 列表失败:', e)
+    ElMessage.error('加载 VPC 列表失败，请重试')
+    vpcsWithRegion.value = []
+  }
   finally { vpcLoading.value = false }
 
   // 加载实例规格 + 镜像（双数据源）
@@ -1095,7 +1101,10 @@ async function loadResourcesForTemplate(accountId: number, region: string, vpcId
         }
       }
       images.value = merged
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.error('加载实例规格或镜像失败:', e)
+      ElMessage.error('加载实例规格或镜像失败，请重试')
+    }
     finally { specLoading.value = false }
   }
 
@@ -1115,7 +1124,10 @@ async function loadResourcesForTemplate(accountId: number, region: string, vpcId
         const sgItems = sgRes.value?.data?.items || sgRes.value?.data || []
         securityGroups.value = mapSecurityGroupAssets(sgItems)
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.error('加载子网或安全组失败:', e)
+      ElMessage.error('加载子网或安全组失败，请重试')
+    }
     finally { subnetLoading.value = false }
   }
 }
