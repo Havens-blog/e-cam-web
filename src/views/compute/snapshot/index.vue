@@ -93,6 +93,7 @@ import { listSnapshotAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
@@ -131,7 +132,12 @@ const fetchData = async () => {
     const data = res.data as any
     instances.value = data?.items || []
     pagination.total = data?.total || 0
-  } catch (e) { console.error(e) } finally { loading.value = false }
+  } catch (e) {
+    console.error('获取快照列表失败:', e)
+    ElMessage.error('获取快照列表失败')
+    instances.value = []
+    pagination.total = 0
+  } finally { loading.value = false }
 }
 
 const handleSearch = () => { pagination.page = 1; fetchData() }
