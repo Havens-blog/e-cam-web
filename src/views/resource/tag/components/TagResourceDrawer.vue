@@ -163,6 +163,11 @@ const handleBatchUnbind = async () => {
   if (selectedRows.value.length === 0) return
   try {
     await ElMessageBox.confirm(`确定要解绑选中的 ${selectedRows.value.length} 个资源的标签吗？`, '批量解绑', { type: 'warning' })
+  } catch {
+    // user cancelled
+    return
+  }
+  try {
     await unbindTagsApi({
       resources: selectedRows.value.map(r => ({
         account_id: r.account_id,
@@ -175,7 +180,9 @@ const handleBatchUnbind = async () => {
     ElMessage.success('解绑成功')
     emit('unbind')
     loadResources()
-  } catch { /* cancelled */ }
+  } catch (err: any) {
+    ElMessage.error(err?.message || '批量解绑失败')
+  }
 }
 
 const handleBatchBind = () => {
