@@ -156,6 +156,13 @@
                   </div>
                 </div>
               </div>
+              <div v-else-if="membersLoadError" class="empty-tab members-error">
+                <el-icon :size="40" class="error-icon"><WarningFilled /></el-icon>
+                <p>成员列表加载失败</p>
+                <el-button size="small" type="primary" plain @click="fetchMembers">
+                  重试
+                </el-button>
+              </div>
               <div v-else-if="!membersLoading" class="empty-tab">
                 <el-icon :size="40"><User /></el-icon>
                 <p>该用户组暂无成员</p>
@@ -173,7 +180,8 @@ import { getGroupMembersApi } from '@/api'
 import type { CloudUser, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import { formatDateTime } from '@/utils/format'
-import { Delete, Document, Edit, Folder, User } from '@element-plus/icons-vue'
+import { Delete, Document, Edit, Folder, User, WarningFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -189,6 +197,7 @@ defineEmits<{
 
 const activeTab = ref('basic')
 const membersLoading = ref(false)
+const membersLoadError = ref(false)
 const groupMembers = ref<CloudUser[]>([])
 
 const tabs = [
@@ -223,13 +232,16 @@ const formatPolicyDoc = (doc: string) => {
 
 const fetchMembers = async () => {
   if (!props.group?.id) return
-  
+
   membersLoading.value = true
+  membersLoadError.value = false
   try {
     const response = await getGroupMembersApi(props.group.id)
     groupMembers.value = Array.isArray(response.data) ? response.data : []
   } catch {
     groupMembers.value = []
+    membersLoadError.value = true
+    ElMessage.error('加载成员列表失败，请稍后重试')
   } finally {
     membersLoading.value = false
   }
@@ -239,6 +251,7 @@ watch(() => props.visible, (val) => {
   if (val) {
     activeTab.value = 'basic'
     groupMembers.value = []
+    membersLoadError.value = false
   }
 })
 
@@ -575,6 +588,16 @@ watch(activeTab, (tab) => {
   p {
     margin: 12px 0 0 0;
     font-size: 14px;
+  }
+
+  &.members-error {
+    .error-icon {
+      color: var(--el-color-danger);
+    }
+
+    .el-button {
+      margin-top: 12px;
+    }
   }
 }
 </style>
