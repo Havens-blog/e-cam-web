@@ -1017,7 +1017,9 @@ async function loadTemplates() {
   try {
     const res = await listTemplatesApi({ limit: 50 })
     templates.value = res?.data?.items || []
-  } catch {
+  } catch (e) {
+    console.error('加载模板列表失败:', e)
+    ElMessage.error('加载模板列表失败')
     templates.value = []
   } finally {
     templateLoading.value = false
