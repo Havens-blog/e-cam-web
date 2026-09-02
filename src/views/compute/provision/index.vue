@@ -132,7 +132,7 @@
               <el-icon class="is-loading"><Loading /></el-icon> 加载中...
             </div>
             <div v-else-if="safeSecurityGroups.length === 0" class="empty-placeholder">
-              请先选择 VPC
+              {{ form.vpc_id ? '未获取到安全组（加载失败或该 VPC 下暂无安全组）' : '请先选择 VPC' }}
             </div>
             <div v-else class="sg-selector">
               <!-- 已选安全组标签 -->
@@ -877,17 +877,24 @@ async function handleVPCChange(vpcId: string) {
     if (results[0].status === 'fulfilled' && results[0].value) {
       const snItems = results[0].value?.data?.items || results[0].value?.data || []
       subnets.value = mapSubnetAssets(snItems)
+    } else if (results[0].status === 'rejected') {
+      console.error('[Provision] 加载子网失败:', results[0].reason)
+      ElMessage.error('加载子网列表失败，请重试')
     }
     // 安全组
     if (results[1].status === 'fulfilled' && results[1].value) {
       const sgItems = results[1].value?.data?.items || results[1].value?.data || []
       securityGroups.value = mapSecurityGroupAssets(sgItems)
+    } else if (results[1].status === 'rejected') {
+      console.error('[Provision] 加载安全组失败:', results[1].reason)
+      ElMessage.error('加载安全组列表失败，请重试')
     }
     // 实例规格
     if (results[2].status === 'fulfilled' && results[2].value) {
       instanceTypes.value = (results[2].value as any)?.data || []
     } else if (results[2].status === 'rejected') {
       console.error('[Provision] 加载实例规格失败:', results[2].reason)
+      ElMessage.error('加载实例规格失败，请重试')
     }
     // 镜像（合并：数据库自定义镜像 + 云 API 公共镜像）
     const mergedImages: ImageWithOwner[] = []
@@ -897,6 +904,7 @@ async function handleVPCChange(vpcId: string) {
       mergedImages.push(...mapImageAssets(imgItems))
     } else if (results[3].status === 'rejected') {
       console.error('[Provision] 加载数据库镜像失败:', results[3].reason)
+      ElMessage.error('加载数据库镜像失败，请重试')
     }
     // 云 API 公共镜像
     if (results[4]?.status === 'fulfilled' && results[4].value) {
@@ -911,6 +919,9 @@ async function handleVPCChange(vpcId: string) {
           mergedImages.push(img)
         }
       }
+    } else if (results[4]?.status === 'rejected') {
+      console.error('[Provision] 加载公共镜像失败:', results[4].reason)
+      ElMessage.error('加载公共镜像失败，请重试')
     }
     images.value = mergedImages
 
@@ -936,6 +947,7 @@ async function handleVPCChange(vpcId: string) {
     }
   } catch (e: any) {
     console.error('加载云资源失败', e)
+    ElMessage.error('加载云资源失败，请重试')
   } finally {
     subnetLoading.value = false
     specLoading.value = false
