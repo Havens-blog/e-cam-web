@@ -294,6 +294,7 @@ import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import SecurityGroupDetailDrawer from '../../security-group/components/SecurityGroupDetailDrawer.vue'
@@ -332,7 +333,9 @@ async function loadSecurityGroups() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
     const data = (res as unknown as { data: { items: Asset[] } }).data || res
     securityGroups.value = (data as { items?: Asset[] }).items || []
-  } catch {
+  } catch (error: any) {
+    // N2-001：安全组列表加载失败不再静默吞错，保留清空逻辑的同时给出可见反馈
+    ElMessage.error(error?.message || '加载安全组列表失败')
     securityGroups.value = []
   } finally {
     securityLoading.value = false
