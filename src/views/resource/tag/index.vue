@@ -244,6 +244,7 @@ const loadTags = async () => {
     tagList.value = res.data?.items || []
     tagTotal.value = res.data?.total || 0
   } catch {
+    ElMessage.error('获取标签列表失败')
     tagList.value = []
     tagTotal.value = 0
   } finally {
