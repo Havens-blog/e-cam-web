@@ -304,6 +304,7 @@ const loadPolicies = async () => {
       complianceFilter.policy_id = policies.value[0]?.id
     }
   } catch {
+    ElMessage.error('获取标签策略失败')
     policies.value = []
   } finally {
     loading.value = false
