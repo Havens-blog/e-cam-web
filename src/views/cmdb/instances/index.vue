@@ -465,6 +465,7 @@ const fetchModels = async () => {
     modelOptions.value = res.data?.data?.models || []
   } catch (error) {
     console.error('加载模型列表失败:', error)
+    ElMessage.error('加载模型列表失败')
   }
 }
 
