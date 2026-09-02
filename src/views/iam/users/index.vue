@@ -166,7 +166,7 @@
             <el-icon><FolderAdd /></el-icon>
             分配用户组
           </el-button>
-          <el-button size="small" type="danger" @click="handleBatchDelete">
+          <el-button size="small" type="danger" :loading="batchDeleting" @click="handleBatchDelete">
             <el-icon><Delete /></el-icon>
             批量删除
           </el-button>
@@ -519,6 +519,7 @@ const formatTime = (time: string | undefined) => {
 const loading = ref(false)
 const submitting = ref(false)
 const batchAssigning = ref(false)
+const batchDeleting = ref(false)
 const dialogVisible = ref(false)
 const syncDialogVisible = ref(false)
 const batchAssignDialogVisible = ref(false)
@@ -815,23 +816,38 @@ const handleConfirmBatchAssign = async () => {
 
 // 批量删除
 const handleBatchDelete = async () => {
+  // 防重复提交：批量删除执行期间忽略再次触发
+  if (batchDeleting.value) return
+  const totalCount = selectedUsers.value.length
+  let deletedCount = 0
   try {
     await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedUsers.value.length} 个用户吗？`,
+      `确定要删除选中的 ${totalCount} 个用户吗？`,
       '确认删除',
       { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     )
+    batchDeleting.value = true
     for (const user of selectedUsers.value) {
       await deleteUserApi(user.id)
+      deletedCount += 1
     }
     ElMessage.success('批量删除成功')
     selectedUsers.value = []
     fetchUsers()
   } catch (error: any) {
     if (error !== 'cancel') {
-      logError(error, 'batchDelete')
-      handleApiError(error, '批量删除失败')
+      logError('batchDelete failed', error, 'users/index')
+      // 部分删除成功时刷新列表，让界面呈现真实状态
+      if (deletedCount > 0) fetchUsers()
+      handleApiError(
+        error,
+        deletedCount > 0
+          ? `批量删除中断：已删除 ${deletedCount}/${totalCount} 个用户`
+          : '批量删除失败'
+      )
     }
+  } finally {
+    batchDeleting.value = false
   }
 }
 
