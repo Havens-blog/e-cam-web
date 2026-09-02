@@ -295,6 +295,7 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import SecurityGroupDetailDrawer from '../../security-group/components/SecurityGroupDetailDrawer.vue'
@@ -443,10 +444,12 @@ const tagList = computed(() => {
   return []
 })
 
+// N2-007：字符串时间不可用 parseInt 解析（"2024-05-06 10:00:00" 会被解析成 2024 再显示为 1970 年），
+// 与 LbDetailDrawer 保持一致改用 dayjs 解析，解析失败时原样返回
 const formatTime = (time: number | string | undefined) => {
   if (!time) return '-'
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  return new Date(ts).toLocaleString('zh-CN')
+  const d = dayjs(time)
+  return d.isValid() ? d.format('YYYY-MM-DD HH:mm:ss') : String(time)
 }
 
 const getTabName = (tab: string) => {
