@@ -789,6 +789,7 @@ const loadBindings = async () => {
         assetMap = new Map(assets.map((a: any) => [a.id, a]))
       } catch (e) {
         console.error('加载资产详情失败:', e)
+        ElMessage.error('加载资产详情失败')
       }
     }
     
@@ -802,6 +803,7 @@ const loadBindings = async () => {
         instanceMap = new Map(instances.map((i: any) => [i.id, i]))
       } catch (e) {
         console.error('加载实例详情失败:', e)
+        ElMessage.error('加载实例详情失败')
       }
     }
     
@@ -841,6 +843,7 @@ const loadBindings = async () => {
     })
   } catch (error) {
     console.error('加载绑定资源失败:', error)
+    ElMessage.error('加载绑定资源失败')
   } finally {
     bindingsLoading.value = false
   }
