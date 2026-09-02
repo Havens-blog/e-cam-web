@@ -657,6 +657,7 @@ const searchInstances = async (query: string) => {
     instanceOptions.value = data?.data?.instances || data?.instances || data?.list || []
   } catch (error) {
     console.error('搜索实例失败:', error)
+    ElMessage.error('搜索实例失败')
   } finally {
     instanceSearchLoading.value = false
   }
