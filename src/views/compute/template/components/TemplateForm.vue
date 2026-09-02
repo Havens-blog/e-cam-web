@@ -150,6 +150,19 @@ async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  // 级联必填项校验（CascadeSelectors 内的子字段不在 el-form model 上，需提交前手动校验）
+  const missing: string[] = []
+  if (!cascadeForm.value.cloud_account_id) missing.push('云账号')
+  if (!cascadeForm.value.region) missing.push('地域')
+  if (!cascadeForm.value.vpc_id) missing.push('VPC')
+  if (!cascadeForm.value.subnet_id) missing.push('子网')
+  if (!cascadeForm.value.instance_type) missing.push('实例规格')
+  if (!cascadeForm.value.image_id) missing.push('镜像')
+  if (missing.length > 0) {
+    ElMessage.error(`请填写以下必填项: ${missing.join('、')}`)
+    return
+  }
+
   const reqData = {
     name: form.name,
     description: form.description,
