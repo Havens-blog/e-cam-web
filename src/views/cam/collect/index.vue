@@ -115,6 +115,7 @@ const accountOptions = ref<{ value: number; label: string }[]>([])
 
 const logs = ref<CollectLog[]>([])
 const logsLoading = ref(false)
+const logsLoadFailed = ref(false)
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
@@ -207,6 +208,7 @@ const fetchLogs = async () => {
     const data = (res as any).data || res
     logs.value = data.items || []
     total.value = data.total || 0
+    logsLoadFailed.value = false
 
     // 如果没有 running 状态的任务，停止轮询
     const hasRunning = logs.value.some((l: CollectLog) => l.status === 'running')
@@ -215,6 +217,11 @@ const fetchLogs = async () => {
     }
   } catch {
     logs.value = []
+    // 轮询期间失败只提示一次，避免每 5 秒重复弹错
+    if (!logsLoadFailed.value) {
+      ElMessage.error('获取采集日志失败')
+      logsLoadFailed.value = true
+    }
   } finally {
     logsLoading.value = false
   }
