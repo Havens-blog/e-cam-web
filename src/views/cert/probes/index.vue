@@ -85,6 +85,16 @@
                     <span class="chevron" :class="{ expanded: isExpanded(g.root) }" aria-hidden="true">▶</span>
                     <span class="group-root cell-mono">{{ g.root }}</span>
                     <span class="group-summary">{{ groupSummary(g.rows) }}</span>
+                    <el-button
+                      class="group-probe-btn"
+                      size="small"
+                      text
+                      :disabled="scanning"
+                      @click.stop="triggerRootScan(g.root, g.rows)"
+                    >
+                      <span v-if="scanningRoot === g.root" class="spinner" aria-hidden="true" />
+                      {{ scanningRoot === g.root ? '探测中' : '探测此域' }}
+                    </el-button>
                   </td>
                 </tr>
                 <template v-if="isExpanded(g.root)">
@@ -165,6 +175,7 @@ const keyword = ref('')
 const statusFilter = ref('')
 const linkFilter = ref('')
 const scanning = ref(false)
+const scanningRoot = ref('')
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const collapsed = ref<Record<string, boolean>>({})
@@ -235,10 +246,40 @@ async function triggerScan() {
         startPolling(baseline)
     } catch (err) {
         scanning.value = false
+        scanningRoot.value = '' 
         const code = err instanceof CertRequestError ? err.code : ''
         if (code === 'SCAN_IN_PROGRESS') {
             ElMessage.warning('探测正在进行中，稍后自动刷新')
             startPolling(baseline)
+            return
+        }
+        ElMessage.error(err instanceof Error ? err.message : '触发探测失败，请重试')
+    }
+}
+
+/** 组头定向探测：202 后轮询至该组 probeAt 推进（其余组不动，完成判定更精准） */
+async function triggerRootScan(root: string, groupRows: CertProbeResult[]) {
+    if (scanning.value) return
+    scanning.value = true
+    scanningRoot.value = root
+    const baseline = groupRows.reduce((m, r) => {
+        const t = Date.parse(r.probeAt)
+        return Number.isNaN(t) ? m : Math.max(m, t)
+    }, 0)
+    try {
+        await triggerCertProbeScanApi(root)
+        startPolling(baseline)
+    } catch (err) {
+        scanning.value = false
+        scanningRoot.value = ''
+        const code = err instanceof CertRequestError ? err.code : ''
+        if (code === 'SCAN_IN_PROGRESS') {
+            ElMessage.warning('探测正在进行中，稍后自动刷新')
+            startPolling(baseline)
+            return
+        }
+        if (code === 'PROBE_NO_TARGETS') {
+            ElMessage.warning(`根域名 ${root} 下无可拨测目标（DNS 记录未同步或域名不存在）`)
             return
         }
         ElMessage.error(err instanceof Error ? err.message : '触发探测失败，请重试')
@@ -253,11 +294,13 @@ function startPolling(baseline: number) {
         // 本轮完成：出现比 baseline 更新的 probeAt
         if (maxProbeAtMs() > baseline) {
             scanning.value = false
+            scanningRoot.value = ''
             ElMessage.success('探测完成，结果已刷新')
             return
         }
         if (Date.now() - startedAt > SCAN_POLL_MAX_MS) {
             scanning.value = false
+            scanningRoot.value = ''
             ElMessage.info('探测仍在后台进行，已停止自动刷新，请稍后手动刷新')
             return
         }
@@ -454,6 +497,11 @@ onUnmounted(stopPolling)
   margin-left: 12px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.group-probe-btn {
+  margin-left: 16px;
+  font-size: 12px;
 }
 
 .sub-row .sub-domain {

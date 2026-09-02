@@ -816,8 +816,12 @@ export function getCertProbesApi() {
 }
 
 /** 立即触发 DNS 源探测（异步后台；202 已触发 / 409 进行中 / 503 DNS 源未装配） */
-export function triggerCertProbeScanApi() {
-    return unwrapCertEnvelope<{ triggered: boolean }>(certAxios.post<CertEnvelope<{ triggered: boolean }>>('/certs/probes/scan'))
+/** rootDomain 可选：仅拨测该根域下目标（定向刷新）；缺省全量 */
+export function triggerCertProbeScanApi(rootDomain?: string) {
+    const body = rootDomain?.trim() ? { rootDomain: rootDomain.trim() } : undefined
+    return unwrapCertEnvelope<{ triggered: boolean }>(
+        certAxios.post<CertEnvelope<{ triggered: boolean }>>('/certs/probes/scan', body),
+    )
 }
 
 // ==================== 引用关系 ====================
