@@ -98,12 +98,19 @@ const dialogVisible = computed({
 })
 
 // 获取用户组成员
-const fetchGroupMembers = async (groupId: number, tenantId?: string): Promise<CloudUser[]> => {
+const fetchGroupMembers = async (
+  groupId: number,
+  tenantId?: string,
+  groupName?: string
+): Promise<CloudUser[]> => {
   try {
     const response = await getGroupMembersApi(groupId, tenantId)
     return Array.isArray(response.data) ? response.data : []
   } catch (error) {
-    console.error(`获取用户组 ${groupId} 成员失败:`, error)
+    console.error(`获取用户组 ${groupName || groupId} 成员失败:`, error)
+    ElMessage.error(
+      `获取用户组「${groupName || groupId}」成员失败，导出内容中的成员信息可能不完整`
+    )
     return []
   }
 }
@@ -132,7 +139,7 @@ const handleExport = async () => {
     if (formData.includeDetails.includes('members')) {
       const groupsWithMembers = await Promise.all(
         dataToExport.map(async (group) => {
-          const members = await fetchGroupMembers(group.id, group.tenant_id)
+          const members = await fetchGroupMembers(group.id, group.tenant_id, group.name)
           return { ...group, members }
         })
       )
