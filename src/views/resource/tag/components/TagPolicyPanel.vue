@@ -90,6 +90,15 @@
         </div>
       </div>
 
+      <el-alert
+        v-if="complianceError"
+        title="合规检查数据获取失败，请点击「重新检查」重试"
+        type="error"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 12px"
+      />
+
       <el-table
         ref="complianceTableRef"
         :data="complianceResults"
@@ -288,6 +297,7 @@ const policyForm = reactive({
 
 // Compliance
 const complianceLoading = ref(false)
+const complianceError = ref(false)
 const complianceResults = ref<ComplianceResult[]>([])
 const complianceData = reactive({ compliant_count: 0, non_compliant_count: 0, total: 0 })
 const complianceFilter = reactive({ policy_id: undefined as number | undefined, resource_type: '' })
@@ -313,6 +323,7 @@ const loadPolicies = async () => {
 
 const loadCompliance = async () => {
   if (!complianceFilter.policy_id) {
+    complianceError.value = false
     complianceResults.value = []
     complianceData.compliant_count = 0
     complianceData.non_compliant_count = 0
@@ -328,12 +339,15 @@ const loadCompliance = async () => {
       offset,
       limit: compliancePageSize.value,
     })
+    complianceError.value = false
     complianceResults.value = (res.data?.items || []).filter(r => r != null)
     complianceData.compliant_count = res.data?.compliant_count || 0
     complianceData.non_compliant_count = res.data?.non_compliant_count || 0
     complianceData.total = res.data?.total || res.data?.non_compliant_count || 0
   } catch (err: any) {
     console.error('[compliance] loadCompliance error:', err?.response?.status, err?.response?.data, err?.message)
+    ElMessage.error('合规检查数据获取失败')
+    complianceError.value = true
     complianceResults.value = []
   } finally {
     complianceLoading.value = false
