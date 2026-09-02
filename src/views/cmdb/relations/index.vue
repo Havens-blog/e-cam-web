@@ -383,6 +383,7 @@ const fetchModels = async () => {
     modelOptions.value = data?.data?.models || data?.models || []
   } catch (error) {
     console.error('获取模型列表失败:', error)
+    ElMessage.error('获取模型列表失败')
   }
 }
 
