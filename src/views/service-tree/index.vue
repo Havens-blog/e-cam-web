@@ -893,6 +893,7 @@ const loadAssetStats = async () => {
   } catch (error) {
     console.error('加载资产统计失败:', error)
     assetStats.value = null
+    ElMessage.error('加载资产统计失败')
   }
 }
 
