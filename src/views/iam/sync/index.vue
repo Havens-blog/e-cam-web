@@ -294,6 +294,7 @@ const loadCloudAccounts = async () => {
     cloudAccounts.value = res.data.accounts || []
   } catch (error) {
     console.error('加载云账号列表失败:', error)
+    ElMessage.error('加载云账号列表失败，筛选条件暂不可用')
   }
 }
 
