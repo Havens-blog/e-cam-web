@@ -314,6 +314,7 @@ const fetchAttributes = async () => {
     }
   } catch (e) {
     console.error('获取属性失败:', e)
+    ElMessage.error('获取属性失败')
   } finally {
     attrLoading.value = false
   }
