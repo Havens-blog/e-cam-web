@@ -282,6 +282,10 @@
                 </div>
               </div>
             </template>
+            <div v-else-if="relationsError" class="empty-tab">
+              <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
+              <p>关联资源加载失败，请刷新重试</p>
+            </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
               <p>暂无安全组数据</p>
@@ -350,6 +354,10 @@
                 </div>
               </div>
             </div>
+            <div v-else-if="relationsError" class="empty-tab">
+              <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
+              <p>关联资源加载失败，请刷新重试</p>
+            </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
               <p>暂无网络数据</p>
@@ -404,6 +412,10 @@
                 </div>
               </div>
             </template>
+            <div v-else-if="relationsError" class="empty-tab">
+              <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
+              <p>关联资源加载失败，请刷新重试</p>
+            </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
               <p>暂无磁盘数据</p>
@@ -457,6 +469,10 @@
                 </div>
               </div>
             </template>
+            <div v-else-if="relationsError" class="empty-tab">
+              <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
+              <p>关联资源加载失败，请刷新重试</p>
+            </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
               <p>暂无快照数据</p>
@@ -517,7 +533,8 @@ import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.v
 import SecurityGroupDetailDrawer from '@/views/compute/security-group/components/SecurityGroupDetailDrawer.vue';
 import SnapshotDetailDrawer from '@/views/compute/snapshot/components/SnapshotDetailDrawer.vue';
 import VpcDetailDrawer from '@/views/network/vpc/components/VpcDetailDrawer.vue';
-import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refresh } from '@element-plus/icons-vue';
+import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refresh, WarningFilled } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import { ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -542,6 +559,7 @@ const nestedDrawerData = ref<Asset | null>(null)
 const relationsData = ref<ECSRelationsResp | null>(null)
 const relationsLoading = ref(false)
 const relationsLoaded = ref(false)
+const relationsError = ref(false)
 
 // 获取关联资源
 const fetchRelations = async () => {
@@ -562,6 +580,7 @@ const fetchRelations = async () => {
   })
   
   relationsLoading.value = true
+  relationsError.value = false
   try {
     const res = await getECSRelationsApi(props.instance.asset_id, {
       tenant_id: props.instance.tenant_id,
@@ -587,6 +606,8 @@ const fetchRelations = async () => {
     }
   } catch (error) {
     console.error('获取关联资源失败:', error)
+    relationsError.value = true
+    ElMessage.error('获取关联资源失败')
   } finally {
     relationsLoading.value = false
   }
@@ -1089,6 +1110,10 @@ const closeNestedDrawer = () => {
   justify-content: center;
   height: 300px;
   color: #909399;
+
+  .empty-error {
+    color: var(--el-color-danger, #f56c6c);
+  }
 
   p {
     margin-top: 16px;
