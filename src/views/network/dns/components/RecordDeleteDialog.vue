@@ -115,6 +115,8 @@ defineExpose({ setLoading: (val: boolean) => { deleting.value = val } })
 .mono {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 12px;
+  word-break: break-all;
+  min-width: 0;
 }
 
 .record-type {
