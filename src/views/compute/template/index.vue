@@ -110,7 +110,7 @@
           <div class="template-actions">
             <button class="template-action-btn primary" title="使用模板" @click="handleProvision(tpl)">🚀</button>
             <button class="template-action-btn" title="编辑" @click="handleEdit(tpl)">✏️</button>
-            <button class="template-action-btn" title="复制" @click="handleCopy(tpl)">📋</button>
+            <button class="template-action-btn" title="复制" :disabled="copying" @click="handleCopy(tpl)">📋</button>
             <button class="template-action-btn danger" title="删除" @click="handleDeleteConfirm(tpl)">🗑️</button>
           </div>
         </div>
@@ -228,6 +228,7 @@ const router = useRouter()
 
 const loading = ref(false)
 const deleteLoading = ref(false)
+const copying = ref(false)
 const templates = ref<VMTemplate[]>([])
 const total = ref(0)
 const currentPage = ref(1)
@@ -365,6 +366,8 @@ function handleProvision(tpl: VMTemplate | null) {
 
 async function handleCopy(tpl: VMTemplate | null) {
   if (!tpl) return
+  if (copying.value) return
+  copying.value = true
   try {
     await createTemplateApi({
       name: `${tpl.name || '模板'} - 副本`,
@@ -392,6 +395,8 @@ async function handleCopy(tpl: VMTemplate | null) {
     loadTemplates()
   } catch {
     ElMessage.error('复制模板失败')
+  } finally {
+    copying.value = false
   }
 }
 
@@ -780,6 +785,14 @@ onMounted(() => {
 .template-action-btn.danger:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
+}
+.template-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.template-action-btn:disabled:hover {
+  background: var(--el-fill-color);
+  color: var(--el-text-color-secondary);
 }
 
 /* 卡片内容 */
