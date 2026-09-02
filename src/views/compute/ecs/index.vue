@@ -901,7 +901,8 @@ const fetchStatusCounts = async () => {
     runningCount.value = runningData.total || 0
     stoppedCount.value = stoppedData.total || 0
   } catch {
-    // 统计请求失败不影响主流程
+    // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    ElMessage.error('获取实例状态统计失败')
   }
 }
 
