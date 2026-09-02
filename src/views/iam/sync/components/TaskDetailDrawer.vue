@@ -137,6 +137,14 @@
           />
         </el-card>
       </template>
+      <div v-else-if="loadError" class="detail-error">
+        <el-icon :size="48" class="error-icon"><WarningFilled /></el-icon>
+        <p>任务详情加载失败，请重试</p>
+        <el-button size="small" @click="loadTaskDetail">
+          <el-icon><Refresh /></el-icon>
+          重新加载
+        </el-button>
+      </div>
     </div>
   </el-drawer>
 </template>
@@ -150,7 +158,8 @@ import {
   getSyncTaskStatusLabel,
   getSyncTaskTypeLabel
 } from '@/utils/constants'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, WarningFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 interface Props {
@@ -173,6 +182,7 @@ const drawerVisible = computed({
 
 const loading = ref(false)
 const task = ref<SyncTask>()
+const loadError = ref(false)
 
 // 自动刷新定时器
 let refreshTimer: number | null = null
@@ -182,6 +192,7 @@ const loadTaskDetail = async () => {
   if (!props.taskId) return
 
   loading.value = true
+  loadError.value = false
   try {
     const res = await getSyncTaskStatusApi(props.taskId)
     // API 可能返回 SyncTaskStatusResponse，提取 task 或直接使用
@@ -196,6 +207,8 @@ const loadTaskDetail = async () => {
     }
   } catch (error) {
     console.error('加载任务详情失败:', error)
+    loadError.value = true
+    ElMessage.error('加载任务详情失败')
   } finally {
     loading.value = false
   }
@@ -270,6 +283,21 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .task-detail {
+  .detail-error {
+    padding: 48px 16px;
+    text-align: center;
+
+    .error-icon {
+      color: var(--el-color-danger);
+    }
+
+    p {
+      margin: 12px 0 16px;
+      font-size: 14px;
+      color: var(--el-text-color-regular);
+    }
+  }
+
   .action-bar {
     margin-bottom: 16px;
     display: flex;
