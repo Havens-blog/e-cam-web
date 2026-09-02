@@ -260,7 +260,9 @@ const loadStats = async () => {
     if (data) {
       Object.assign(tagStats, data)
     }
-  } catch { /* ignore */ }
+  } catch {
+    ElMessage.error('获取标签统计失败')
+  }
 }
 
 // Load policy count for tab badge
@@ -268,7 +270,9 @@ const loadPolicyCount = async () => {
   try {
     const res = await listPoliciesApi({ offset: 0, limit: 1 })
     policyCount.value = res.data?.total || 0
-  } catch { /* ignore */ }
+  } catch {
+    ElMessage.error('获取标签策略数量失败')
+  }
 }
 
 // Load rule count for tab badge
@@ -276,7 +280,9 @@ const loadRuleCount = async () => {
   try {
     const res = await listRulesApi({ offset: 0, limit: 1 })
     ruleCount.value = res.data?.total || 0
-  } catch { /* ignore */ }
+  } catch {
+    ElMessage.error('获取自动打标规则数量失败')
+  }
 }
 
 const handleSearch = () => {
