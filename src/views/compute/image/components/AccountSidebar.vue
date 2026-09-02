@@ -52,7 +52,8 @@
           </div>
         </div>
       </template>
-      <div v-if="filteredAccountGroups.length === 0" class="empty-accounts">暂无账号</div>
+      <div v-if="accountsError" class="empty-accounts is-error">账号列表加载失败，请稍后重试</div>
+      <div v-else-if="filteredAccountGroups.length === 0" class="empty-accounts">暂无账号</div>
     </div>
 
     <!-- 镜像类型筛选 -->
@@ -99,6 +100,7 @@ import type { CloudAccount } from '@/api/types/account'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { CopyDocument, Delete, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -120,6 +122,7 @@ const selectedAccountId = ref(0)
 const accountSearch = ref('')
 const accounts = ref<CloudAccount[]>([])
 const showDropdown = ref(false)
+const accountsError = ref(false)
 
 const selectedAccount = computed(() => {
   if (selectedAccountId.value === 0) return null
@@ -167,8 +170,10 @@ const loadAccounts = async () => {
     const res = await listCloudAccountsApi({ limit: 200 })
     const data = (res as any).data || res
     accounts.value = (data.accounts || data.data || []).filter((a: any) => a != null)
+    accountsError.value = false
   } catch {
-    accounts.value = []
+    accountsError.value = true
+    ElMessage.error('获取云账号列表失败')
   }
 }
 
@@ -344,6 +349,10 @@ onMounted(() => { loadAccounts() })
   text-align: center;
   font-size: 12px;
   color: var(--text-tertiary);
+
+  &.is-error {
+    color: var(--el-color-danger);
+  }
 }
 
 /* 侧边栏分区 */
