@@ -275,6 +275,7 @@ const fetchStats = async () => {
       custom: data.custom || 0, shared: data.shared || 0,
     }
   } catch {
+    ElMessage.error('获取镜像统计信息失败')
     stats.value = { total: 0, system: 0, custom: 0, shared: 0 }
   }
 }
