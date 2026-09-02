@@ -87,6 +87,7 @@ const MULTI_PART_SUFFIXES = new Set([
  *   - 单标签/裸根域原样返回
  */
 export function rootDomainOf(domain: string): string {
+    if (typeof domain !== 'string') return ''
     const bare = domain.replace(/^\*\./, '').toLowerCase().trim()
     const labels = bare.split('.').filter(Boolean)
     if (labels.length <= 2) return bare
@@ -104,7 +105,8 @@ export interface ProbeResultGroup {
 export function groupProbeResults(rows: CertProbeResult[]): ProbeResultGroup[] {
     const byRoot = new Map<string, CertProbeResult[]>()
     for (const r of rows) {
-        const root = rootDomainOf(r.domain)
+        // 脏数据防御：domain 缺失/非法的行归入空串组（仍展示，不因单行崩溃整页）
+        const root = rootDomainOf(r?.domain) || '(未知域名)'
         const bucket = byRoot.get(root)
         if (bucket) bucket.push(r)
         else byRoot.set(root, [r])

@@ -179,3 +179,20 @@ describe('recordTypeLabel / recordValueText', () => {
         expect(recordValueText(long).endsWith('…')).toBe(true)
     })
 })
+
+describe('rootDomainOf 脏数据防御（白屏回归）', () => {
+    it('null/undefined/非字符串域名不 throw，返回空串', () => {
+        expect(() => rootDomainOf(null as never)).not.toThrow()
+        expect(rootDomainOf(null as never)).toBe('')
+        expect(rootDomainOf(undefined as never)).toBe('')
+    })
+
+    it('含脏行的列表分组不崩，脏行归入未知组', () => {
+        const rows = [
+            { domain: 'www.ok.com' },
+            { domain: null },
+        ] as unknown as CertProbeResult[]
+        const groups = groupProbeResults(rows)
+        expect(groups.map((g) => g.root)).toEqual(['(未知域名)', 'ok.com'])
+    })
+})

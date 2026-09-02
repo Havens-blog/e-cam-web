@@ -114,16 +114,15 @@
                     <td class="cell-mono">
                       <template v-if="r.onlineFingerprint">
                         <span class="fp">{{ truncateFingerprint(r.onlineFingerprint) }}</span>
-                        <el-tooltip content="复制完整指纹" placement="top">
-                          <button
-                            type="button"
-                            class="copy-btn"
-                            :aria-label="`复制 ${r.domain} 的线上指纹`"
-                            @click="onCopy(r.onlineFingerprint!, r.domain)"
-                          >
-                            <el-icon><CopyDocument /></el-icon>
-                          </button>
-                        </el-tooltip>
+                        <button
+                          type="button"
+                          class="copy-btn"
+                          title="复制完整指纹"
+                          :aria-label="`复制 ${r.domain} 的线上指纹`"
+                          @click="onCopy(r.onlineFingerprint!, r.domain)"
+                        >
+                          <el-icon><CopyDocument /></el-icon>
+                        </button>
                       </template>
                       <span v-else>—</span>
                     </td>
@@ -207,7 +206,11 @@ const filtered = computed(() =>
     }),
 )
 
+let loadInFlight = false
+
 async function load() {
+    if (loadInFlight) return // 轮询 tick 与手动刷新重叠时跳过重复请求
+    loadInFlight = true
     loading.value = true
     error.value = ''
     try {
@@ -215,6 +218,7 @@ async function load() {
     } catch (err) {
         error.value = err instanceof Error ? err.message : '探测结果获取失败，请重试'
     } finally {
+        loadInFlight = false
         loading.value = false
     }
 }
