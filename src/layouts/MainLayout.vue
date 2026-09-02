@@ -303,6 +303,7 @@ const menuGroups = ref<MenuGroup[]>([
     items: [
       { key: 'dashboard', path: '/dashboard', title: '仪表盘', icon: 'ops-oneterm-dashboard' },
       { key: 'topology', path: '/topology', title: '资源拓扑', icon: 'icon-xianxing-luyouqi' },
+      { key: 'cloud-logs', path: '/logs', title: '日志查询', icon: 'ops-itsm-logs' },
     ]
   },
   {

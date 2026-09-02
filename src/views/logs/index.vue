@@ -19,7 +19,6 @@
           range-separator="→"
           start-placeholder="开始时间"
           end-placeholder="结束时间"
-          value-format="x"
           :disabled-date="disableOutsideWindow"
           @change="onTimeChange"
         />
@@ -225,7 +224,7 @@ const activeType = ref<LogType>('cdn')
 const sources = ref<LogSource[]>([])
 const sourcesLoading = ref(false)
 
-const timeRange = ref<[string, string] | null>(null)
+const timeRange = ref<[Date, Date] | null>(null)
 const selectedClouds = ref<string[]>([])
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
@@ -327,7 +326,9 @@ function onCloudsChange() {
 function resetTimeRange() {
     const end = Date.now()
     const window = defaultWindowMs(currentMeta.value?.max_window_days ?? 7)
-    timeRange.value = [String(end - Math.min(window, 3600_000)), String(end)]
+    // 默认 6 小时:CloudFront 标准日志小时级投递,1h 窗口内活跃域名太少;
+    // 仍受类型上限钳制(CDN 7d / SLB 3d)
+    timeRange.value = [new Date(end - Math.min(window, 6 * 3600_000)), new Date(end)]
 }
 
 function disableOutsideWindow(d: Date): boolean {
@@ -340,8 +341,8 @@ function onTimeChange() {
     // 超窗自动收紧到上限(与 disableOutsideWindow 双保险)
     const days = currentMeta.value?.max_window_days ?? 7
     const floor = Date.now() - days * 24 * 3600_000
-    if (timeRange.value && Number(timeRange.value[0]) < floor) {
-        timeRange.value = [String(floor), timeRange.value[1]]
+    if (timeRange.value && timeRange.value[0].getTime() < floor) {
+        timeRange.value = [new Date(floor), timeRange.value[1]]
     }
 }
 
@@ -353,8 +354,8 @@ async function doSearch() {
     try {
         resp.value = await searchLogsApi({
             log_type: activeType.value,
-            start_time: Number(timeRange.value[0]),
-            end_time: Number(timeRange.value[1]),
+            start_time: timeRange.value[0].getTime(),
+            end_time: timeRange.value[1].getTime(),
             query: keyword.value || undefined,
             clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
             resources: selectedResources.value.length ? selectedResources.value : undefined,
