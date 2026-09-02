@@ -1,5 +1,5 @@
 <template>
-  <div class="dns-stats">
+  <div v-loading="loading" class="dns-stats">
     <!-- 统计加载失败提示 -->
     <el-alert
       v-if="loadError"
