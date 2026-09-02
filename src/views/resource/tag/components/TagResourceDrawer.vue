@@ -148,6 +148,7 @@ const loadResources = async () => {
     resources.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch {
+    ElMessage.error('获取关联资源失败')
     resources.value = []
   } finally {
     loading.value = false
