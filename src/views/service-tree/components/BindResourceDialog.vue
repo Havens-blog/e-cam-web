@@ -228,6 +228,7 @@ const loadModels = async () => {
     modelList.value = data?.list || data?.models || []
   } catch (error) {
     console.error('加载模型列表失败:', error)
+    ElMessage.error('加载模型列表失败')
   }
 }
 
@@ -284,6 +285,7 @@ const loadResources = async () => {
     }
   } catch (error) {
     console.error('加载资源失败:', error)
+    ElMessage.error('加载资源失败')
   } finally {
     loading.value = false
   }
