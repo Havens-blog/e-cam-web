@@ -802,6 +802,12 @@ export interface CertProbeResult {
     tenantId?: number
     /** 链路关联资源类型：cdn/waf/external（DNS 源探测链路分层；SAN 探测缺省） */
     linkedResource?: string
+    /** 记录类型：A/AAAA/CNAME（DNS 源探测；SAN 探测缺省） */
+    recordType?: string
+    /** 解析地址（记录值：IP / CNAME 目标；SAN 探测缺省） */
+    recordValue?: string
+    /** 协商 TLS 版本（如 TLS 1.3；unreachable 缺省） */
+    tlsVersion?: string
 }
 
 /** 探测结果列表（每域最近一次；含 DNS 源探测的子域名行） */

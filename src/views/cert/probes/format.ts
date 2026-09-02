@@ -141,3 +141,38 @@ export function groupSummary(rows: CertProbeResult[]): string {
 export function isProbeFilterActive(keyword: string, status: string, link: string): boolean {
     return keyword.trim() !== '' || status !== '' || link !== ''
 }
+
+/** 证书到期时间展示：UTC 日期 YYYY-MM-DD（到期列用实际日期，相对时间语义失真） */
+export function certExpiryDate(iso: string | null | undefined): string {
+    if (!iso) return ''
+    const t = Date.parse(iso)
+    if (Number.isNaN(t)) return ''
+    const d = new Date(t)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+}
+
+/** 距到期剩余天数（<0 已过期）；解析失败返回 null */
+export function daysUntil(iso: string | null | undefined, now: Date = new Date()): number | null {
+    if (!iso) return null
+    const t = Date.parse(iso)
+    if (Number.isNaN(t)) return null
+    return Math.floor((t - now.getTime()) / 86_400_000)
+}
+
+/** 记录类型标签（DNS 源探测；SAN 行空串 → —） */
+export function recordTypeLabel(rt?: string): string {
+    switch (rt) {
+        case undefined:
+        case '':
+            return '—'
+        default:
+            return rt
+    }
+}
+
+/** 解析地址展示：长 CNAME 目标截断（保留完整值于 title） */
+export function recordValueText(v?: string): string {
+    if (!v) return '—'
+    return v.length > 48 ? v.slice(0, 47) + '…' : v
+}

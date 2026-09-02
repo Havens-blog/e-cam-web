@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { CertProbeResult } from '@/api/cert'
 import {
+    certExpiryDate,
+    daysUntil,
     groupProbeResults,
     groupSummary,
     isProbeFilterActive,
     linkedResourceLabel,
     matchDomain,
     probeBadgeClass,
+    recordTypeLabel,
+    recordValueText,
     rootDomainOf,
 } from './format'
 
@@ -132,5 +136,46 @@ describe('isProbeFilterActive（筛选激活判定）', () => {
         expect(isProbeFilterActive('', 'diff', '')).toBe(true)
         expect(isProbeFilterActive('', '', 'cdn')).toBe(true)
         expect(isProbeFilterActive('   ', '', '')).toBe(false)
+    })
+})
+
+describe('certExpiryDate（证书到期实际日期）', () => {
+    it('RFC3339 → UTC 日期', () => {
+        expect(certExpiryDate('2027-01-01T00:00:00Z')).toBe('2027-01-01')
+    })
+
+    it('空/非法 → 空串', () => {
+        expect(certExpiryDate(undefined)).toBe('')
+        expect(certExpiryDate('')).toBe('')
+        expect(certExpiryDate('not-a-date')).toBe('')
+    })
+})
+
+describe('daysUntil（距到期天数）', () => {
+    it('未来日期正数，过去负数', () => {
+        const now = new Date('2026-09-02T00:00:00Z')
+        expect(daysUntil('2026-09-12T00:00:00Z', now)).toBe(10)
+        expect(daysUntil('2026-09-01T00:00:00Z', now)).toBe(-1)
+    })
+
+    it('空/非法 → null', () => {
+        expect(daysUntil(undefined)).toBeNull()
+        expect(daysUntil('bad')).toBeNull()
+    })
+})
+
+describe('recordTypeLabel / recordValueText', () => {
+    it('缺省 → —，类型原样', () => {
+        expect(recordTypeLabel(undefined)).toBe('—')
+        expect(recordTypeLabel('')).toBe('—')
+        expect(recordTypeLabel('CNAME')).toBe('CNAME')
+    })
+
+    it('长解析地址截断', () => {
+        expect(recordValueText(undefined)).toBe('—')
+        expect(recordValueText('1.2.3.4')).toBe('1.2.3.4')
+        const long = 'a'.repeat(60) + '.edgesuite.net'
+        expect(recordValueText(long)).toHaveLength(48)
+        expect(recordValueText(long).endsWith('…')).toBe(true)
     })
 })

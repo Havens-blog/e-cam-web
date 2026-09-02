@@ -68,9 +68,12 @@
             <thead>
               <tr>
                 <th scope="col">域名 / 子域名</th>
+                <th scope="col">记录类型</th>
+                <th scope="col">解析地址</th>
                 <th scope="col">链路层</th>
                 <th scope="col">探测状态</th>
-                <th scope="col">线上到期</th>
+                <th scope="col">TLS 版本</th>
+                <th scope="col">证书到期</th>
                 <th scope="col">线上指纹</th>
                 <th scope="col">探测时间</th>
               </tr>
@@ -78,7 +81,7 @@
             <tbody>
               <template v-for="g in groups" :key="g.root">
                 <tr class="group-row" :aria-expanded="isExpanded(g.root)" @click="toggleGroup(g.root)">
-                  <td colspan="6">
+                  <td colspan="9">
                     <span class="chevron" :class="{ expanded: isExpanded(g.root) }" aria-hidden="true">▶</span>
                     <span class="group-root cell-mono">{{ g.root }}</span>
                     <span class="group-summary">{{ groupSummary(g.rows) }}</span>
@@ -87,6 +90,8 @@
                 <template v-if="isExpanded(g.root)">
                   <tr v-for="r in g.rows" :key="r.domain" class="sub-row">
                     <td class="cell-mono sub-domain">{{ r.domain }}</td>
+                    <td class="cell-mono">{{ recordTypeLabel(r.recordType) }}</td>
+                    <td class="cell-mono record-value" :title="r.recordValue || ''">{{ recordValueText(r.recordValue) }}</td>
                     <td>{{ linkedResourceLabel(r.linkedResource) }}</td>
                     <td>
                       <span class="probe-badge" :class="probeBadgeClass(r.status)">
@@ -94,7 +99,8 @@
                         {{ probeBadge(r.status as ProbeStatus).label }}
                       </span>
                     </td>
-                    <td class="cell-mono">{{ r.onlineNotAfter ? relativeTimeDash(r.onlineNotAfter) : '—' }}</td>
+                    <td class="cell-mono">{{ r.tlsVersion || '—' }}</td>
+                    <td class="cell-mono">{{ certExpiryDate(r.onlineNotAfter) || '—' }}</td>
                     <td class="cell-mono">
                       <template v-if="r.onlineFingerprint">
                         <span class="fp">{{ truncateFingerprint(r.onlineFingerprint) }}</span>
@@ -137,7 +143,20 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { probeBadge, relativeTimeDash } from '../dashboard/format'
 import { copyText, truncateFingerprint } from '../ledger/format'
-import { PROBE_LINK_FILTERS, PROBE_STATUS_FILTERS, groupSummary, groupProbeResults, isProbeFilterActive, linkedResourceLabel, matchDomain, probeBadgeClass, type ProbeResultGroup } from './format'
+import {
+    PROBE_LINK_FILTERS,
+    PROBE_STATUS_FILTERS,
+    certExpiryDate,
+    groupProbeResults,
+    groupSummary,
+    isProbeFilterActive,
+    linkedResourceLabel,
+    matchDomain,
+    probeBadgeClass,
+    recordTypeLabel,
+    recordValueText,
+    type ProbeResultGroup,
+} from './format'
 
 const rows = ref<CertProbeResult[]>([])
 const loading = ref(false)
@@ -439,6 +458,13 @@ onUnmounted(stopPolling)
 
 .sub-row .sub-domain {
   padding-left: 30px;
+}
+
+.record-value {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
