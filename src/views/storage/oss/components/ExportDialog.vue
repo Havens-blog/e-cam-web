@@ -84,7 +84,7 @@ const handleExport = async () => {
   if (!exportForm.fields.length) { ElMessage.warning('请至少选择一个导出字段'); return }
   exporting.value = true
   try {
-    let dataToExport: Asset[] = exportForm.scope === 'selected' ? props.instances.filter(i => props.selectedIds.includes(i.id)) : props.instances
+    const dataToExport: Asset[] = exportForm.scope === 'selected' ? props.instances.filter(i => props.selectedIds.includes(i.id)) : props.instances
     const headers = exportForm.fields.map(key => availableFields.find(f => f.key === key)?.label || key)
     const rows = dataToExport.map(instance => exportForm.fields.map(key => getFieldValue(instance, key)))
     const BOM = '\uFEFF'
