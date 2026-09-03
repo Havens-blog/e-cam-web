@@ -69,6 +69,7 @@
             <template #default="{ row }">
               <el-switch
                 :model-value="row.status === 1"
+                :before-change="() => beforeStatusChange(row)"
                 @change="(val) => handleStatusChange(row, val as boolean)"
               />
             </template>
@@ -222,6 +223,16 @@ const handleEdit = (env: Environment) => {
   currentEnvironment.value = env
   isEdit.value = true
   formDialogVisible.value = true
+}
+
+// 状态切换前守卫：禁用影响服务树中该环境绑定资源的可见性，需二次确认；启用直接放行
+const beforeStatusChange = (env: Environment) => {
+  if (env.status !== 1) return true
+  return ElMessageBox.confirm(
+    `确定要禁用环境 "${env.name}" 吗？禁用后该环境下绑定的资源将在服务树中不可见。`,
+    '禁用确认',
+    { type: 'warning' }
+  ).then(() => true).catch(() => false)
 }
 
 // 状态切换

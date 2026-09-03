@@ -81,6 +81,7 @@
             <template #default="{ row }">
               <el-switch
                 :model-value="row.enabled"
+                :before-change="() => beforeStatusChange(row)"
                 @change="(val) => handleStatusChange(row, val as boolean)"
               />
             </template>
@@ -277,6 +278,16 @@ const handleEdit = (rule: BindingRule) => {
   currentRule.value = rule
   isEdit.value = true
   formDialogVisible.value = true
+}
+
+// 状态切换前守卫：禁用规则会停止自动绑定，需二次确认；启用直接放行
+const beforeStatusChange = (rule: BindingRule) => {
+  if (!rule.enabled) return true
+  return ElMessageBox.confirm(
+    `确定要禁用规则 "${rule.name}" 吗？禁用后该规则将停止自动绑定。`,
+    '禁用确认',
+    { type: 'warning' }
+  ).then(() => true).catch(() => false)
 }
 
 // 状态切换
