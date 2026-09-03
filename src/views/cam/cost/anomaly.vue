@@ -232,11 +232,16 @@ const handleDismiss = async (row: Recommendation) => {
       cancelButtonText: '取消',
       type: 'warning',
     })
+  } catch {
+    // user cancelled
+    return
+  }
+  try {
     await dismissRecommendationApi(row.id)
     ElMessage.success('已忽略该建议')
     fetchRecommendations()
-  } catch {
-    // user cancelled
+  } catch (e: any) {
+    ElMessage.error(e?.message || '忽略建议失败')
   }
 }
 
