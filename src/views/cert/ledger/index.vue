@@ -46,7 +46,7 @@
 
       <!-- Populated：统计卡 + 表格 -->
       <template v-else>
-        <StatsCards :stats="stats" />
+        <StatsCards :stats="stats" :stats-error="statsError" />
         <CertTable
           class="table-block"
           :rows="rows"
@@ -158,6 +158,7 @@ const router = useRouter()
 const rows = ref<CertListItem[]>([])
 const total = ref(0)
 const stats = ref<CertStats | null>(null)
+const statsError = ref(false)
 const page = ref(1)
 const pageSize = 20
 const search = ref('')
@@ -228,8 +229,14 @@ async function fetchList() {
 async function fetchStats() {
     try {
         stats.value = await getCertStatsApi()
-    } catch {
+        statsError.value = false
+    } catch (err) {
+        // 统计卡加载失败：保留「-」占位（列表仍可用，不塌陷页面），但必须显式反馈，
+        // 避免三张统计卡静默降级为「-」被误读为「数据为零」
         stats.value = null
+        statsError.value = true
+        console.error('[cert-ledger] 统计加载失败:', err)
+        ElMessage.error(err instanceof Error && err.message ? err.message : '统计加载失败')
     }
 }
 

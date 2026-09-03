@@ -1,5 +1,6 @@
 <template>
   <div class="stats-grid" role="group" aria-label="台账统计">
+    <div v-if="statsError" class="stats-error" role="status">统计暂不可用，请刷新页面重试</div>
     <div class="stat-card">
       <div class="stat-label">完整托管</div>
       <div class="stat-value">{{ stats?.complete ?? '—' }}</div>
@@ -37,6 +38,8 @@ import { formatPercent } from '../format'
 
 defineProps<{
     stats: CertStats | null
+    /** 统计请求失败标记：与「-」占位一并呈现行内错误提示，避免被误读为数据为零 */
+    statsError?: boolean
 }>()
 </script>
 
@@ -49,6 +52,12 @@ defineProps<{
   @media (max-width: 1023px) {
     grid-template-columns: 1fr;
   }
+}
+
+.stats-error {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--cert-error, #ee0000);
 }
 
 .stat-card {
