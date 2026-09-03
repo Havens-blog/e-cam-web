@@ -177,6 +177,7 @@ import { listNASAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
@@ -251,7 +252,12 @@ const fetchData = async () => {
     const res = await listNASAssetsApi(params)
     nasList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
-  } catch (e) { console.error('获取NAS列表失败:', e) }
+  } catch (e) {
+    console.error('获取NAS列表失败:', e)
+    ElMessage.error('获取NAS列表失败，请稍后重试')
+    nasList.value = []
+    pagination.total = 0
+  }
   finally { loading.value = false }
 }
 
