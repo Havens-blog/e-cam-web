@@ -68,7 +68,8 @@
           <h3>资产类型分布</h3>
         </div>
         <div class="chart-body">
-          <div ref="assetTypeChartRef" class="chart-container full"></div>
+          <div v-if="assetTypeLoadError" class="empty-tip">资产类别统计加载失败</div>
+          <div v-else ref="assetTypeChartRef" class="chart-container full"></div>
         </div>
       </div>
     </div>
@@ -155,6 +156,7 @@ const overview = ref<OverviewData>({ total: 0, by_provider: [], by_type: [], by_
 const overviewLoadError = ref(false)
 const providerItems = ref<KeyCount[]>([])
 const assetTypeItems = ref<KeyCount[]>([])
+const assetTypeLoadError = ref(false)
 const regionItems = ref<KeyCount[]>([])
 const expiringList = ref<ExpiringAsset[]>([])
 const expiringTotal = ref(0)
@@ -402,8 +404,11 @@ const fetchAssetTypeStats = async () => {
       assetTypeItems.value = Object.entries(d.by_asset_type)
         .map(([key, count]) => ({ key, count: count as number }))
     }
+    assetTypeLoadError.value = false
   } catch (e: any) {
+    assetTypeLoadError.value = true
     console.error('获取资产类别统计失败:', e)
+    ElMessage.error('获取资产类别统计数据失败')
   }
 }
 
