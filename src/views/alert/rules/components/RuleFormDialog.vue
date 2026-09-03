@@ -24,6 +24,13 @@
             <span>{{ ch.name }}</span>
             <el-tag size="small" style="margin-left: 8px" :type="channelTagType(ch.type)">{{ channelTypeLabel(ch.type) }}</el-tag>
           </el-option>
+          <template #empty>
+            <div v-if="channelLoadFailed" class="channel-load-failed">
+              <span>通知渠道加载失败</span>
+              <el-button link type="primary" size="small" @click="loadChannels">重试</el-button>
+            </div>
+            <span v-else>暂无通知渠道</span>
+          </template>
         </el-select>
       </el-form-item>
       <el-form-item label="资源类型">
@@ -72,6 +79,8 @@ const isEdit = ref(false)
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 const channelOptions = ref<AlertChannel[]>([])
+// 渠道列表加载失败标记：下拉空态据此分流「加载失败可重试」与「暂无渠道」两种文案
+const channelLoadFailed = ref(false)
 
 const resourceTypeOptions = [
   { label: 'ECS 虚拟机', value: 'ecs' },
@@ -118,7 +127,13 @@ const loadChannels = async () => {
   try {
     const res = await listChannelsApi({ limit: 100 })
     channelOptions.value = (res as any).data?.items || []
-  } catch { /* ignore */ }
+    channelLoadFailed.value = false
+  } catch (e: any) {
+    console.error('加载通知渠道列表失败:', e)
+    channelOptions.value = []
+    channelLoadFailed.value = true
+    ElMessage.error('通知渠道加载失败，请重试')
+  }
 }
 
 watch(() => props.modelValue, (val) => {
@@ -171,3 +186,15 @@ const handleSubmit = async () => {
 
 onMounted(() => loadChannels())
 </script>
+
+<style lang="scss" scoped>
+.channel-load-failed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--el-text-color-secondary, #909399);
+}
+</style>
