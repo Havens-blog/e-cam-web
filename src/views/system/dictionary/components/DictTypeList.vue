@@ -84,7 +84,7 @@
 import { listDictTypesApi, updateDictTypeStatusApi } from '@/api/dictionary'
 import type { DictType } from '@/api/types/dictionary'
 import { Delete, Edit, Loading, Search, Switch } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -141,6 +141,15 @@ function handleCommand(cmd: string, item: DictType) {
 
 async function toggleStatus(item: DictType) {
   const newStatus = item.status === 'enabled' ? 'disabled' : 'enabled'
+  // 禁用字典类型会使其下全部字典项失效，影响消费该字典的页面取值，需二次确认；启用直接放行
+  if (newStatus === 'disabled') {
+    const confirmed = await ElMessageBox.confirm(
+      `确定要禁用字典类型 "${item.name}" 吗？禁用后其下全部字典项将不可用。`,
+      '禁用确认',
+      { type: 'warning' }
+    ).then(() => true).catch(() => false)
+    if (!confirmed) return
+  }
   try {
     await updateDictTypeStatusApi(item.id, newStatus)
     ElMessage.success(`已${newStatus === 'enabled' ? '启用' : '禁用'}`)
