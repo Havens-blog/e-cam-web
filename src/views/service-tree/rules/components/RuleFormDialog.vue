@@ -192,6 +192,7 @@ const loadTree = async () => {
     }
   } catch (error) {
     console.error('加载服务树失败:', error)
+    ElMessage.error('加载服务树失败')
   }
 }
 
@@ -202,6 +203,7 @@ const loadEnvironments = async () => {
     environmentList.value = res.data?.list || []
   } catch (error) {
     console.error('加载环境列表失败:', error)
+    ElMessage.error('加载环境列表失败')
   }
 }
 
