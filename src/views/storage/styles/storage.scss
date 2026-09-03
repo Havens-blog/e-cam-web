@@ -262,3 +262,12 @@
   align-items: center;
   gap: 16px;
 }
+
+// 表格单元格内长文本截断（rds/redis/mongodb、elasticsearch/kafka 等引用本文件时使用）
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  display: inline-block;
+}
