@@ -213,11 +213,12 @@ const providerLegend = computed(() =>
 const formatNumber = (n: number) => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n)
 
 const formatExpireTime = (row: ExpiringAsset) => {
-  const t = row.attributes?.expire_time
+  // 到期时间由同步执行器写入 attributes.expired_time（勿改回 expire_time）
+  const t = row.attributes?.expired_time
   return t ? new Date(t).toLocaleString('zh-CN') : '-'
 }
 const daysLeft = (row: ExpiringAsset) => {
-  const t = row.attributes?.expire_time
+  const t = row.attributes?.expired_time
   if (!t) return '-'
   const diff = Math.ceil((new Date(t).getTime() - Date.now()) / 86400000)
   return diff < 0 ? 0 : diff
