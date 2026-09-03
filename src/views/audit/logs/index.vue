@@ -32,14 +32,14 @@
     </div>
     <div class="filter-bar">
       <div class="filter-left">
-        <el-input v-model="filters.api_path" placeholder="搜索 API 路径" clearable size="default" style="width: 220px" @keyup.enter="fetchLogs" />
-        <el-select v-model="filters.http_method" placeholder="请求方法" clearable size="default" style="width: 120px" @change="fetchLogs">
+        <el-input v-model="filters.api_path" placeholder="搜索 API 路径" clearable size="default" style="width: 220px" @keyup.enter="handleFilterChange" />
+        <el-select v-model="filters.http_method" placeholder="请求方法" clearable size="default" style="width: 120px" @change="handleFilterChange">
           <el-option v-for="m in methods" :key="m" :label="m" :value="m" />
         </el-select>
-        <el-select v-model="filters.operation_type" placeholder="操作类型" clearable size="default" style="width: 130px" @change="fetchLogs">
+        <el-select v-model="filters.operation_type" placeholder="操作类型" clearable size="default" style="width: 130px" @change="handleFilterChange">
           <el-option v-for="op in opTypes" :key="op.value" :label="op.label" :value="op.value" />
         </el-select>
-        <el-select v-model="resultFilter" placeholder="结果" clearable size="default" style="width: 100px" @change="fetchLogs">
+        <el-select v-model="resultFilter" placeholder="结果" clearable size="default" style="width: 100px" @change="handleFilterChange">
           <el-option label="成功" value="success" />
           <el-option label="失败" value="fail" />
         </el-select>
@@ -47,7 +47,7 @@
       </div>
       <div class="filter-right">
         <el-button @click="handleReset" plain>重置</el-button>
-        <el-button type="primary" @click="fetchLogs">查询</el-button>
+        <el-button type="primary" @click="handleFilterChange">查询</el-button>
         <el-divider direction="vertical" />
         <el-tooltip content="导出 CSV"><el-button :icon="Download" circle @click="handleExport" /></el-tooltip>
         <el-tooltip content="刷新"><el-button :icon="Refresh" circle @click="handleRefresh" /></el-tooltip>
@@ -182,7 +182,14 @@ async function fetchLogs() {
   }
 }
 
+// 筛选条件变更/点击查询：重置页码到第 1 页，避免新结果集从旧页码的 offset 开始
+function handleFilterChange() {
+  page.value = 1
+  fetchLogs()
+}
+
 function handleDateChange() {
+  page.value = 1
   fetchLogs()
 }
 
