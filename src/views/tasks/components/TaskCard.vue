@@ -56,6 +56,8 @@
         v-if="task.status === 'running' || task.status === 'pending'"
         size="small"
         type="warning"
+        :loading="isCardActioning"
+        :disabled="isActionLocked"
         @click="$emit('cancel', task)"
       >
         取消任务
@@ -68,6 +70,8 @@
         "
         size="small"
         type="danger"
+        :loading="isCardActioning"
+        :disabled="isActionLocked"
         @click="$emit('delete', task)"
       >
         删除
@@ -86,6 +90,8 @@ import TaskStatusBadge from './TaskStatusBadge.vue'
 
 interface Props {
   task: Task
+  /** 父组件正在执行取消/删除的任务 id；非空表示有操作进行中 */
+  actionTaskId?: string
 }
 
 const props = defineProps<Props>()
@@ -95,6 +101,11 @@ defineEmits<{
   cancel: [task: Task]
   delete: [task: Task]
 }>()
+
+// 本卡片正在执行操作：目标按钮置 loading
+const isCardActioning = computed(() => !!props.actionTaskId && props.actionTaskId === props.task.id)
+// 任意卡片有操作进行中：禁用其余操作按钮，防止并发第二个请求
+const isActionLocked = computed(() => !!props.actionTaskId)
 
 const taskTypeIcon = computed(() => {
   return props.task.type === 'sync_assets' ? Refresh : Search

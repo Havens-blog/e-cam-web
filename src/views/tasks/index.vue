@@ -45,6 +45,7 @@
             v-for="task in tasks"
             :key="task.id"
             :task="task"
+            :action-task-id="actionTaskId"
             @view="handleView"
             @cancel="handleCancel"
             @delete="handleDelete"
@@ -84,6 +85,8 @@ const router = useRouter()
 // 状态
 const loading = ref(false)
 const tasks = ref<Task[]>([])
+// 防重复提交：正在执行取消/删除的任务 id（请求期间禁用所有卡片操作按钮）
+const actionTaskId = ref<string>('')
 const filters = reactive({
   type: '',
   status: '',
@@ -130,6 +133,8 @@ const handleView = (task: Task) => {
 
 // 取消任务
 const handleCancel = async (task: Task) => {
+  if (actionTaskId.value) return
+  actionTaskId.value = task.id
   try {
     await ElMessageBox.confirm(`确定要取消任务"${task.id}"吗？`, '确认取消', {
       confirmButtonText: '确定',
@@ -144,11 +149,15 @@ const handleCancel = async (task: Task) => {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '取消任务失败')
     }
+  } finally {
+    actionTaskId.value = ''
   }
 }
 
 // 删除任务
 const handleDelete = async (task: Task) => {
+  if (actionTaskId.value) return
+  actionTaskId.value = task.id
   try {
     await ElMessageBox.confirm(
       `确定要删除任务"${task.id}"吗？删除后将无法恢复。`,
@@ -167,6 +176,8 @@ const handleDelete = async (task: Task) => {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败')
     }
+  } finally {
+    actionTaskId.value = ''
   }
 }
 
