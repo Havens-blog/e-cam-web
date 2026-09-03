@@ -57,7 +57,7 @@
         </el-table-column>
         <el-table-column prop="enabled" label="启用" width="80">
           <template #default="{ row }">
-            <el-switch v-model="row.enabled" size="small" @change="handleToggle(row)" />
+            <el-switch v-model="row.enabled" size="small" :before-change="() => beforeToggle(row)" @change="handleToggle(row)" />
           </template>
         </el-table-column>
         <el-table-column prop="create_time" label="创建时间" width="180">
@@ -95,7 +95,7 @@
 import type { AlertRule, AlertRuleType } from '@/api/alert'
 import { deleteRuleApi, listRulesApi, toggleRuleApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 
@@ -140,6 +140,18 @@ const handleDelete = async (row: AlertRule) => {
     ElMessage.success('删除成功')
     fetchData()
   } catch (e: any) { ElMessage.error(e.message || '删除失败') }
+}
+
+// 启停前守卫：禁用告警规则将停止该规则触发的告警通知，需二次确认；启用直接放行。
+// before-change 在 v-model 翻转前执行，cancel 时 resolve(false) 则 switch 不翻转、
+// @change 不触发，无需还原 row.enabled，原 handleToggle 请求流程零改动。
+const beforeToggle = (row: AlertRule) => {
+  if (!row.enabled) return true
+  return ElMessageBox.confirm(
+    `确定要禁用告警规则 "${row.name}" 吗？禁用后将停止该规则触发的通知。`,
+    '禁用确认',
+    { type: 'warning' }
+  ).then(() => true).catch(() => false)
 }
 
 const handleToggle = async (row: AlertRule) => {
