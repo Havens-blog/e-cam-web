@@ -826,3 +826,9 @@ function detailToChangeList(d: Awaited<ReturnType<typeof getChangeApi>>): Change
   }
 }
 </style>
+
+<style lang="scss">
+/* cert 模块统一按钮样式钩子（audit cert-1 H2）：btn-secondary / btn-ghost 原为无定义空挂 class，
+   弹窗玻璃风格已由全局 .el-dialog 覆盖。见 src/views/cert/styles/ui-classes.scss */
+@import '@/views/cert/styles/ui-classes.scss';
+</style>

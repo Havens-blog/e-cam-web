@@ -1,0 +1,74 @@
+// ============================================
+// cert 模块统一 UI class 落地（audit cert-1 H2）
+// ============================================
+// 背景：changes/ 视图大量使用 `.btn-secondary` / `.btn-ghost`（约 19 处）与
+// `.cert-modal`，但全仓此前无任何 class 定义（仅 mixins.scss / theme-dark.scss
+// 存在同名 @mixin 且从未被 @include），按钮因此退回 Element Plus 默认样式。
+//
+// 处理口径：
+// 1. 按钮类在本模块内以主题 token 落地（--text-*/--border-*/--glass-*，深浅色
+//    自适应），不复刻 mixins 里硬编码 #fafafa 的深色写法，避免浅色主题下文字
+//    不可见。
+// 2. 选择器写成 `.el-button.btn-secondary`（特异性 0,2,0），稳定高于全局
+//    element-theme.scss 的 `.el-button`（0,1,0）与主题chalk 的 `.el-button`，
+//    不依赖样式引入顺序。
+// 3. `.cert-modal` 不在此重复定义：全局 element-theme.scss 的 `.el-dialog` 已
+//    统一落玻璃风格（--el-dialog-bg-color: var(--dialog-bg)、12px 圆角、描边），
+//    该 class 现为纯语义钩子，保留供后续差异化样式使用。
+//
+// 引入方式：在 changes 的三个路由入口（index / new/index / detail/index）的
+// 非 scoped 样式块 `@import` 本文件，保证从任意入口进入均生效（路由按 chunk
+// 分包，样式随 chunk 加载）。ledger/settings 等同模块页面的同名 class 可后续
+// 复用本文件（cert-2 M4 的 10 处）。
+
+.el-button.btn-secondary {
+  background: transparent;
+  border-color: var(--border-base);
+  color: var(--text-primary);
+
+  &:hover,
+  &:focus {
+    background: var(--glass-bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &:active {
+    background: var(--glass-bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &.is-disabled,
+  &:disabled {
+    background: transparent;
+    border-color: var(--border-base);
+    color: var(--text-secondary);
+  }
+}
+
+.el-button.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+
+  &:hover,
+  &:focus {
+    background: var(--glass-bg-hover);
+    border-color: transparent;
+    color: var(--text-primary);
+  }
+
+  &:active {
+    background: var(--glass-bg-hover);
+    border-color: transparent;
+    color: var(--text-primary);
+  }
+
+  &.is-disabled,
+  &:disabled {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+  }
+}
