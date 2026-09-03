@@ -77,6 +77,7 @@
     <DictItemForm
       v-model:visible="itemFormVisible"
       :edit-data="editingItem"
+      :submitting="itemSubmitting"
       @submit="handleItemFormSubmit"
     />
   </PageContainer>
@@ -119,6 +120,8 @@ const editingType = ref<DictType | null>(null)
 const typeSubmitting = ref(false)
 const itemFormVisible = ref(false)
 const editingItem = ref<DictItem | null>(null)
+// 防重复提交：字典项创建/保存请求在途标记（期间禁用弹窗提交按钮）
+const itemSubmitting = ref(false)
 const typeCount = ref(0)
 const itemCount = ref(0)
 
@@ -190,6 +193,8 @@ async function handleDeleteType(type: DictType) {
 
 async function handleItemFormSubmit(data: CreateDictItemReq | UpdateDictItemReq) {
   if (!selectedType.value) return
+  if (itemSubmitting.value) return
+  itemSubmitting.value = true
   try {
     if (editingItem.value) {
       await updateDictItemApi(editingItem.value.id, data as UpdateDictItemReq)
@@ -203,6 +208,8 @@ async function handleItemFormSubmit(data: CreateDictItemReq | UpdateDictItemReq)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '操作失败'
     ElMessage.error(msg)
+  } finally {
+    itemSubmitting.value = false
   }
 }
 
