@@ -41,7 +41,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-label">即将过期</div>
-          <div class="stat-value">{{ expiringTotal }}</div>
+          <div class="stat-value">{{ expiringLoadError ? '-' : expiringTotal }}</div>
         </div>
       </div>
     </div>
@@ -108,7 +108,7 @@
             <el-option :label="'90 天内'" :value="90" />
           </el-select>
         </div>
-        <el-table :data="expiringList" v-loading="expiringLoading" stripe style="width: 100%">
+        <el-table :data="expiringList" v-loading="expiringLoading" :empty-text="expiringLoadError ? '加载失败，请切换天数后重试' : '暂无数据'" stripe style="width: 100%">
           <el-table-column prop="asset_name" label="资源名称" min-width="160" show-overflow-tooltip />
           <el-table-column prop="asset_id" label="资源ID" min-width="180" show-overflow-tooltip />
           <el-table-column prop="asset_type" label="类型" width="120">
@@ -165,6 +165,7 @@ const expiringList = ref<ExpiringAsset[]>([])
 const expiringTotal = ref(0)
 const expiringDays = ref(30)
 const expiringLoading = ref(false)
+const expiringLoadError = ref(false)
 const costByProductItems = ref<CostDistItem[]>([])
 const costByProductLoadError = ref(false)
 
@@ -456,8 +457,11 @@ const fetchExpiring = async () => {
     const res = await getExpiringApi({ days: expiringDays.value, limit: 20 })
     expiringList.value = (res as any).data?.items || []
     expiringTotal.value = (res as any).data?.total || 0
+    expiringLoadError.value = false
   } catch (e: any) {
+    expiringLoadError.value = true
     console.error('获取过期资源失败:', e)
+    ElMessage.error('获取过期资源列表失败')
   } finally {
     expiringLoading.value = false
   }
