@@ -200,6 +200,9 @@ const assetTypeMap: Record<string, string> = {
   cloud_snapshot: '快照', cloud_security_group: '安全组',
   ecs: '虚拟机', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB',
   vpc: 'VPC', eip: 'EIP', nas: 'NAS', oss: 'OSS',
+  kafka: 'Kafka', elasticsearch: 'ES', lb: '负载均衡', cdn: 'CDN', waf: 'WAF',
+  disk: '云盘', snapshot: '快照', security_group: '安全组', eni: '弹性网卡',
+  vswitch: '子网', image: '镜像',
 }
 const assetTypeLabel = (k: string) => assetTypeMap[k] || k
 
