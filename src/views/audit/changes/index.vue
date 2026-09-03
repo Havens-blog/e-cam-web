@@ -106,7 +106,11 @@
     </div>
 
     <!-- 无资产ID时的提示 -->
-    <div class="empty-hint" v-if="!assetId && !summary">
+    <div class="empty-hint" v-if="!assetId && summaryLoadError">
+      <el-icon :size="48" color="var(--el-color-danger, #f56c6c)"><WarningFilled /></el-icon>
+      <p>变更统计汇总加载失败，可点击右上角刷新重试</p>
+    </div>
+    <div class="empty-hint" v-else-if="!assetId && !summary">
       <el-icon :size="48" color="var(--text-muted, #c0c4cc)"><Document /></el-icon>
       <p>输入资产ID查看详细变更记录，或查看下方统计汇总</p>
     </div>
@@ -127,7 +131,7 @@
 <script setup lang="ts">
 import type { AssetChange, ChangeSummary } from '@/api/audit'
 import { getChangeSummaryApi, listAssetChangesApi } from '@/api/audit'
-import { Document, Refresh, Right } from '@element-plus/icons-vue'
+import { Document, Refresh, Right, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -139,6 +143,7 @@ const page = ref(1)
 const pageSize = 20
 
 const summary = ref<ChangeSummary | null>(null)
+const summaryLoadError = ref(false)
 const summaryFilter = reactive({ model_uid: '', provider: '' })
 
 const modelLabel = (uid: string) => {
@@ -192,8 +197,11 @@ const fetchSummary = async () => {
     if (summaryFilter.provider) params.provider = summaryFilter.provider
     const res = await getChangeSummaryApi(params)
     summary.value = (res as any).data?.data || (res as any).data || null
+    summaryLoadError.value = false
   } catch (e: any) {
+    summaryLoadError.value = true
     console.error('获取变更汇总失败:', e)
+    ElMessage.error('获取变更汇总失败，请刷新重试')
   }
 }
 
