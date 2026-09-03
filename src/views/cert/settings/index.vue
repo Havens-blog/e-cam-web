@@ -212,10 +212,16 @@ async function fetchSettings() {
     }
 }
 
-/** 豁免增删后静默刷新（保留未保存的草稿输入） */
+/** 豁免增删后静默刷新（保留未保存的草稿输入）；失败不外抛，避免把已生效的变异误报为失败 */
 async function refreshSettingsKeepDrafts() {
-    const res = await getCertSettingsApi()
-    settings.value = res
+    try {
+        const res = await getCertSettingsApi()
+        settings.value = res
+    } catch (err) {
+        // 刷新失败仅提示，不影响已成功的增删结果（页面数据随下次保存/进入页面自动对齐）
+        console.warn('[cert-settings] 豁免变更后刷新配置失败:', err)
+        ElMessage.warning('豁免列表刷新失败，请刷新页面查看最新数据')
+    }
 }
 
 // ===== 卡1：告警接收 =====
@@ -263,9 +269,10 @@ async function onAddExemption(payload: { domain: string; reason?: string }) {
     exemptionMutating.value = true
     try {
         await addCertExemptionApi(payload)
-        await refreshSettingsKeepDrafts()
+        // 变异成功即反馈/关窗，刷新结果与之隔离（刷新失败不回滚成功反馈）
         exemptionCard.value?.notifyAddResult(true)
         ElMessage.success('豁免已添加，审计已记录')
+        await refreshSettingsKeepDrafts()
     } catch (err) {
         const message = err instanceof CertRequestError || err instanceof Error ? err.message : '添加失败，请重试'
         exemptionCard.value?.notifyAddResult(false, message)
@@ -278,9 +285,10 @@ async function onRemoveExemption(domain: string) {
     exemptionMutating.value = true
     try {
         await removeCertExemptionApi(domain)
-        await refreshSettingsKeepDrafts()
+        // 变异成功即反馈/关窗，刷新结果与之隔离（刷新失败不回滚成功反馈）
         exemptionCard.value?.notifyRemoveResult(true)
         ElMessage.success('豁免已移除，审计已记录')
+        await refreshSettingsKeepDrafts()
     } catch (err) {
         ElMessage.error(err instanceof Error ? err.message : '移除失败，请重试')
         exemptionCard.value?.notifyRemoveResult(false)
