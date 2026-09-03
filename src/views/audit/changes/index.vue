@@ -42,7 +42,7 @@
 
     <div class="action-bar">
       <div class="action-left">
-        <el-input v-model="assetId" placeholder="输入资产ID查询变更" clearable size="small" style="width: 220px" @clear="handleClearAsset" @keyup.enter="fetchChanges" />
+        <el-input v-model="assetId" placeholder="输入资产ID查询变更" clearable size="small" style="width: 220px" @clear="handleClearAsset" @keyup.enter="handleQueryAsset" />
         <el-select v-model="summaryFilter.model_uid" placeholder="资源类型" clearable size="small" style="width: 140px" @change="fetchSummary">
           <el-option label="虚拟机" value="cloud_vm" />
           <el-option label="RDS" value="cloud_rds" />
@@ -223,7 +223,14 @@ const fetchChanges = async () => {
   }
 }
 
+// 发起新查询：重置页码到第 1 页，避免沿用旧页码的 offset 落在新结果集中间页
+const handleQueryAsset = () => {
+  page.value = 1
+  fetchChanges()
+}
+
 const handleClearAsset = () => {
+  page.value = 1
   changeList.value = []
   changesTotal.value = 0
 }
