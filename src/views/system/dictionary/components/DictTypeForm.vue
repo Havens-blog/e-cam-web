@@ -30,7 +30,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="$emit('update:visible', false)">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">
+        <el-button type="primary" :loading="submitting" :disabled="submitting" @click="handleSubmit">
           {{ editData ? '保存' : '创建' }}
         </el-button>
       </div>
@@ -46,6 +46,8 @@ import { ref, watch } from 'vue';
 const props = defineProps<{
   visible: boolean
   editData: DictType | null
+  /** 宿主侧创建/保存请求进行中（防重复提交守卫） */
+  submitting?: boolean
 }>()
 
 const emit = defineEmits<{

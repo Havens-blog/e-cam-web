@@ -71,6 +71,7 @@
     <DictTypeForm
       v-model:visible="typeFormVisible"
       :edit-data="editingType"
+      :submitting="typeSubmitting"
       @submit="handleTypeFormSubmit"
     />
     <DictItemForm
@@ -114,6 +115,8 @@ const itemTableRef = ref<InstanceType<typeof DictItemTable>>()
 const selectedType = ref<DictType | null>(null)
 const typeFormVisible = ref(false)
 const editingType = ref<DictType | null>(null)
+// 防重复提交：字典类型创建/保存请求在途标记（期间禁用弹窗提交按钮）
+const typeSubmitting = ref(false)
 const itemFormVisible = ref(false)
 const editingItem = ref<DictItem | null>(null)
 const typeCount = ref(0)
@@ -142,6 +145,8 @@ function showItemForm(item: DictItem | null) {
 }
 
 async function handleTypeFormSubmit(data: CreateDictTypeReq | UpdateDictTypeReq) {
+  if (typeSubmitting.value) return
+  typeSubmitting.value = true
   try {
     if (editingType.value) {
       await updateDictTypeApi(editingType.value.id, data as UpdateDictTypeReq)
@@ -155,6 +160,8 @@ async function handleTypeFormSubmit(data: CreateDictTypeReq | UpdateDictTypeReq)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '操作失败'
     ElMessage.error(msg)
+  } finally {
+    typeSubmitting.value = false
   }
 }
 
