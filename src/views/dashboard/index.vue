@@ -14,7 +14,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-label">资产总数</div>
-          <div class="stat-value">{{ formatNumber(overview.total) }}</div>
+          <div class="stat-value">{{ overviewLoadError ? '-' : formatNumber(overview.total) }}</div>
         </div>
       </div>
       <div class="stat-card" @click="router.push('/accounts')">
@@ -23,7 +23,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-label">云厂商</div>
-          <div class="stat-value">{{ overview.by_provider.length }}</div>
+          <div class="stat-value">{{ overviewLoadError ? '-' : overview.by_provider.length }}</div>
         </div>
       </div>
       <div class="stat-card">
@@ -32,7 +32,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-label">运行中</div>
-          <div class="stat-value">{{ runningCount }}</div>
+          <div class="stat-value">{{ overviewLoadError ? '-' : runningCount }}</div>
         </div>
       </div>
       <div class="stat-card" @click="scrollToExpiring">
@@ -144,6 +144,7 @@ import { getGlobalAssetStatsApi } from '@/api/service-tree'
 import type { CostDistItem } from '@/api/types/finops'
 import { Box, CircleCheck, User, Warning } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -151,6 +152,7 @@ const router = useRouter()
 
 // ==================== 数据 ====================
 const overview = ref<OverviewData>({ total: 0, by_provider: [], by_type: [], by_status: [] })
+const overviewLoadError = ref(false)
 const providerItems = ref<KeyCount[]>([])
 const assetTypeItems = ref<KeyCount[]>([])
 const regionItems = ref<KeyCount[]>([])
@@ -384,8 +386,11 @@ const fetchOverview = async () => {
       }
       providerItems.value = overview.value.by_provider
     }
+    overviewLoadError.value = false
   } catch (e: any) {
+    overviewLoadError.value = true
     console.error('获取总览失败:', e)
+    ElMessage.error('获取总览数据失败，请刷新页面重试')
   }
 }
 
