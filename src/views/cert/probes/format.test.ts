@@ -91,7 +91,7 @@ describe('groupProbeResults（根域分组与排序）', () => {
             { domain: 'jlcerp.com' } as CertProbeResult,
             { domain: 'www.jlcerp.com' } as CertProbeResult,
         ]
-        const [g] = groupProbeResults(rows)
+        const g = groupProbeResults(rows)[0]!
         expect(g.root).toBe('jlcerp.com')
         expect(g.rows.map((r) => r.domain)).toEqual([
             'jlcerp.com',
