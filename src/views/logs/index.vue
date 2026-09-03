@@ -225,7 +225,11 @@ const sources = ref<LogSource[]>([])
 const sourcesLoading = ref(false)
 
 const timeRange = ref<[Date, Date] | null>(null)
-const selectedClouds = ref<string[]>([])
+/** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
+const DEFAULT_CLOUDS = ['aliyun']
+const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
+/** 用户是否手动改过云选择(改过后不再自动收敛到默认) */
+const cloudsTouched = ref(false)
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
 
@@ -303,6 +307,11 @@ async function loadSources() {
         // 清除已失效的资源选择
         const valid = new Set(sources.value.map((s) => s.resource_id))
         selectedResources.value = selectedResources.value.filter((r) => valid.has(r))
+        // 首次加载:云选择收敛到实际有源的默认云(避免空选导致"全部云"联邦扫)
+        if (!cloudsTouched.value) {
+            const available = new Set(sources.value.map((s) => s.cloud))
+            selectedClouds.value = DEFAULT_CLOUDS.filter((c) => available.has(c))
+        }
     } catch {
         sources.value = []
     } finally {
@@ -318,6 +327,7 @@ function onTypeChange() {
 }
 
 function onCloudsChange() {
+    cloudsTouched.value = true
     // 云变化只影响可选源展示,已有资源选择按有效性保留(loadSources 会清理)
     void loadSources()
 }
