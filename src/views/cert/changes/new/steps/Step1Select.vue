@@ -51,6 +51,21 @@
           </el-option>
         </el-select>
 
+        <!-- 检索失败错误态：与空态分流，避免网络/服务错误被渲染成「无候选」 -->
+        <el-alert
+          v-if="oldSearchError"
+          type="error"
+          :closable="false"
+          show-icon
+          class="search-error"
+          role="alert"
+        >
+          <template #title>旧证书列表加载失败，请重试</template>
+          <div class="new-empty-actions">
+            <el-button size="small" @click="searchOld('')">重试</el-button>
+          </div>
+        </el-alert>
+
         <div v-if="oldCert" class="selected-card" aria-live="polite">
           <div class="row">
             <strong>{{ oldCert.commonName }}</strong>
@@ -103,6 +118,21 @@
           <div class="text-secondary text-sm mono selected-fp">{{ truncateMiddle(newCert.fingerprint) }}</div>
         </div>
 
+        <!-- 检索失败错误态：优先于空态展示（newEmpty 已排除检索失败） -->
+        <el-alert
+          v-if="newSearchError"
+          type="error"
+          :closable="false"
+          show-icon
+          class="search-error"
+          role="alert"
+        >
+          <template #title>新证书列表加载失败，请重试</template>
+          <div class="new-empty-actions">
+            <el-button size="small" @click="searchNew('')">重试</el-button>
+          </div>
+        </el-alert>
+
         <!-- 无完整托管候选 → 空态卡 + 返回台账导入（已选旧证书暂存草稿） -->
         <el-alert
           v-if="newEmpty"
@@ -132,6 +162,7 @@
  */
 import type { CertListItem } from '@/api/cert'
 import { listCertsApi } from '@/api/cert'
+import { ElMessage } from 'element-plus'
 import { ref, watch } from 'vue'
 import { hostingStatusMeta } from '../../../ledger/format'
 import { truncateMiddle } from '../../format'
@@ -154,17 +185,24 @@ const oldOptions = ref<CertListItem[]>([])
 const newOptions = ref<CertListItem[]>([])
 const oldLoading = ref(false)
 const newLoading = ref(false)
+// 检索失败标记：空态与错误态分流，避免网络/服务错误被误渲染为「暂无完整托管证书」业务空态
+const oldSearchError = ref(false)
+const newSearchError = ref(false)
 
 /** 旧证书候选：完整托管 + 有活跃引用（变更对象=旧证书的引用资源） */
 async function searchOld(query: string) {
     oldLoading.value = true
+    oldSearchError.value = false
     try {
         const res = await listCertsApi({ search: query || undefined, pageSize: 50 })
         oldOptions.value = res.items.filter(
             (c) => c.hostingStatus === 'complete' && c.refCount > 0,
         )
-    } catch {
+    } catch (err) {
+        console.error('旧证书候选检索失败:', err)
         oldOptions.value = []
+        oldSearchError.value = true
+        ElMessage.error({ message: '旧证书列表加载失败，请重试', grouping: true })
     } finally {
         oldLoading.value = false
     }
@@ -173,13 +211,17 @@ async function searchOld(query: string) {
 /** 新证书候选：完整托管，排除已选旧证书 */
 async function searchNew(query: string) {
     newLoading.value = true
+    newSearchError.value = false
     try {
         const res = await listCertsApi({ search: query || undefined, pageSize: 50 })
         newOptions.value = res.items.filter(
             (c) => c.hostingStatus === 'complete' && c.id !== props.oldCert?.id,
         )
-    } catch {
+    } catch (err) {
+        console.error('新证书候选检索失败:', err)
         newOptions.value = []
+        newSearchError.value = true
+        ElMessage.error({ message: '新证书列表加载失败，请重试', grouping: true })
     } finally {
         newLoading.value = false
     }
@@ -213,12 +255,13 @@ function onNewChange(id: string | '') {
     if (found) emit('update:newCert', found)
 }
 
-/** 无完整托管候选空态（首屏加载完成后判定） */
+/** 无完整托管候选空态（首屏加载完成后判定；检索失败时展示错误态而非空态） */
 const newEmpty = ref(false)
 watch(
     newOptions,
     (v) => {
-        newEmpty.value = v.length === 0 && !newLoading.value && !props.newCert
+        newEmpty.value =
+            v.length === 0 && !newLoading.value && !props.newCert && !newSearchError.value
     },
     { immediate: false },
 )
@@ -361,6 +404,11 @@ void searchNew('')
 }
 
 .new-empty {
+  margin-top: 16px;
+  border-radius: 8px;
+}
+
+.search-error {
   margin-top: 16px;
   border-radius: 8px;
 }
