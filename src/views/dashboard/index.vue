@@ -53,14 +53,7 @@
           <h3>云厂商分布</h3>
         </div>
         <div v-loading="providerLoading" class="chart-body">
-          <div ref="providerChartRef" class="chart-container"></div>
-          <div class="chart-legend">
-            <div v-for="item in providerLegend" :key="item.name" class="legend-item">
-              <span class="legend-dot" :style="{ background: item.color }"></span>
-              <span class="legend-name">{{ item.name }}</span>
-              <span class="legend-value">{{ item.value }}</span>
-            </div>
-          </div>
+          <div ref="providerChartRef" class="chart-container full"></div>
         </div>
       </div>
       <div class="chart-card">
@@ -219,14 +212,6 @@ let assetTypeChart: echarts.ECharts | null = null
 let regionChart: echarts.ECharts | null = null
 let costByProductChart: echarts.ECharts | null = null
 
-const providerLegend = computed(() =>
-  providerItems.value.map((item, i) => ({
-    name: providerLabel(item.key),
-    value: item.count,
-    color: COLORS[i % COLORS.length],
-  }))
-)
-
 const formatNumber = (n: number) => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n)
 
 const formatExpireTime = (row: ExpiringAsset) => {
@@ -261,18 +246,44 @@ const scrollToExpiring = () => {
 const initProviderChart = () => {
   if (!providerChartRef.value || !providerItems.value.length) return
   providerChart = echarts.init(providerChartRef.value)
+  const total = providerItems.value.reduce((sum, item) => sum + item.count, 0)
   providerChart.setOption({
-    tooltip: { trigger: 'item', backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fafafa' } },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)',
+      textStyle: { color: '#fafafa' },
+      formatter: (p: any) => `${p.marker} ${p.name}<br/>${p.value} 台 · ${p.percent}%`,
+    },
     series: [{
-      type: 'pie', radius: ['55%', '75%'], center: ['50%', '50%'],
+      type: 'pie', radius: ['52%', '70%'], center: ['50%', '50%'],
       itemStyle: { borderRadius: 4, borderColor: 'transparent', borderWidth: 2 },
-      label: { show: false },
-      emphasis: { scale: true, scaleSize: 8 },
+      // 扇区外直接标注厂商+数量+占比,信息全在图上,无需对照图例
+      label: {
+        show: true,
+        formatter: (p: any) => `{name|${p.name}}\n{value|${p.value} 台 · ${p.percent}%}`,
+        rich: {
+          name: { fontSize: 13, fontWeight: 500, color: '#d4d4d8', lineHeight: 20 },
+          value: { fontSize: 12, color: '#71717a' },
+        },
+      },
+      labelLine: { length: 14, length2: 12, lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+      emphasis: { scale: true, scaleSize: 6 },
       data: providerItems.value.map((item, i) => ({
         value: item.count, name: providerLabel(item.key),
         itemStyle: { color: COLORS[i % COLORS.length] },
       })),
     }],
+    // 环心显示资产总数,与各扇区数量对照
+    graphic: [
+      {
+        type: 'text', left: 'center', top: '42%',
+        style: { text: String(total), fontSize: 26, fontWeight: 700, fill: '#fafafa', textAlign: 'center' },
+      },
+      {
+        type: 'text', left: 'center', top: '56%',
+        style: { text: '资产总数', fontSize: 12, fill: '#71717a', textAlign: 'center' },
+      },
+    ],
   })
 }
 
@@ -601,15 +612,6 @@ onUnmounted(() => {
     .chart-container {
       width: 200px; height: 200px; flex-shrink: 0;
       &.full { width: 100%; height: 280px; }
-    }
-    .chart-legend {
-      flex: 1; display: flex; flex-direction: column; gap: 14px;
-      .legend-item {
-        display: flex; align-items: center; gap: 12px;
-        .legend-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
-        .legend-name { flex: 1; font-size: 14px; color: var(--text-secondary); }
-        .legend-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-      }
     }
   }
 }
