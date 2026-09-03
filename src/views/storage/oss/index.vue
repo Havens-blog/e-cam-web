@@ -176,6 +176,7 @@ import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import type { TagType } from '@/utils/constants'
 import { Box, Download, Folder, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
@@ -235,7 +236,12 @@ const fetchData = async () => {
     const res = await listOSSAssetsApi(params)
     ossList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
-  } catch (e) { console.error('获取OSS列表失败:', e) }
+  } catch (e) {
+    console.error('获取OSS列表失败:', e)
+    ElMessage.error('获取OSS列表失败，请稍后重试')
+    ossList.value = []
+    pagination.total = 0
+  }
   finally { loading.value = false }
 }
 
