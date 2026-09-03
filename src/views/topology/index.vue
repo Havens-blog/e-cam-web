@@ -89,7 +89,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.topology-page { display: flex; flex-direction: column; height: calc(100vh - 0px); background: var(--bg-base); color: var(--text-primary); }
+/* 100vh - 导航栏 56px（MainLayout $navbar-height）- main-content 上下 padding 24px*2，避免三栏工作区纵向溢出触发整页滚动 */
+.topology-page { display: flex; flex-direction: column; height: calc(100vh - 56px - 48px); background: var(--bg-base); color: var(--text-primary); }
 .topology-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-shrink: 0; }
 .toolbar-left { display: flex; align-items: center; gap: 16px; }
 .toolbar-right { display: flex; align-items: center; gap: 6px; }
