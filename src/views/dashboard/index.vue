@@ -81,7 +81,8 @@
           <h3>地域分布 TOP10</h3>
         </div>
         <div class="chart-body">
-          <div ref="regionChartRef" class="chart-container full"></div>
+          <div v-if="regionLoadError" class="empty-tip">地域统计加载失败</div>
+          <div v-else ref="regionChartRef" class="chart-container full"></div>
         </div>
       </div>
       <div class="chart-card">
@@ -158,6 +159,7 @@ const providerItems = ref<KeyCount[]>([])
 const assetTypeItems = ref<KeyCount[]>([])
 const assetTypeLoadError = ref(false)
 const regionItems = ref<KeyCount[]>([])
+const regionLoadError = ref(false)
 const expiringList = ref<ExpiringAsset[]>([])
 const expiringTotal = ref(0)
 const expiringDays = ref(30)
@@ -416,8 +418,11 @@ const fetchByRegion = async () => {
   try {
     const res = await getByRegionApi()
     regionItems.value = (res as any).data?.items || []
+    regionLoadError.value = false
   } catch (e: any) {
+    regionLoadError.value = true
     console.error('获取地域统计失败:', e)
+    ElMessage.error('获取地域统计数据失败')
   }
 }
 
