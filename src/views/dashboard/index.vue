@@ -90,7 +90,8 @@
           <h3>产品成本 TOP10（{{ costMonth }}）</h3>
         </div>
         <div class="chart-body">
-          <div v-if="costByProductItems.length" ref="costByProductChartRef" class="chart-container full"></div>
+          <div v-if="costByProductLoadError" class="empty-tip">产品成本分布加载失败</div>
+          <div v-else-if="costByProductItems.length" ref="costByProductChartRef" class="chart-container full"></div>
           <div v-else class="empty-tip">暂无成本数据</div>
         </div>
       </div>
@@ -165,6 +166,7 @@ const expiringTotal = ref(0)
 const expiringDays = ref(30)
 const expiringLoading = ref(false)
 const costByProductItems = ref<CostDistItem[]>([])
+const costByProductLoadError = ref(false)
 
 // 上个月的年月标签
 const lastMonth = (() => {
@@ -440,8 +442,11 @@ const fetchCostByProduct = async () => {
     if (costByProductItems.value.length) {
       nextTick(() => initCostByProductChart())
     }
+    costByProductLoadError.value = false
   } catch (e: unknown) {
+    costByProductLoadError.value = true
     console.error('获取产品成本分布失败:', e)
+    ElMessage.error('获取产品成本分布数据失败')
   }
 }
 
