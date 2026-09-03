@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import { listCloudAccountsApi } from '@/api'
+import { ElMessage } from 'element-plus'
 import { useDictionary } from '@/composables/useDictionary'
 import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
 import { Refresh, RefreshLeft } from '@element-plus/icons-vue'
@@ -259,6 +260,7 @@ const fetchAccounts = async () => {
     }))
   } catch {
     accountOptions.value = []
+    ElMessage.error('获取云账号列表失败')
   }
 }
 
