@@ -23,7 +23,13 @@
             <el-icon><Edit /></el-icon>
             编辑
           </el-button>
-          <el-button size="small" type="danger" @click="account && $emit('delete', account)">
+          <el-button
+            size="small"
+            type="danger"
+            :loading="deleting"
+            :disabled="actionPending"
+            @click="account && $emit('delete', account)"
+          >
             <el-icon><Delete /></el-icon>
             删除
           </el-button>
@@ -52,7 +58,7 @@
 
       <!-- 快捷操作 -->
       <div class="quick-actions">
-        <button class="quick-btn" @click="account && $emit('test', account)">
+        <button class="quick-btn" :disabled="actionPending" @click="account && $emit('test', account)">
           <el-icon><Connection /></el-icon>
           <span>测试连接</span>
         </button>
@@ -176,11 +182,17 @@ import type { CloudAccount } from '@/api/types/account'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { Box, Connection, Delete, Edit, Refresh } from '@element-plus/icons-vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   visible: boolean
   account: CloudAccount | null
+  /** 宿主侧删除操作进行中（防重复提交守卫） */
+  deleting?: boolean
+  /** 宿主侧测试连接操作进行中 */
+  testing?: boolean
+  /** 宿主侧禁用/启用操作进行中 */
+  toggling?: boolean
 }>()
 
 defineEmits<{
@@ -192,6 +204,11 @@ defineEmits<{
 }>()
 
 const activeTab = ref('basic')
+
+// 任一异步操作进行中：禁用删除/测试连接入口，防止并发第二个请求
+const actionPending = computed(
+  () => !!(props.deleting || props.testing || props.toggling)
+)
 
 const tabs = [
   { key: 'basic', label: '基本信息' },
@@ -417,6 +434,12 @@ const formatDateTime = (time: string | undefined) => {
       background: var(--glass-bg-hover);
       border-color: var(--border-strong);
       color: var(--text-primary);
+    }
+
+    // 操作进行中被禁用时给出可见反馈
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
     }
   }
 }
