@@ -80,7 +80,7 @@
         <el-table-column prop="field_name" label="变更字段" width="120" />
         <el-table-column prop="old_value" label="旧值" min-width="160">
           <template #default="{ row }">
-            <span class="change-value old">{{ parseValue(row.old_value) }}</span>
+            <span class="change-value old" :title="parseValue(row.old_value)">{{ parseValue(row.old_value) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="" width="40" align="center">
@@ -90,7 +90,7 @@
         </el-table-column>
         <el-table-column prop="new_value" label="新值" min-width="160">
           <template #default="{ row }">
-            <span class="change-value new">{{ parseValue(row.new_value) }}</span>
+            <span class="change-value new" :title="parseValue(row.new_value)">{{ parseValue(row.new_value) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="change_source" label="变更来源" width="110">
@@ -342,6 +342,12 @@ onMounted(() => fetchSummary())
   padding: 8px 0;
 }
 .change-value {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 12px;
   padding: 2px 6px;
