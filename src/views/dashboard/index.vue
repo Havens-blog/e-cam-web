@@ -52,7 +52,7 @@
         <div class="chart-header">
           <h3>云厂商分布</h3>
         </div>
-        <div class="chart-body">
+        <div v-loading="providerLoading" class="chart-body">
           <div ref="providerChartRef" class="chart-container"></div>
           <div class="chart-legend">
             <div v-for="item in providerLegend" :key="item.name" class="legend-item">
@@ -67,7 +67,7 @@
         <div class="chart-header">
           <h3>资产类型分布</h3>
         </div>
-        <div class="chart-body">
+        <div v-loading="assetTypeLoading" class="chart-body">
           <div v-if="assetTypeLoadError" class="empty-tip">资产类别统计加载失败</div>
           <div v-else ref="assetTypeChartRef" class="chart-container full"></div>
         </div>
@@ -80,7 +80,7 @@
         <div class="chart-header">
           <h3>地域分布 TOP10</h3>
         </div>
-        <div class="chart-body">
+        <div v-loading="regionLoading" class="chart-body">
           <div v-if="regionLoadError" class="empty-tip">地域统计加载失败</div>
           <div v-else ref="regionChartRef" class="chart-container full"></div>
         </div>
@@ -89,7 +89,7 @@
         <div class="chart-header">
           <h3>产品成本 TOP10（{{ costMonth }}）</h3>
         </div>
-        <div class="chart-body">
+        <div v-loading="costByProductLoading" class="chart-body">
           <div v-if="costByProductLoadError" class="empty-tip">产品成本分布加载失败</div>
           <div v-else-if="costByProductItems.length" ref="costByProductChartRef" class="chart-container full"></div>
           <div v-else class="empty-tip">暂无成本数据</div>
@@ -168,6 +168,11 @@ const expiringLoading = ref(false)
 const expiringLoadError = ref(false)
 const costByProductItems = ref<CostDistItem[]>([])
 const costByProductLoadError = ref(false)
+// 四张图表卡加载态
+const providerLoading = ref(false)
+const assetTypeLoading = ref(false)
+const regionLoading = ref(false)
+const costByProductLoading = ref(false)
 
 // 上个月的年月标签
 const lastMonth = (() => {
@@ -381,6 +386,7 @@ const initCostByProductChart = () => {
 
 // ==================== 数据加载 ====================
 const fetchOverview = async () => {
+  providerLoading.value = true
   try {
     const res = await getOverviewApi()
     const d = (res as any).data
@@ -398,10 +404,13 @@ const fetchOverview = async () => {
     overviewLoadError.value = true
     console.error('获取总览失败:', e)
     ElMessage.error('获取总览数据失败，请刷新页面重试')
+  } finally {
+    providerLoading.value = false
   }
 }
 
 const fetchAssetTypeStats = async () => {
+  assetTypeLoading.value = true
   try {
     const res = await getGlobalAssetStatsApi({ include_children: true })
     const d = (res as any).data
@@ -414,10 +423,13 @@ const fetchAssetTypeStats = async () => {
     assetTypeLoadError.value = true
     console.error('获取资产类别统计失败:', e)
     ElMessage.error('获取资产类别统计数据失败')
+  } finally {
+    assetTypeLoading.value = false
   }
 }
 
 const fetchByRegion = async () => {
+  regionLoading.value = true
   try {
     const res = await getByRegionApi()
     regionItems.value = (res as any).data?.items || []
@@ -426,10 +438,13 @@ const fetchByRegion = async () => {
     regionLoadError.value = true
     console.error('获取地域统计失败:', e)
     ElMessage.error('获取地域统计数据失败')
+  } finally {
+    regionLoading.value = false
   }
 }
 
 const fetchCostByProduct = async () => {
+  costByProductLoading.value = true
   try {
     // 查询上个月整月数据
     const startDate = `${lastMonth.year}-${String(lastMonth.month).padStart(2, '0')}-01`
@@ -448,6 +463,8 @@ const fetchCostByProduct = async () => {
     costByProductLoadError.value = true
     console.error('获取产品成本分布失败:', e)
     ElMessage.error('获取产品成本分布数据失败')
+  } finally {
+    costByProductLoading.value = false
   }
 }
 
