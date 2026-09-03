@@ -101,7 +101,7 @@ const finalDesc = computed(() => {
         case 'completed':
             return '全部清单项达标，变更报告已生成。旧证书进入回滚保护期。'
         case 'partial_completed':
-            return '验证窗口已关闭，存在未达标/失败项。仍在回滚保护期内，可回滚成功项���'
+            return '验证窗口已关闭，存在未达标/失败项。仍在回滚保护期内，可回滚成功项。'
         case 'rollback_failed':
             return '回滚失败已转人工处理，告警同步触发。请查看变更报告与审计记录。'
         case 'rolled_back':

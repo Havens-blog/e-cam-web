@@ -6,7 +6,7 @@
     <div v-if="failedPresent" class="banner banner-error" role="alert">
       <span class="banner-icon" aria-hidden="true">⚠</span>
       <div>
-        <div class="banner-title">出现失败项���已成功项可回滚</div>
+        <div class="banner-title">出现失败项，已成功项可回滚</div>
         <div class="banner-body">失败项引用未被改动，无需回滚。</div>
       </div>
       <div class="banner-actions">
@@ -65,7 +65,7 @@
         <div v-if="!reducedMotion" class="progress" aria-hidden="true">
           <div class="progress-bar" :style="{ width: `${progressPercent}%` }" />
         </div>
-        <span v-else class="text-secondary text-sm">��理中：{{ summary.terminal }}/{{ summary.total }}</span>
+        <span v-else class="text-secondary text-sm">处理中：{{ summary.terminal }}/{{ summary.total }}</span>
       </div>
     </div>
 

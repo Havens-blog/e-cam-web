@@ -160,7 +160,7 @@
       <p class="modal-lead">
         本次变更将影响 <strong>{{ executableTotal }} 项资源</strong>
         <template v-if="step4Conf?.enabled">
-          ，首批执行 <strong>{{ step4Conf?.batchSize }} 项</strong>（剩余批需人���确认后续批）
+          ，首批执行 <strong>{{ step4Conf?.batchSize }} 项</strong>（剩余批需人工确认后续批）
         </template>
         。确认后立即进入执行进度，全程留审计。
       </p>
@@ -371,7 +371,7 @@ async function runPrecheck() {
     } catch (err) {
         precheckError.value = {
             code: (err as { code?: string }).code ?? 'UNKNOWN',
-            message: (err as Error).message || '预检失���',
+            message: (err as Error).message || '预检失败',
         }
         announcement.value = '预检未通过'
     } finally {

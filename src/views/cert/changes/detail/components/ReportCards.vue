@@ -181,7 +181,7 @@
 
     <!-- 卡5 孤儿证书补偿清理 -->
     <section class="card" aria-labelledby="card-orphan-title">
-      <h2 id="card-orphan-title">孤���证书补偿清理</h2>
+      <h2 id="card-orphan-title">孤儿证书补偿清理</h2>
       <el-table
         v-if="orphanCleanup.length > 0"
         :data="orphanCleanup"
