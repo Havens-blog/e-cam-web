@@ -218,8 +218,9 @@ const fetchComparison = async () => {
   try {
     const res = await getCostComparisonApi(buildFilterParams())
     comparison.value = (res as any).data || res || null
-  } catch {
+  } catch (e: any) {
     comparison.value = null
+    ElMessage.error(e.message || '获取成本对比数据失败')
   }
   // YoY uses the same endpoint; backend differentiates via date range
   // For now we show the same comparison data as a placeholder
