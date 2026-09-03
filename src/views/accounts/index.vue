@@ -197,7 +197,7 @@
                 <span class="card-asset-tag">资产 <strong>{{ account.asset_count || 0 }}</strong></span>
               </div>
               <div class="card-footer-right" @click.stop>
-                <el-dropdown trigger="click" @command="(cmd: string) => handleAction(cmd, account)">
+                <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => handleAction(cmd, account)">
                   <button class="card-action-btn">
                     <el-icon><MoreFilled /></el-icon>
                   </button>
@@ -295,7 +295,7 @@
             {{ formatSyncTime(account.last_sync_time) }}
           </div>
           <div class="col-actions" @click.stop>
-            <el-dropdown trigger="click" @command="(cmd: string) => handleAction(cmd, account)">
+            <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => handleAction(cmd, account)">
               <button class="action-trigger">
                 <el-icon><MoreFilled /></el-icon>
               </button>
@@ -466,6 +466,9 @@
     <AccountDetailDrawer
       v-model:visible="detailDrawerVisible"
       :account="detailAccount"
+      :deleting="deleting"
+      :testing="testing"
+      :toggling="toggling"
       @edit="handleEdit"
       @delete="handleDelete"
       @sync="handleSync"
@@ -522,6 +525,11 @@ const viewMode = ref<'card' | 'list'>('card')
 const loading = ref(false)
 const submitting = ref(false)
 const syncing = ref(false)
+// 防重复提交：删除 / 测试连接 / 禁用启用 的 in-flight 守卫（对齐 handleConfirmSync 的 syncing 写法）
+const deleting = ref(false)
+const testing = ref(false)
+const toggling = ref(false)
+const accountActionPending = computed(() => deleting.value || testing.value || toggling.value)
 const dialogVisible = ref(false)
 const syncDialogVisible = ref(false)
 const detailDrawerVisible = ref(false)
@@ -823,6 +831,8 @@ const handleAction = (command: string, account: CloudAccount) => {
 }
 
 const handleDelete = async (account: CloudAccount) => {
+  if (deleting.value) return
+  deleting.value = true
   try {
     await ElMessageBox.confirm(
       `确定要删除云账号"${account.name}"吗？删除后将无法恢复。`,
@@ -838,10 +848,14 @@ const handleDelete = async (account: CloudAccount) => {
       logError(error, 'deleteAccount')
       handleApiError(error, '删除失败')
     }
+  } finally {
+    deleting.value = false
   }
 }
 
 const handleTestConnection = async (account: CloudAccount) => {
+  if (testing.value) return
+  testing.value = true
   const loadingMsg = ElMessage({ message: '正在测试连接...', type: 'info', duration: 0 })
   try {
     const { data } = await testConnectionApi(account.id)
@@ -855,6 +869,8 @@ const handleTestConnection = async (account: CloudAccount) => {
     loadingMsg.close()
     logError(error, 'testConnection')
     ElMessage.error(error.message || '测试连接失败')
+  } finally {
+    testing.value = false
   }
 }
 
@@ -910,6 +926,8 @@ const handleSyncDialogClosed = () => {
 const handleToggleStatus = async (account: CloudAccount) => {
   const isActive = account.status === 'active'
   const action = isActive ? '禁用' : '启用'
+  if (toggling.value) return
+  toggling.value = true
   try {
     await ElMessageBox.confirm(`确定要${action}云账号"${account.name}"吗？`, `确认${action}`, {
       confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
@@ -926,6 +944,8 @@ const handleToggleStatus = async (account: CloudAccount) => {
       logError(error, 'toggleStatus')
       handleApiError(error, `${action}失败`)
     }
+  } finally {
+    toggling.value = false
   }
 }
 
