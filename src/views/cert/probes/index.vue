@@ -6,15 +6,15 @@
     </div>
 
     <div aria-live="polite">
-      <!-- Loading -->
-      <template v-if="loading">
+      <!-- Loading：仅初始加载（无数据）显示骨架；已有数据刷新保留表格防高度塌缩 -->
+      <template v-if="loading && !rows.length">
         <div class="table-skeleton" aria-hidden="true">
           <div v-for="i in 5" :key="i" class="skeleton-row" />
         </div>
       </template>
 
-      <!-- Error -->
-      <div v-else-if="error" class="state-card">
+      <!-- Error：仅无数据时整卡提示；已有数据刷新失败走行内提示不打断浏览 -->
+      <div v-else-if="error && !rows.length" class="state-card">
         <div class="error-state">
           <div class="state-icon state-icon-error" aria-hidden="true">⚠</div>
           <div class="state-title">探测结果加载失败</div>
@@ -36,6 +36,11 @@
 
       <!-- Populated -->
       <template v-else>
+        <div v-if="loading" class="refresh-bar" role="status">
+          <span class="spinner" aria-hidden="true" />
+          正在刷新探测结果…
+        </div>
+
         <div class="toolbar">
           <el-input
             v-model="keyword"
@@ -412,6 +417,15 @@ onUnmounted(stopPolling)
 @keyframes cert-skel {
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
+}
+
+.refresh-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 2px;
 }
 
 .toolbar {
