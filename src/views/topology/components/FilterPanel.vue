@@ -104,6 +104,7 @@
 import { getDnsDomainsApi, searchDnsRecordsApi } from '@/api/dns'
 import { useTopologyStore } from '@/stores/topology'
 import { Filter } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 
 const store = useTopologyStore()
@@ -127,7 +128,10 @@ async function loadMainDomains() {
         options.push({ value: domain, label: domain, provider: d.provider || '', type: '主域名' })
       }
     }
-  } catch { /* ignore */ }
+  } catch (error) {
+    console.error('[FilterPanel] 加载域名列表失败:', error)
+    ElMessage.error('域名列表加载失败，请重试')
+  }
   domainOptions.value = options
 }
 
@@ -168,7 +172,10 @@ async function searchDomains(query: string) {
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch (error) {
+      console.error('[FilterPanel] 域名搜索失败:', error)
+      ElMessage.error('域名搜索失败，请重试')
+    }
     domainOptions.value = options
   } finally { domainSearchLoading.value = false }
 }
