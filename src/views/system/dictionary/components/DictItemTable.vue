@@ -56,6 +56,7 @@
               inline-prompt
               active-text="启"
               inactive-text="停"
+              :before-change="() => beforeStatusChange(row)"
               @change="(val: string | number | boolean) => $emit('statusChange', row, val ? 'enabled' : 'disabled')"
             />
           </template>
@@ -90,7 +91,7 @@
 import { listDictItemsApi } from '@/api/dictionary'
 import type { DictItem } from '@/api/types/dictionary'
 import { Delete, Edit, Plus } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -132,6 +133,18 @@ async function loadItems() {
 
 function rowClassName({ row }: { row: DictItem }) {
   return row.status === 'disabled' ? 'row-disabled' : ''
+}
+
+// 状态切换前守卫：禁用字典项会导致消费该字典的页面取不到此项，需二次确认；启用直接放行。
+// cancel 时 resolve(false)，el-switch 的 handleChange 不会触发（见 element-plus switch switchValue 实现），
+// 因此 @change 不会 emit，父级 API 调用零改动。
+const beforeStatusChange = (item: DictItem) => {
+  if (item.status !== 'enabled') return true
+  return ElMessageBox.confirm(
+    `确定要禁用字典项 "${item.label}" 吗？禁用后使用该字典的页面将取不到此项。`,
+    '禁用确认',
+    { type: 'warning' }
+  ).then(() => true).catch(() => false)
 }
 
 watch(() => props.typeId, () => loadItems(), { immediate: true })
