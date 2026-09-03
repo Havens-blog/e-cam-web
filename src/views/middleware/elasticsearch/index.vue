@@ -102,6 +102,7 @@ import { listElasticsearchAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EsDetailDrawer from './components/EsDetailDrawer.vue'
@@ -152,7 +153,12 @@ const fetchInstances = async () => {
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
-  } catch (error) { console.error('获取ES列表失败:', error) } finally { loading.value = false }
+  } catch (error) {
+    console.error('获取ES列表失败:', error)
+    ElMessage.error('获取ES列表失败，请稍后重试')
+    instances.value = []
+    pagination.total = 0
+  } finally { loading.value = false }
 }
 
 const handleSearch = () => { pagination.page = 1; fetchInstances() }
