@@ -143,7 +143,7 @@ async function onSubmit() {
     errorItems.value = []
     try {
         await uploadCertKeyApi(target.id, key)
-        ElMessage.success('匹配校验通过，已升���为完整托管')
+        ElMessage.success('匹配校验通过，已升级为完整托管')
         visible.value = false
         emit('upgraded', { certId: target.id })
     } catch (err) {
