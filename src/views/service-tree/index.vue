@@ -457,6 +457,7 @@
   <UnbindConfirmDialog
     v-model:visible="unbindDialogVisible"
     :resource="unbindResource"
+    :loading="unbindLoading"
     @confirm="handleUnbindConfirm"
   />
 
@@ -1146,6 +1147,7 @@ const handleBindResource = () => {
 // 解绑资源
 const unbindDialogVisible = ref(false)
 const unbindResource = ref<ResourceBinding | null>(null)
+const unbindLoading = ref(false)
 
 const handleUnbind = (binding: ResourceBinding) => {
   console.log('[DEBUG] handleUnbind called', binding)
@@ -1157,12 +1159,15 @@ const handleUnbind = (binding: ResourceBinding) => {
 const handleUnbindConfirm = async () => {
   if (!unbindResource.value) return
   try {
+    unbindLoading.value = true
     await unbindResourceApi(unbindResource.value.id)
     ElMessage.success('解绑成功')
     unbindDialogVisible.value = false
     loadBindings()
   } catch (error: any) {
     ElMessage.error(error.message || '解绑失败')
+  } finally {
+    unbindLoading.value = false
   }
 }
 

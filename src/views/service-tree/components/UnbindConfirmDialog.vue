@@ -69,19 +69,17 @@
 <script setup lang="ts">
 import type { ResourceBinding } from '@/api/types/service-tree';
 import { Delete, WarningFilled } from '@element-plus/icons-vue';
-import { ref } from 'vue';
 
 defineProps<{
   visible: boolean
   resource: ResourceBinding | null
+  loading: boolean
 }>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
   confirm: []
 }>()
-
-const loading = ref(false)
 
 const assetTypeMap: Record<string, string> = {
   ecs: '云服务器',
