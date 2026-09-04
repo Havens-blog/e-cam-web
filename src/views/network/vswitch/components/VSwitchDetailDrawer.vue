@@ -23,9 +23,12 @@
                 <div class="instance-type">交换机/子网</div>
                 <div class="instance-name">
                   {{ instance.asset_name || instance.asset_id }}
-                  <el-button text size="small" @click="handleRefresh">
-                    <el-icon><Refresh /></el-icon>
-                  </el-button>
+                  <!-- N2-004：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
+                  <el-tooltip content="功能开发中" placement="top">
+                    <el-button text size="small" disabled @click="handleRefresh">
+                      <el-icon><Refresh /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </div>
               </div>
             </div>

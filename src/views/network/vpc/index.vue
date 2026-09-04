@@ -59,7 +59,14 @@
         @row-click="handleRowClick"
         highlight-current-row
       >
-        <el-table-column type="selection" width="40" />
+        <!-- N2-009：selection 列未接线（无 @selection-change，selectedIds 恒空），按主题 B 决策禁用：
+             行复选框 selectable 恒 false，表头全选置灰且不可交互，避免零反馈点击 -->
+        <el-table-column
+          type="selection"
+          width="40"
+          class-name="audit-disabled-col"
+          :selectable="isRowSelectable"
+        />
         <el-table-column label="云上ID/名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="id-name-cell">
@@ -263,6 +270,9 @@ const detailInstance = ref<Asset | null>(null)
 const showExportDialog = ref(false)
 const showColumnSettings = ref(false)
 const selectedIds = ref<number[]>([])
+
+// N2-009：selection 列未接线（selectedIds 恒空），先禁用勾选，待批量操作落地后再接线
+const isRowSelectable = () => false
 
 // 默认列配置
 const defaultColumnSettings: ColumnConfig[] = [
@@ -498,6 +508,13 @@ onMounted(() => {
   .ip-count {
     color: var(--el-color-primary);
     font-weight: 600;
+  }
+
+  // N2-009：selection 列已禁用，表头全选一并置灰且不可交互（Element Plus 的 selection 表头为内置渲染，无法用插槽覆盖）
+  :deep(th.audit-disabled-col .el-checkbox) {
+    pointer-events: none;
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 }
 

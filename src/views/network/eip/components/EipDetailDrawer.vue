@@ -25,9 +25,12 @@
                 <div class="instance-type">弹性公网IP</div>
                 <div class="instance-name">
                   {{ instance.asset_name || instance.asset_id }}
-                  <el-button text size="small" @click="handleRefresh">
-                    <el-icon><Refresh /></el-icon>
-                  </el-button>
+                  <!-- F-EIP-03：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
+                  <el-tooltip content="功能开发中" placement="top">
+                    <el-button text size="small" disabled @click="handleRefresh">
+                      <el-icon><Refresh /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </div>
               </div>
             </div>
@@ -38,7 +41,8 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>同步状态</el-dropdown-item>
+                    <!-- F-EIP-02：菜单无处理器，按主题 B 决策禁用 + title -->
+                    <el-dropdown-item disabled title="功能开发中">同步状态</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -48,8 +52,9 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>绑定实例</el-dropdown-item>
-                    <el-dropdown-item>解绑实例</el-dropdown-item>
+                    <!-- F-EIP-02：绑定/解绑实例未实现（解绑属危险操作，实现时须二次确认），禁用 + title -->
+                    <el-dropdown-item disabled title="功能开发中">绑定实例</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">解绑实例</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -103,7 +108,8 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">云账号</span>
-                    <span class="info-value link">{{ instance.attributes?.account_name || '-' }}</span>
+                    <!-- F-EIP-07：假链接（无点击行为），去掉 link 样式避免误导 -->
+                    <span class="info-value">{{ instance.attributes?.account_name || '-' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">云平台</span>
@@ -141,7 +147,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">绑定实例</span>
-                    <span class="info-value link">{{ instance.attributes?.instance_id || '-' }}</span>
+                    <span class="info-value">{{ instance.attributes?.instance_id || '-' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">实例类型</span>
@@ -464,12 +470,7 @@ const getTabName = (tab: string) => {
     gap: 6px;
     line-height: 1.6;
 
-    &.link {
-      color: #409eff;
-      cursor: pointer;
-      &:hover { text-decoration: underline; }
-    }
-
+    // F-EIP-07：两处假链接已去 link 样式，原 .link 变体随之移除
     &.highlight { color: #409eff; }
 
     &.mono {

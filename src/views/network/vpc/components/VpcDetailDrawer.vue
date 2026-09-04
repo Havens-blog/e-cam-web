@@ -25,9 +25,12 @@
                 <div class="instance-type">VPC</div>
                 <div class="instance-name">
                   {{ instance.asset_name || instance.asset_id }}
-                  <el-button text size="small" @click="handleRefresh">
-                    <el-icon><Refresh /></el-icon>
-                  </el-button>
+                  <!-- N2-003：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
+                  <el-tooltip content="功能开发中" placement="top">
+                    <el-button text size="small" disabled @click="handleRefresh">
+                      <el-icon><Refresh /></el-icon>
+                    </el-button>
+                  </el-tooltip>
                 </div>
               </div>
             </div>
@@ -38,7 +41,8 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>同步状态</el-dropdown-item>
+                    <!-- N2-005：菜单无处理器，按主题 B 决策禁用 + title -->
+                    <el-dropdown-item disabled title="功能开发中">同步状态</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -48,8 +52,9 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>查看子网</el-dropdown-item>
-                    <el-dropdown-item>查看路由表</el-dropdown-item>
+                    <!-- N2-005：三个死菜单项禁用（子网跳转已有 navigateToVSwitch 可复用，接线属后续任务） -->
+                    <el-dropdown-item disabled title="功能开发中">查看子网</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">查看路由表</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -102,7 +107,8 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">云账号</span>
-                    <span class="info-value link">{{ instance.attributes?.account_name || '-' }}</span>
+                    <!-- N2-008：假链接（无点击行为），去掉 link 样式避免误导 -->
+                    <span class="info-value">{{ instance.attributes?.account_name || '-' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">云平台</span>
@@ -160,7 +166,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">路由表数量</span>
-                    <span class="info-value link">{{ instance.attributes?.route_table_count || 0 }}</span>
+                    <span class="info-value">{{ instance.attributes?.route_table_count || 0 }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">NAT网关</span>
