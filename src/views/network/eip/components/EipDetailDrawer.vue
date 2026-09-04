@@ -95,7 +95,7 @@
                   <div class="info-row">
                     <span class="info-label">状态</span>
                     <span class="info-value">
-                      <EipStatusBadge :status="instance.status" />
+                      <AssetStatusBadge :status="instance.status" :labels="statusLabels" :tones="statusTones" />
                     </span>
                   </div>
                   <div class="info-row">
@@ -214,7 +214,20 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { ArrowDown, Close, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
-import EipStatusBadge from './EipStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案/色调(共享 AssetStatusBadge 映射) */
+const statusLabels: Record<string, string> = {
+  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定',
+  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+  Bindable: '可绑定',
+}
+const statusTones: Record<string, string> = {
+  InUse: 'active', inuse: 'active', '已绑定': 'active',
+  Available: 'inactive', available: 'inactive', '未绑定': 'inactive',
+  Bindable: 'pending',
+}
+
 
 const props = defineProps<{
   visible: boolean

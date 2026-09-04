@@ -1,37 +1,30 @@
 <template>
   <el-drawer
     :model-value="visible"
-    :with-header="false"
-    size="50%"
+    size="720px"
     :close-on-click-modal="true"
     class="cdn-detail-drawer"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <div class="drawer-wrapper">
+    <template #header>
+      <div class="drawer-header">
+        <div class="instance-icon">
+          <el-icon :size="20"><Connection /></el-icon>
+        </div>
+        <div class="instance-info">
+          <div class="instance-type">CDN 加速域名</div>
+          <div class="instance-name">{{ domainName }}</div>
+        </div>
+      </div>
+    </template>
+    <div class="drawer-body">
       <template v-if="instance">
-        <div class="drawer-header-area">
-          <div class="drawer-header">
-            <div class="close-corner" @click="$emit('update:visible', false)">
-              <div class="corner-bg"></div>
-              <el-icon class="corner-icon" :size="12"><Close /></el-icon>
-            </div>
-            <div class="header-left">
-              <div class="instance-icon">
-                <el-icon :size="24"><Connection /></el-icon>
-              </div>
-              <div class="instance-info">
-                <div class="instance-type">CDN 加速域名</div>
-                <div class="instance-name">{{ domainName }}</div>
-              </div>
-            </div>
-          </div>
-          <div class="drawer-tabs">
-            <el-tabs v-model="activeTab">
-              <el-tab-pane label="详情" name="detail" />
-              <el-tab-pane label="源站配置" name="origins" />
-              <el-tab-pane label="标签" name="tags" />
-            </el-tabs>
-          </div>
+        <div class="drawer-tabs">
+          <el-tabs v-model="activeTab">
+            <el-tab-pane label="详情" name="detail" />
+            <el-tab-pane label="源站配置" name="origins" />
+            <el-tab-pane label="标签" name="tags" />
+          </el-tabs>
         </div>
 
         <div class="drawer-content">
@@ -51,7 +44,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">状态</span>
-                    <span class="info-value"><CdnStatusBadge :status="instance.status" /></span>
+                    <span class="info-value"><AssetStatusBadge :status="instance.status" :labels="statusLabels" /></span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">业务类型</span>
@@ -103,18 +96,14 @@
                 <div class="info-list">
                   <div class="info-row">
                     <span class="info-label">HTTPS</span>
-                    <span class="info-value">
-                      <el-tag size="small" :type="attr.https_enabled ? 'success' : 'info'" effect="plain">
-                        {{ attr.https_enabled ? '已开启' : '未开启' }}
-                      </el-tag>
+                    <span class="info-value" :class="attr.https_enabled ? 'bool-on' : 'bool-off'">
+                      {{ attr.https_enabled ? '已开启' : '未开启' }}
                     </span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">HTTP/2</span>
-                    <span class="info-value">
-                      <el-tag size="small" :type="attr.http2_enabled ? 'success' : 'info'" effect="plain">
-                        {{ attr.http2_enabled ? '已开启' : '未开启' }}
-                      </el-tag>
+                    <span class="info-value" :class="attr.http2_enabled ? 'bool-on' : 'bool-off'">
+                      {{ attr.http2_enabled ? '已开启' : '未开启' }}
                     </span>
                   </div>
                   <div class="info-row">
@@ -204,11 +193,22 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { Close, Connection, PriceTag } from '@element-plus/icons-vue'
+import { Connection, PriceTag } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
-import CdnStatusBadge from './CdnStatusBadge.vue'
+
+/** 状态值 → 展示文案(与列表页共用同一份映射) */
+const statusLabels: Record<string, string> = {
+  online: '正常', Online: '正常', Deployed: '正常', deployed: '正常',
+  active: '正常', Active: '正常', Started: '正常', started: '正常',
+  offline: '已停用', Offline: '已停用', stopped: '已停用', Stopped: '已停用', disabled: '已停用',
+  configuring: '配置中', Configuring: '配置中',
+  checking: '审核中', Checking: '审核中', creating: '创建中',
+  check_failed: '审核失败', InProgress: '部署中', inprogress: '部署中',
+  error: '异常', failed: '失败',
+}
 
 interface OriginItem {
   address: string
@@ -291,50 +291,40 @@ const formatTime = (time: string | number | undefined) => {
 </script>
 
 <style scoped lang="scss">
-.drawer-wrapper { height: 100%; display: flex; flex-direction: column; }
-
-.drawer-header-area { background: #f5f7fa; flex-shrink: 0; }
-
 .drawer-header {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
-  position: relative;
-}
+  gap: 12px;
 
-.close-corner {
-  position: absolute; top: 0; left: 0; width: 36px; height: 36px; cursor: pointer; z-index: 10;
-  .corner-bg { position: absolute; top: 0; left: 0; width: 0; height: 0; border-style: solid; border-width: 36px 36px 0 0; border-color: #409eff transparent transparent transparent; transition: border-color 0.2s; }
-  .corner-icon { position: absolute; top: 6px; left: 6px; color: #fff; }
-  &:hover .corner-bg { border-color: #66b1ff transparent transparent transparent; }
-}
-
-.header-left {
-  display: flex; align-items: center; gap: 12px; margin-left: 36px;
-  .instance-icon { width: 40px; height: 40px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #409eff; }
+  .instance-icon {
+    width: 40px; height: 40px; border-radius: 9px;
+    background: rgba(59, 130, 246, 0.14); color: #60a5fa;
+    display: flex; align-items: center; justify-content: center;
+  }
   .instance-info {
-    .instance-type { font-size: 11px; color: #909399; margin-bottom: 2px; }
-    .instance-name { font-size: 15px; font-weight: 600; color: #303133; }
+    .instance-type { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
+    .instance-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
   }
 }
 
 .drawer-tabs {
-  padding: 0 20px; border-bottom: 1px solid #e4e7ed;
+  flex-shrink: 0;
+  padding: 0 24px; border-bottom: 1px solid var(--glass-border);
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
     .el-tabs__nav-wrap::after { display: none; }
-    .el-tabs__item { height: 36px; line-height: 36px; font-size: 13px; }
+    .el-tabs__item { height: 40px; line-height: 40px; font-size: 13px; }
   }
 }
 
-.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: #fff; }
+.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; }
 
 .detail-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 
 .detail-column {
   .column-title {
-    font-size: 14px; font-weight: 600; color: #303133;
-    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #ebeef5;
+    font-size: 14px; font-weight: 600; color: var(--text-primary);
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--glass-border);
   }
 }
 
@@ -342,10 +332,12 @@ const formatTime = (time: string | number | undefined) => {
 
 .info-row {
   display: flex; align-items: flex-start; padding: 8px 0; font-size: 13px;
-  .info-label { width: 80px; flex-shrink: 0; color: #909399; }
+  .info-label { width: 80px; flex-shrink: 0; color: var(--text-tertiary); }
   .info-value {
-    flex: 1; color: #303133; word-break: break-all;
+    flex: 1; color: var(--text-primary); word-break: break-all;
     &.mono { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 12px; }
+    &.bool-on { color: #4ade80; }
+    &.bool-off { color: var(--text-muted); }
   }
 }
 
@@ -362,12 +354,12 @@ const formatTime = (time: string | number | undefined) => {
 .origins-section {
   .origins-summary {
     display: flex; gap: 32px; padding: 16px; margin-bottom: 16px;
-    background: #f5f7fa; border-radius: 8px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
 
     .summary-item {
       display: flex; flex-direction: column; gap: 4px;
-      .summary-label { font-size: 12px; color: #909399; }
-      .summary-value { font-size: 13px; color: #303133; font-weight: 500; }
+      .summary-label { font-size: 12px; color: var(--text-tertiary); }
+      .summary-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
     }
   }
 }
@@ -379,13 +371,13 @@ const formatTime = (time: string | number | undefined) => {
 
 .empty-tab {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 300px; color: #909399;
+  height: 300px; color: var(--text-tertiary);
   p { margin-top: 16px; }
 }
 </style>
 
 <style lang="scss">
 .cdn-detail-drawer {
-  .el-drawer__body { padding: 0; height: 100%; overflow: hidden; }
+  .el-drawer__body { padding: 0; display: flex; flex-direction: column; overflow: hidden; }
 }
 </style>

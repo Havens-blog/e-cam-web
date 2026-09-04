@@ -78,7 +78,7 @@
           <template #default="{ row }">
             <!-- 状态列 -->
             <template v-if="col.key === 'status'">
-              <EipStatusBadge :status="row.status" />
+              <AssetStatusBadge :status="row.status" :labels="statusLabels" :tones="statusTones" />
             </template>
             <!-- IP地址列 -->
             <template v-else-if="col.key === 'ip_address'">
@@ -224,7 +224,20 @@ import { useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
 import EipFilters from './components/EipFilters.vue'
-import EipStatusBadge from './components/EipStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案/色调(共享 AssetStatusBadge 映射) */
+const statusLabels: Record<string, string> = {
+  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定',
+  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+  Bindable: '可绑定',
+}
+const statusTones: Record<string, string> = {
+  InUse: 'active', inuse: 'active', '已绑定': 'active',
+  Available: 'inactive', available: 'inactive', '未绑定': 'inactive',
+  Bindable: 'pending',
+}
+
 import ExportDialog from './components/ExportDialog.vue'
 
 const router = useRouter()

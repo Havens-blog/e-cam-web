@@ -22,7 +22,10 @@
     </ManagerHeader>
 
     <!-- 统计卡片 -->
-    <CdnStatsCards :total="pagination.total" :online-count="onlineCount" />
+    <div class="page-stats">
+      <StatCard title="加速域名" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="在线域名" :value="onlineCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="onlineRateText" />
+    </div>
 
     <!-- 筛选器 -->
     <div class="cdn-filters">
@@ -36,7 +39,7 @@
         >
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
-        <el-select v-model="filters.provider" placeholder="全部云平台" clearable @change="handleSearch" style="width: 130px">
+        <el-select v-model="filters.provider" placeholder="全部云厂商" clearable @change="handleSearch" style="width: 130px">
           <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
         </el-select>
         <el-select v-model="filters.status" placeholder="全部状态" clearable @change="handleSearch" style="width: 120px">
@@ -52,9 +55,6 @@
         </el-select>
       </div>
       <div class="filters-right">
-        <el-tooltip content="刷新">
-          <el-button :icon="Refresh" circle size="small" @click="fetchData" />
-        </el-tooltip>
         <el-tooltip content="重置筛选">
           <el-button :icon="RefreshLeft" circle size="small" @click="handleReset" />
         </el-tooltip>
@@ -75,23 +75,18 @@
         <el-table-column type="selection" width="40" />
         <el-table-column label="域名" min-width="260" show-overflow-tooltip>
           <template #default="{ row }">
-            <div class="domain-cell">
-              <span class="domain-name">{{ extractDomainName(row) }}</span>
-              <span v-if="extractCname(row)" class="domain-cname">{{ extractCname(row) }}</span>
-            </div>
+            <span class="domain-name">{{ extractDomainName(row) }}</span>
           </template>
         </el-table-column>
         <template v-for="col in visibleColumns" :key="col.key">
           <el-table-column v-if="col.key === 'status'" label="状态" :width="col.width" align="center">
             <template #default="{ row }">
-              <CdnStatusBadge :status="row.status" />
+              <AssetStatusBadge :status="row.status" :labels="statusLabels" />
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'business_type'" label="业务类型" :width="col.width">
             <template #default="{ row }">
-              <el-tag size="small" :type="safeTagType(getBusinessTypeTag(row.attributes?.business_type)) || undefined" effect="plain">
-                {{ getBusinessTypeLabel(row.attributes?.business_type) }}
-              </el-tag>
+              <span class="cell-text">{{ getBusinessTypeLabel(row.attributes?.business_type) }}</span>
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'platform'" label="云平台" :width="col.width">
@@ -104,9 +99,8 @@
           </el-table-column>
           <el-table-column v-else-if="col.key === 'https_enabled'" label="HTTPS" :width="col.width" align="center">
             <template #default="{ row }">
-              <el-tag size="small" :type="row.attributes?.https_enabled ? 'success' : 'info'" effect="plain">
-                {{ row.attributes?.https_enabled ? '已开启' : '未开启' }}
-              </el-tag>
+              <el-icon v-if="row.attributes?.https_enabled" class="bool-on" :size="15"><CircleCheck /></el-icon>
+              <span v-else class="bool-off">—</span>
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'service_area'" label="加速区域" :width="col.width">
@@ -126,20 +120,14 @@
           </el-table-column>
           <el-table-column v-else-if="col.key === 'http2_enabled'" label="HTTP/2" :width="col.width" align="center">
             <template #default="{ row }">
-              <el-tag size="small" :type="row.attributes?.http2_enabled ? 'success' : 'info'" effect="plain">
-                {{ row.attributes?.http2_enabled ? '已开启' : '未开启' }}
-              </el-tag>
+              <el-icon v-if="row.attributes?.http2_enabled" class="bool-on" :size="15"><CircleCheck /></el-icon>
+              <span v-else class="bool-off">—</span>
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'cert_name'" label="证书名称" :width="col.width" show-overflow-tooltip>
             <template #default="{ row }">{{ row.attributes?.cert_name || '-' }}</template>
           </el-table-column>
         </template>
-        <el-table-column label="操作" width="100" fixed="right" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link @click.stop="handleRowClick(row)">查看详情</el-button>
-          </template>
-        </el-table-column>
       </el-table>
       <el-empty v-if="!loading && cdnList.length === 0" description="暂无数据" />
     </div>
@@ -189,18 +177,18 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listCDNAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { CLOUD_PROVIDERS, getProviderLabel, safeTagType } from '@/utils/constants'
-import { Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
+import StatCard from '@/components/StatCard.vue'
+import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
-import CdnStatsCards from './components/CdnStatsCards.vue'
-import CdnStatusBadge from './components/CdnStatusBadge.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
 
@@ -253,13 +241,26 @@ const onlineCount = computed(() => cdnList.value.filter(i =>
   ['online', 'Deployed', 'active', 'Started'].includes(i.status)
 ).length)
 
+const onlineRateText = computed(() => {
+  if (!cdnList.value.length) return '暂无数据'
+  const pct = Math.round((onlineCount.value / cdnList.value.length) * 100)
+  return `在线率 ${pct}% · 按当前页统计`
+})
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+  online: '正常', Online: '正常', Deployed: '正常', deployed: '正常',
+  active: '正常', Active: '正常', Started: '正常', started: '正常',
+  offline: '已停用', Offline: '已停用', stopped: '已停用', Stopped: '已停用', disabled: '已停用',
+  configuring: '配置中', Configuring: '配置中',
+  checking: '审核中', Checking: '审核中', creating: '创建中',
+  check_failed: '审核失败', InProgress: '部署中', inprogress: '部署中',
+  error: '异常', failed: '失败',
+}
+
 const getBusinessTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = { web: '网页加速', download: '下载加速', media: '流媒体', vodDomainName: '点播', wholeSite: '全站加速', page: '网页加速', api: 'API加速' }
   return map[type || ''] || type || '-'
-}
-const getBusinessTypeTag = (type: string | undefined): string => {
-  const map: Record<string, string> = { web: 'primary', page: 'primary', download: 'success', media: 'warning', wholeSite: 'danger', api: '' }
-  return map[type || ''] || 'info'
 }
 const getServiceAreaLabel = (area: string | undefined) => {
   const map: Record<string, string> = { domestic: '中国大陆', overseas: '海外加速', global: '全球加速', mainland: '中国大陆' }
@@ -375,29 +376,24 @@ onMounted(() => { loadColumnSettings(); fetchData() })
     cursor: pointer;
   }
 
-  .domain-cell {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.4;
+  .domain-name {
+    color: var(--el-color-primary);
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
 
-    .domain-name {
-      color: var(--el-color-primary);
-      font-weight: 500;
-      font-size: 13px;
-      cursor: pointer;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    .domain-cname {
-      color: var(--text-tertiary);
-      font-size: 11px;
-      margin-top: 2px;
-      font-family: 'SF Mono', Consolas, monospace;
+    &:hover {
+      text-decoration: underline;
     }
   }
+
+  .cell-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .bool-on { color: #4ade80; }
+  .bool-off { color: var(--text-muted); font-size: 12px; }
 
   .provider-cell {
     display: flex;
@@ -412,6 +408,13 @@ onMounted(() => { loadColumnSettings(); fetchData() })
     font-size: 12px;
     color: var(--text-tertiary);
   }
+}
+
+.page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .pagination-bar {
