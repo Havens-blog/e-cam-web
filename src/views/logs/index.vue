@@ -68,6 +68,11 @@
           aria-label="检索关键词"
           @keyup.enter="doSearch"
         />
+        <el-tooltip content="每日志源采样上限(窗口内实际日志可能更多,明细/统计均为采样视图)" placement="top">
+          <el-select v-model="limit" class="filter-limit" aria-label="条数上限">
+            <el-option v-for="n in LIMIT_OPTIONS" :key="n" :label="`${n} 条/源`" :value="n" />
+          </el-select>
+        </el-tooltip>
         <el-button type="primary" :loading="searching" @click="doSearch">查询</el-button>
       </div>
 
@@ -256,6 +261,9 @@ const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
 const cloudsTouched = ref(false)
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
+/** 每日志源采样上限(后端单源硬顶 500、联邦 1000;默认拉满提高样本覆盖) */
+const LIMIT_OPTIONS = [100, 500, 1000]
+const limit = ref(1000)
 
 const searching = ref(false)
 const searchError = ref('')
@@ -396,7 +404,7 @@ async function doSearch() {
             query: keyword.value || undefined,
             clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
             resources: selectedResources.value.length ? selectedResources.value : undefined,
-            limit: 100,
+            limit: limit.value,
         })
     } catch (e) {
         resp.value = null
@@ -476,6 +484,9 @@ function columnWidth(key: string): number {
     flex: 1;
     min-width: 200px;
     max-width: 320px;
+}
+.filter-limit {
+    width: 110px;
 }
 .source-option {
     display: flex;
