@@ -17,7 +17,11 @@
     </el-form>
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button type="primary" @click="handleExport">导出</el-button>
+      <!-- S-C12：导出为假功能（原实现仅弹 success 提示，属误导反馈），按主题 B 决策禁用 + tooltip；
+           handleExport 保留但在入口禁用后不可达，接真实导出 API 时再放开 -->
+      <el-tooltip content="功能开发中" placement="top">
+        <el-button type="primary" disabled @click="handleExport">导出</el-button>
+      </el-tooltip>
     </template>
   </el-dialog>
 </template>
