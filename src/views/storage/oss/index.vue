@@ -28,7 +28,10 @@
     <!-- 操作栏 -->
     <div class="action-bar">
       <div class="action-left">
-        <el-button size="small" :disabled="!selectedIds.length">批量操作</el-button>
+        <!-- S-C6：批量操作无处理器（选中后点击零反馈），按主题 B 决策禁用 + tooltip；实现时危险动作须二次确认 -->
+        <el-tooltip content="功能开发中" placement="top">
+          <el-button size="small" disabled>批量操作</el-button>
+        </el-tooltip>
       </div>
       <div class="action-right">
         <span class="page-info">本页{{ ossList.length }}条 / 选中{{ selectedIds.length }}条 / 共{{ pagination.total }}条</span>
@@ -126,8 +129,9 @@
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="view">查看详情</el-dropdown-item>
-                      <el-dropdown-item command="files">文件管理</el-dropdown-item>
-                      <el-dropdown-item command="settings">基础设置</el-dropdown-item>
+                      <!-- S-C8：handleAction 无 files/settings 分支，按主题 B 决策禁用 + title -->
+                      <el-dropdown-item command="files" disabled title="功能开发中">文件管理</el-dropdown-item>
+                      <el-dropdown-item command="settings" disabled title="功能开发中">基础设置</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>

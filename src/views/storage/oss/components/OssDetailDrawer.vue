@@ -29,9 +29,10 @@
                 <el-button size="small">更多 <el-icon><ArrowDown /></el-icon></el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>文件管理</el-dropdown-item>
-                    <el-dropdown-item>基础设置</el-dropdown-item>
-                    <el-dropdown-item>权限管理</el-dropdown-item>
+                    <!-- S-C10：抽屉「更多」菜单无处理器（权限管理属危险入口），按主题 B 决策禁用 + title -->
+                    <el-dropdown-item disabled title="功能开发中">文件管理</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">基础设置</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">权限管理</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>

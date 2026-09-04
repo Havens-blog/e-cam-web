@@ -29,8 +29,9 @@
                 <el-button size="small">更多 <el-icon><ArrowDown /></el-icon></el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>挂载点管理</el-dropdown-item>
-                    <el-dropdown-item>扩容</el-dropdown-item>
+                    <!-- S-C9：抽屉「更多」菜单无处理器（扩容属资源变更入口），按主题 B 决策禁用 + title -->
+                    <el-dropdown-item disabled title="功能开发中">挂载点管理</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">扩容</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
