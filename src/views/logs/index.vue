@@ -106,8 +106,8 @@
       <span class="strip-total">共 {{ resp.total }} 条</span>
     </div>
 
-    <!-- 结果表(动态列) -->
-    <div class="table-card">
+    <!-- 结果区:统计视图为主,明细默认折叠 -->
+    <div v-if="searching || searchError || !resp || resp.entries.length === 0" class="table-card">
       <template v-if="searching">
         <div class="table-skeleton" aria-hidden="true">
           <div v-for="i in 6" :key="i" class="skeleton-row" />
@@ -121,7 +121,7 @@
           <el-button class="state-cta" @click="doSearch">重试</el-button>
         </div>
       </div>
-      <div v-else-if="!resp || resp.entries.length === 0" class="state-card">
+      <div v-else class="state-card">
         <div class="empty-state">
           <div class="state-icon" aria-hidden="true">🔍</div>
           <div class="state-title">暂无日志</div>
@@ -132,56 +132,77 @@
           </div>
         </div>
       </div>
-      <template v-else>
-        <el-table
-          :data="resp.entries"
-          class="log-table"
-          size="small"
-          stripe
-          @row-click="openDetail"
-        >
-          <el-table-column
-            v-for="f in currentFields"
-            :key="f.key"
-            :label="f.label"
-            :min-width="columnWidth(f.key)"
-            :show-overflow-tooltip="true"
-          >
-            <template #default="{ row }">
-              <template v-if="f.key === 'timestamp'">
-                <span class="cell-mono">{{ formatLogTime(row.timestamp) }}</span>
-              </template>
-              <template v-else-if="f.key === 'meta.cloud'">
-                {{ cloudLabel(row.meta.cloud) }}
-              </template>
-              <template v-else-if="f.key === 'status'">
-                <el-tag :type="statusTagType(row.status)" size="small" effect="plain">
-                  {{ row.status || '—' }}
-                </el-tag>
-              </template>
-              <template v-else-if="f.key === 'action'">
-                <el-tag :type="actionTagType(row.action)" size="small" effect="plain">{{ row.action || '—' }}</el-tag>
-              </template>
-              <template v-else-if="f.key === 'severity'">
-                <el-tag :type="severityTagType(row.severity)" size="small" effect="plain">{{ row.severity || '—' }}</el-tag>
-              </template>
-              <template v-else-if="f.key === 'cache_hit'">
-                <el-tag :type="cacheHitTagType(row.cache_hit)" size="small" effect="plain">{{ row.cache_hit || '—' }}</el-tag>
-              </template>
-              <template v-else-if="f.key === 'bytes_sent'">
-                <span class="cell-mono">{{ formatBytes(row.bytes_sent) }}</span>
-              </template>
-              <template v-else-if="isMono(f.key)">
-                <span class="cell-mono">{{ dashIfEmpty(cellValue(row, f.key)) }}</span>
-              </template>
-              <template v-else>
-                {{ dashIfEmpty(cellValue(row, f.key)) }}
-              </template>
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
     </div>
+    <template v-else>
+      <LogStats :entries="resp.entries" :log-type="activeType" />
+
+      <!-- 明细(默认折叠) -->
+      <div class="table-card">
+        <button
+          type="button"
+          class="detail-toggle"
+          :aria-expanded="detailVisible"
+          @click="detailVisible = !detailVisible"
+        >
+          <el-icon :size="14">
+            <ArrowDown v-if="detailVisible" />
+            <ArrowRight v-else />
+          </el-icon>
+          <span class="toggle-title">明细数据({{ resp.entries.length }} 条)</span>
+          <span class="toggle-hint">点击{{ detailVisible ? '收起' : '展开' }} · 点击行查看详情</span>
+        </button>
+        <div v-show="detailVisible" class="detail-body">
+          <el-table
+            :data="resp.entries"
+            class="log-table"
+            size="small"
+            stripe
+            max-height="480"
+            @row-click="openDetail"
+          >
+            <el-table-column
+              v-for="f in currentFields"
+              :key="f.key"
+              :label="f.label"
+              :min-width="columnWidth(f.key)"
+              :show-overflow-tooltip="true"
+            >
+              <template #default="{ row }">
+                <template v-if="f.key === 'timestamp'">
+                  <span class="cell-mono">{{ formatLogTime(row.timestamp) }}</span>
+                </template>
+                <template v-else-if="f.key === 'meta.cloud'">
+                  {{ cloudLabel(row.meta.cloud) }}
+                </template>
+                <template v-else-if="f.key === 'status'">
+                  <el-tag :type="statusTagType(row.status)" size="small" effect="plain">
+                    {{ row.status || '—' }}
+                  </el-tag>
+                </template>
+                <template v-else-if="f.key === 'action'">
+                  <el-tag :type="actionTagType(row.action)" size="small" effect="plain">{{ row.action || '—' }}</el-tag>
+                </template>
+                <template v-else-if="f.key === 'severity'">
+                  <el-tag :type="severityTagType(row.severity)" size="small" effect="plain">{{ row.severity || '—' }}</el-tag>
+                </template>
+                <template v-else-if="f.key === 'cache_hit'">
+                  <el-tag :type="cacheHitTagType(row.cache_hit)" size="small" effect="plain">{{ row.cache_hit || '—' }}</el-tag>
+                </template>
+                <template v-else-if="f.key === 'bytes_sent'">
+                  <span class="cell-mono">{{ formatBytes(row.bytes_sent) }}</span>
+                </template>
+                <template v-else-if="isMono(f.key)">
+                  <span class="cell-mono">{{ dashIfEmpty(cellValue(row, f.key)) }}</span>
+                </template>
+                <template v-else>
+                  {{ dashIfEmpty(cellValue(row, f.key)) }}
+                </template>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </template>
 
     <LogDetailDrawer v-model:visible="drawerVisible" :entry="detailEntry" :fields="drawerFields" />
   </div>
@@ -194,8 +215,10 @@
  * - 时间范围按类型上限约束(CDN 7d / SLB 3d,与后端一致);
  * - 日志源按云·账号分组,未开启投递的源禁用并给引导文案;
  * - 联邦查询 per-source 状态条(失败不静默)+ 截断提示;
+ * - 结果区统计视图为主(KPI + 图表,前端聚合),明细默认折叠;
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
  */
+import { ArrowDown, ArrowRight } from '@element-plus/icons-vue'
 import { getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type {
     LogEntry,
@@ -206,6 +229,7 @@ import type {
 } from '@/api/types/logs'
 import { computed, onMounted, ref } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
+import LogStats from './components/LogStats.vue'
 import {
     actionTagType,
     cacheHitTagType,
@@ -236,6 +260,8 @@ const keyword = ref('')
 const searching = ref(false)
 const searchError = ref('')
 const resp = ref<LogSearchResponse | null>(null)
+/** 明细表格默认折叠(统计视图为主) */
+const detailVisible = ref(false)
 
 const drawerVisible = ref(false)
 const detailEntry = ref<LogEntry | null>(null)
@@ -361,6 +387,7 @@ async function doSearch() {
     if (!timeRange.value) return
     searching.value = true
     searchError.value = ''
+    detailVisible.value = false // 新查询收敛到统计视图
     try {
         resp.value = await searchLogsApi({
             log_type: activeType.value,
@@ -488,6 +515,34 @@ function columnWidth(key: string): number {
     border-radius: 8px;
     padding: 8px;
     border: 1px solid var(--el-border-color-lighter);
+}
+.detail-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--el-text-color-primary);
+    font-size: 13px;
+    border-radius: 4px;
+
+    &:hover {
+        background: var(--el-fill-color-light);
+    }
+}
+.toggle-title {
+    font-weight: 600;
+}
+.toggle-hint {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    font-weight: normal;
+}
+.detail-body {
+    margin-top: 4px;
 }
 .log-table {
     width: 100%;
