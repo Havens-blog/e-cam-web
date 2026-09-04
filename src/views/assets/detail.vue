@@ -276,7 +276,7 @@ const handleDelete = async () => {
 
     await deleteAssetApi(asset.value.id)
     ElMessage.success('删除成功')
-    router.push('/cam/assets')
+    router.push('/assets')
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败')
