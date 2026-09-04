@@ -22,8 +22,9 @@
                 <el-button size="small">更多 <el-icon><ArrowDown /></el-icon></el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>重启实例</el-dropdown-item>
-                    <el-dropdown-item>备份</el-dropdown-item>
+                    <!-- F-C5：重启/备份无处理器，按主题 B 决策禁用 + title（重启属危险操作，实现时必须二次确认） -->
+                    <el-dropdown-item disabled title="功能开发中">重启实例</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">备份</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>

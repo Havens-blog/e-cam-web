@@ -98,7 +98,8 @@
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="view">查看详情</el-dropdown-item>
-                      <el-dropdown-item command="console">控制台</el-dropdown-item>
+                      <!-- F-C4：handleAction 无 console 分支，按主题 B 决策禁用 + title -->
+                      <el-dropdown-item command="console" disabled title="功能开发中">控制台</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>

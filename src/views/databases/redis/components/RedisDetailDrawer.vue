@@ -20,8 +20,9 @@
                 <el-button size="small">更多 <el-icon><ArrowDown /></el-icon></el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>重启实例</el-dropdown-item>
-                    <el-dropdown-item>清空数据</el-dropdown-item>
+                    <!-- F-C6：重启/清空数据无处理器，按主题 B 决策禁用 + title（清空数据属破坏性操作，实现时需强确认） -->
+                    <el-dropdown-item disabled title="功能开发中">重启实例</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">清空数据</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
