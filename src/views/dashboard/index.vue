@@ -10,38 +10,42 @@
     <div class="stats-row">
       <div class="stat-card" @click="router.push('/assets')">
         <div class="stat-icon blue">
-          <el-icon :size="24"><Box /></el-icon>
+          <el-icon :size="22"><Box /></el-icon>
         </div>
         <div class="stat-body">
           <div class="stat-label">资产总数</div>
           <div class="stat-value">{{ overviewLoadError ? '-' : formatNumber(overview.total) }}</div>
+          <div class="stat-sub">覆盖 {{ overview.by_provider.length }} 个云厂商</div>
         </div>
       </div>
       <div class="stat-card" @click="router.push('/accounts')">
         <div class="stat-icon orange">
-          <el-icon :size="24"><User /></el-icon>
+          <el-icon :size="22"><User /></el-icon>
         </div>
         <div class="stat-body">
           <div class="stat-label">云厂商</div>
           <div class="stat-value">{{ overviewLoadError ? '-' : overview.by_provider.length }}</div>
+          <div class="stat-sub">多云统一接入</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon green">
-          <el-icon :size="24"><CircleCheck /></el-icon>
+          <el-icon :size="22"><CircleCheck /></el-icon>
         </div>
         <div class="stat-body">
           <div class="stat-label">运行中</div>
           <div class="stat-value">{{ overviewLoadError ? '-' : runningCount }}</div>
+          <div class="stat-sub">{{ runningShare }}</div>
         </div>
       </div>
       <div class="stat-card" @click="scrollToExpiring">
         <div class="stat-icon red">
-          <el-icon :size="24"><Warning /></el-icon>
+          <el-icon :size="22"><Warning /></el-icon>
         </div>
         <div class="stat-body">
           <div class="stat-label">即将过期</div>
           <div class="stat-value">{{ expiringLoadError ? '-' : expiringTotal }}</div>
+          <div class="stat-sub">{{ expiringDays }} 天窗口</div>
         </div>
       </div>
     </div>
@@ -180,6 +184,12 @@ const runningCount = computed(() => {
   return r?.count || 0
 })
 
+const runningShare = computed(() => {
+  if (overviewLoadError.value || !overview.value.total) return '-'
+  const pct = Math.round((runningCount.value / overview.value.total) * 100)
+  return `占实体资产 ${pct}%`
+})
+
 // ==================== 映射 ====================
 const providerMap: Record<string, string> = {
   aliyun: '阿里云', aws: 'AWS', huawei: '华为云', tencent: '腾讯云', volcano: '火山引擎',
@@ -199,7 +209,9 @@ const assetTypeMap: Record<string, string> = {
 }
 const assetTypeLabel = (k: string) => assetTypeMap[k] || k
 
-const COLORS = ['#3b82f6', '#f59e0b', '#06b6d4', '#10b981', '#8b5cf6', '#ef4444', '#ec4899', '#f97316', '#14b8a6', '#6366f1']
+// 分类色板(固定顺序,勿按排名循环):已过暗色表面六项校验
+// (CVD 区分度/正常视觉下限/对比度),更新颜色请重跑 dataviz validate_palette.js
+const COLORS = ['#3b82f6', '#d97706', '#0891b2', '#16a34a', '#8b5cf6']
 
 // ==================== 图表 ====================
 const providerChartRef = ref<HTMLElement>()
@@ -291,28 +303,30 @@ const initAssetTypeChart = () => {
   if (!assetTypeChartRef.value || !assetTypeItems.value.length) return
   assetTypeChart = echarts.init(assetTypeChartRef.value)
   const sorted = [...assetTypeItems.value].sort((a, b) => b.count - a.count)
+  const total = sorted.reduce((sum, item) => sum + item.count, 0)
+  // 单系列横向排名条:单色(量级任务),每条值标注在条尾,坐标轴刻度冗余故隐藏
   assetTypeChart.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fafafa' } },
-    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: {
-      type: 'category', data: sorted.map(i => assetTypeLabel(i.key)),
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-      axisLabel: { color: '#71717a', rotate: 30, fontSize: 11 },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)',
+      textStyle: { color: '#fafafa' },
+      formatter: (p: any) => `${p.marker} ${p.name}<br/>${p.value} 台 · ${((p.value / total) * 100).toFixed(1)}%`,
     },
+    grid: { left: 8, right: 64, top: 8, bottom: 8, containLabel: true },
+    xAxis: { type: 'value', show: false },
     yAxis: {
-      type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
-      axisLabel: { color: '#71717a' },
+      type: 'category', data: sorted.map(i => assetTypeLabel(i.key)).reverse(),
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: '#a1a1aa', fontSize: 12 },
     },
     series: [{
-      type: 'bar', barWidth: '50%', barMaxWidth: 40,
-      itemStyle: {
-        borderRadius: [4, 4, 0, 0],
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: '#3b82f6' }, { offset: 1, color: 'rgba(59,130,246,0.3)' },
-        ]),
+      type: 'bar', barMaxWidth: 18,
+      itemStyle: { borderRadius: [0, 4, 4, 0], color: '#3b82f6' },
+      label: {
+        show: true, position: 'right', color: '#d4d4d8', fontSize: 11,
+        formatter: (p: any) => `${p.value} · ${((p.value / total) * 100).toFixed(1)}%`,
       },
-      data: sorted.map(i => i.count),
+      data: sorted.map(i => i.count).reverse(),
     }],
   })
 }
@@ -320,29 +334,26 @@ const initAssetTypeChart = () => {
 const initRegionChart = () => {
   if (!regionChartRef.value || !regionItems.value.length) return
   regionChart = echarts.init(regionChartRef.value)
-  const top10 = [...regionItems.value].sort((a, b) => b.count - a.count).slice(0, 10).reverse()
+  const top10 = [...regionItems.value].sort((a, b) => b.count - a.count).slice(0, 10)
   regionChart.setOption({
-    tooltip: { trigger: 'axis', backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fafafa' } },
-    grid: { left: '3%', right: '8%', bottom: '3%', top: '5%', containLabel: true },
-    xAxis: {
-      type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
-      axisLabel: { color: '#71717a' },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(23,23,23,0.95)', borderColor: 'rgba(255,255,255,0.1)',
+      textStyle: { color: '#fafafa' },
+      formatter: (p: any) => `${p.marker} ${p.name}<br/>${p.value} 台`,
     },
+    grid: { left: 8, right: 48, top: 8, bottom: 8, containLabel: true },
+    xAxis: { type: 'value', show: false },
     yAxis: {
-      type: 'category', data: top10.map(i => i.key),
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-      axisLabel: { color: '#71717a', fontSize: 11 },
+      type: 'category', data: top10.map(i => i.key).reverse(),
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: '#a1a1aa', fontSize: 11 },
     },
     series: [{
-      type: 'bar', barWidth: '60%', barMaxWidth: 24,
-      itemStyle: {
-        borderRadius: [0, 4, 4, 0],
-        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-          { offset: 0, color: 'rgba(6,182,212,0.3)' }, { offset: 1, color: '#06b6d4' },
-        ]),
-      },
-      data: top10.map(i => i.count),
+      type: 'bar', barMaxWidth: 18,
+      itemStyle: { borderRadius: [0, 4, 4, 0], color: '#0891b2' },
+      label: { show: true, position: 'right', color: '#d4d4d8', fontSize: 11 },
+      data: top10.map(i => i.count).reverse(),
     }],
   })
 }
@@ -358,41 +369,27 @@ const initCostByProductChart = () => {
     top10.push({ key: `其他 (${sorted.length - 10}项)`, amount: 0, amount_cny: otherAmount, percent: 0 })
   }
   const reversed = [...top10].reverse()
-  const barColors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#ec4899', '#10b981', '#f97316', '#14b8a6', '#6366f1', '#22d3ee']
+  const fmtCNY = (val: number) => `¥${val.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
   costByProductChart.setOption({
     tooltip: {
-      trigger: 'axis',
+      trigger: 'item',
       backgroundColor: 'rgba(23,23,23,0.95)',
       borderColor: 'rgba(255,255,255,0.1)',
       textStyle: { color: '#fafafa' },
-      formatter: (params: unknown) => {
-        const list = params as Array<{ name: string; value: number }>
-        const p = list[0]
-        if (!p) return ''
-        return `${p.name}<br/>¥${p.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      },
+      formatter: (p: any) => `${p.marker} ${p.name}<br/>¥${p.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     },
-    grid: { left: '3%', right: '8%', bottom: '3%', top: '5%', containLabel: true },
-    xAxis: {
-      type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
-      axisLabel: {
-        color: '#71717a',
-        formatter: (val: number) => val >= 10000 ? (val / 10000).toFixed(0) + '万' : String(val),
-      },
-    },
+    grid: { left: 8, right: 88, top: 8, bottom: 8, containLabel: true },
+    xAxis: { type: 'value', show: false },
     yAxis: {
       type: 'category',
       data: reversed.map(i => i.key),
-      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-      axisLabel: { color: '#71717a', fontSize: 11 },
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: '#a1a1aa', fontSize: 11 },
     },
     series: [{
-      type: 'bar', barWidth: '60%', barMaxWidth: 24,
-      itemStyle: {
-        borderRadius: [0, 4, 4, 0],
-        color: (params: { dataIndex: number }) => barColors[params.dataIndex % barColors.length],
-      },
+      type: 'bar', barMaxWidth: 18,
+      itemStyle: { borderRadius: [0, 4, 4, 0], color: '#8b5cf6' },
+      label: { show: true, position: 'right', color: '#d4d4d8', fontSize: 11, formatter: (p: any) => fmtCNY(p.value) },
       data: reversed.map(i => i.amount_cny),
     }],
   })
@@ -465,7 +462,6 @@ const fetchCostByProduct = async () => {
     const endDay = new Date(lastMonth.year, lastMonth.month, 0).getDate()
     const endDate = `${lastMonth.year}-${String(lastMonth.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`
     const res = await getCostDistributionApi({ dimension: 'service_type', start_date: startDate, end_date: endDate })
-    // eslint-disable-next-line -- 响应结构可能被拦截器改写，需要兼容多种格式
     const d = (res as any).data || res || []
     costByProductItems.value = Array.isArray(d) ? d : []
     // 数据到位后在下一帧渲染图表
@@ -572,19 +568,23 @@ onUnmounted(() => {
     transform: translateY(-2px);
   }
   .stat-icon {
-    width: 48px; height: 48px; border-radius: 12px;
+    width: 44px; height: 44px; border-radius: 11px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    &.blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
-    &.orange { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
-    &.green { background: rgba(16,185,129,0.15); color: var(--accent-green); }
-    &.red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+    &.blue { background: rgba(59,130,246,0.14); color: #60a5fa; }
+    &.orange { background: rgba(217,119,6,0.16); color: #fbbf24; }
+    &.green { background: rgba(22,163,74,0.16); color: #4ade80; }
+    &.red { background: rgba(239,68,68,0.14); color: #f87171; }
   }
   .stat-body {
     flex: 1; min-width: 0;
-    .stat-label { font-size: 13px; color: var(--text-tertiary); margin-bottom: 8px; }
+    .stat-label { font-size: 13px; color: var(--text-tertiary); margin-bottom: 6px; }
     .stat-value {
-      font-size: 32px; font-weight: 600; color: var(--text-primary);
-      line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+      font-size: 28px; font-weight: 650; color: var(--text-primary);
+      line-height: 1.1; letter-spacing: -0.02em;
+    }
+    .stat-sub {
+      margin-top: 6px; font-size: 12px; color: var(--text-tertiary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
   }
 }
