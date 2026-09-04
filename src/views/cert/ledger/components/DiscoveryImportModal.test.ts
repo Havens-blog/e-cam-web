@@ -63,6 +63,7 @@ function entry(p: {
     cloud: string
     cloudCertId: string
     accountKey?: string
+    label?: string
     refCount?: number
     inLedger?: boolean
     notAfter?: string
@@ -73,6 +74,7 @@ function entry(p: {
         cloud: p.cloud,
         accountKey: p.accountKey ?? 'acc-1',
         cloudCertId: p.cloudCertId,
+        ...(p.label ? { label: p.label } : {}),
         refCount: p.refCount ?? 1,
         inLedger: p.inLedger ?? false,
         notAfter: p.notAfter ?? PENDING,
@@ -682,5 +684,50 @@ describe('DiscoveryImportModal（确认导入与进度轮询收敛，任务 7）
         const calls = importApi.mock.calls.length
         await vi.advanceTimersByTimeAsync(6000)
         expect(importApi.mock.calls.length).toBe(calls)
+    })
+})
+
+describe('DiscoveryImportModal（清单搜索与可读名标签）', () => {
+    it('label 渲染在行内（证书名/域名可读）', async () => {
+        const w = await openWith({
+            snapshotId: 'snap-1',
+            snapshotStartedAt: '2099-01-01T00:00:00Z',
+            count: 1,
+            items: [entry({ cloud: 'aliyun', cloudCertId: '27029968', label: 'jlccam.com-2026-09' })],
+        })
+        expect(w.text()).toContain('jlccam.com-2026-09')
+    })
+
+    it('搜索按 cloudCertId 过滤分组清单，清空恢复', async () => {
+        const w = await openWith(makePreview())
+        expect(rows(w).length).toBe(5)
+        const search = w.find('input[placeholder="搜索证书名 / 证书 ID / 域名"]')
+        await search.setValue('27029968')
+        await flushPromises()
+        expect(w.text()).toContain('无匹配证书')
+        await search.setValue('tx-defer')
+        await flushPromises()
+        expect(rows(w).length).toBe(1)
+        expect(w.text()).toContain('tx-defer')
+        await search.setValue('')
+        await flushPromises()
+        expect(rows(w).length).toBe(5)
+    })
+
+    it('搜索按 label 命中', async () => {
+        const w = await openWith({
+            snapshotId: 'snap-1',
+            snapshotStartedAt: '2099-01-01T00:00:00Z',
+            count: 2,
+            items: [
+                entry({ cloud: 'aliyun', cloudCertId: '27029968', label: 'jlccam.com-2026-09' }),
+                entry({ cloud: 'aliyun', cloudCertId: '20312053', label: 'jlc-cnc.com-2025-09' }),
+            ],
+        })
+        const search = w.find('input[placeholder="搜索证书名 / 证书 ID / 域名"]')
+        await search.setValue('jlccam')
+        await flushPromises()
+        expect(rows(w).length).toBe(1)
+        expect(w.text()).toContain('27029968')
     })
 })

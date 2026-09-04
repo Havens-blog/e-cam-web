@@ -634,6 +634,8 @@ export interface DiscoveryPreviewEntry {
     cloud: string
     accountKey: string
     cloudCertId: string
+    /** 可读名（引用 resourceId 采样：cas=证书名称、cdn/waf=域名、alb/nlb=复合 ID）；空=引用未带 */
+    label?: string
     refCount: number
     inLedger: boolean
     /** 台账 RFC3339；未登记为占位文案「—（导入后补全）」（后端 DiscoveryNotAfterPending） */

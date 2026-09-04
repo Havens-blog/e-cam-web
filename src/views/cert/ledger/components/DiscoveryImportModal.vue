@@ -151,9 +151,22 @@
         <span class="ds-meta-time">快照时间：{{ snapshotTimeText || '—' }}</span>
       </div>
 
+      <!-- 清单搜索（客户端过滤，大清单定位证书名/ID） -->
+      <el-input
+        v-model="listKeyword"
+        class="ds-search"
+        type="search"
+        placeholder="搜索证书名 / 证书 ID / 域名"
+        aria-label="搜索预览清单"
+        clearable
+        data-testid="discovery-list-search"
+      />
+
       <div v-if="groups.length === 0" class="ds-state" data-testid="discovery-empty-list">
-        <div class="ds-state-title">快照内未发现可展示的云端证书</div>
-        <div class="ds-state-desc">可重新执行引用扫描后再次预览。</div>
+        <div class="ds-state-title">{{ listKeyword.trim() ? '无匹配证书' : '快照内未发现可展示的云端证书' }}</div>
+        <div class="ds-state-desc">
+          {{ listKeyword.trim() ? '调整搜索关键字或清空重试。' : '可重新执行引用扫描后再次预览。' }}
+        </div>
       </div>
 
       <!-- 按云分组（大清单分组折叠即可，无需虚拟滚动） -->
@@ -213,6 +226,7 @@
                 @change="() => toggleEntry(e)"
               />
               <span class="ds-cert-id" :title="e.cloudCertId">{{ e.cloudCertId }}</span>
+              <span v-if="e.label" class="ds-label" :title="e.label">{{ e.label }}</span>
               <span class="ds-account" :title="e.accountKey">{{ e.accountKey }}</span>
               <span class="ds-refcount">{{ e.refCount }} 个引用</span>
               <span class="ds-notafter" :class="{ 'ds-notafter-pending': e.notAfter === NOT_AFTER_PENDING }">
@@ -293,7 +307,7 @@ import {
     startDiscoveryImportApi,
     triggerCertScanApi,
 } from '@/api/cert'
-import { ElAlert, ElButton, ElCheckbox, ElDialog, ElMessage, ElProgress } from 'element-plus'
+import { ElAlert, ElButton, ElCheckbox, ElDialog, ElInput, ElMessage, ElProgress } from 'element-plus'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { batchProgressPercent } from '../format'
 import {
@@ -366,8 +380,25 @@ const scanNotice = ref('')
 let statusTimer: ReturnType<typeof setInterval> | null = null
 let statusPollInFlight = false
 
-const groups = computed(() => (preview.value ? groupPreviewEntries(preview.value.items) : []))
+const groups = computed(() => (preview.value ? groupPreviewEntries(filteredItems.value) : []))
 const summary = computed(() => summarizePreview(preview.value?.items ?? []))
+
+// ===== 清单搜索（客户端过滤；数据已在内存，逐键过滤开销可忽略） =====
+
+const listKeyword = ref('')
+
+/** 关键字命中：证书 ID / 可读名 / 账号（大小写不敏感子串） */
+const filteredItems = computed<DiscoveryPreviewEntry[]>(() => {
+    const kw = listKeyword.value.trim().toLowerCase()
+    const items = preview.value?.items ?? []
+    if (!kw) return items
+    return items.filter(
+        (e) =>
+            e.cloudCertId.toLowerCase().includes(kw) ||
+            (e.label ?? '').toLowerCase().includes(kw) ||
+            e.accountKey.toLowerCase().includes(kw),
+    )
+})
 const stale = computed(() => isSnapshotStale(preview.value?.snapshotStartedAt))
 const snapshotTimeText = computed(() => formatSnapshotTime(preview.value?.snapshotStartedAt))
 const selectedCount = computed(() => selected.value.size)
@@ -1005,6 +1036,21 @@ defineExpose({ open })
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 120px;
+}
+
+.ds-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.ds-search {
+  margin-top: 10px;
+  width: 320px;
+  max-width: 100%;
 }
 
 .ds-refcount {
