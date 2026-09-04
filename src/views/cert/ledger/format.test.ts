@@ -308,4 +308,9 @@ describe('resolvePageState（loading/empty/error/populated 四态判定，AC6）
     it('error 但已有数据（刷新失败）维持 populated 避免整页塌陷', () => {
         expect(resolvePageState({ loading: false, error: true, total: 60 })).toBe('populated')
     })
+    it('筛选中 total=0 → populated（工具栏保留；仅无筛选空台账才进引导空态）', () => {
+        expect(resolvePageState({ loading: false, error: false, total: 0, filtered: true })).toBe('populated')
+        expect(resolvePageState({ loading: false, error: true, total: 0, filtered: true })).toBe('populated')
+        expect(resolvePageState({ loading: false, error: false, total: 0, filtered: false })).toBe('empty')
+    })
 })

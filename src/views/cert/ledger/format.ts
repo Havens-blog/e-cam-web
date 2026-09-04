@@ -377,8 +377,11 @@ export type PageState = 'loading' | 'empty' | 'error' | 'populated'
  * 台账页四态判定：loading 优先 → error（仅无数据时，刷新失败不塌陷已渲染列表）
  * → total=0 empty → populated。
  */
-export function resolvePageState(args: { loading: boolean; error: boolean; total: number }): PageState {
+export function resolvePageState(args: { loading: boolean; error: boolean; total: number; filtered?: boolean }): PageState {
     if (args.loading) return 'loading'
+    // 筛选/搜索中 total=0 是「无匹配」而非空台账——维持 populated 保留工具栏，
+    // 表格区由 el-table 内建空态承载（整页切引导卡会连搜索框一起消失，无法清筛选）
+    if (args.filtered) return 'populated'
     if (args.error) return args.total > 0 ? 'populated' : 'error'
     return args.total > 0 ? 'populated' : 'empty'
 }

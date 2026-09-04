@@ -8,7 +8,6 @@
         placeholder="按域名 / SAN / 指纹片段搜索"
         aria-label="搜索证书（域名 / SAN / 指纹片段）"
         clearable
-        :disabled="disabled"
         @input="onSearchInput"
       >
         <template #prefix>
@@ -20,7 +19,6 @@
         v-model="hostingFilter"
         class="toolbar-select"
         aria-label="筛选托管状态"
-        :disabled="disabled"
         @change="emitFilters"
       >
         <el-option label="托管状态：全部" value="" />
@@ -31,7 +29,6 @@
         v-model="daysFilter"
         class="toolbar-select"
         aria-label="筛选剩余天数"
-        :disabled="disabled"
         @change="emitFilters"
       >
         <el-option label="剩余天数：全部" value="" />
@@ -48,6 +45,7 @@
       :data="rows"
       row-key="id"
       :row-class-name="rowClassName"
+      :empty-text="filterActive ? '无匹配证书，调整筛选或清空搜索重试' : '暂无数据'"
       tabindex="0"
       aria-label="证书台账列表"
       @row-click="onRowClick"
@@ -208,6 +206,9 @@ function emitFilters() {
 }
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))
+
+/** 搜索/任一筛选激活（表格内建空态区分「无匹配」文案；工具栏不因查询禁用——防抖输入不丢字） */
+const filterActive = computed(() => Boolean(searchText.value.trim() || hostingFilter.value || daysFilter.value))
 
 function changePage(p: number) {
     if (p < 1 || p > totalPages.value) return

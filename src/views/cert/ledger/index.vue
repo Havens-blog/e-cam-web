@@ -182,8 +182,16 @@ const SKELETON_DELAY_MS = 800
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | null = null
 
+/** 搜索/任一筛选激活（total=0 时区分「无匹配」与空台账引导态） */
+const filterActive = computed(() => Boolean(search.value || hostingStatus.value || daysLeft.value))
+
 const pageState = computed(() =>
-    resolvePageState({ loading: listLoading.value && rows.value.length === 0, error: loadError.value, total: total.value }),
+    resolvePageState({
+        loading: listLoading.value && rows.value.length === 0,
+        error: loadError.value,
+        total: total.value,
+        filtered: filterActive.value,
+    }),
 )
 
 function beginSkeletonTimer() {
@@ -200,7 +208,11 @@ function endSkeletonTimer() {
     skeletonVisible.value = false
 }
 
+/** 请求序号：筛选控件不再随请求禁用（防抖输入不丢字），以仅应用最新响应防乱序覆盖 */
+let fetchListSeq = 0
+
 async function fetchList() {
+    const seq = ++fetchListSeq
     listLoading.value = true
     loadError.value = false
     beginSkeletonTimer()
@@ -212,17 +224,21 @@ async function fetchList() {
             ...(hostingStatus.value ? { hostingStatus: hostingStatus.value } : {}),
             ...(daysLeft.value ? { daysLeft: daysLeft.value } : {}),
         })
+        if (seq !== fetchListSeq) return // 过期响应（期间有更新的查询）丢弃
         rows.value = res.items
         total.value = res.total
     } catch (err) {
+        if (seq !== fetchListSeq) return
         loadError.value = true
         // 已有数据的刷新失败不塌陷页面（resolvePageState 维持 populated），以 Toast 提示
         if (rows.value.length > 0) {
             ElMessage.error(err instanceof Error ? err.message : '证书列表刷新失败')
         }
     } finally {
-        listLoading.value = false
-        endSkeletonTimer()
+        if (seq === fetchListSeq) {
+            listLoading.value = false
+            endSkeletonTimer()
+        }
     }
 }
 
