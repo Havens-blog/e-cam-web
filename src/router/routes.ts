@@ -38,26 +38,12 @@ const routes: RouteRecordRaw[] = [
                     icon: 'ops-oneterm-asset-management',
                 },
             },
-            {
-                path: '/accounts/create',
-                name: 'AccountCreate',
-                component: () => import('@/views/accounts/form.vue'),
-                meta: {
-                    title: '添加云账号',
-                    icon: 'Plus',
-                    hideInMenu: true,
-                },
-            },
-            {
-                path: '/accounts/:id/edit',
-                name: 'AccountEdit',
-                component: () => import('@/views/accounts/form.vue'),
-                meta: {
-                    title: '编辑云账号',
-                    icon: 'Edit',
-                    hideInMenu: true,
-                },
-            },
+            // TODO(audit A-H1/A-H2): 移除 /accounts/create 与 /accounts/:id/edit 两条死路由。
+            // form.vue 模板根节点为裸 <el-form>，无提交/取消入口，也不读取 route.params.id，
+            // 独立路由页访问时既不能提交也不能取消，编辑路由会渲染成新建表单。
+            // 云账号的新增/编辑已统一由 accounts/index.vue 对话框承载（见 docs/features/
+            // ecam-web-ui-audit/reports/audit-accounts-topology-tasks.md 第六节 A-H2）。
+            // 若未来恢复独立页，需为 form.vue 补页面级操作栏并接入路由参数加载。
             {
                 path: '/assets',
                 name: 'Assets',
