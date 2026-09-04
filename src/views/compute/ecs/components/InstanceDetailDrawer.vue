@@ -38,9 +38,10 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item>开机</el-dropdown-item>
-                    <el-dropdown-item>关机</el-dropdown-item>
-                    <el-dropdown-item>重启</el-dropdown-item>
+                    <!-- F-C5：实例控制菜单无处理器，按主题 B 决策禁用 + title（实现时须接 API 并防重复提交） -->
+                    <el-dropdown-item disabled title="功能开发中">开机</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">关机</el-dropdown-item>
+                    <el-dropdown-item disabled title="功能开发中">重启</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>

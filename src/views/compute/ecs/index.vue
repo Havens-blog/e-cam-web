@@ -40,31 +40,43 @@
           <el-icon><Plus /></el-icon>
           新建
         </el-button>
-        <el-button size="small" :disabled="!selectedIds.length">开机</el-button>
-        <el-button size="small" :disabled="!selectedIds.length">关机</el-button>
-        <el-button size="small" :disabled="!selectedIds.length">重启</el-button>
-        <el-dropdown trigger="click" :disabled="!selectedIds.length">
-          <el-button size="small" :disabled="!selectedIds.length">
-            更多状态 <el-icon><ArrowDown /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>挂起</el-dropdown-item>
-              <el-dropdown-item>恢复</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-dropdown trigger="click" :disabled="!selectedIds.length">
-          <el-button size="small" :disabled="!selectedIds.length">
-            批量操作 <el-icon><ArrowDown /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>批量删除</el-dropdown-item>
-              <el-dropdown-item>批量编辑</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <!-- F-C2/F-C3：批量开机/关机/重启与「更多状态/批量操作」菜单均未实现（选中后点击零反馈，含危险项批量删除），
+             按主题 B 决策统一禁用 + tooltip；实现时批量删除必须补二次确认 -->
+        <el-tooltip content="功能开发中" placement="top">
+          <el-button size="small" disabled>开机</el-button>
+        </el-tooltip>
+        <el-tooltip content="功能开发中" placement="top">
+          <el-button size="small" disabled>关机</el-button>
+        </el-tooltip>
+        <el-tooltip content="功能开发中" placement="top">
+          <el-button size="small" disabled>重启</el-button>
+        </el-tooltip>
+        <el-tooltip content="功能开发中" placement="top">
+          <el-dropdown trigger="click" disabled>
+            <el-button size="small" disabled>
+              更多状态 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled title="功能开发中">挂起</el-dropdown-item>
+                <el-dropdown-item disabled title="功能开发中">恢复</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-tooltip>
+        <el-tooltip content="功能开发中" placement="top">
+          <el-dropdown trigger="click" disabled>
+            <el-button size="small" disabled>
+              批量操作 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled title="功能开发中">批量删除</el-dropdown-item>
+                <el-dropdown-item disabled title="功能开发中">批量编辑</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </el-tooltip>
         <el-popover
           v-model:visible="tagFilterVisible"
           placement="bottom-start"
@@ -381,8 +393,9 @@
                   <span class="action-link">远程登录</span>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item command="ssh">SSH登录</el-dropdown-item>
-                      <el-dropdown-item command="vnc">VNC登录</el-dropdown-item>
+                      <!-- F-C4：handleAction 无 ssh/vnc 分支，按主题 B 决策禁用 + title -->
+                      <el-dropdown-item command="ssh" disabled title="功能开发中">SSH登录</el-dropdown-item>
+                      <el-dropdown-item command="vnc" disabled title="功能开发中">VNC登录</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>

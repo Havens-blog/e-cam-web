@@ -40,10 +40,12 @@
             <el-icon :size="16"><List /></el-icon>
           </button>
         </el-tooltip>
-        <el-tooltip content="网格视图" placement="top">
+        <!-- F-C7：网格视图未实现（父组件未监听 viewChange），按主题 B 决策禁用 + tooltip -->
+        <el-tooltip content="功能开发中" placement="top">
           <button
             class="view-btn"
             :class="{ active: viewMode === 'grid' }"
+            disabled
             @click="viewMode = 'grid'; $emit('viewChange', 'grid')"
           >
             <el-icon :size="16"><Grid /></el-icon>
@@ -201,6 +203,15 @@ const handleReset = () => {
 
     & + .view-btn {
       border-left: 1px solid var(--glass-border);
+    }
+
+    // F-C7：网格视图未实现，禁用态置灰
+    &:disabled,
+    &:disabled:hover {
+      color: var(--el-text-color-disabled);
+      background: transparent;
+      cursor: not-allowed;
+      opacity: 0.5;
     }
   }
 }

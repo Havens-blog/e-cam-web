@@ -60,13 +60,20 @@
         <option value="volcano">火山引擎</option>
       </select>
       <div class="filter-tabs">
-        <div
+        <!-- F-C4（compute-2）：「最近使用/我的模板」两个 tab 未参与请求参数（点击后列表不变），按主题 B 决策禁用 + tooltip -->
+        <el-tooltip
           v-for="tab in filterTabs"
           :key="tab.key"
-          class="filter-tab"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key; loadTemplates()"
-        >{{ tab.label }}</div>
+          content="功能开发中"
+          placement="top"
+          :disabled="!isTabDisabled(tab.key)"
+        >
+          <div
+            class="filter-tab"
+            :class="{ active: activeTab === tab.key, 'is-disabled': isTabDisabled(tab.key) }"
+            @click="handleFilterTabClick(tab.key)"
+          >{{ tab.label }}</div>
+        </el-tooltip>
       </div>
     </div>
 
@@ -249,6 +256,15 @@ const filterTabs = [
   { key: 'recent', label: '最近使用' },
   { key: 'my', label: '我的模板' }
 ]
+
+// F-C4（compute-2）：「最近使用/我的模板」未参与请求参数，先禁用；待排序/归属过滤参数落地后再放开
+const isTabDisabled = (key: string) => key !== 'all'
+
+const handleFilterTabClick = (key: string) => {
+  if (isTabDisabled(key)) return
+  activeTab.value = key
+  loadTemplates()
+}
 
 const safeTemplates = computed(() =>
   (templates.value || []).filter(item => item != null)
@@ -641,6 +657,12 @@ onMounted(() => {
 }
 .filter-tab:hover {
   color: var(--el-text-color-primary);
+}
+/* F-C4（compute-2）：未实现 tab 禁用态 */
+.filter-tab.is-disabled,
+.filter-tab.is-disabled:hover {
+  color: var(--el-text-color-placeholder);
+  cursor: not-allowed;
 }
 .filter-tab.active {
   background: rgba(139, 92, 246, 0.2);
