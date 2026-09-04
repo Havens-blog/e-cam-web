@@ -44,6 +44,12 @@ describe('matchDomain（域名子串搜索，大小写不敏感）', () => {
     it('不命中', () => {
         expect(matchDomain('www.example.com', 'other')).toBe(false)
     })
+
+    it('null/undefined 域名不 throw（脏数据防御，与 rootDomainOf 同类）', () => {
+        expect(() => matchDomain(null as never, 'x')).not.toThrow()
+        expect(matchDomain(null as never, 'x')).toBe(false)
+        expect(matchDomain(undefined as never, 'x')).toBe(false)
+    })
 })
 
 describe('probeBadgeClass（探测徽章 class）', () => {

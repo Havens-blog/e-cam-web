@@ -78,3 +78,48 @@ describe('ProbesIndex（挂载与刷新回归）', () => {
         expect(triggerApi).toHaveBeenCalledWith('easyeda.com')
     })
 })
+
+describe('ProbesIndex（搜索交互回归）', () => {
+    it('搜索无匹配保留工具栏与空态（页面消失回归）', async () => {
+        probesApi.mockResolvedValue(payload as never)
+        vi.useFakeTimers()
+        try {
+            const w = mountPage()
+            await flushPromises()
+            const input = w.find('.toolbar-search input')
+            await input.setValue('zzz-no-match')
+            await flushPromises()
+            // 防抖窗口内表格仍在（未过滤）
+            expect(w.find('.data-table').exists()).toBe(true)
+            vi.advanceTimersByTime(300)
+            await flushPromises()
+            // 工具栏与搜索框必须保留——用户能调整/清空筛选
+            expect(w.find('.toolbar-search').exists()).toBe(true)
+            // 空态提示可见
+            expect(w.text()).toContain('当前筛选无匹配')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('输入防抖：停顿后过滤才生效', async () => {
+        probesApi.mockResolvedValue(payload as never)
+        vi.useFakeTimers()
+        try {
+            const w = mountPage()
+            await flushPromises()
+            const input = w.find('.toolbar-search input')
+            await input.setValue('easyeda')
+            await flushPromises()
+            // 防抖窗口内：全部组仍显示（keyword 未应用）
+            expect(w.text()).toContain('jlcerp.com')
+            vi.advanceTimersByTime(300)
+            await flushPromises()
+            // 防抖后：过滤生效，只剩命中组
+            expect(w.text()).not.toContain('jlcerp.com')
+            expect(w.text()).toContain('easyeda.com')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+})

@@ -23,18 +23,16 @@
         </div>
       </div>
 
-      <!-- Empty -->
-      <div v-else-if="!filtered.length" class="state-card">
+      <!-- Empty：完全无数据（尚未探测过） -->
+      <div v-else-if="!rows.length" class="state-card">
         <div class="empty-state">
           <div class="state-icon" aria-hidden="true">🔍</div>
           <div class="state-title">暂无探测结果</div>
-          <div class="state-desc">
-            {{ rows.length ? '当前筛选无匹配，调整筛选重试。' : '尚未执行 TLS 探测，等待下一次巡检。' }}
-          </div>
+          <div class="state-desc">尚未执行 TLS 探测，等待下一次巡检。</div>
         </div>
       </div>
 
-      <!-- Populated -->
+      <!-- Populated：工具栏常驻（筛选无匹配时不消失，用户可调整/清空筛选） -->
       <template v-else>
         <div v-if="loading" class="refresh-bar" role="status">
           <span class="spinner" aria-hidden="true" />
@@ -43,7 +41,7 @@
 
         <div class="toolbar">
           <el-input
-            v-model="keyword"
+            v-model="keywordInput"
             class="toolbar-search"
             type="search"
             placeholder="搜索域名 / 子域名"
@@ -68,7 +66,16 @@
           <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
         </div>
 
-        <div class="table-wrap">
+        <!-- 筛选无匹配：保留工具栏，仅表格区切空态 -->
+        <div v-if="!filtered.length" class="state-card">
+          <div class="empty-state">
+            <div class="state-icon" aria-hidden="true">🔍</div>
+            <div class="state-title">无匹配结果</div>
+            <div class="state-desc">当前筛选无匹配，调整筛选或清空搜索重试。</div>
+          </div>
+        </div>
+
+        <div v-else class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
@@ -154,7 +161,7 @@ import { getCertProbesApi, triggerCertProbeScanApi } from '@/api/cert'
 import { CertRequestError } from '@/api/cert'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { probeBadge, relativeTimeDash } from '../dashboard/format'
 import { copyText, truncateFingerprint } from '../ledger/format'
 import {
@@ -175,12 +182,33 @@ import {
 const rows = ref<CertProbeResult[]>([])
 const loading = ref(false)
 const error = ref('')
+// 搜索输入与生效关键词分离：2600+ 行每次按键全量重过滤+重渲染代价高，
+// 输入防抖（KEYWORD_DEBOUNCE_MS）后 keyword 才驱动 filtered/groups/filterActive
+const keywordInput = ref('')
 const keyword = ref('')
 const statusFilter = ref('')
 const linkFilter = ref('')
 const scanning = ref(false)
 const scanningRoot = ref('')
 let pollTimer: ReturnType<typeof setTimeout> | null = null
+let keywordTimer: ReturnType<typeof setTimeout> | null = null
+
+const KEYWORD_DEBOUNCE_MS = 250
+
+watch(keywordInput, (v) => {
+    if (keywordTimer) {
+        clearTimeout(keywordTimer)
+        keywordTimer = null
+    }
+    if (!v) {
+        keyword.value = '' // 清空立即生效（clearable 关闭按钮/手动清空不等防抖）
+        return
+    }
+    keywordTimer = setTimeout(() => {
+        keyword.value = v
+        keywordTimer = null
+    }, KEYWORD_DEBOUNCE_MS)
+})
 
 const collapsed = ref<Record<string, boolean>>({})
 
@@ -326,7 +354,10 @@ function stopPolling() {
 }
 
 onMounted(load)
-onUnmounted(stopPolling)
+onUnmounted(() => {
+    stopPolling()
+    if (keywordTimer) clearTimeout(keywordTimer)
+})
 </script>
 
 <style lang="scss" scoped>

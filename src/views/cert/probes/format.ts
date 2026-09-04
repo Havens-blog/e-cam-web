@@ -41,9 +41,10 @@ export const PROBE_LINK_FILTERS = [
     { value: 'san', label: 'SAN 探测' },
 ] as const
 
-/** 域名搜索（子串大小写不敏感） */
+/** 域名搜索（子串大小写不敏感）；脏数据防御：非字符串域名单行不命中不崩页 */
 export function matchDomain(domain: string, kw: string): boolean {
     if (!kw) return true
+    if (typeof domain !== 'string') return false
     return domain.toLowerCase().includes(kw.toLowerCase())
 }
 
