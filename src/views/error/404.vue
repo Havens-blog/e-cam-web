@@ -17,7 +17,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goHome = () => {
-  router.push('/cam/dashboard')
+  router.push('/dashboard')
 }
 </script>
 
