@@ -33,6 +33,7 @@ const PRODUCT_LABELS: Record<string, string> = {
     alb: 'ALB',
     clb: 'CLB',
     nlb: 'NLB',
+    cas: '证书库',
     ingress: 'Ingress',
     gateway: 'Gateway',
     httproute: 'HTTPRoute',

@@ -14,6 +14,7 @@ import {
     loadScanSession,
     noRefsNotice,
     parseScanConflict,
+    productLabel,
     relativeTime,
     resolveReverseState,
     resourceIdLines,
@@ -450,5 +451,17 @@ describe('resourceIdLines（资源 ID 展示行：复合形态拆两行）', () 
 
     it('非复合形态 -> 单行原文', () => {
         expect(resourceIdLines('www.example.com')).toEqual(['www.example.com'])
+    })
+})
+
+describe('productLabel（产品展示名）', () => {
+    it('cas 证书库标签（cert-cas-library-scan）', () => {
+        expect(productLabel('cas')).toBe('证书库')
+    })
+
+    it('既有产品不受影响，未知产品回退原文', () => {
+        expect(productLabel('cdn')).toBe('CDN')
+        expect(productLabel('waf')).toBe('WAF')
+        expect(productLabel('unknown-prod')).toBe('unknown-prod')
     })
 })
