@@ -180,7 +180,7 @@
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { PROVIDER_CONFIGS } from '@/utils/constants'
+import { getProviderLabel } from '@/utils/constants'
 import { Box, Connection, Delete, Edit, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 
@@ -216,10 +216,9 @@ const tabs = [
   { key: 'assets', label: '关联资产' }
 ]
 
-const getProviderName = (provider: string) => {
-  const config = PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]
-  return config?.name || provider || '-'
-}
+/** 云厂商展示名统一走 utils/constants 单源。原实现返回 config.name(小写 id),
+ *  详情抽屉里显示的是 'aliyun' 而非「阿里云」,收敛后与其他页面一致 */
+const getProviderName = (provider: string) => (provider ? getProviderLabel(provider) : '-')
 
 const getProviderClass = (provider: string) => {
   return provider ? `provider-${provider}` : ''

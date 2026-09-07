@@ -180,7 +180,7 @@
                     <el-table-column label="云平台" width="90">
                       <template #default="{ row }">
                         <span v-if="row.provider" class="provider-tag">
-                          {{ providerMap[row.provider] || row.provider }}
+                          {{ getProviderLabel(row.provider) }}
                         </span>
                         <span v-else class="text-muted">-</span>
                       </template>
@@ -316,7 +316,7 @@
                     </el-table-column>
                     <el-table-column label="云厂商" width="90">
                       <template #default="{ row }">
-                        {{ providerMap[row.provider] || row.provider }}
+                        {{ getProviderLabel(row.provider) }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="region" label="地域" width="110" show-overflow-tooltip />
@@ -534,6 +534,7 @@ import {
     Refresh,
     Search
 } from '@element-plus/icons-vue'
+import { getProviderLabel } from '@/utils/constants'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -577,16 +578,6 @@ const assetTypeMap: Record<string, string> = {
   cdn: 'CDN',
   waf: 'WAF',
   image: '镜像'
-}
-
-// 云平台映射
-const providerMap: Record<string, string> = {
-  aliyun: '阿里云',
-  aws: 'AWS',
-  tencent: '腾讯云',
-  huawei: '华为云',
-  azure: 'Azure',
-  volcano: '火山引擎'
 }
 
 // 获取状态类型

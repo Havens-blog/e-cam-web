@@ -132,6 +132,7 @@
 import type { AssetChange, ChangeSummary } from '@/api/audit'
 import { getChangeSummaryApi, listAssetChangesApi } from '@/api/audit'
 import { Document, Refresh, Right, WarningFilled } from '@element-plus/icons-vue'
+import { getProviderLabel } from '@/utils/constants'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -156,13 +157,8 @@ const modelLabel = (uid: string) => {
   return m[uid] || uid
 }
 
-const providerLabel = (p: string) => {
-  const m: Record<string, string> = {
-    aliyun: '阿里云', aws: 'AWS', tencent: '腾讯云',
-    huawei: '华为云', volcano: '火山引擎',
-  }
-  return m[p] || p
-}
+/** 云平台展示名统一走 utils/constants 单源（含 volcengine 等变体归一） */
+const providerLabel = (p: string) => (p ? getProviderLabel(p) : p)
 
 const sourceLabel = (s: string) => {
   const m: Record<string, string> = { sync_task: '同步任务', manual: '手动修改', api: 'API调用' }

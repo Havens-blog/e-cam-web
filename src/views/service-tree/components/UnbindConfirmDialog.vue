@@ -32,7 +32,7 @@
           </div>
           <div v-if="resource.provider" class="detail-item">
             <span class="detail-label">云平台</span>
-            <span class="detail-value">{{ providerMap[resource.provider] || resource.provider }}</span>
+            <span class="detail-value">{{ getProviderLabel(resource.provider) }}</span>
           </div>
           <div v-if="resource.private_ip || resource.public_ip" class="detail-item">
             <span class="detail-label">IP地址</span>
@@ -69,6 +69,7 @@
 <script setup lang="ts">
 import type { ResourceBinding } from '@/api/types/service-tree';
 import { Delete, WarningFilled } from '@element-plus/icons-vue';
+import { getProviderLabel } from '@/utils/constants';
 
 defineProps<{
   visible: boolean
@@ -89,14 +90,6 @@ const assetTypeMap: Record<string, string> = {
   eip: '弹性IP',
   disk: '云硬盘',
   vpc: 'VPC'
-}
-
-const providerMap: Record<string, string> = {
-  aliyun: '阿里云',
-  aws: 'AWS',
-  tencent: '腾讯云',
-  huawei: '华为云',
-  azure: 'Azure'
 }
 
 const handleConfirm = () => {

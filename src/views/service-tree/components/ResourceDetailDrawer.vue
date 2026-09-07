@@ -225,6 +225,7 @@
 <script setup lang="ts">
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { Close, Monitor } from '@element-plus/icons-vue'
+import { getProviderLabel } from '@/utils/constants'
 import { computed, ref } from 'vue'
 
 export interface ResourceData {
@@ -284,12 +285,8 @@ const assetTypeLabel = computed(() => {
 
 const provider = computed(() => props.resource?.provider || attrs.value.provider || '')
 
-const providerLabel = computed(() => {
-  const map: Record<string, string> = {
-    aliyun: '阿里云', aws: 'AWS', tencent: '腾讯云', huawei: '华为云', volcano: '火山引擎'
-  }
-  return map[provider.value] || provider.value || '-'
-})
+/** 云平台展示名统一走 utils/constants 单源（含 volcengine 等变体归一） */
+const providerLabel = computed(() => (provider.value ? getProviderLabel(provider.value) : '-'))
 
 const region = computed(() => props.resource?.region || attrs.value.region || '')
 

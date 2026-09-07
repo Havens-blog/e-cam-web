@@ -123,9 +123,10 @@ import { ArrowRight, Bottom, Close, Link, Top } from '@element-plus/icons-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNodeColor, getProviderColor } from '../composables/useTopologyChart'
+import { getProviderLabel } from '@/utils/constants'
 
 const TN: Record<string, string> = { dns_record: 'DNS', cdn: 'CDN', waf: 'WAF', slb: 'SLB', alb: 'ALB', nlb: 'NLB', elb: 'ELB', eni: 'ENI', gateway: '网关', k8s_ingress: 'Ingress', k8s_service: 'Service', k8s_deployment: 'Deployment', ecs: 'ECS', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB', oss: 'OSS', external: '外部', unknown: '未知' }
-const PNMap: Record<string, string> = { aliyun: '阿里云', aws: 'AWS', tencent: '腾讯云', huawei: '华为云', volcano: '火山引擎', volcengine: '火山引擎' }
+
 const TI: Record<string, string> = { dns_record: '🌐', cdn: '⚡', waf: '🛡', slb: '⚖', alb: '⚖', nlb: '⚖', eni: '🔌', ecs: '🖥', rds: '🗄', redis: '📦', oss: '💾', external: '🔗', unknown: '❓' }
 const ST: Record<string, string> = { active: '运行中', error: '异常', inactive: '已停止', pending: '待处理' }
 
@@ -185,7 +186,8 @@ const loading = ref(false)
 const router = useRouter()
 
 function typeLabel(t: string) { return TN[t] || t }
-function providerName(p: string) { return PNMap[p] || p }
+/** 云平台展示名统一走 utils/constants 单源（含 volcengine 变体归一） */
+function providerName(p: string) { return getProviderLabel(p) }
 
 const displayName = computed(() => detail.value?.name || '—')
 const displayType = computed(() => {
@@ -198,7 +200,7 @@ const displayType = computed(() => {
 const iconColor = computed(() => detail.value ? getNodeColor(detail.value as TopoNode) : '#64748b')
 const typeIcon = computed(() => detail.value ? (TI[detail.value.type] || '📦') : '📦')
 const statusText = computed(() => detail.value ? (ST[detail.value.status] || detail.value.status) : '')
-const providerLabel = computed(() => detail.value?.provider ? PNMap[detail.value.provider] || detail.value.provider : '')
+const providerLabel = computed(() => detail.value?.provider ? getProviderLabel(detail.value.provider) : '')
 const providerColor = computed(() => detail.value?.provider ? getProviderColor(detail.value.provider) : '#64748b')
 
 const keyAttrs = computed(() => {

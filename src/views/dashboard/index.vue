@@ -143,6 +143,7 @@ import { getCostDistributionApi } from '@/api/finops'
 import { getGlobalAssetStatsApi } from '@/api/service-tree'
 import type { CostDistItem } from '@/api/types/finops'
 import { Box, CircleCheck, User, Warning } from '@element-plus/icons-vue'
+import { getProviderLabel } from '@/utils/constants'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -191,10 +192,8 @@ const runningShare = computed(() => {
 })
 
 // ==================== 映射 ====================
-const providerMap: Record<string, string> = {
-  aliyun: '阿里云', aws: 'AWS', huawei: '华为云', tencent: '腾讯云', volcano: '火山引擎',
-}
-const providerLabel = (k: string) => providerMap[k] || k
+/** 云平台展示名统一走 utils/constants 单源（含 volcengine 等变体归一） */
+const providerLabel = (k: string) => (k ? getProviderLabel(k) : k)
 
 const assetTypeMap: Record<string, string> = {
   cloud_vm: '虚拟机', cloud_rds: 'RDS', cloud_redis: 'Redis', cloud_mongodb: 'MongoDB',
