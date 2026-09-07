@@ -117,14 +117,21 @@ function pctText(v: number | null): string {
 
 // ---- KPI(按类型定制) ----
 
-export function buildKpis(logType: LogType, entries: LogEntry[]): StatKpi[] {
-    const total = entries.length
-    if (logType === 'waf') return wafKpis(entries, total)
-    if (logType === 'slb') return slbKpis(entries, total)
-    return cdnKpis(entries, total)
+/**
+ * buildKpis KPI 行。totalOverride:服务端聚合的窗口精确总数(聚合失败时
+ * 回退采样条数);比率类(错误率/命中率)始终采样估算。
+ */
+export function buildKpis(logType: LogType, entries: LogEntry[], totalOverride?: number): StatKpi[] {
+    // displayTotal:精确总数(聚合);rateTotal:比率分母(恒采样,避免被
+    // 大分母稀释);两者相等时即纯采样视图。
+    const displayTotal = totalOverride ?? entries.length
+    const rateTotal = entries.length
+    if (logType === 'waf') return wafKpis(entries, displayTotal, rateTotal)
+    if (logType === 'slb') return slbKpis(entries, displayTotal, rateTotal)
+    return cdnKpis(entries, displayTotal, rateTotal)
 }
 
-function cdnKpis(entries: LogEntry[], total: number): StatKpi[] {
+function cdnKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
     const statusBuckets: Record<string, number> = {}
     const cacheBuckets: Record<string, number> = {}
     let bytes = 0
@@ -134,23 +141,23 @@ function cdnKpis(entries: LogEntry[], total: number): StatKpi[] {
         if (hit) cacheBuckets[hit] = (cacheBuckets[hit] || 0) + 1
         bytes += Number((e as CDNLogEntry).bytes_sent) || 0
     }
-    const errRate = ratio(statusBuckets['5xx'] || 0, total)
+    const errRate = ratio(statusBuckets['5xx'] || 0, rateTotal)
     const hitCount = cacheBuckets['hit'] || 0
-    const hitTotal = total - (cacheBuckets['-'] || 0)
+    const hitTotal = rateTotal - (cacheBuckets['-'] || 0)
     return [
-        { label: '日志条数', value: total.toLocaleString() },
-        { label: '缓存命中率', value: pctText(ratio(hitCount, hitTotal)), tone: 'good', hint: 'hit / 有效判定条数' },
+        { label: '日志条数', value: displayTotal.toLocaleString(), hint: displayTotal === rateTotal ? undefined : '窗口精确总数(服务端聚合)' },
+        { label: '缓存命中率', value: pctText(ratio(hitCount, hitTotal)), tone: 'good', hint: '采样估算' },
         {
             label: '5xx 错误率',
             value: pctText(errRate),
             tone: errRate !== null && errRate >= 5 ? 'danger' : undefined,
-            hint: '状态码 ≥500 占比',
+            hint: '采样估算:状态码 ≥500 占比',
         },
-        { label: '总流量', value: formatBytes(bytes) },
+        { label: '总流量', value: formatBytes(bytes), hint: '采样估算' },
     ]
 }
 
-function wafKpis(entries: LogEntry[], total: number): StatKpi[] {
+function wafKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
     const actionBuckets: Record<string, number> = {}
     let high = 0
     for (const e of entries) {
@@ -158,22 +165,22 @@ function wafKpis(entries: LogEntry[], total: number): StatKpi[] {
         if (a) actionBuckets[a] = (actionBuckets[a] || 0) + 1
         if ((e as { severity?: string }).severity === 'high') high++
     }
-    const blockRate = ratio(actionBuckets['block'] || 0, total)
-    const alertRate = ratio(actionBuckets['alert'] || 0, total)
+    const blockRate = ratio(actionBuckets['block'] || 0, rateTotal)
+    const alertRate = ratio(actionBuckets['alert'] || 0, rateTotal)
     return [
-        { label: '日志条数', value: total.toLocaleString() },
+        { label: '日志条数', value: displayTotal.toLocaleString(), hint: displayTotal === rateTotal ? undefined : '窗口精确总数(服务端聚合)' },
         {
             label: '拦截率',
             value: pctText(blockRate),
             tone: blockRate !== null && blockRate > 0 ? 'danger' : undefined,
-            hint: 'action=block 占比',
+            hint: '采样估算:action=block 占比',
         },
-        { label: '告警占比', value: pctText(alertRate), tone: alertRate !== null && alertRate > 0 ? 'warning' : undefined, hint: 'action=alert 占比' },
-        { label: '高危事件', value: high.toLocaleString(), tone: high > 0 ? 'danger' : undefined, hint: 'severity=high' },
+        { label: '告警占比', value: pctText(alertRate), tone: alertRate !== null && alertRate > 0 ? 'warning' : undefined, hint: '采样估算:action=alert 占比' },
+        { label: '高危事件', value: high.toLocaleString(), tone: high > 0 ? 'danger' : undefined, hint: '采样估算:severity=high' },
     ]
 }
 
-function slbKpis(entries: LogEntry[], total: number): StatKpi[] {
+function slbKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
     const statusBuckets: Record<string, number> = {}
     const latencies: number[] = []
     for (const e of entries) {
@@ -181,19 +188,19 @@ function slbKpis(entries: LogEntry[], total: number): StatKpi[] {
         const lat = (e as { latency_ms?: number }).latency_ms
         if (lat && lat > 0) latencies.push(lat)
     }
-    const errRate = ratio(statusBuckets['5xx'] || 0, total)
+    const errRate = ratio(statusBuckets['5xx'] || 0, rateTotal)
     const p95 = percentile(latencies, 95)
     const avg = latencies.length ? Math.round(latencies.reduce((s, v) => s + v, 0) / latencies.length) : 0
     return [
-        { label: '日志条数', value: total.toLocaleString() },
+        { label: '日志条数', value: displayTotal.toLocaleString(), hint: displayTotal === rateTotal ? undefined : '窗口精确总数(服务端聚合)' },
         {
             label: '5xx 错误率',
             value: pctText(errRate),
             tone: errRate !== null && errRate >= 5 ? 'danger' : undefined,
-            hint: '状态码 ≥500 占比',
+            hint: '采样估算:状态码 ≥500 占比',
         },
-        { label: 'P95 延迟', value: p95 > 0 ? `${p95.toLocaleString()} ms` : '-' },
-        { label: '平均延迟', value: avg > 0 ? `${avg.toLocaleString()} ms` : '-' },
+        { label: 'P95 延迟', value: p95 > 0 ? `${p95.toLocaleString()} ms` : '-', hint: '采样估算' },
+        { label: '平均延迟', value: avg > 0 ? `${avg.toLocaleString()} ms` : '-', hint: '采样估算' },
     ]
 }
 
@@ -317,4 +324,22 @@ export function buildTrend(entries: LogEntry[], fallbackWindowMs = 0): TrendPoin
     return Array.from(buckets.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([t, v]) => ({ name: formatBucket(t, bucketMs), value: v }))
+}
+
+/**
+ * 服务端聚合分桶 -> 趋势数据(真实分布;桶秒取相邻分桶最小差值)。
+ * 聚合失败时调用方回退 buildTrend 采样。
+ */
+export function buildTrendFromBuckets(buckets: Array<{ timestamp: number; count: number }>): TrendPoint[] {
+    if (!buckets.length) return []
+    let bucketMs = 300_000
+    if (buckets.length > 1) {
+        let minDiff = Infinity
+        for (let i = 1; i < buckets.length; i++) {
+            const d = (buckets[i]?.timestamp ?? 0) - (buckets[i - 1]?.timestamp ?? 0)
+            if (d > 0 && d < minDiff) minDiff = d
+        }
+        if (minDiff !== Infinity) bucketMs = minDiff
+    }
+    return buckets.map((b) => ({ name: formatBucket(b.timestamp, bucketMs), value: b.count }))
 }

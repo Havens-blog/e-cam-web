@@ -158,3 +158,48 @@ export interface LogSearchResponse {
     entries: LogEntry[]
     sources: LogSourceOutcome[]
 }
+
+/** 聚合请求(与查询对齐,无 limit——聚合下推云引擎不受采样约束) */
+export interface LogAggregateRequest {
+    log_type: LogType
+    start_time: number
+    end_time: number
+    query?: string
+    clouds?: string[]
+    resources?: string[]
+}
+
+/** 时间分桶(窗口真实分布) */
+export interface AggregateBucket {
+    /** 桶起点 Unix 毫秒 UTC */
+    timestamp: number
+    count: number
+}
+
+/** 聚合 TopN 条目(域名/规则按类型维度) */
+export interface TopNItem {
+    name: string
+    count: number
+}
+
+/** 单源聚合状态(不支持聚合的源显式标注) */
+export interface AggregateSourceOutcome {
+    cloud: string
+    account_id: string
+    account_name: string
+    /** 该源窗口精确总数 */
+    total: number
+    /** 失败/不支持原因(空 = 成功) */
+    error: string
+    duration_ms: number
+}
+
+/** 联邦聚合响应(跨源分桶求和、TopN 归并) */
+export interface LogAggregateResponse {
+    log_type: string
+    /** 窗口精确总数 */
+    total: number
+    buckets: AggregateBucket[]
+    topn: TopNItem[]
+    sources: AggregateSourceOutcome[]
+}

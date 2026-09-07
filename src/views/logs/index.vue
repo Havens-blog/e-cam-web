@@ -139,7 +139,7 @@
       </div>
     </div>
     <template v-else>
-      <LogStats :entries="resp.entries" :log-type="activeType" />
+      <LogStats :entries="resp.entries" :log-type="activeType" :aggregate="aggregate" />
 
       <!-- 明细(默认折叠) -->
       <div class="table-card">
@@ -224,8 +224,9 @@
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
  */
 import { ArrowDown, ArrowRight } from '@element-plus/icons-vue'
-import { getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
+import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type {
+    LogAggregateResponse,
     LogEntry,
     LogSearchResponse,
     LogSource,
@@ -268,6 +269,8 @@ const limit = ref(1000)
 const searching = ref(false)
 const searchError = ref('')
 const resp = ref<LogSearchResponse | null>(null)
+/** 服务端聚合(真实总数/趋势/TopN;null=失败,统计图回退采样) */
+const aggregate = ref<LogAggregateResponse | null>(null)
 /** 明细表格默认折叠(统计视图为主) */
 const detailVisible = ref(false)
 
@@ -355,6 +358,7 @@ async function loadSources() {
 
 function onTypeChange() {
     resp.value = null
+    aggregate.value = null
     selectedResources.value = []
     resetTimeRange()
     void loadSources()
@@ -396,18 +400,25 @@ async function doSearch() {
     searching.value = true
     searchError.value = ''
     detailVisible.value = false // 新查询收敛到统计视图
+    const params = {
+        log_type: activeType.value,
+        start_time: timeRange.value[0].getTime(),
+        end_time: timeRange.value[1].getTime(),
+        query: keyword.value || undefined,
+        clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+        resources: selectedResources.value.length ? selectedResources.value : undefined,
+    }
     try {
-        resp.value = await searchLogsApi({
-            log_type: activeType.value,
-            start_time: timeRange.value[0].getTime(),
-            end_time: timeRange.value[1].getTime(),
-            query: keyword.value || undefined,
-            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
-            resources: selectedResources.value.length ? selectedResources.value : undefined,
-            limit: limit.value,
-        })
+        // search(采样明细)+ aggregate(全窗真实统计)并行;聚合失败降级采样视图
+        const [searchRes, aggRes] = await Promise.all([
+            searchLogsApi({ ...params, limit: limit.value }),
+            aggregateLogsApi(params).catch(() => null),
+        ])
+        resp.value = searchRes
+        aggregate.value = aggRes
     } catch (e) {
         resp.value = null
+        aggregate.value = null
         searchError.value = e instanceof Error ? e.message : String(e)
     } finally {
         searching.value = false

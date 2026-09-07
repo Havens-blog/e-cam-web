@@ -4,6 +4,8 @@
 
 import instance from './request/service';
 import type {
+    LogAggregateRequest,
+    LogAggregateResponse,
     LogSearchRequest,
     LogSearchResponse,
     LogSource,
@@ -51,4 +53,16 @@ export async function searchLogsApi(data: LogSearchRequest): Promise<LogSearchRe
         data,
     })
     return unwrap<LogSearchResponse>(res)
+}
+
+/**
+ * 窗口内真实聚合(趋势/总数/TopN 下推云引擎,不受采样上限约束;
+ * 不支持的源显式标注)。聚合失败由调用方降级为采样视图。
+ */
+export async function aggregateLogsApi(data: LogAggregateRequest): Promise<LogAggregateResponse> {
+    const res = await instance.post<LogAggregateResponse>({
+        url: `${BASE}/aggregate`,
+        data,
+    })
+    return unwrap<LogAggregateResponse>(res)
 }

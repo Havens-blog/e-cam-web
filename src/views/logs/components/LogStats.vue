@@ -13,7 +13,7 @@
     <!-- 图表区:三个并列 + 时间趋势全宽 -->
     <div class="chart-grid">
       <div class="chart-cell">
-        <div class="chart-title">状态码分布</div>
+        <div class="chart-title">状态码分布(采样)</div>
         <ChartCard title="状态码分布" :option="statusOption" height="240px" />
       </div>
       <div class="chart-cell">
@@ -25,7 +25,7 @@
         <ChartCard :title="thirdChartTitle" :option="thirdOption" height="240px" />
       </div>
       <div class="chart-cell chart-cell-wide">
-        <div class="chart-title">时间趋势</div>
+        <div class="chart-title">{{ trendChartTitle }}</div>
         <ChartCard title="时间趋势" :option="trendOption" height="220px" />
       </div>
     </div>
@@ -35,12 +35,13 @@
 <script setup lang="ts">
 /**
  * 日志统计视图:KPI 行 + 按类型定制的图表组(状态码/命中/动作 + TopN + 时间趋势)。
- * 数据全部由已返回条目前端聚合(stats.ts 纯函数),零后端改动。
- * 颜色纪律:语义切片用状态色板并固定顺序,排名/趋势单一蓝;身份靠图例/标签,不靠色相循环。
+ * 趋势/总数/TopN 优先用服务端聚合(全窗真实);聚合缺失时回退采样估算。
+ * 占比图(状态码/命中/动作/延迟)始终采样估算,图题标"(采样)"。
+ * 颜色纪律:语义切片用状态色板并固定顺序,排名/趋势单一蓝;身份靠图例/标签。
  */
 import type { EChartsOption } from 'echarts'
 import { computed } from 'vue'
-import type { LogEntry, LogType } from '@/api/types/logs'
+import type { LogAggregateResponse, LogEntry, LogType } from '@/api/types/logs'
 import {
     SERIES_COLOR,
     buildActionSlices,
@@ -51,12 +52,15 @@ import {
     buildTopHosts,
     buildTopRules,
     buildTrend,
+    buildTrendFromBuckets,
 } from '../stats'
 import type { Slice } from '../stats'
 
 const props = defineProps<{
     entries: LogEntry[]
     logType: LogType
+    /** 服务端聚合结果(真实总数/趋势/TopN;null=聚合失败,回退采样) */
+    aggregate?: LogAggregateResponse | null
 }>()
 
 const kpis = computed(() => buildKpis(props.logType, props.entries))
@@ -182,10 +186,14 @@ function trendChartOption(points: { name: string; value: number }[]): EChartsOpt
 }
 
 // ---- 按类型定制三张图(状态码固定第一张,趋势固定全宽) ----
+// 占比图用采样估算(占比对采样不敏感);趋势/TopN 优先服务端聚合(全窗真实)。
 
 const statusOption = computed(() => donutOption(buildStatusSlices(props.entries)))
 
-const secondChartTitle = computed(() => (props.logType === 'cdn' ? '缓存命中分布' : props.logType === 'waf' ? '动作分布' : '延迟分布'))
+const secondChartTitle = computed(() => {
+    const base = props.logType === 'cdn' ? '缓存命中分布' : props.logType === 'waf' ? '动作分布' : '延迟分布'
+    return `${base}(采样)`
+})
 
 const secondOption = computed<EChartsOption>(() => {
     if (props.logType === 'cdn') return donutOption(buildCacheSlices(props.entries))
@@ -193,15 +201,30 @@ const secondOption = computed<EChartsOption>(() => {
     return topBarOption(buildLatencyBuckets(props.entries))
 })
 
-const thirdChartTitle = computed(() => (props.logType === 'waf' ? '规则 Top' : '域名 Top'))
+const hasAggregate = computed(() => !!props.aggregate && (props.aggregate.buckets.length > 0 || props.aggregate.topn.length > 0))
+
+const thirdChartTitle = computed(() => {
+    const base = props.logType === 'waf' ? '规则 Top' : '域名 Top'
+    return hasAggregate.value ? base : `${base}(采样)`
+})
 
 const thirdOption = computed<EChartsOption>(() => {
+    if (hasAggregate.value && props.aggregate!.topn.length > 0) {
+        return topBarOption(props.aggregate!.topn.map((t) => ({ name: t.name, value: t.count })))
+    }
     if (props.logType === 'waf') return topBarOption(buildTopRules(props.entries))
     return topBarOption(buildTopHosts(props.entries))
 })
 
 // WAF 严重度已并入 KPI"高危事件"与动作分布环图,不再单列图表
-const trendOption = computed(() => trendChartOption(buildTrend(props.entries)))
+const trendChartTitle = computed(() => (hasAggregate.value && props.aggregate!.buckets.length > 0 ? '时间趋势(全窗)' : '时间趋势(采样)'))
+
+const trendOption = computed(() => {
+    if (hasAggregate.value && props.aggregate!.buckets.length > 0) {
+        return trendChartOption(buildTrendFromBuckets(props.aggregate!.buckets))
+    }
+    return trendChartOption(buildTrend(props.entries))
+})
 </script>
 
 <style scoped lang="scss">
