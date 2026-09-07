@@ -53,7 +53,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">状态</span>
-                    <span class="info-value"><WafStatusBadge :status="instance.status" /></span>
+                    <span class="info-value"><AssetStatusBadge :status="instance.status" :labels="statusLabels" :tones="statusTones" /></span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">版本</span>
@@ -262,7 +262,18 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import { Close, Connection, Document, Lock, Position, PriceTag } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
-import WafStatusBadge from './WafStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    active: '运行中', Active: '运行中', running: '运行中',
+    inactive: '已停用', expired: '已过期', stopped: '已停用',
+    creating: '创建中', configuring: '配置中',
+    expiring: '即将到期',
+    error: '异常',
+  }
+const statusTones: Record<string, string> = {'expiring': 'pending', 'Expiring': 'pending'}
+
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()

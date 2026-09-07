@@ -18,13 +18,13 @@
     </ManagerHeader>
 
     <!-- 统计卡片 -->
-    <EniStatsCards
-      :total="pagination.total"
-      :in-use-count="inUseCount"
-      :available-count="availableCount"
-      :primary-count="primaryCount"
-      :secondary-count="secondaryCount"
-    />
+    <div class="page-stats">
+      <StatCard title="弹性网卡" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="使用中" :value="inUseCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="`${bindingRate}% 绑定率`" />
+      <StatCard title="可用" :value="availableCount" icon="Clock" icon-color="#d97706" subtitle="未绑定实例" />
+      <StatCard title="主网卡" :value="primaryCount" icon="DataLine" icon-color="#0891b2" :subtitle="`占 ${primaryRate}%`" />
+      <StatCard title="辅助网卡" :value="secondaryCount" icon="DataLine" icon-color="#8b5cf6" :subtitle="`占 ${secondaryRate}%`" />
+    </div>
 
     <!-- 筛选器 -->
     <div class="eni-filters">
@@ -84,7 +84,7 @@
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <EniStatusBadge :status="row.status" />
+            <AssetStatusBadge :status="row.status" :labels="statusLabels" :tones="statusTones" />
           </template>
         </el-table-column>
         <el-table-column label="类型" width="90">
@@ -200,8 +200,25 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import EniDetailDrawer from './components/EniDetailDrawer.vue'
 import EniExportDialog from './components/EniExportDialog.vue'
-import EniStatsCards from './components/EniStatsCards.vue'
-import EniStatusBadge from './components/EniStatusBadge.vue'
+import StatCard from '@/components/StatCard.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    in_use: '使用中', InUse: '使用中', inuse: '使用中',
+    available: '可用', Available: '可用',
+    attaching: '绑定中', Attaching: '绑定中',
+    detaching: '解绑中', Detaching: '解绑中',
+    creating: '创建中', Creating: '创建中',
+    deleting: '删除中', Deleting: '删除中',
+    error: '异常', Error: '异常',
+    ACTIVE: '使用中', DOWN: '可用',
+    BINDBOUND: '使用中', BINDUNBOUND: '可用',
+    PENDING: '创建中',
+  }
+
+const statusTones: Record<string, string> = {'deleting': 'pending', 'Deleting': 'pending'}
+
 
 const router = useRouter()
 const loading = ref(false)
@@ -233,6 +250,10 @@ const primaryCount = computed(() => eniList.value.filter(i =>
 const secondaryCount = computed(() => eniList.value.filter(i =>
   i.attributes?.type === 'Secondary' || i.attributes?.type !== 'Primary'
 ).length)
+
+const bindingRate = computed(() => pagination.total > 0 ? Math.round((inUseCount.value / pagination.total) * 100) : 0)
+const primaryRate = computed(() => pagination.total > 0 ? Math.round((primaryCount.value / pagination.total) * 100) : 0)
+const secondaryRate = computed(() => pagination.total > 0 ? Math.round((secondaryCount.value / pagination.total) * 100) : 0)
 
 const handleSelectionChange = (rows: Asset[]) => { selectedIds.value = rows.map(r => r.id) }
 
@@ -333,6 +354,13 @@ onMounted(() => { fetchData() })
 
   .mono-text { font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: var(--text-tertiary); }
   .text-muted { color: var(--text-tertiary); font-size: 12px; }
+}
+
+.page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .pagination-bar {

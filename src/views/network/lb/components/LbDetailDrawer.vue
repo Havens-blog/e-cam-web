@@ -63,7 +63,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">状态</span>
-                    <span class="info-value"><LbStatusBadge :status="instance.status" /></span>
+                    <span class="info-value"><AssetStatusBadge :status="instance.status" :labels="statusLabels" /></span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">类型</span>
@@ -207,7 +207,7 @@
                 </el-table-column>
                 <el-table-column label="状态" width="90" align="center">
                   <template #default="{ row }">
-                    <LbStatusBadge :status="row.status || 'Active'" />
+                    <AssetStatusBadge :status="row.status || 'Active'" :labels="statusLabels" />
                   </template>
                 </el-table-column>
                 <el-table-column label="描述" min-width="120" show-overflow-tooltip>
@@ -268,7 +268,7 @@
                 <el-table-column label="状态" width="90" align="center">
                   <template #default="{ row }">
                     <template v-if="row.status || row.Status">
-                      <LbStatusBadge :status="row.status || row.Status" />
+                      <AssetStatusBadge :status="row.status || row.Status" :labels="statusLabels" />
                     </template>
                     <template v-else>
                       <span style="color: #909399">-</span>
@@ -314,7 +314,31 @@ import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { Close, Headset, Monitor, PriceTag, SetUp } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
-import LbStatusBadge from './LbStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+  active: '运行中',
+  Active: '运行中',
+  running: '运行中',
+  Running: '运行中',
+  available: '可用',
+  Available: '可用',
+  inactive: '已停止',
+  Inactive: '已停止',
+  stopped: '已停止',
+  Stopped: '已停止',
+  creating: '创建中',
+  Creating: '创建中',
+  configuring: '配置中',
+  Configuring: '配置中',
+  pending: '等待中',
+  Pending: '等待中',
+  locked: '已锁定',
+  Locked: '已锁定',
+  error: '异常',
+  Error: '异常',
+}
 
 interface ListenerItem {
   listenerid?: string

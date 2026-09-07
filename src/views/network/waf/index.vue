@@ -18,7 +18,10 @@
     </ManagerHeader>
 
     <!-- 统计卡片 -->
-    <WafStatsCards :total="pagination.total" :active-count="activeCount" />
+    <div class="page-stats">
+      <StatCard title="WAF 实例" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="正常运行" :value="activeCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="activeRateText" />
+    </div>
 
     <!-- 标签页 -->
     <div class="waf-tabs">
@@ -94,7 +97,7 @@
           </el-table-column>
           <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
-              <WafStatusBadge :status="row.status" />
+              <AssetStatusBadge :status="row.status" :labels="statusLabels" :tones="statusTones" />
             </template>
           </el-table-column>
           <el-table-column label="版本" width="100">
@@ -234,8 +237,20 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
 import WafExportDialog from './components/WafExportDialog.vue'
-import WafStatsCards from './components/WafStatsCards.vue'
-import WafStatusBadge from './components/WafStatusBadge.vue'
+import StatCard from '@/components/StatCard.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    active: '运行中', Active: '运行中', running: '运行中',
+    inactive: '已停用', expired: '已过期', stopped: '已停用',
+    creating: '创建中', configuring: '配置中',
+    expiring: '即将到期',
+    error: '异常',
+  }
+
+const statusTones: Record<string, string> = {'expiring': 'pending', 'Expiring': 'pending'}
+
 
 const router = useRouter()
 const loading = ref(false)
@@ -263,6 +278,11 @@ const tabs = computed(() => [
 const activeCount = computed(() => wafList.value.filter(i =>
   ['active', 'Active', 'running'].includes(i.status)
 ).length)
+
+const activeRateText = computed(() => {
+  if (!pagination.total) return '暂无数据'
+  return `占实例 ${Math.round((activeCount.value / pagination.total) * 100)}% · 按当前页统计`
+})
 
 const getEditionLabel = (edition: string | undefined) => {
   const map: Record<string, string> = { basic: '基础版', pro: '专业版', business: '商业版', enterprise: '企业版' }
@@ -494,5 +514,11 @@ onMounted(() => { fetchData() })
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 </style>

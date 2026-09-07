@@ -49,7 +49,7 @@
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <VSwitchStatusBadge :status="row.status" />
+            <AssetStatusBadge :status="row.status" :labels="statusLabels" :tones="statusTones" />
           </template>
         </el-table-column>
         <el-table-column label="CIDR" min-width="140" show-overflow-tooltip>
@@ -165,7 +165,17 @@ import { useRoute, useRouter } from 'vue-router'
 import VpcDetailDrawer from '../vpc/components/VpcDetailDrawer.vue'
 import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
 import VSwitchFilters from './components/VSwitchFilters.vue'
-import VSwitchStatusBadge from './components/VSwitchStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    Available: '可用', available: '可用', ACTIVE: '可用', active: '可用',
+    Pending: '创建中', pending: '创建中', creating: '创建中',
+    Deleting: '删除中', deleting: '删除中',
+  }
+
+const statusTones: Record<string, string> = {'deleting': 'pending', 'Deleting': 'pending'}
+
 
 const route = useRoute()
 const router = useRouter()

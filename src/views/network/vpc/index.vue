@@ -87,7 +87,7 @@
           <template #default="{ row }">
             <!-- 状态列 -->
             <template v-if="col.key === 'status'">
-              <VpcStatusBadge :status="row.status" />
+              <AssetStatusBadge :status="row.status" :labels="statusLabels" />
             </template>
             <!-- IPv4网段列 -->
             <template v-else-if="col.key === 'cidr_block'">
@@ -236,7 +236,19 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import ExportDialog from './components/ExportDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import VpcFilters from './components/VpcFilters.vue'
-import VpcStatusBadge from './components/VpcStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    Available: '正常',
+    available: '正常',
+    '正常': '正常',
+    Pending: '创建中',
+    pending: '创建中',
+    error: '异常',
+    Error: '异常',
+  }
+
 
 const router = useRouter()
 

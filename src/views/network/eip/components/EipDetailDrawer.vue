@@ -1,79 +1,70 @@
 <template>
   <el-drawer
     :model-value="visible"
-    :with-header="false"
-    size="50%"
+    size="720px"
     :close-on-click-modal="true"
     class="eip-detail-drawer"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <div class="drawer-wrapper">
-      <template v-if="instance">
-        <!-- 头部区域（浅灰背景） -->
-        <div class="drawer-header-area">
-          <!-- 自定义头部 -->
-          <div class="drawer-header">
-            <div class="close-corner" @click="$emit('update:visible', false)">
-              <div class="corner-bg"></div>
-              <el-icon class="corner-icon" :size="12"><Close /></el-icon>
-            </div>
-            <div class="header-left">
-              <div class="instance-icon">
-                <el-icon :size="24"><Position /></el-icon>
-              </div>
-              <div class="instance-info">
-                <div class="instance-type">弹性公网IP</div>
-                <div class="instance-name">
-                  {{ instance.asset_name || instance.asset_id }}
-                  <!-- F-EIP-03：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
-                  <el-tooltip content="功能开发中" placement="top">
-                    <el-button text size="small" disabled @click="handleRefresh">
-                      <el-icon><Refresh /></el-icon>
-                    </el-button>
-                  </el-tooltip>
-                </div>
-              </div>
-            </div>
-            <div class="header-right">
-              <el-dropdown trigger="click">
-                <el-button size="small">
-                  同步状态 <el-icon><ArrowDown /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <!-- F-EIP-02：菜单无处理器，按主题 B 决策禁用 + title -->
-                    <el-dropdown-item disabled title="功能开发中">同步状态</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-              <el-dropdown trigger="click">
-                <el-button size="small">
-                  更多 <el-icon><ArrowDown /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <!-- F-EIP-02：绑定/解绑实例未实现（解绑属危险操作，实现时须二次确认），禁用 + title -->
-                    <el-dropdown-item disabled title="功能开发中">绑定实例</el-dropdown-item>
-                    <el-dropdown-item disabled title="功能开发中">解绑实例</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
+    <template #header>
+      <div class="drawer-header">
+        <div class="header-left">
+          <div class="instance-icon">
+            <el-icon :size="20"><Position /></el-icon>
           </div>
-
-          <!-- 标签页 -->
-          <div class="drawer-tabs">
-            <el-tabs v-model="activeTab">
-              <el-tab-pane label="详情" name="detail" />
-              <el-tab-pane label="标签" name="tags" />
-              <el-tab-pane label="监控" name="monitor" />
-              <el-tab-pane label="操作日志" name="logs" />
-            </el-tabs>
+          <div class="instance-info">
+            <div class="instance-type">弹性公网IP</div>
+            <div class="instance-name">
+              {{ instance?.asset_name || instance?.asset_id }}
+              <!-- F-EIP-03：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
+              <el-tooltip content="功能开发中" placement="top">
+                <el-button text size="small" disabled @click="handleRefresh">
+                  <el-icon><Refresh /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </div>
           </div>
         </div>
+        <div class="header-right">
+          <el-dropdown trigger="click">
+            <el-button size="small">
+              同步状态 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <!-- F-EIP-02：菜单无处理器，按主题 B 决策禁用 + title -->
+                <el-dropdown-item disabled title="功能开发中">同步状态</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-dropdown trigger="click">
+            <el-button size="small">
+              更多 <el-icon><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <!-- F-EIP-02：绑定/解绑实例未实现（解绑属危险操作，实现时须二次确认），禁用 + title -->
+                <el-dropdown-item disabled title="功能开发中">绑定实例</el-dropdown-item>
+                <el-dropdown-item disabled title="功能开发中">解绑实例</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+    </template>
+    <template v-if="instance">
+      <!-- 标签页 -->
+      <div class="drawer-tabs">
+        <el-tabs v-model="activeTab">
+          <el-tab-pane label="详情" name="detail" />
+          <el-tab-pane label="标签" name="tags" />
+          <el-tab-pane label="监控" name="monitor" />
+          <el-tab-pane label="操作日志" name="logs" />
+        </el-tabs>
+      </div>
 
-        <!-- 内容区域 -->
-        <div class="drawer-content">
+      <!-- 内容区域 -->
+      <div class="drawer-content">
           <template v-if="activeTab === 'detail'">
             <div class="detail-columns">
               <!-- 左列：基本信息 -->
@@ -202,9 +193,8 @@
               <p>{{ getTabName(activeTab) }} 功能开发中...</p>
             </div>
           </template>
-        </div>
-      </template>
-    </div>
+      </div>
+    </template>
   </el-drawer>
 </template>
 
@@ -212,7 +202,7 @@
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
-import { ArrowDown, Close, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
+import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
@@ -313,87 +303,40 @@ const getTabName = (tab: string) => {
 </script>
 
 <style scoped lang="scss">
-.drawer-wrapper {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.drawer-header-area {
-  background: #f5f7fa;
-  flex-shrink: 0;
-}
-
 .drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #f5f7fa;
-  position: relative;
-}
-
-.close-corner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  z-index: 10;
-
-  .corner-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 36px 36px 0 0;
-    border-color: #409eff transparent transparent transparent;
-    transition: border-color 0.2s;
-  }
-
-  .corner-icon {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    color: #fff;
-  }
-
-  &:hover .corner-bg {
-    border-color: #66b1ff transparent transparent transparent;
-  }
+  width: 100%;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: 36px;
 
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: #fff;
-    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.14);
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #409eff;
+    color: #60a5fa;
   }
 
   .instance-info {
     .instance-type {
       font-size: 11px;
-      color: #909399;
+      color: var(--text-tertiary);
       margin-bottom: 2px;
     }
 
     .instance-name {
       font-size: 15px;
       font-weight: 600;
-      color: #303133;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 4px;
@@ -408,25 +351,18 @@ const getTabName = (tab: string) => {
 }
 
 .drawer-tabs {
-  padding: 0 20px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
+  flex-shrink: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--glass-border);
 
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
     .el-tabs__nav-wrap::after { display: none; }
     .el-tabs__item {
-      height: 36px;
-      line-height: 36px;
+      height: 40px;
+      line-height: 40px;
       font-size: 13px;
-      color: #606266;
       padding: 0 14px;
-      &.is-active { color: #409eff; }
-      &:hover { color: #303133; }
-    }
-    .el-tabs__active-bar {
-      background-color: #409eff;
-      height: 2px;
     }
   }
 }
@@ -435,7 +371,6 @@ const getTabName = (tab: string) => {
   padding: 24px 28px;
   flex: 1;
   overflow: auto;
-  background: #fff;
 }
 
 .detail-columns {
@@ -448,10 +383,10 @@ const getTabName = (tab: string) => {
   .column-title {
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid var(--glass-border);
   }
 }
 
@@ -470,13 +405,13 @@ const getTabName = (tab: string) => {
   .info-label {
     width: 80px;
     flex-shrink: 0;
-    color: #909399;
+    color: var(--text-tertiary);
     line-height: 1.6;
   }
 
   .info-value {
     flex: 1;
-    color: #303133;
+    color: var(--text-primary);
     word-break: break-all;
     display: flex;
     align-items: center;
@@ -484,7 +419,7 @@ const getTabName = (tab: string) => {
     line-height: 1.6;
 
     // F-EIP-07：两处假链接已去 link 样式，原 .link 变体随之移除
-    &.highlight { color: #409eff; }
+    &.highlight { color: var(--el-color-primary); }
 
     &.mono {
       font-family: 'JetBrains Mono', monospace;
@@ -496,13 +431,13 @@ const getTabName = (tab: string) => {
       gap: 4px;
       .tag-item {
         padding: 2px 8px;
-        background: #f0f2f5;
+        background: var(--glass-bg-hover);
         border-radius: 4px;
         font-size: 12px;
-        color: #606266;
+        color: var(--text-secondary);
       }
       .tag-more {
-        color: #409eff;
+        color: var(--el-color-primary);
         font-size: 12px;
       }
     }
@@ -522,7 +457,7 @@ const getTabName = (tab: string) => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #909399;
+  color: var(--text-tertiary);
   p { margin-top: 16px; }
 }
 </style>

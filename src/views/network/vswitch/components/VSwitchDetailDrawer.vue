@@ -58,7 +58,7 @@
                   <div class="info-row">
                     <span class="info-label">状态</span>
                     <span class="info-value">
-                      <VSwitchStatusBadge :status="instance.status" />
+                      <AssetStatusBadge :status="instance.status" :labels="statusLabels" :tones="statusTones" />
                     </span>
                   </div>
                   <div class="info-row">
@@ -150,7 +150,16 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
 import { Close, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
-import VSwitchStatusBadge from './VSwitchStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    Available: '可用', available: '可用', ACTIVE: '可用', active: '可用',
+    Pending: '创建中', pending: '创建中', creating: '创建中',
+    Deleting: '删除中', deleting: '删除中',
+  }
+const statusTones: Record<string, string> = {'deleting': 'pending', 'Deleting': 'pending'}
+
 
 const props = defineProps<{
   visible: boolean

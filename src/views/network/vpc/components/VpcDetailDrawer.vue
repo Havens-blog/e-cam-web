@@ -98,7 +98,7 @@
                   <div class="info-row">
                     <span class="info-label">状态</span>
                     <span class="info-value">
-                      <VpcStatusBadge :status="instance.status" />
+                      <AssetStatusBadge :status="instance.status" :labels="statusLabels" />
                     </span>
                   </div>
                   <div class="info-row">
@@ -306,7 +306,18 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import SecurityGroupDetailDrawer from '../../security-group/components/SecurityGroupDetailDrawer.vue'
 import VSwitchDetailDrawer from '../../vswitch/components/VSwitchDetailDrawer.vue'
-import VpcStatusBadge from './VpcStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+    Available: '正常',
+    available: '正常',
+    '正常': '正常',
+    Pending: '创建中',
+    pending: '创建中',
+    error: '异常',
+    Error: '异常',
+  }
 
 const props = defineProps<{
   visible: boolean
