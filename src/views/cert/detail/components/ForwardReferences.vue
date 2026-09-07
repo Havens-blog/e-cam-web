@@ -128,6 +128,14 @@
                       >
                         {{ line }}
                       </div>
+                      <!-- 托管标注（cert-alb-ingress-managed）：证书变更须经 CRD 管理管道 -->
+                      <span
+                        v-if="managedRefLabel(item.managedBy)"
+                        class="managed-badge"
+                        :title="item.managedOwner ? `由 ${item.managedOwner}（AlbConfig）托管` : ''"
+                      >
+                        {{ managedRefLabel(item.managedBy) }}
+                      </span>
                     </td>
                     <td class="cell-mono">{{ item.referencedCloudCertId }}</td>
                     <td>{{ accountCell(item) }}</td>
@@ -163,6 +171,7 @@ import {
     filterForwardGroups,
     forwardFilterOptions,
     groupLabel,
+    managedRefLabel,
     k8sClusterCount,
     noRefsNotice,
     productLabel,
@@ -543,6 +552,17 @@ const announceText = computed(() => {
     font-size: 11px;
     margin-top: 2px;
   }
+}
+
+.managed-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-base);
+  color: var(--text-secondary);
+  cursor: help;
 }
 
 .clickable-row {

@@ -10,6 +10,7 @@ import {
     forwardFilterOptions,
     groupLabel,
     isK8sCloud,
+    managedRefLabel,
     isScanComplete,
     loadScanSession,
     noRefsNotice,
@@ -463,5 +464,20 @@ describe('productLabel（产品展示名）', () => {
         expect(productLabel('cdn')).toBe('CDN')
         expect(productLabel('waf')).toBe('WAF')
         expect(productLabel('unknown-prod')).toBe('unknown-prod')
+    })
+})
+
+describe('managedRefLabel（托管标注展示名）', () => {
+    it('alb-ingress → CRD 托管', () => {
+        expect(managedRefLabel('alb-ingress')).toBe('CRD 托管')
+    })
+
+    it('空/缺省 → 空串（不渲染）', () => {
+        expect(managedRefLabel(undefined)).toBe('')
+        expect(managedRefLabel('')).toBe('')
+    })
+
+    it('未知托管方原样返回', () => {
+        expect(managedRefLabel('some-operator')).toBe('some-operator')
     })
 })

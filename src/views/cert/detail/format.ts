@@ -471,3 +471,10 @@ export function isScanComplete(lastScanAt: string | null | undefined, startedAt:
     if (Number.isNaN(t)) return false
     return t >= startedAt
 }
+
+/** 托管标注展示名（cert-alb-ingress-managed）：空=未托管不渲染 */
+export function managedRefLabel(managedBy?: string): string {
+    if (!managedBy) return ''
+    if (managedBy === 'alb-ingress') return 'CRD 托管'
+    return managedBy
+}

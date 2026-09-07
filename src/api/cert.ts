@@ -245,6 +245,10 @@ export interface CertReferenceItem {
     accountKey?: string
     namespace?: string
     kind?: string
+    /** 托管标注（cert-alb-ingress-managed；alb-ingress=ALB Ingress Controller 经 CRD 管理） */
+    managedBy?: string
+    /** 托管资源定位 "cluster/namespace/name" */
+    managedOwner?: string
 }
 
 /** 引用分组（云×产品/集群） */
@@ -290,6 +294,10 @@ export interface ReverseLookupItem {
     resourceId: string
     referencedCloudCertId: string
     accountKey?: string
+    /** 托管标注（cert-alb-ingress-managed；alb-ingress=ALB Ingress Controller 经 CRD 管理） */
+    managedBy?: string
+    /** 托管资源定位 "cluster/namespace/name" */
+    managedOwner?: string
 }
 
 /** 反向查询单证书卡片（同域名多证书并存时按指纹严格区分，API 逐指纹返回不合并） */
