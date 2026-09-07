@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -75,7 +76,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'storage_class') { const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储' }; return map[attr.storage_class] || attr.storage_class || '' }
   if (key === 'acl') { const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[attr.acl] || attr.acl || '' }
   if (key === 'versioning') return attr.versioning ? '已开启' : '未开启'
-  if (key === 'provider') { const map: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }; return map[attr.provider] || attr.provider || '' }
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'storage_size') { const v = attr.storage_size; if (!v) return ''; if (v >= 1024 * 1024 * 1024) return `${(v / 1024 / 1024 / 1024).toFixed(2)}TB`; if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)}GB`; return `${(v / 1024).toFixed(2)}MB` }
   return attr[key] || ''
 }

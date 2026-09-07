@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -73,7 +74,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
   if (key === 'status') { const map: Record<string, string> = { Running: '运行中', Stopped: '已停止' }; return map[attr.status] || attr.status || '' }
-  if (key === 'provider') { const map: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }; return map[attr.provider] || attr.provider || '' }
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'capacity' || key === 'used_capacity') { const v = attr[key]; if (!v) return ''; if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(1)}TB`; if (v >= 1024) return `${(v / 1024).toFixed(1)}GB`; return `${v}MB` }
   return attr[key] || ''
 }

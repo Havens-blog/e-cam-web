@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
-import { safeTagType } from '@/utils/constants';
+import { safeTagType, getProviderLabel } from '@/utils/constants';
 import { ArrowDown, Close, Document, Folder } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -106,7 +106,7 @@ const getAclText = (acl?: string) => { if (!acl) return '-'; const map: Record<s
 const formatNumber = (num?: number) => { if (!num) return '0'; return num.toLocaleString() }
 const formatStorageSize = (size?: number) => { if (!size) return '-'; if (size >= 1024 * 1024 * 1024) return `${(size / 1024 / 1024 / 1024).toFixed(2)} TB`; if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(2)} GB`; if (size >= 1024) return `${(size / 1024).toFixed(2)} MB`; return `${size} KB` }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
-const getProviderName = (provider?: string) => { if (!provider) return '-'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return '阿里云'; if (p.includes('tencent')) return '腾讯云'; if (p.includes('huawei')) return '华为云'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return '火山引擎'; return provider }
+const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>
 
