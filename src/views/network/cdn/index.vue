@@ -191,7 +191,7 @@ import {
   cdnBusinessTypeLabel,
   cdnServiceAreaLabel,
 } from '@/utils/cdn'
-import { CLOUD_PROVIDERS } from '@/utils/constants'
+import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
