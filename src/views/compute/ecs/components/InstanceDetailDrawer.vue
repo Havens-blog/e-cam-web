@@ -530,6 +530,7 @@
 import { getECSRelationsApi, type ECSRelationsResp } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
+import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.vue';
 import SecurityGroupDetailDrawer from '@/views/compute/security-group/components/SecurityGroupDetailDrawer.vue';
@@ -701,25 +702,8 @@ const getPlatformIconType = (provider: string | undefined): string => {
   return 'Alibaba_Cloud'
 }
 
-const getProviderName = (provider: string | undefined): string => {
-  if (!provider) return '-'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
-  if (p.includes('tencent') || p.includes('qcloud')) return '腾讯云'
-  if (p.includes('huawei')) return '华为云'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
-  if (p.includes('google') || p.includes('gcp')) return 'Google Cloud'
-  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return '火山引擎'
-  if (p.includes('ucloud')) return 'UCloud'
-  if (p.includes('jd') || p.includes('jdcloud')) return '京东云'
-  if (p.includes('ecloud') || p.includes('ctyun')) return '天翼云'
-  if (p.includes('openstack')) return 'OpenStack'
-  if (p.includes('vmware') || p.includes('vsphere')) return 'VMware'
-  if (p.includes('nutanix')) return 'Nutanix'
-  if (p.includes('zstack')) return 'ZStack'
-  return provider
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 与扩展云归一） */
+const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
 const getChargeTypeText = (chargeType: string | undefined): string => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 

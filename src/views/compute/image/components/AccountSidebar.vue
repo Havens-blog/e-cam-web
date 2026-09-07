@@ -98,7 +98,7 @@
 import { listCloudAccountsApi } from '@/api'
 import type { CloudAccount } from '@/api/types/account'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { CLOUD_PROVIDERS } from '@/utils/constants'
+import { CLOUD_PROVIDERS, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { CopyDocument, Delete, Refresh, Search, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
@@ -129,10 +129,8 @@ const selectedAccount = computed(() => {
   return accounts.value.find(a => a?.id === selectedAccountId.value) || null
 })
 
-const getProviderLabel = (provider: string): string => {
-  const found = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return found?.label || provider || ''
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine 等变体归一） */
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 
 interface AccountGroup {
   provider: string

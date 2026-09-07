@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
@@ -179,13 +180,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
     return map[attr.status] || attr.status || ''
   }
   if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
-  if (key === 'provider') {
-    const map: Record<string, string> = {
-      aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS',
-      volcengine: '火山引擎', volcano: '火山引擎'
-    }
-    return map[attr.provider] || attr.provider || ''
-  }
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'memory') {
     const mem = attr.memory
     if (!mem) return ''

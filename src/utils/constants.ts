@@ -446,7 +446,7 @@ export function getProviderConfig(value: string): ProviderConfig | undefined {
  * 内部做展示层兜底，不改配置对象本身。
  *
  * 六个标准键之外还收录 ecs 列表/实例抽屉历史映射里的扩展云
- * （Google/UCloud/京东云/天翼云）；openstack/vmware 等仅出现在图标映射，不在此表。
+ * （Google/UCloud/京东云/天翼云/OpenStack/VMware/Nutanix/ZStack）。
  */
 const PROVIDER_TOKEN_LABELS: Array<{ token: string; label: string }> = [
     { token: 'volcengine', label: PROVIDER_CONFIGS.volcano.displayName },
@@ -469,6 +469,11 @@ const PROVIDER_TOKEN_LABELS: Array<{ token: string; label: string }> = [
     { token: 'azure', label: PROVIDER_CONFIGS.azure.displayName },
     { token: 'aws', label: PROVIDER_CONFIGS.aws.displayName },
     { token: 'gcp', label: 'Google Cloud' },
+    { token: 'openstack', label: 'OpenStack' },
+    { token: 'vmware', label: 'VMware' },
+    { token: 'vsphere', label: 'VMware' },
+    { token: 'nutanix', label: 'Nutanix' },
+    { token: 'zstack', label: 'ZStack' },
     { token: 'volc', label: PROVIDER_CONFIGS.volcano.displayName },
     { token: 'jd', label: '京东云' }
 ].sort((a, b) => b.token.length - a.token.length)
