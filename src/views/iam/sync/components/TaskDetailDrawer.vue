@@ -153,7 +153,7 @@
 import { getSyncTaskStatusApi } from '@/api/iam'
 import type { SyncTask } from '@/api/types/iam'
 import {
-  CLOUD_PROVIDERS,
+  getProviderLabel as getProviderLabelShared,
   getSyncTaskStatusColor,
   getSyncTaskStatusLabel,
   getSyncTaskTypeLabel
@@ -247,10 +247,8 @@ const formatJSON = (data: any): string => {
 }
 
 // 获取云平台标签
-const getProviderLabel = (provider: string): string => {
-  const item = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return item?.label || provider
-}
+// 获取云平台标签（统一走 utils/constants 单源，含 volcengine 等变体归一）
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 
 // 重试任务
 const handleRetry = () => {

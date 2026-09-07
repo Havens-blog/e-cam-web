@@ -112,7 +112,7 @@
 import { listCloudAccountsApi } from '@/api'
 import { createSyncTaskApi } from '@/api/iam'
 import type { CloudAccount } from '@/api/types/account'
-import { CLOUD_PROVIDERS, SYNC_TASK_TYPES } from '@/utils/constants'
+import { SYNC_TASK_TYPES, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -178,10 +178,8 @@ const handleAccountChange = () => {
 }
 
 // 获取云平台标签
-const getProviderLabel = (provider: string): string => {
-  const item = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return item?.label || provider
-}
+// 获取云平台标签（统一走 utils/constants 单源，含 volcengine 等变体归一）
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 
 // 提交表单
 const handleSubmit = async () => {

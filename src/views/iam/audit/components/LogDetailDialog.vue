@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import type { AuditLog } from '@/api/types/iam'
-import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType } from '@/utils/constants'
+import { OPERATION_TYPES, TARGET_TYPES, safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { computed } from 'vue'
 
 interface Props {
@@ -180,10 +180,8 @@ const getTargetTypeLabel = (type: string): string => {
 }
 
 // 获取云平台标签
-const getProviderLabel = (provider: string): string => {
-  const item = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return item?.label || provider
-}
+// 获取云平台标签（统一走 utils/constants 单源，含 volcengine 等变体归一）
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 </script>
 
 <style scoped lang="scss">

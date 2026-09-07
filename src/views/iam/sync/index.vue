@@ -214,6 +214,7 @@ import type { SyncTask } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
     CLOUD_PROVIDERS,
+    getProviderLabel as getProviderLabelShared,
     getSyncTaskStatusColor,
     getSyncTaskStatusLabel,
     getSyncTaskTypeLabel,
@@ -393,11 +394,8 @@ const handleFormSuccess = () => {
   loadSyncTasks()
 }
 
-// 获取云平台标签
-const getProviderLabel = (provider: string): string => {
-  const item = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return item?.label || provider
-}
+// 获取云平台标签（统一走 utils/constants 单源，含 volcengine 等变体归一）
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 
 // 启动自动刷新
 const startAutoRefresh = () => {

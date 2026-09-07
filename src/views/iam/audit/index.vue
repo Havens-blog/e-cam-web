@@ -200,7 +200,7 @@
 import { listAuditLogsApi } from '@/api/iam'
 import type { AuditLog } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
-import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType } from '@/utils/constants'
+import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { Document, Download, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -353,11 +353,8 @@ const getTargetTypeLabel = (type: string): string => {
   return item?.label || type
 }
 
-// 获取云平台标签
-const getProviderLabel = (provider: string): string => {
-  const item = CLOUD_PROVIDERS.find(p => p.value === provider)
-  return item?.label || provider
-}
+// 获取云平台标签（统一走 utils/constants 单源，含 volcengine 等变体归一）
+const getProviderLabel = (provider: string): string => getProviderLabelShared(provider)
 
 // 初始化
 onMounted(() => {
