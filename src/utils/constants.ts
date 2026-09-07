@@ -436,9 +436,64 @@ export function getProviderConfig(value: string): ProviderConfig | undefined {
     return PROVIDER_CONFIGS[value as CloudProvider]
 }
 
+/**
+ * provider 变体 → PROVIDER_CONFIGS 六个标准键的展示层归一。
+ *
+ * 历史链路对同一云厂商下发过多种拼写（CMDB 筛选下拉用 `volcengine`、部分实例用
+ * `bytedance`，阿里云出现过 `alibaba`，腾讯云出现过 `qcloud`），而 asset.ts 的
+ * CloudProvider 联合类型不含这些变体，PROVIDER_CONFIGS 的键集又被
+ * Record<CloudProvider, ProviderConfig> 锁定，因此变体归一收在 getProviderLabel
+ * 内部做展示层兜底，不改配置对象本身。
+ */
+const PROVIDER_VALUE_ALIASES: Record<string, CloudProvider> = {
+    alibaba: 'aliyun',
+    alibabacloud: 'aliyun',
+    qcloud: 'tencent',
+    amazon: 'aws',
+    volcengine: 'volcano',
+    volc: 'volcano',
+    volcano: 'volcano',
+    bytedance: 'volcano',
+    bytecloud: 'volcano'
+}
+
+/** 子串匹配表：token 更长的排前面，避免 `volc` 抢先命中 `volcengine` */
+const PROVIDER_SUBSTRING_TOKENS: Array<{ token: string; provider: CloudProvider }> = [
+    { token: 'volcengine', provider: 'volcano' },
+    { token: 'alibabacloud', provider: 'aliyun' },
+    { token: 'alibaba', provider: 'aliyun' },
+    { token: 'aliyun', provider: 'aliyun' },
+    { token: 'tencent', provider: 'tencent' },
+    { token: 'qcloud', provider: 'tencent' },
+    { token: 'huawei', provider: 'huawei' },
+    { token: 'amazon', provider: 'aws' },
+    { token: 'aws', provider: 'aws' },
+    { token: 'azure', provider: 'azure' },
+    { token: 'volcano', provider: 'volcano' },
+    { token: 'bytedance', provider: 'volcano' },
+    { token: 'bytecloud', provider: 'volcano' },
+    { token: 'volc', provider: 'volcano' }
+]
+
+/**
+ * 云厂商展示名（单源，各列表/抽屉/导出统一走这里）。
+ * 严格键优先取 PROVIDER_CONFIGS.displayName，变体按别名表与子串归一，
+ * 都未命中的未知值原样返回（与既有兜底语义一致，不吞原始值）。
+ */
 export function getProviderLabel(value: string): string {
+    if (!value) return value
+
     const config = getProviderConfig(value)
-    return config?.displayName || value
+    if (config) return config.displayName
+
+    const normalized = value.trim().toLowerCase()
+    const aliasProvider = PROVIDER_VALUE_ALIASES[normalized]
+    if (aliasProvider) return PROVIDER_CONFIGS[aliasProvider].displayName
+
+    const matched = PROVIDER_SUBSTRING_TOKENS.find((item) => normalized.includes(item.token))
+    if (matched) return PROVIDER_CONFIGS[matched.provider].displayName
+
+    return value
 }
 
 export function getProviderRegions(provider: string): Array<{ value: string; label: string }> {
