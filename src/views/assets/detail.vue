@@ -60,7 +60,7 @@
               </div>
               <div class="info-item">
                 <span class="label">状态:</span>
-                <AssetStatusBadge v-if="asset" :status="asset.status" />
+                <AssetStatusBadge v-if="asset" :status="asset.status" :labels="ASSET_STATUS_LABELS" />
               </div>
               <div class="info-item">
                 <span class="label">成本:</span>
@@ -184,7 +184,8 @@ import { Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AssetStatusBadge from './components/AssetStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
 
 const router = useRouter()
 const route = useRoute()
