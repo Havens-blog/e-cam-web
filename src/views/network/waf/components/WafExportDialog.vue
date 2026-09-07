@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -96,7 +97,6 @@ const exportForm = reactive({
 const selectAllFields = () => { exportForm.fields = availableFields.map(f => f.key) }
 const deselectAllFields = () => { exportForm.fields = [] }
 
-const providerMap: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }
 const editionMap: Record<string, string> = { basic: '基础版', pro: '专业版', business: '商业版', enterprise: '企业版' }
 
 const getFieldValue = (instance: Asset, key: string): string => {
@@ -105,7 +105,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'instance_id') return instance.asset_id || ''
   if (key === 'status') return instance.status || ''
   if (key === 'edition') return editionMap[attr.edition] || attr.edition || ''
-  if (key === 'provider') return providerMap[instance.provider] || instance.provider || ''
+  if (key === 'provider') return getProviderLabel(instance.provider || '')
   if (key === 'domain_count') return String(attr.domain_count || 0)
   if (key === 'region') return instance.region || ''
   if (key === 'expired_time') return attr.expired_time || ''

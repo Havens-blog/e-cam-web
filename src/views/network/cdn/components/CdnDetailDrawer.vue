@@ -274,6 +274,7 @@ import {
   cdnServiceAreaLabel,
   cdnTtlText,
 } from '@/utils/cdn'
+import { getProviderLabel } from '@/utils/constants'
 import { Connection, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
@@ -379,17 +380,8 @@ const tagList = computed(() => {
   return Object.entries(tags).map(([key, value]) => ({ key, value: String(value) }))
 })
 
-const getProviderName = (provider: string | undefined): string => {
-  if (!provider) return '-'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
-  if (p.includes('tencent')) return '腾讯云'
-  if (p.includes('huawei')) return '华为云'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('volc')) return '火山引擎'
-  if (p.includes('azure')) return 'Azure'
-  return provider
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
+const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
 const getOriginTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = {

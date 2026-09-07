@@ -263,6 +263,7 @@ import { Close, Connection, Document, Lock, Position, PriceTag } from '@element-
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { getProviderLabel } from '@/utils/constants'
 
 /** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
 const statusLabels: Record<string, string> = {
@@ -316,17 +317,8 @@ const getEditionTagType = (edition: string | undefined): any => {
   return map[edition || ''] || 'info'
 }
 
-const getProviderName = (provider: string | undefined): string => {
-  if (!provider) return '-'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
-  if (p.includes('tencent')) return '腾讯云'
-  if (p.includes('huawei')) return '华为云'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('volc')) return '火山引擎'
-  if (p.includes('azure')) return 'Azure'
-  return provider
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
+const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
 const getPayTypeLabel = (payType: string | undefined) => {
   const map: Record<string, string> = { subscription: '包年包月', payasyougo: '按量付费', Subscription: '包年包月', PayAsYouGo: '按量付费' }

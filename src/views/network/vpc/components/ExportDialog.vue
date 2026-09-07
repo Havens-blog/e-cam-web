@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -108,8 +109,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
   if (key === 'provider') {
-    const map: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS' }
-    return map[instance.provider] || instance.provider || ''
+    return getProviderLabel(instance.provider || '')
   }
   if (key === 'region') return instance.region || ''
   if (key === 'status') return instance.status || ''

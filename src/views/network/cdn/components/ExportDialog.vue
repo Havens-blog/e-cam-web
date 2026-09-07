@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import { cdnBusinessTypeLabel, cdnServiceAreaLabel, cdnStatusLabel } from '@/utils/cdn';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -69,8 +70,6 @@ const exportForm = reactive({
 const selectAllFields = () => { exportForm.fields = availableFields.map(f => f.key) }
 const deselectAllFields = () => { exportForm.fields = [] }
 
-const providerMap: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }
-
 const getFieldValue = (instance: Asset, key: string): string => {
   const attr = instance.attributes || {}
   if (key === 'domain_name') return attr.domain_name || instance.asset_id || ''
@@ -79,7 +78,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'business_type') return cdnBusinessTypeLabel(attr.business_type)
   if (key === 'https_enabled') return attr.https_enabled ? '已开启' : '未开启'
   if (key === 'service_area') return cdnServiceAreaLabel(attr.service_area)
-  if (key === 'provider') return providerMap[instance.provider] || instance.provider || ''
+  if (key === 'provider') return getProviderLabel(instance.provider || '')
   if (key === 'creation_time') return attr.creation_time || ''
   return attr[key] || ''
 }

@@ -135,7 +135,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { PROVIDER_CONFIGS } from '@/utils/constants'
+import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, Lock } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 
@@ -158,16 +158,8 @@ defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
 
-const getProviderName = (provider: string | undefined): string => {
-  if (!provider) return '-'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'
-  if (p.includes('tencent') || p.includes('qcloud')) return '腾讯云'
-  if (p.includes('huawei')) return '华为云'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('volcengine') || p.includes('volc')) return '火山引擎'
-  return provider
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
+const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
 const getRegionLabel = computed(() => {
   if (!props.instance) return '-'

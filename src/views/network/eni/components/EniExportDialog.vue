@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { getProviderLabel } from '@/utils/constants';
 import { labelOfLenient } from '@/utils/fieldLabels';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
@@ -70,8 +71,6 @@ const exportForm = reactive({
 const selectAllFields = () => { exportForm.fields = availableFields.map(f => f.key) }
 const deselectAllFields = () => { exportForm.fields = [] }
 
-const providerMap: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }
-
 /** 状态 → 展示文案。键值与列表页 eni/index.vue 的 statusLabels 完全一致(键值勿改),
  *  列表页未导出该映射故此处复制;待 P2 单源收敛时一并迁走,导出不再裸出 in_use/available */
 const ENI_STATUS_LABELS: Record<string, string> = {
@@ -95,7 +94,7 @@ const getFieldValue = (inst: Asset, key: string): string => {
   if (key === 'type') return attr.type === 'Primary' ? '主网卡' : '辅助网卡'
   if (key === 'primary_private_ip') return attr.primary_private_ip || ''
   if (key === 'mac_address') return attr.mac_address || ''
-  if (key === 'provider') return providerMap[inst.provider] || inst.provider || ''
+  if (key === 'provider') return getProviderLabel(inst.provider || '')
   if (key === 'instance_id') return attr.instance_id || '未绑定'
   if (key === 'vpc_id') return attr.vpc_id || ''
   if (key === 'creation_time') return attr.creation_time || ''
