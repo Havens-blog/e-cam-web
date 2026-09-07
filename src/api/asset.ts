@@ -432,6 +432,13 @@ export interface CDNCacheRule {
     type: string
     ttl: number
     priority?: number
+    /** 高级缓存行为(阿里云 swift_* 开关;status_code/query_filter 规则专用字段) */
+    follow_origin_cache?: boolean
+    force_revalidate?: boolean
+    no_cache_low_freq?: boolean
+    cache_high_freq?: boolean
+    code_string?: string
+    query_args?: string
 }
 
 /** 按需查询CDN域名缓存配置(实时经厂商 API,不落库) */

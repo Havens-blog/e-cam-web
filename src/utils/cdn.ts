@@ -109,6 +109,8 @@ const CACHE_RULE_TYPE_LABELS: Record<string, string> = {
     file_ext: '文件后缀',
     directory: '目录',
     full_path: '全路径',
+    status_code: '状态码',
+    query_filter: 'URL 参数',
 }
 
 export function cdnCacheRuleTypeLabel(type?: string): string {

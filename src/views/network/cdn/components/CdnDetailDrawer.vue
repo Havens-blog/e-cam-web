@@ -162,6 +162,11 @@
                       <span :class="{ 'ttl-no-cache': row.ttl === 0 }">{{ cdnTtlText(row.ttl) }}</span>
                     </template>
                   </el-table-column>
+                  <el-table-column label="行为" min-width="150" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      {{ cdnCacheBehaviorText(row) }}
+                    </template>
+                  </el-table-column>
                   <el-table-column label="优先级" width="90" align="center">
                     <template #default="{ row }">{{ row.priority || '-' }}</template>
                   </el-table-column>
@@ -275,6 +280,18 @@ const cacheFetchedKey = ref('')
 const sortedCacheRules = computed(() =>
   [...cacheRules.value].sort((a, b) => (b.priority || 0) - (a.priority || 0))
 )
+
+/** 规则行为描述:状态码码表 / URL 参数语义 / 阿里云高级缓存开关 */
+const cdnCacheBehaviorText = (row: CDNCacheRule): string => {
+  const parts: string[] = []
+  if (row.code_string) parts.push(`状态码强制 TTL: ${row.code_string}`)
+  if (row.query_args) parts.push(row.query_args)
+  if (row.follow_origin_cache) parts.push('遵循源站缓存时长')
+  if (row.force_revalidate) parts.push('强制回源校验(忽略缓存头)')
+  if (row.no_cache_low_freq) parts.push('低频不缓存')
+  if (row.cache_high_freq) parts.push('高频强制缓存')
+  return parts.join(' · ') || '标准缓存'
+}
 
 const fetchCacheRules = async () => {
   const inst = props.instance
