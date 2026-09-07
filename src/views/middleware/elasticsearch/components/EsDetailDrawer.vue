@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
+import { getProviderLabel } from '@/utils/constants';
 import { Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -77,7 +78,7 @@ const activeTab = ref('detail')
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (['running', 'active'].includes(s)) return 'running'; if (['stopped', 'inactive'].includes(s)) return 'stopped'; return 'pending' }
 const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', active: '运行中', stopped: '已停止' }; return map[status.toLowerCase()] || status }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
-const getProviderName = (provider?: string) => { if (!provider) return '-'; const p = provider.toLowerCase(); if (p.includes('aliyun') || p.includes('alibaba')) return '阿里云'; if (p.includes('tencent')) return '腾讯云'; if (p.includes('huawei')) return '华为云'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return '火山引擎'; return provider }
+const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 const formatTime = (time?: number) => { if (!time) return '-'; return new Date(time).toLocaleString('zh-CN') }
 </script>
