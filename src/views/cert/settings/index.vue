@@ -82,6 +82,7 @@
           @save="saveThresholds"
         />
 
+        <ClusterCredentialCard />
         <CrdRegistrationCard />
       </template>
     </div>
@@ -115,6 +116,7 @@ import {
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AlertReceiverCard from './components/AlertReceiverCard.vue'
+import ClusterCredentialCard from './components/ClusterCredentialCard.vue'
 import CrdRegistrationCard from './components/CrdRegistrationCard.vue'
 import ExemptionListCard from './components/ExemptionListCard.vue'
 import ThresholdsCard from './components/ThresholdsCard.vue'

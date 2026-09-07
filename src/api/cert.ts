@@ -1033,3 +1033,65 @@ export function deleteCrdRegistrationApi(id: string) {
         certAxios.delete<CertEnvelope<{ id: string; deleted: boolean }>>(`/certs/settings/crds/${id}`)
     )
 }
+
+// ==================== K8s 集群凭证（cert-alb-ingress-managed 第一层） ====================
+
+/** 集群凭证视图（白名单：永不携带 kubeconfig 任何形态） */
+export interface K8sCredentialItem {
+    clusterName: string
+    apiEndpoint?: string
+    createdAt: string
+}
+
+/** ACK 集群清单条目（云端拉取前置列表） */
+export interface AliyunK8sCluster {
+    clusterId: string
+    name: string
+    regionId: string
+    state: string
+    clusterType: string
+}
+
+/** 逐集群拉取登记结果 */
+export interface K8sCredentialFetchResult {
+    clusterId: string
+    clusterName?: string
+    status: 'registered' | 'duplicate' | 'failed'
+    apiEndpoint?: string
+    reason?: string
+}
+
+/** 集群凭证列表 */
+export function listK8sCredentialsApi() {
+    return unwrapCertEnvelope<K8sCredentialItem[]>(
+        certAxios.get<CertEnvelope<K8sCredentialItem[]>>('/certs/settings/k8s-credentials')
+    )
+}
+
+/** 手动登记集群凭证（kubeconfig 明文 YAML，经信封加密落库） */
+export function addK8sCredentialApi(data: { clusterName: string; kubeconfig: string }) {
+    return unwrapCertEnvelope<K8sCredentialItem>(
+        certAxios.post<CertEnvelope<K8sCredentialItem>>('/certs/settings/k8s-credentials', data)
+    )
+}
+
+/** 删除集群凭证 */
+export function deleteK8sCredentialApi(clusterName: string) {
+    return unwrapCertEnvelope<{ deleted: boolean }>(
+        certAxios.delete<CertEnvelope<{ deleted: boolean }>>(`/certs/settings/k8s-credentials/${encodeURIComponent(clusterName)}`)
+    )
+}
+
+/** 列出指定阿里云账号名下全部 ACK 集群（拉取前置） */
+export function listAliyunK8sClustersApi(accountKey: string) {
+    return unwrapCertEnvelope<AliyunK8sCluster[]>(
+        certAxios.get<CertEnvelope<AliyunK8sCluster[]>>('/certs/settings/k8s-clusters', { params: { accountKey } })
+    )
+}
+
+/** 批量拉取 kubeconfig 并登记（单集群失败不中断批次，逐条记因） */
+export function fetchK8sCredentialsApi(data: { accountKey: string; clusterIds: string[]; privateIp?: boolean }) {
+    return unwrapCertEnvelope<K8sCredentialFetchResult[]>(
+        certAxios.post<CertEnvelope<K8sCredentialFetchResult[]>>('/certs/settings/k8s-credentials/fetch', data)
+    )
+}
