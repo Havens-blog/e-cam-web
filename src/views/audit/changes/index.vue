@@ -107,7 +107,7 @@
 
     <!-- 无资产ID时的提示 -->
     <div class="empty-hint" v-if="!assetId && summaryLoadError">
-      <el-icon :size="48" color="var(--el-color-danger, #f56c6c)"><WarningFilled /></el-icon>
+      <el-icon :size="48" color="var(--el-color-danger, var(--el-color-danger))"><WarningFilled /></el-icon>
       <p>变更统计汇总加载失败，可点击右上角刷新重试</p>
     </div>
     <div class="empty-hint" v-else-if="!assetId && !summary">
@@ -253,7 +253,7 @@ onMounted(() => fetchSummary())
 .page-top {
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -265,7 +265,7 @@ onMounted(() => fetchSummary())
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #303133);
+  color: var(--text-primary, var(--text-primary));
   margin: 0;
 }
 .stats-badges {
@@ -277,12 +277,12 @@ onMounted(() => fetchSummary())
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--bg-secondary, #f5f7fa);
+  background: var(--bg-secondary, var(--glass-bg));
   border-radius: 20px;
   font-size: 13px;
 }
-.stat-label { color: var(--text-secondary, #909399); }
-.stat-num { font-weight: 600; color: var(--text-primary, #303133); }
+.stat-label { color: var(--text-secondary, var(--text-tertiary)); }
+.stat-num { font-weight: 600; color: var(--text-primary, var(--text-primary)); }
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -290,14 +290,14 @@ onMounted(() => fetchSummary())
 }
 .summary-card {
   background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 10px;
   padding: 16px;
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary, #303133);
+    color: var(--text-primary, var(--text-primary));
   }
 }
 .summary-item {
@@ -309,7 +309,7 @@ onMounted(() => fetchSummary())
     width: 80px;
     flex-shrink: 0;
     font-size: 12px;
-    color: var(--text-secondary, #909399);
+    color: var(--text-secondary, var(--text-tertiary));
     text-align: right;
   }
   .el-progress { flex: 1; }
@@ -318,7 +318,7 @@ onMounted(() => fetchSummary())
     text-align: right;
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-primary, #303133);
+    color: var(--text-primary, var(--text-primary));
   }
 }
 .action-bar {
@@ -328,7 +328,7 @@ onMounted(() => fetchSummary())
   padding: 12px 16px;
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
 }
 .action-left, .action-right {
@@ -339,7 +339,7 @@ onMounted(() => fetchSummary())
 .table-wrapper {
   flex: 1;
   background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
   overflow: hidden;
 }

@@ -297,7 +297,7 @@ onMounted(() => {
 
   .detail-value {
     font-weight: 500;
-    color: #303133;
+    color: var(--text-primary);
   }
 
   .platforms-tags {
@@ -329,13 +329,13 @@ onMounted(() => {
 
           .policy-name {
             font-weight: 600;
-            color: #303133;
+            color: var(--text-primary);
           }
         }
 
         .policy-id {
           font-size: 12px;
-          color: #909399;
+          color: var(--text-tertiary);
         }
       }
 
@@ -343,7 +343,7 @@ onMounted(() => {
         :deep(.el-textarea__inner) {
           font-family: 'Courier New', monospace;
           font-size: 12px;
-          background: #f5f7fa;
+          background: var(--glass-bg);
         }
       }
     }

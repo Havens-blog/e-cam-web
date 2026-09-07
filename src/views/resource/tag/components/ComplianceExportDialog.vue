@@ -132,14 +132,14 @@ const handleExport = () => {
   border: none; border-right: 1px solid var(--el-border-color); cursor: pointer; white-space: nowrap;
   &:last-child { border-right: none; }
   &:hover:not(.disabled) { color: var(--text-primary); background: var(--el-fill-color); }
-  &.active { color: #409eff; position: relative; &::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #409eff; } }
+  &.active { color: var(--el-color-primary); position: relative; &::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--el-color-primary); } }
   &.disabled { color: var(--text-tertiary); cursor: not-allowed; opacity: 0.6; }
 }
 .format-card {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px;
   border: 2px solid var(--el-border-color); border-radius: 10px; cursor: pointer;
   &:hover { border-color: var(--el-border-color-darker); }
-  &.active { border-color: #409eff; background: rgba(64, 158, 255, 0.06); }
+  &.active { border-color: var(--el-color-primary); background: rgba(64, 158, 255, 0.06); }
 }
 .field-list {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px;

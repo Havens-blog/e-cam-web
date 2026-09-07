@@ -48,7 +48,7 @@ defineEmits<{
     p {
       margin: 4px 0;
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary);
     }
 
     .error-actions {

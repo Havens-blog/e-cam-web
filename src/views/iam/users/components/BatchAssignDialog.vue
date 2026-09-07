@@ -291,12 +291,12 @@ onMounted(() => {
       
       .group-name {
         font-weight: 500;
-        color: #303133;
+        color: var(--text-primary);
       }
       
       .group-description {
         font-size: 12px;
-        color: #909399;
+        color: var(--text-tertiary);
         margin-top: 4px;
       }
     }
@@ -304,7 +304,7 @@ onMounted(() => {
     .form-tip {
       margin-top: 8px;
       font-size: 12px;
-      color: #909399;
+      color: var(--text-tertiary);
       line-height: 1.5;
     }
   }
@@ -312,14 +312,14 @@ onMounted(() => {
   .progress-section {
     margin-top: 20px;
     padding: 16px;
-    background: #f5f7fa;
+    background: var(--glass-bg);
     border-radius: 4px;
 
     .progress-text {
       margin-top: 12px;
       text-align: center;
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary);
     }
   }
 
@@ -340,7 +340,7 @@ onMounted(() => {
           
           li {
             margin: 4px 0;
-            color: #f56c6c;
+            color: var(--el-color-danger);
           }
         }
       }

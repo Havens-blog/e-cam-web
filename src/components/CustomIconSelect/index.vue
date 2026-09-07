@@ -138,7 +138,7 @@ const clearIcon = () => {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border: 1px solid var(--el-border-color, #dcdfe6);
+  border: 1px solid var(--el-border-color, var(--glass-border));
   border-radius: 8px;
   background: var(--el-fill-color-blank, #fff);
   cursor: pointer;
@@ -147,7 +147,7 @@ const clearIcon = () => {
   height: 32px;
 
   &:hover {
-    border-color: var(--el-color-primary, #409eff);
+    border-color: var(--el-color-primary, var(--el-color-primary));
   }
 
   .trigger-img { width: 20px; height: 20px; border-radius: 4px; object-fit: contain; }
@@ -155,7 +155,7 @@ const clearIcon = () => {
   .trigger-text {
     flex: 1;
     font-size: 13px;
-    color: var(--el-text-color-regular, #606266);
+    color: var(--el-text-color-regular, var(--text-secondary));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -177,7 +177,7 @@ const clearIcon = () => {
     .category-title {
       font-size: 13px;
       font-weight: 600;
-      color: var(--el-text-color-secondary, #909399);
+      color: var(--el-text-color-secondary, var(--text-tertiary));
       margin-bottom: 8px;
       padding-left: 2px;
     }
@@ -204,7 +204,7 @@ const clearIcon = () => {
 
     .icon-label {
       font-size: 11px;
-      color: var(--el-text-color-secondary, #909399);
+      color: var(--el-text-color-secondary, var(--text-tertiary));
       text-align: center;
       line-height: 1.2;
       max-width: 100%;
@@ -214,12 +214,12 @@ const clearIcon = () => {
     }
 
     &:hover {
-      background: var(--el-fill-color-light, #f5f7fa);
+      background: var(--el-fill-color-light, var(--glass-bg));
     }
     &.selected {
-      border-color: var(--el-color-primary, #409eff);
+      border-color: var(--el-color-primary, var(--el-color-primary));
       background: var(--el-color-primary-light-9, #ecf5ff);
-      .icon-label { color: var(--el-color-primary, #409eff); font-weight: 500; }
+      .icon-label { color: var(--el-color-primary, var(--el-color-primary)); font-weight: 500; }
     }
   }
 
@@ -233,7 +233,7 @@ const clearIcon = () => {
       background: var(--el-fill-color-lighter, #fafafa);
       border-radius: 8px;
       .preview-img { width: 48px; height: 48px; border-radius: 6px; object-fit: contain; border: 1px solid var(--el-border-color-lighter); }
-      .preview-status { font-size: 13px; color: var(--el-color-success, #67c23a); &.error { color: var(--el-color-danger, #f56c6c); } }
+      .preview-status { font-size: 13px; color: var(--el-color-success, var(--el-color-success)); &.error { color: var(--el-color-danger, var(--el-color-danger)); } }
     }
   }
 }

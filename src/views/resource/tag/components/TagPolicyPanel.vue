@@ -81,7 +81,7 @@
 
       <!-- Batch remediation bar -->
       <div v-if="selectedCompliance.length > 0" class="batch-bar">
-        <div style="display: flex; align-items: center; gap: 6px; color: #409eff; font-size: 13px">
+        <div style="display: flex; align-items: center; gap: 6px; color: var(--el-color-primary); font-size: 13px">
           ✅ 已选 <strong>{{ selectedCompliance.length }}</strong> 个不合规资源
         </div>
         <div style="display: flex; gap: 8px">

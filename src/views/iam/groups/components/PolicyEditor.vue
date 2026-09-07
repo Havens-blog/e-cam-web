@@ -228,7 +228,7 @@ watch(() => props.providers, (newProviders) => {
     
     .policy-count {
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary);
       font-weight: 500;
     }
   }
@@ -252,7 +252,7 @@ watch(() => props.providers, (newProviders) => {
           
           .policy-name {
             font-weight: 600;
-            color: #303133;
+            color: var(--text-primary);
           }
         }
       }
@@ -269,7 +269,7 @@ watch(() => props.providers, (newProviders) => {
   .form-tip {
     margin-top: 8px;
     font-size: 12px;
-    color: #909399;
+    color: var(--text-tertiary);
     line-height: 1.5;
   }
 }

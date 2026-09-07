@@ -29,7 +29,7 @@
           <span style="font-size: 13px; color: var(--text-secondary)">打标内容：</span>
           <el-tag v-for="(val, key) in rule.tags || {}" :key="key" size="small" type="success" style="margin-right: 4px">{{ key }}={{ val }}</el-tag>
         </div>
-        <div v-if="previewResults[rule.id] !== undefined" style="margin-top: 8px; font-size: 13px; color: #409eff">预览：匹配 <strong>{{ previewResults[rule.id] }}</strong> 个资源</div>
+        <div v-if="previewResults[rule.id] !== undefined" style="margin-top: 8px; font-size: 13px; color: var(--el-color-primary)">预览：匹配 <strong>{{ previewResults[rule.id] }}</strong> 个资源</div>
       </div>
       <el-empty v-if="rules.length === 0 && !loading" description="暂无自动打标规则" />
     </div>
@@ -106,7 +106,7 @@
       <template #header>
         <div>
           <h3 style="font-size: 18px; font-weight: 600; margin: 0">规则预览：{{ previewRuleName }}</h3>
-          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px">共匹配 <strong style="color: #409eff">{{ previewTotal }}</strong> 个资源（显示前 100 条）</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px">共匹配 <strong style="color: var(--el-color-primary)">{{ previewTotal }}</strong> 个资源（显示前 100 条）</div>
         </div>
       </template>
       <el-table :data="previewResourceList" v-loading="previewLoading" style="width: 100%">

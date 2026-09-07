@@ -168,25 +168,25 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 
 .tab-section {
   padding: 16px;
-  .section-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: #303133; }
+  .section-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: var(--text-primary); }
 }
 
 .mount-list {
   display: flex; flex-direction: column; gap: 12px;
   .mount-card {
-    border: 1px solid #ebeef5; border-radius: 6px; padding: 12px 16px; background: #fafafa;
+    border: 1px solid var(--glass-border); border-radius: 6px; padding: 12px 16px; background: #fafafa;
     .info-list { display: flex; flex-direction: column; gap: 6px; }
     .info-row { display: flex; align-items: center; font-size: 13px; }
-    .info-label { color: #909399; width: 80px; flex-shrink: 0; }
-    .info-value { color: #303133; word-break: break-all; }
+    .info-label { color: var(--text-tertiary); width: 80px; flex-shrink: 0; }
+    .info-value { color: var(--text-primary); word-break: break-all; }
     .info-value.monospace { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
   }
 }
 
 .tags-table {
   width: 100%; border-collapse: collapse; font-size: 13px;
-  th { text-align: left; padding: 8px 12px; background: #f5f7fa; color: #909399; font-weight: 500; border-bottom: 1px solid #ebeef5; }
-  td { padding: 8px 12px; border-bottom: 1px solid #ebeef5; color: #303133; }
-  tr:hover td { background: #f5f7fa; }
+  th { text-align: left; padding: 8px 12px; background: var(--glass-bg); color: var(--text-tertiary); font-weight: 500; border-bottom: 1px solid var(--glass-border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--glass-border); color: var(--text-primary); }
+  tr:hover td { background: var(--glass-bg); }
 }
 </style>

@@ -49,7 +49,7 @@
             <template v-if="row.resource_types && row.resource_types.length">
               <el-tag v-for="rt in row.resource_types" :key="rt" size="small" style="margin-right: 4px">{{ rt }}</el-tag>
             </template>
-            <span v-else style="color: #909399">全部</span>
+            <span v-else style="color: var(--text-tertiary)">全部</span>
           </template>
         </el-table-column>
         <el-table-column label="静默期" width="100">
@@ -177,7 +177,7 @@ onMounted(() => fetchData())
 .page-top {
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -189,7 +189,7 @@ onMounted(() => fetchData())
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #303133);
+  color: var(--text-primary, var(--text-primary));
   margin: 0;
 }
 .stats-badges {
@@ -202,12 +202,12 @@ onMounted(() => fetchData())
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--bg-secondary, #f5f7fa);
+  background: var(--bg-secondary, var(--glass-bg));
   border-radius: 20px;
   font-size: 13px;
 }
-.stat-label { color: var(--text-secondary, #909399); }
-.stat-num { font-weight: 600; color: var(--text-primary, #303133); }
+.stat-label { color: var(--text-secondary, var(--text-tertiary)); }
+.stat-num { font-weight: 600; color: var(--text-primary, var(--text-primary)); }
 .action-bar {
   display: flex;
   justify-content: space-between;
@@ -215,7 +215,7 @@ onMounted(() => fetchData())
   padding: 12px 16px;
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
 }
 .action-left, .action-right {
@@ -226,7 +226,7 @@ onMounted(() => fetchData())
 .table-wrapper {
   flex: 1;
   background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
   overflow: hidden;
 }

@@ -163,7 +163,7 @@ onUnmounted(() => {
 .page-top {
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -175,7 +175,7 @@ onUnmounted(() => {
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #303133);
+  color: var(--text-primary, var(--text-primary));
   margin: 0;
 }
 .stats-badges {
@@ -188,12 +188,12 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--bg-secondary, #f5f7fa);
+  background: var(--bg-secondary, var(--glass-bg));
   border-radius: 20px;
   font-size: 13px;
 }
-.stat-label { color: var(--text-secondary, #909399); }
-.stat-num { font-weight: 600; color: var(--text-primary, #303133); }
+.stat-label { color: var(--text-secondary, var(--text-tertiary)); }
+.stat-num { font-weight: 600; color: var(--text-primary, var(--text-primary)); }
 .action-bar {
   display: flex;
   justify-content: space-between;
@@ -201,7 +201,7 @@ onUnmounted(() => {
   padding: 12px 16px;
   background: var(--glass-bg, #fff);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
 }
 .action-left, .action-right {
@@ -212,7 +212,7 @@ onUnmounted(() => {
 .table-wrapper {
   flex: 1;
   background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, #e4e7ed);
+  border: 1px solid var(--glass-border, var(--glass-border));
   border-radius: 8px;
   overflow: hidden;
 }
@@ -225,12 +225,12 @@ onUnmounted(() => {
   padding: 16px 24px;
 }
 .event-content {
-  background: var(--bg-secondary, #f5f7fa);
+  background: var(--bg-secondary, var(--glass-bg));
   border-radius: 8px;
   padding: 16px;
   font-size: 12px;
   line-height: 1.6;
-  color: var(--text-primary, #303133);
+  color: var(--text-primary, var(--text-primary));
   overflow-x: auto;
   margin: 0;
   white-space: pre-wrap;

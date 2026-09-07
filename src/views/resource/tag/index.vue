@@ -81,7 +81,7 @@
           <el-table-column type="selection" width="40" />
           <el-table-column prop="key" label="标签键" min-width="120">
             <template #default="{ row }">
-              <span style="font-weight: 600; color: #409eff">{{ row?.key }}</span>
+              <span style="font-weight: 600; color: var(--el-color-primary)">{{ row?.key }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="value" label="标签值" min-width="120">
@@ -454,7 +454,7 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   }
 
   &.active {
-    background: #409eff;
+    background: var(--el-color-primary);
     color: #fff;
     box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
   }
@@ -499,7 +499,7 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #409eff;
+  color: var(--el-color-primary);
   font-size: 13px;
 }
 
@@ -518,7 +518,7 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
 }
 
 .cell-link {
-  color: #409eff;
+  color: var(--el-color-primary);
   cursor: pointer;
   text-decoration: none;
 

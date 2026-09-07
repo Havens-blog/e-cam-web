@@ -476,7 +476,7 @@
     :close-on-click-modal="false"
   >
     <div v-if="assignAsset" style="margin-bottom: 16px;">
-      <p style="margin: 0 0 8px; color: #606266;">
+      <p style="margin: 0 0 8px; color: var(--text-secondary);">
         将资产 <strong>{{ assignAsset.asset_name }}</strong> ({{ assetTypeMap[assignAsset.asset_type] || assignAsset.asset_type }}) 分配到：
       </p>
     </div>

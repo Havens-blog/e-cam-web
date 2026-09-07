@@ -396,7 +396,7 @@ function toggleGroup(key: string) {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #409eff, #7c3aed);
+  background: linear-gradient(135deg, var(--el-color-primary), #7c3aed);
   display: flex;
   align-items: center;
   justify-content: center;

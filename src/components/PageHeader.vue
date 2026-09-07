@@ -104,7 +104,7 @@ const handleExport = async () => {
   align-items: flex-start;
   padding: 20px 0;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--glass-border);
 
   .page-header-left {
     display: flex;
@@ -128,14 +128,14 @@ const handleExport = async () => {
         margin: 0;
         font-size: 24px;
         font-weight: 600;
-        color: #303133;
+        color: var(--text-primary);
         line-height: 1.4;
       }
 
       .page-description {
         margin: 8px 0 0;
         font-size: 14px;
-        color: #909399;
+        color: var(--text-tertiary);
         line-height: 1.5;
       }
     }

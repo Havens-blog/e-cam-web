@@ -136,7 +136,7 @@ const getEnvironmentType = (environment: string) => {
       .account-name {
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--text-primary);
       }
     }
     
@@ -153,13 +153,13 @@ const getEnvironmentType = (environment: string) => {
       font-size: 14px;
       
       .label {
-        color: #909399;
+        color: var(--text-tertiary);
         margin-right: 8px;
         min-width: 120px;
       }
       
       .value {
-        color: #606266;
+        color: var(--text-secondary);
         flex: 1;
       }
     }
@@ -167,7 +167,7 @@ const getEnvironmentType = (environment: string) => {
     .iam-stats {
       margin-top: 16px;
       padding-top: 12px;
-      border-top: 1px solid #ebeef5;
+      border-top: 1px solid var(--glass-border);
       display: flex;
       align-items: center;
       gap: 16px;
@@ -179,15 +179,15 @@ const getEnvironmentType = (environment: string) => {
         font-size: 14px;
         
         .el-icon {
-          color: #409eff;
+          color: var(--el-color-primary);
         }
         
         .stat-label {
-          color: #909399;
+          color: var(--text-tertiary);
         }
         
         .stat-value {
-          color: #303133;
+          color: var(--text-primary);
           font-weight: 500;
         }
       }
@@ -197,11 +197,11 @@ const getEnvironmentType = (environment: string) => {
   .card-footer {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #ebeef5;
+    border-top: 1px solid var(--glass-border);
     
     .create-time {
       font-size: 12px;
-      color: #909399;
+      color: var(--text-tertiary);
     }
   }
 }

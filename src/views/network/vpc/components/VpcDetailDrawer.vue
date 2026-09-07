@@ -244,7 +244,7 @@
                 </el-table-column>
                 <el-table-column label="状态" width="80" align="center">
                   <template #default="{ row }">
-                    <span :style="{ color: row.status === 'Available' || row.status === 'available' ? '#10b981' : '#909399' }">
+                    <span :style="{ color: row.status === 'Available' || row.status === 'available' ? '#10b981' : 'var(--text-tertiary)' }">
                       {{ row.status || '-' }}
                     </span>
                   </template>
@@ -490,7 +490,7 @@ const getTabName = (tab: string) => {
 }
 
 .drawer-header-area {
-  background: #f5f7fa;
+  background: var(--glass-bg);
   flex-shrink: 0;
 }
 
@@ -499,7 +499,7 @@ const getTabName = (tab: string) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: #f5f7fa;
+  background: var(--glass-bg);
   position: relative;
 }
 
@@ -520,7 +520,7 @@ const getTabName = (tab: string) => {
     height: 0;
     border-style: solid;
     border-width: 36px 36px 0 0;
-    border-color: #409eff transparent transparent transparent;
+    border-color: var(--el-color-primary) transparent transparent transparent;
     transition: border-color 0.2s;
   }
 
@@ -532,7 +532,7 @@ const getTabName = (tab: string) => {
   }
 
   &:hover .corner-bg {
-    border-color: #66b1ff transparent transparent transparent;
+    border-color: var(--el-color-primary) transparent transparent transparent;
   }
 }
 
@@ -545,25 +545,25 @@ const getTabName = (tab: string) => {
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: #fff;
+    background: var(--glass-bg);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #409eff;
+    color: var(--el-color-primary);
   }
 
   .instance-info {
     .instance-type {
       font-size: 11px;
-      color: #909399;
+      color: var(--text-tertiary);
       margin-bottom: 2px;
     }
 
     .instance-name {
       font-size: 15px;
       font-weight: 600;
-      color: #303133;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 4px;
@@ -579,8 +579,8 @@ const getTabName = (tab: string) => {
 
 .drawer-tabs {
   padding: 0 20px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
 
   :deep(.el-tabs) {
     .el-tabs__header {
@@ -595,20 +595,20 @@ const getTabName = (tab: string) => {
       height: 36px;
       line-height: 36px;
       font-size: 13px;
-      color: #606266;
+      color: var(--text-secondary);
       padding: 0 14px;
 
       &.is-active {
-        color: #409eff;
+        color: var(--el-color-primary);
       }
 
       &:hover {
-        color: #303133;
+        color: var(--text-primary);
       }
     }
 
     .el-tabs__active-bar {
-      background-color: #409eff;
+      background-color: var(--el-color-primary);
       height: 2px;
     }
   }
@@ -618,7 +618,7 @@ const getTabName = (tab: string) => {
   padding: 24px 28px;
   flex: 1;
   overflow: auto;
-  background: #fff;
+  background: var(--glass-bg);
 }
 
 .detail-columns {
@@ -631,10 +631,10 @@ const getTabName = (tab: string) => {
   .column-title {
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid var(--glass-border);
   }
 }
 
@@ -653,13 +653,13 @@ const getTabName = (tab: string) => {
   .info-label {
     width: 80px;
     flex-shrink: 0;
-    color: #909399;
+    color: var(--text-tertiary);
     line-height: 1.6;
   }
 
   .info-value {
     flex: 1;
-    color: #303133;
+    color: var(--text-primary);
     word-break: break-all;
     display: flex;
     align-items: center;
@@ -667,7 +667,7 @@ const getTabName = (tab: string) => {
     line-height: 1.6;
 
     &.link {
-      color: #409eff;
+      color: var(--el-color-primary);
       cursor: pointer;
 
       &:hover {
@@ -686,14 +686,14 @@ const getTabName = (tab: string) => {
 
       .tag-item {
         padding: 2px 8px;
-        background: #f0f2f5;
+        background: var(--glass-bg-hover);
         border-radius: 4px;
         font-size: 12px;
-        color: #606266;
+        color: var(--text-secondary);
       }
 
       .tag-more {
-        color: #409eff;
+        color: var(--el-color-primary);
         font-size: 12px;
       }
     }
@@ -716,7 +716,7 @@ const getTabName = (tab: string) => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #909399;
+  color: var(--text-tertiary);
 
   p {
     margin-top: 16px;
@@ -724,7 +724,7 @@ const getTabName = (tab: string) => {
 }
 
 .cell-link {
-  color: #409eff;
+  color: var(--el-color-primary);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
 }

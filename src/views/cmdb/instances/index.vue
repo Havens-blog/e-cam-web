@@ -654,27 +654,27 @@ onMounted(() => {
   
   &.status-running {
     background: rgba(103, 194, 58, 0.1);
-    color: #67c23a;
+    color: var(--el-color-success);
   }
   
   &.status-stopped {
     background: rgba(144, 147, 153, 0.1);
-    color: #909399;
+    color: var(--text-tertiary);
   }
   
   &.status-pending {
     background: rgba(230, 162, 60, 0.1);
-    color: #e6a23c;
+    color: var(--el-color-warning);
   }
   
   &.status-error {
     background: rgba(245, 108, 108, 0.1);
-    color: #f56c6c;
+    color: var(--el-color-danger);
   }
   
   &.status-default {
     background: rgba(144, 147, 153, 0.1);
-    color: #909399;
+    color: var(--text-tertiary);
   }
 }
 

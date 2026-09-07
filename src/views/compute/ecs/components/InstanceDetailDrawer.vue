@@ -866,7 +866,7 @@ const closeNestedDrawer = () => {
 }
 
 .drawer-header-area {
-  background: #f5f7fa;
+  background: var(--glass-bg);
   flex-shrink: 0;
 }
 
@@ -875,7 +875,7 @@ const closeNestedDrawer = () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: #f5f7fa;
+  background: var(--glass-bg);
   position: relative;
 }
 
@@ -896,7 +896,7 @@ const closeNestedDrawer = () => {
     height: 0;
     border-style: solid;
     border-width: 36px 36px 0 0;
-    border-color: #409eff transparent transparent transparent;
+    border-color: var(--el-color-primary) transparent transparent transparent;
     transition: border-color 0.2s;
   }
 
@@ -908,7 +908,7 @@ const closeNestedDrawer = () => {
   }
 
   &:hover .corner-bg {
-    border-color: #66b1ff transparent transparent transparent;
+    border-color: var(--el-color-primary) transparent transparent transparent;
   }
 }
 
@@ -921,25 +921,25 @@ const closeNestedDrawer = () => {
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: #fff;
+    background: var(--glass-bg);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #909399;
+    color: var(--text-tertiary);
   }
 
   .instance-info {
     .instance-type {
       font-size: 11px;
-      color: #909399;
+      color: var(--text-tertiary);
       margin-bottom: 2px;
     }
 
     .instance-name {
       font-size: 15px;
       font-weight: 600;
-      color: #303133;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 4px;
@@ -955,8 +955,8 @@ const closeNestedDrawer = () => {
 
 .drawer-tabs {
   padding: 0 20px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
 
   :deep(.el-tabs) {
     .el-tabs__header {
@@ -971,20 +971,20 @@ const closeNestedDrawer = () => {
       height: 36px;
       line-height: 36px;
       font-size: 13px;
-      color: #606266;
+      color: var(--text-secondary);
       padding: 0 14px;
 
       &.is-active {
-        color: #409eff;
+        color: var(--el-color-primary);
       }
 
       &:hover {
-        color: #303133;
+        color: var(--text-primary);
       }
     }
 
     .el-tabs__active-bar {
-      background-color: #409eff;
+      background-color: var(--el-color-primary);
       height: 2px;
     }
   }
@@ -994,7 +994,7 @@ const closeNestedDrawer = () => {
   padding: 24px 28px;
   flex: 1;
   overflow: auto;
-  background: #fff;
+  background: var(--glass-bg);
 }
 
 .detail-columns {
@@ -1007,10 +1007,10 @@ const closeNestedDrawer = () => {
   .column-title {
     font-size: 14px;
     font-weight: 600;
-    color: #303133;
+    color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid var(--glass-border);
   }
 }
 
@@ -1029,13 +1029,13 @@ const closeNestedDrawer = () => {
   .info-label {
     width: 80px;
     flex-shrink: 0;
-    color: #909399;
+    color: var(--text-tertiary);
     line-height: 1.6;
   }
 
   .info-value {
     flex: 1;
-    color: #303133;
+    color: var(--text-primary);
     word-break: break-all;
     display: flex;
     align-items: center;
@@ -1043,7 +1043,7 @@ const closeNestedDrawer = () => {
     line-height: 1.6;
 
     &.link {
-      color: #409eff;
+      color: var(--el-color-primary);
       cursor: pointer;
 
       &:hover {
@@ -1052,17 +1052,17 @@ const closeNestedDrawer = () => {
     }
 
     &.highlight {
-      color: #409eff;
+      color: var(--el-color-primary);
     }
 
     .edit-icon {
-      color: #409eff;
+      color: var(--el-color-primary);
       cursor: pointer;
       font-size: 12px;
     }
 
     .link-text {
-      color: #409eff;
+      color: var(--el-color-primary);
       cursor: pointer;
       text-decoration: none;
 
@@ -1083,10 +1083,10 @@ const closeNestedDrawer = () => {
 
       .tag-item {
         padding: 2px 8px;
-        background: #f0f2f5;
+        background: var(--glass-bg-hover);
         border-radius: 4px;
         font-size: 12px;
-        color: #606266;
+        color: var(--text-secondary);
       }
     }
   }
@@ -1096,12 +1096,12 @@ const closeNestedDrawer = () => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #909399;
+  background: var(--text-tertiary);
   flex-shrink: 0;
 
-  &.running { background: #67c23a; }
-  &.stopped { background: #909399; }
-  &.error { background: #f56c6c; }
+  &.running { background: var(--el-color-success); }
+  &.stopped { background: var(--text-tertiary); }
+  &.error { background: var(--el-color-danger); }
 }
 
 .empty-tab {
@@ -1110,10 +1110,10 @@ const closeNestedDrawer = () => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #909399;
+  color: var(--text-tertiary);
 
   .empty-error {
-    color: var(--el-color-danger, #f56c6c);
+    color: var(--el-color-danger, var(--el-color-danger));
   }
 
   p {
@@ -1133,14 +1133,14 @@ const closeNestedDrawer = () => {
 }
 
 .resource-card {
-  background: #fff;
-  border: 1px solid #e4e7ed;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #409eff;
+    border-color: var(--el-color-primary);
     box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1);
   }
 
@@ -1149,8 +1149,8 @@ const closeNestedDrawer = () => {
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
-    border-bottom: 1px solid #ebeef5;
+    background: linear-gradient(135deg, var(--glass-bg) 0%, #fff 100%);
+    border-bottom: 1px solid var(--glass-border);
   }
 
   .card-icon {
@@ -1201,7 +1201,7 @@ const closeNestedDrawer = () => {
     .card-type {
       display: block;
       font-size: 11px;
-      color: #909399;
+      color: var(--text-tertiary);
       margin-bottom: 2px;
     }
 
@@ -1209,13 +1209,13 @@ const closeNestedDrawer = () => {
       display: block;
       font-size: 14px;
       font-weight: 500;
-      color: #303133;
+      color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
 
       &.link {
-        color: #409eff;
+        color: var(--el-color-primary);
         cursor: pointer;
 
         &:hover {
@@ -1227,14 +1227,14 @@ const closeNestedDrawer = () => {
     .card-id {
       display: block;
       font-size: 12px;
-      color: #909399;
+      color: var(--text-tertiary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       cursor: pointer;
 
       &:hover {
-        color: #409eff;
+        color: var(--el-color-primary);
       }
     }
   }
@@ -1270,18 +1270,18 @@ const closeNestedDrawer = () => {
     .label {
       width: 70px;
       flex-shrink: 0;
-      color: #909399;
+      color: var(--text-tertiary);
     }
 
     .value {
       flex: 1;
-      color: #303133;
+      color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
 
       &.link {
-        color: #409eff;
+        color: var(--el-color-primary);
         cursor: pointer;
 
         &:hover {
@@ -1290,7 +1290,7 @@ const closeNestedDrawer = () => {
       }
 
       &.highlight {
-        color: #409eff;
+        color: var(--el-color-primary);
         font-weight: 500;
       }
     }
@@ -1331,7 +1331,7 @@ const closeNestedDrawer = () => {
 }
 
 .danger-text {
-  color: #f56c6c;
+  color: var(--el-color-danger);
 }
 </style>
 

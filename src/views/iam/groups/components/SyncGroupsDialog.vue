@@ -311,14 +311,14 @@ watch(() => props.visible, (visible) => {
   .sync-progress {
     margin-top: 20px;
     padding: 16px;
-    background: #f5f7fa;
+    background: var(--glass-bg);
     border-radius: 4px;
 
     .progress-text {
       margin-top: 12px;
       text-align: center;
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary);
       font-weight: 500;
     }
   }

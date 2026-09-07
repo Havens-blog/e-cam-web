@@ -148,7 +148,7 @@ onMounted(() => {
 .form-tip {
   margin-top: 8px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 

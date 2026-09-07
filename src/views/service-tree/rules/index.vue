@@ -66,7 +66,7 @@
           <el-table-column label="目标环境" width="100">
             <template #default="{ row }">
               <span v-if="row.env_name" class="env-tag">
-                <span class="env-dot" :style="{ background: row.env_color || '#909399' }"></span>
+                <span class="env-dot" :style="{ background: row.env_color || 'var(--text-tertiary)' }"></span>
                 {{ row.env_name }}
               </span>
               <span v-else class="text-muted">-</span>

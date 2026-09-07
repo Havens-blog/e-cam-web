@@ -289,7 +289,7 @@ onMounted(() => {
 .stats-row { display: flex; gap: 16px; }
 .stat-card {
   flex: 1; display: flex; align-items: center; gap: 12px; padding: 16px 20px;
-  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, #e4e7ed); border-radius: 12px;
+  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 12px;
 }
 .stat-icon {
   width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
@@ -300,31 +300,31 @@ onMounted(() => {
 }
 .stat-info { display: flex; flex-direction: column; }
 .stat-num {
-  font-size: 20px; font-weight: 700; color: var(--text-primary, #303133);
+  font-size: 20px; font-weight: 700; color: var(--text-primary, var(--text-primary));
   &.success { color: #10b981; }
   &.fail { color: #ef4444; }
   &.slow { color: #f59e0b; }
 }
-.stat-label { font-size: 12px; color: var(--text-secondary, #909399); }
+.stat-label { font-size: 12px; color: var(--text-secondary, var(--text-tertiary)); }
 .filter-bar {
   display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
-  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, #e4e7ed); border-radius: 10px; flex-wrap: wrap; gap: 8px;
+  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 10px; flex-wrap: wrap; gap: 8px;
 }
 .filter-left, .filter-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .table-card {
-  flex: 1; background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, #e4e7ed); border-radius: 10px; overflow: hidden;
+  flex: 1; background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 10px; overflow: hidden;
   :deep(.row-error) { background-color: rgba(239,68,68,0.04) !important; }
 }
-.cell-time { font-size: 13px; color: var(--text-secondary, #606266); font-variant-numeric: tabular-nums; }
+.cell-time { font-size: 13px; color: var(--text-secondary, var(--text-secondary)); font-variant-numeric: tabular-nums; }
 .cell-operator { display: flex; align-items: center; gap: 6px; }
 .operator-avatar {
   width: 24px; height: 24px; border-radius: 50%; background: var(--el-color-primary-light-7, #c6e2ff);
-  color: var(--el-color-primary, #409eff); display: flex; align-items: center; justify-content: center;
+  color: var(--el-color-primary, var(--el-color-primary)); display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600; flex-shrink: 0;
 }
 .cell-request { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .api-path {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--text-secondary, #606266);
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--text-secondary, var(--text-secondary));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .method-badge {
@@ -356,18 +356,18 @@ onMounted(() => {
 .detail-content { display: flex; flex-direction: column; gap: 16px; }
 .detail-row {
   display: flex; gap: 12px;
-  .detail-label { width: 80px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary, #909399); text-align: right; line-height: 22px; }
+  .detail-label { width: 80px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary, var(--text-tertiary)); text-align: right; line-height: 22px; }
   .detail-value {
-    font-size: 13px; color: var(--text-primary, #303133); word-break: break-all;
-    &.ua { font-size: 12px; color: var(--text-secondary, #909399); }
+    font-size: 13px; color: var(--text-primary, var(--text-primary)); word-break: break-all;
+    &.ua { font-size: 12px; color: var(--text-secondary, var(--text-tertiary)); }
   }
   code {
     font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
-    background: var(--bg-secondary, #f5f7fa); padding: 2px 6px; border-radius: 4px;
+    background: var(--bg-secondary, var(--glass-bg)); padding: 2px 6px; border-radius: 4px;
   }
 }
 .detail-json {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: var(--bg-secondary, #f5f7fa);
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: var(--bg-secondary, var(--glass-bg));
   padding: 12px; border-radius: 6px; overflow-x: auto; max-height: 300px; margin: 0; white-space: pre-wrap; word-break: break-all;
 }
 </style>

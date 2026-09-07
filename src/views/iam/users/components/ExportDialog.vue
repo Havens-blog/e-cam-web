@@ -260,7 +260,7 @@ const handleCancel = () => {
 .field-selection {
   width: 100%;
   padding: 12px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   max-height: 300px;
   overflow-y: auto;

@@ -211,7 +211,7 @@ onMounted(() => {
 .user-detail {
   .detail-value {
     font-weight: 500;
-    color: #303133;
+    color: var(--text-primary);
   }
 
   .permission-groups-section {
@@ -227,7 +227,7 @@ onMounted(() => {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--text-primary);
       }
     }
     
@@ -241,13 +241,13 @@ onMounted(() => {
           .group-name {
             font-size: 16px;
             font-weight: 600;
-            color: #303133;
+            color: var(--text-primary);
             margin-bottom: 8px;
           }
           
           .group-description {
             font-size: 14px;
-            color: #606266;
+            color: var(--text-secondary);
             margin-bottom: 12px;
             line-height: 1.5;
           }
@@ -264,7 +264,7 @@ onMounted(() => {
   .action-buttons {
     margin-top: 24px;
     padding-top: 24px;
-    border-top: 1px solid #ebeef5;
+    border-top: 1px solid var(--glass-border);
     display: flex;
     gap: 12px;
   }

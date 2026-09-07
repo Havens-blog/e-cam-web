@@ -46,7 +46,7 @@
       </el-form-item>
       <el-form-item label="升级阈值">
         <el-input-number v-model="form.escalate_after" :min="0" :max="100" style="width: 200px" />
-        <span style="margin-left: 8px; color: #909399; font-size: 12px">连续触发N次后升级通知</span>
+        <span style="margin-left: 8px; color: var(--text-tertiary); font-size: 12px">连续触发N次后升级通知</span>
       </el-form-item>
       <el-form-item label="升级渠道">
         <el-select v-model="form.escalate_channels" multiple placeholder="选择升级后使用的渠道" style="width: 100%">
@@ -195,6 +195,6 @@ onMounted(() => loadChannels())
   gap: 8px;
   padding: 4px 0;
   font-size: 13px;
-  color: var(--el-text-color-secondary, #909399);
+  color: var(--el-text-color-secondary, var(--text-tertiary));
 }
 </style>

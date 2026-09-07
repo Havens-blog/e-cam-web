@@ -77,7 +77,7 @@ function donutOption(slices: Slice[]): EChartsOption {
             icon: 'circle',
             itemWidth: 8,
             itemHeight: 8,
-            textStyle: { color: '#606266', fontSize: 12 },
+            textStyle: { color: 'var(--text-secondary)', fontSize: 12 },
         },
         series: [
             {
@@ -112,15 +112,15 @@ function topBarOption(data: { name: string; value: number }[]): EChartsOption {
         grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
         xAxis: {
             type: 'value',
-            splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } },
-            axisLabel: { color: '#909399', fontSize: 11 },
+            splitLine: { lineStyle: { color: 'var(--glass-border)', type: 'dashed' } },
+            axisLabel: { color: 'var(--text-tertiary)', fontSize: 11 },
         },
         yAxis: {
             type: 'category',
             data: rows.map((r) => r.name),
             axisTick: { show: false },
             axisLine: { show: false },
-            axisLabel: { color: '#606266', fontSize: 12 },
+            axisLabel: { color: 'var(--text-secondary)', fontSize: 12 },
         },
         series: [
             {
@@ -131,7 +131,7 @@ function topBarOption(data: { name: string; value: number }[]): EChartsOption {
                 label: {
                     show: true,
                     position: 'right',
-                    color: '#606266',
+                    color: 'var(--text-secondary)',
                     fontSize: 11,
                     formatter: (p: unknown) => ((p as { value: number }).value || 0).toLocaleString(),
                 },
@@ -158,14 +158,14 @@ function trendChartOption(points: { name: string; value: number }[]): EChartsOpt
             data: points.map((p) => p.name),
             boundaryGap: false,
             axisTick: { show: false },
-            axisLine: { lineStyle: { color: '#dcdfe6' } },
-            axisLabel: { color: '#909399', fontSize: 11 },
+            axisLine: { lineStyle: { color: 'var(--glass-border)' } },
+            axisLabel: { color: 'var(--text-tertiary)', fontSize: 11 },
         },
         yAxis: {
             type: 'value',
             minInterval: 1,
-            splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } },
-            axisLabel: { color: '#909399', fontSize: 11 },
+            splitLine: { lineStyle: { color: 'var(--glass-border)', type: 'dashed' } },
+            axisLabel: { color: 'var(--text-tertiary)', fontSize: 11 },
         },
         series: [
             {

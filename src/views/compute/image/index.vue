@@ -112,7 +112,7 @@
             </el-table-column>
             <el-table-column label="状态" width="100" align="center">
               <template #default="{ row }">
-                <ImageStatusBadge :status="row?.status || ''" />
+                <AssetStatusBadge :status="row?.status || ''" :labels="statusLabels" />
               </template>
             </el-table-column>
             <el-table-column label="操作" width="160" fixed="right" align="center">
@@ -203,7 +203,20 @@ import AccountSidebar from './components/AccountSidebar.vue'
 import ImageDetailDrawer from './components/ImageDetailDrawer.vue'
 import ImageFilters from './components/ImageFilters.vue'
 import ImageStatsCards from './components/ImageStatsCards.vue'
-import ImageStatusBadge from './components/ImageStatusBadge.vue'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+const statusLabels: Record<string, string> = {
+  Available: '可用',
+  available: '可用',
+  Creating: '创建中',
+  creating: '创建中',
+  Waiting: '等待中',
+  waiting: '等待中',
+  UnAvailable: '不可用',
+  unavailable: '不可用',
+}
+
 import ImageSyncDialog from './components/ImageSyncDialog.vue'
 import OsIcon from './components/OsIcon.vue'
 
