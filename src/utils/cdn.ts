@@ -118,6 +118,46 @@ export function cdnCacheRuleTypeLabel(type?: string): string {
     return CACHE_RULE_TYPE_LABELS[type] || type
 }
 
+/** 缓存行为术语解释(悬停提示;与 CdnDetailDrawer 行为列共用) */
+const CACHE_BEHAVIOR_HINTS: Record<string, string> = {
+    遵循源站缓存时长:
+        '源站响应带 Cache-Control 时,按源站指定的时长缓存(忽略规则里配置的 TTL)',
+    '强制回源校验(忽略缓存头)':
+        '每次请求都回源验证资源是否更新,不信任节点上的旧缓存;内容一致性最好,回源量最大',
+    低频不缓存: '访问频率低的资源不缓存,节省边缘节点存储',
+    高频强制缓存: '热门资源强制缓存,即使源站返回不可缓存的响应头',
+    '状态码强制 TTL': '对该路径按响应状态码强制设置缓存时长(格式 301=0,302=0;0 表示该状态码不缓存)',
+    '保留全部 URL 参数(不忽略)': 'URL 的所有查询参数都参与缓存键,参数不同视为不同资源各自缓存',
+    标准缓存: '按规则配置的缓存时长缓存,无特殊行为',
+}
+
+/**
+ * cdnCacheBehaviorHints 行为分段 + 解释(行为列逐术语渲染悬停说明)。
+ * text 为展示文案,hint 为悬停解释;未收录的术语原样展示。
+ */
+export function cdnCacheBehaviorHints(row: {
+    code_string?: string
+    query_args?: string
+    follow_origin_cache?: boolean
+    force_revalidate?: boolean
+    no_cache_low_freq?: boolean
+    cache_high_freq?: boolean
+}): Array<{ text: string; hint?: string }> {
+    const out: Array<{ text: string; hint?: string }> = []
+    if (row.code_string) {
+        out.push({ text: `状态码强制 TTL: ${row.code_string}`, hint: CACHE_BEHAVIOR_HINTS['状态码强制 TTL'] })
+    }
+    if (row.query_args) {
+        out.push({ text: row.query_args, hint: CACHE_BEHAVIOR_HINTS[row.query_args] })
+    }
+    if (row.follow_origin_cache) out.push({ text: '遵循源站缓存时长', hint: CACHE_BEHAVIOR_HINTS['遵循源站缓存时长'] })
+    if (row.force_revalidate) out.push({ text: '强制回源校验(忽略缓存头)', hint: CACHE_BEHAVIOR_HINTS['强制回源校验(忽略缓存头)'] })
+    if (row.no_cache_low_freq) out.push({ text: '低频不缓存', hint: CACHE_BEHAVIOR_HINTS['低频不缓存'] })
+    if (row.cache_high_freq) out.push({ text: '高频强制缓存', hint: CACHE_BEHAVIOR_HINTS['高频强制缓存'] })
+    if (!out.length) out.push({ text: '标准缓存', hint: CACHE_BEHAVIOR_HINTS['标准缓存'] })
+    return out
+}
+
 /** 缓存时间(秒)→ 文案: -1 跟随源站 / 0 不缓存 / >0 人性化时长 */
 export function cdnTtlText(ttl?: number): string {
     if (ttl === undefined || ttl === null) return '-'

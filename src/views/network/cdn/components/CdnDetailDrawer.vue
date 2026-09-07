@@ -162,9 +162,31 @@
                       <span :class="{ 'ttl-no-cache': row.ttl === 0 }">{{ cdnTtlText(row.ttl) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="行为" min-width="150" show-overflow-tooltip>
+                  <el-table-column min-width="150">
+                    <template #header>
+                      <span class="behavior-header">
+                        行为
+                        <el-tooltip placement="top">
+                          <template #content>
+                            规则的缓存策略细节,悬停各项术语查看说明。<br />
+                            多条规则按优先级匹配:命中第一条后不再向下。
+                          </template>
+                          <el-icon :size="13" class="behavior-help"><QuestionFilled /></el-icon>
+                        </el-tooltip>
+                      </span>
+                    </template>
                     <template #default="{ row }">
-                      {{ cdnCacheBehaviorText(row) }}
+                      <span class="behavior-cell">
+                        <el-tooltip
+                          v-for="seg in cdnCacheBehaviorHints(row)"
+                          :key="seg.text"
+                          :content="seg.hint"
+                          placement="top"
+                          :disabled="!seg.hint"
+                        >
+                          <span class="behavior-item" :class="{ 'behavior-plain': !seg.hint }">{{ seg.text }}</span>
+                        </el-tooltip>
+                      </span>
                     </template>
                   </el-table-column>
                   <el-table-column label="优先级" width="90" align="center">
@@ -247,11 +269,12 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import {
   CDN_STATUS_LABELS,
   cdnBusinessTypeLabel,
+  cdnCacheBehaviorHints,
   cdnCacheRuleTypeLabel,
   cdnServiceAreaLabel,
   cdnTtlText,
 } from '@/utils/cdn'
-import { Connection, PriceTag, WarningFilled } from '@element-plus/icons-vue'
+import { Connection, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 
@@ -280,18 +303,6 @@ const cacheFetchedKey = ref('')
 const sortedCacheRules = computed(() =>
   [...cacheRules.value].sort((a, b) => (b.priority || 0) - (a.priority || 0))
 )
-
-/** 规则行为描述:状态码码表 / URL 参数语义 / 阿里云高级缓存开关 */
-const cdnCacheBehaviorText = (row: CDNCacheRule): string => {
-  const parts: string[] = []
-  if (row.code_string) parts.push(`状态码强制 TTL: ${row.code_string}`)
-  if (row.query_args) parts.push(row.query_args)
-  if (row.follow_origin_cache) parts.push('遵循源站缓存时长')
-  if (row.force_revalidate) parts.push('强制回源校验(忽略缓存头)')
-  if (row.no_cache_low_freq) parts.push('低频不缓存')
-  if (row.cache_high_freq) parts.push('高频强制缓存')
-  return parts.join(' · ') || '标准缓存'
-}
 
 const fetchCacheRules = async () => {
   const inst = props.instance
@@ -468,6 +479,35 @@ const formatTime = (time: string | number | undefined) => {
 
   .ttl-no-cache {
     color: var(--el-color-warning);
+  }
+
+  .behavior-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+
+    .behavior-help {
+      color: var(--text-tertiary);
+      cursor: help;
+    }
+  }
+
+  .behavior-cell {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    font-size: 12px;
+
+    .behavior-item {
+      cursor: help;
+      text-decoration: underline dotted var(--text-tertiary);
+      text-underline-offset: 3px;
+    }
+
+    .behavior-plain {
+      cursor: default;
+      text-decoration: none;
+    }
   }
 }
 
