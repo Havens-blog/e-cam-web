@@ -20,7 +20,12 @@
     </div>
 
     <!-- Stats Cards -->
-    <TagStatsCards :stats="tagStats" />
+    <div class="page-stats">
+      <StatCard title="标签键" :value="tagStats.total_keys" icon="Coin" icon-color="#3b82f6" subtitle="全仓标签键" />
+      <StatCard title="标签值" :value="tagStats.total_values" icon="EditPen" icon-color="#8b5cf6" subtitle="全仓标签值" />
+      <StatCard title="已打标资源" :value="tagStats.tagged_resources" icon="CircleCheck" icon-color="#16a34a" :subtitle="`共 ${tagStats.total_resources} 个资源`" />
+      <StatCard title="资源覆盖率" :value="`${tagStats.coverage_percent}%`" icon="DataLine" icon-color="#0891b2" subtitle="已打标 / 总资源" />
+    </div>
 
     <!-- Tab Bar -->
     <div class="tab-bar">
@@ -184,7 +189,7 @@ import TagFilters from './components/TagFilters.vue'
 import TagPolicyPanel from './components/TagPolicyPanel.vue'
 import TagResourceDrawer from './components/TagResourceDrawer.vue'
 import TagRulePanel from './components/TagRulePanel2.vue'
-import TagStatsCards from './components/TagStatsCards.vue'
+import StatCard from '@/components/StatCard.vue'
 
 // State
 const activeTab = ref<'tagList' | 'policies' | 'compliance' | 'autoTag'>('tagList')
@@ -543,5 +548,12 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
 .pagination-info {
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+.page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 </style>

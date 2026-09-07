@@ -47,7 +47,7 @@
 import { getDnsStatsApi } from '@/api/dns'
 import type { DnsStats } from '@/api/types/dns'
 import { getProviderLabel } from '@/utils/constants'
-import { Cloudy, Connection, List, WarningFilled } from '@element-plus/icons-vue'
+import { Cloudy, Connection, List } from '@element-plus/icons-vue'
 import { ElButton, ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -112,14 +112,6 @@ const statCards = computed(() => {
       icon: Cloudy,
       iconBg: 'rgba(16,185,129,0.15)',
       iconColor: '#34d399',
-    },
-    {
-      label: '异常域名',
-      value: 0,
-      desc: '',
-      icon: WarningFilled,
-      iconBg: 'rgba(245,158,11,0.15)',
-      iconColor: '#fbbf24',
     },
   ]
 })

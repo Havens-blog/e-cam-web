@@ -24,7 +24,12 @@
       <!-- 右侧内容区 -->
       <div class="image-main-content">
         <!-- 统计卡片 -->
-        <ImageStatsCards :stats="stats" />
+        <div class="page-stats">
+          <StatCard title="镜像总数" :value="stats.total" icon="Box" icon-color="#8b5cf6" subtitle="公共/自定义/共享合计" />
+          <StatCard title="公共镜像" :value="stats.system" icon="Monitor" icon-color="#0891b2" :subtitle="shareOf(stats.total, stats.system)" />
+          <StatCard title="自定义镜像" :value="stats.custom" icon="User" icon-color="#16a34a" :subtitle="shareOf(stats.total, stats.custom)" />
+          <StatCard title="共享镜像" :value="stats.shared" icon="Connection" icon-color="#d97706" :subtitle="shareOf(stats.total, stats.shared)" />
+        </div>
 
         <!-- 筛选器 -->
         <ImageFilters
@@ -202,7 +207,7 @@ import { useRouter } from 'vue-router'
 import AccountSidebar from './components/AccountSidebar.vue'
 import ImageDetailDrawer from './components/ImageDetailDrawer.vue'
 import ImageFilters from './components/ImageFilters.vue'
-import ImageStatsCards from './components/ImageStatsCards.vue'
+import StatCard from '@/components/StatCard.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
 /** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
@@ -229,6 +234,9 @@ const filters = reactive({
   os_type: '', image_owner_alias: '', account_id: 0,
 })
 const stats = ref<ImageStatsResponse>({ total: 0, system: 0, custom: 0, shared: 0 })
+
+const shareOf = (total: number, part: number) =>
+  total > 0 ? `占 ${Math.round((part / total) * 100)}%` : '-' 
 const selectedRows = ref<Asset[]>([])
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
@@ -389,5 +397,12 @@ onMounted(() => { fetchData(); fetchStats() })
     align-items: center; padding: 12px 24px;
   }
   .pagination-info .page-size-info { font-size: 13px; color: var(--text-secondary); }
+}
+
+.page-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 </style>
