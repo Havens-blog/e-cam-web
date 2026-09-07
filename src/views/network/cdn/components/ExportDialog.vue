@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { cdnBusinessTypeLabel, cdnServiceAreaLabel, cdnStatusLabel } from '@/utils/cdn';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -69,17 +70,15 @@ const selectAllFields = () => { exportForm.fields = availableFields.map(f => f.k
 const deselectAllFields = () => { exportForm.fields = [] }
 
 const providerMap: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }
-const businessTypeMap: Record<string, string> = { web: '网页加速', download: '下载加速', media: '流媒体', vodDomainName: '点播', wholeSite: '全站加速' }
-const serviceAreaMap: Record<string, string> = { domestic: '中国大陆', overseas: '海外', global: '全球', mainland: '中国大陆' }
 
 const getFieldValue = (instance: Asset, key: string): string => {
   const attr = instance.attributes || {}
   if (key === 'domain_name') return attr.domain_name || instance.asset_id || ''
   if (key === 'cname') return attr.cname || ''
-  if (key === 'status') return instance.status || ''
-  if (key === 'business_type') return businessTypeMap[attr.business_type] || attr.business_type || ''
+  if (key === 'status') return cdnStatusLabel(instance.status)
+  if (key === 'business_type') return cdnBusinessTypeLabel(attr.business_type)
   if (key === 'https_enabled') return attr.https_enabled ? '已开启' : '未开启'
-  if (key === 'service_area') return serviceAreaMap[attr.service_area] || attr.service_area || ''
+  if (key === 'service_area') return cdnServiceAreaLabel(attr.service_area)
   if (key === 'provider') return providerMap[instance.provider] || instance.provider || ''
   if (key === 'creation_time') return attr.creation_time || ''
   return attr[key] || ''

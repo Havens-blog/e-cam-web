@@ -22,6 +22,7 @@
         <div class="drawer-tabs">
           <el-tabs v-model="activeTab">
             <el-tab-pane label="详情" name="detail" />
+            <el-tab-pane label="缓存配置" name="cache" />
             <el-tab-pane label="源站配置" name="origins" />
             <el-tab-pane label="标签" name="tags" />
           </el-tabs>
@@ -49,12 +50,12 @@
                   <div class="info-row">
                     <span class="info-label">业务类型</span>
                     <span class="info-value">
-                      <el-tag size="small" effect="plain">{{ getBusinessTypeLabel(attr.business_type) }}</el-tag>
+                      <el-tag size="small" effect="plain">{{ cdnBusinessTypeLabel(attr.business_type) }}</el-tag>
                     </span>
                   </div>
                   <div class="info-row">
-                    <span class="info-label">加速区域</span>
-                    <span class="info-value">{{ getServiceAreaLabel(attr.service_area) }}</span>
+                    <span class="info-label">服务区域</span>
+                    <span class="info-value">{{ cdnServiceAreaLabel(attr.service_area) }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">云平台</span>
@@ -131,6 +132,48 @@
             </div>
           </template>
 
+          <!-- 缓存配置 Tab -->
+          <template v-else-if="activeTab === 'cache'">
+            <div v-loading="cacheLoading" class="cache-section">
+              <template v-if="cacheError">
+                <div class="empty-tab">
+                  <el-icon :size="48"><WarningFilled /></el-icon>
+                  <p>{{ cacheError }}</p>
+                  <el-button size="small" type="primary" plain @click="fetchCacheRules">重试</el-button>
+                </div>
+              </template>
+              <template v-else-if="cacheRules.length > 0">
+                <div class="cache-note">
+                  实时读取自云厂商 API,共 {{ cacheRules.length }} 条规则;按优先级生效
+                </div>
+                <el-table :data="sortedCacheRules" style="width: 100%" border>
+                  <el-table-column label="匹配内容" min-width="220" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <span class="mono">{{ row.path }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="匹配类型" width="110" align="center">
+                    <template #default="{ row }">
+                      <el-tag size="small" effect="plain">{{ cdnCacheRuleTypeLabel(row.type) }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="缓存时间" width="120" align="center">
+                    <template #default="{ row }">
+                      <span :class="{ 'ttl-no-cache': row.ttl === 0 }">{{ cdnTtlText(row.ttl) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="优先级" width="90" align="center">
+                    <template #default="{ row }">{{ row.priority || '-' }}</template>
+                  </el-table-column>
+                </el-table>
+              </template>
+              <div v-else-if="!cacheLoading" class="empty-tab">
+                <el-icon :size="48"><Connection /></el-icon>
+                <p>该云厂商暂无缓存规则数据</p>
+              </div>
+            </div>
+          </template>
+
           <!-- 源站配置 Tab -->
           <template v-else-if="activeTab === 'origins'">
             <div v-if="originList.length > 0" class="origins-section">
@@ -192,23 +235,23 @@
 </template>
 
 <script setup lang="ts">
+import { getCDNCacheConfigApi, type CDNCacheRule } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { Connection, PriceTag } from '@element-plus/icons-vue'
+import {
+  CDN_STATUS_LABELS,
+  cdnBusinessTypeLabel,
+  cdnCacheRuleTypeLabel,
+  cdnServiceAreaLabel,
+  cdnTtlText,
+} from '@/utils/cdn'
+import { Connection, PriceTag, WarningFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 
 /** 状态值 → 展示文案(与列表页共用同一份映射) */
-const statusLabels: Record<string, string> = {
-  online: '正常', Online: '正常', Deployed: '正常', deployed: '正常',
-  active: '正常', Active: '正常', Started: '正常', started: '正常',
-  offline: '已停用', Offline: '已停用', stopped: '已停用', Stopped: '已停用', disabled: '已停用',
-  configuring: '配置中', Configuring: '配置中',
-  checking: '审核中', Checking: '审核中', creating: '创建中',
-  check_failed: '审核失败', InProgress: '部署中', inprogress: '部署中',
-  error: '异常', failed: '失败',
-}
+const statusLabels = CDN_STATUS_LABELS
 
 interface OriginItem {
   address: string
@@ -222,8 +265,64 @@ const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
 
-// 切换实例时重置 tab
-watch(() => props.instance, () => { activeTab.value = 'detail' })
+// ===== 缓存配置(按需实时查询) =====
+const cacheLoading = ref(false)
+const cacheRules = ref<CDNCacheRule[]>([])
+const cacheError = ref('')
+const cacheFetchedKey = ref('')
+
+/** 优先级降序,未标优先级的排后 */
+const sortedCacheRules = computed(() =>
+  [...cacheRules.value].sort((a, b) => (b.priority || 0) - (a.priority || 0))
+)
+
+const fetchCacheRules = async () => {
+  const inst = props.instance
+  if (!inst) return
+  const accountId = Number(inst.attributes?.cloud_account_id || 0)
+  const domainName = attr.value.domain_name || ''
+  const domainId = String(inst.attributes?.domain_id || inst.asset_id || '')
+  if (!accountId || (!domainName && !domainId)) {
+    cacheError.value = '缺少账号或域名标识,无法查询'
+    return
+  }
+  cacheLoading.value = true
+  cacheError.value = ''
+  try {
+    const res = await getCDNCacheConfigApi({
+      account_id: accountId,
+      domain_name: domainName || undefined,
+      domain_id: domainId || undefined,
+    })
+    cacheRules.value = (res as any).data?.rules || []
+    cacheFetchedKey.value = `${accountId}:${domainId}:${domainName}`
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '查询缓存配置失败'
+    // 多数情况是厂商接口失败;提示具体原因并允许重试
+    cacheError.value = msg.includes('不支持') ? msg : `缓存配置查询失败: ${msg}`
+  } finally {
+    cacheLoading.value = false
+  }
+}
+
+// 切换实例时重置 tab 与缓存配置状态
+watch(() => props.instance, () => {
+  activeTab.value = 'detail'
+  cacheRules.value = []
+  cacheError.value = ''
+  cacheFetchedKey.value = ''
+})
+
+// 打开抽屉或切到缓存 Tab 时按需拉取
+watch(
+  () => [props.visible, activeTab.value] as const,
+  ([visible, tab]) => {
+    if (!visible || tab !== 'cache') return
+    const inst = props.instance
+    const key = inst ? `${Number(inst.attributes?.cloud_account_id || 0)}:${inst.attributes?.domain_id || inst.asset_id || ''}:${inst.attributes?.domain_name || ''}` : ''
+    if (key && key !== cacheFetchedKey.value && !cacheError.value) fetchCacheRules()
+  }
+)
 
 /** 安全获取 attributes */
 const attr = computed(() => props.instance?.attributes || {} as Record<string, any>)
@@ -251,16 +350,6 @@ const tagList = computed(() => {
   if (!tags || typeof tags !== 'object' || Array.isArray(tags)) return []
   return Object.entries(tags).map(([key, value]) => ({ key, value: String(value) }))
 })
-
-const getBusinessTypeLabel = (type: string | undefined) => {
-  const map: Record<string, string> = { web: '网页加速', download: '下载加速', media: '流媒体', page: '网页加速', api: 'API加速', vodDomainName: '点播', wholeSite: '全站加速' }
-  return map[type || ''] || type || '-'
-}
-
-const getServiceAreaLabel = (area: string | undefined) => {
-  const map: Record<string, string> = { domestic: '中国大陆', overseas: '海外加速', global: '全球加速', mainland: '中国大陆' }
-  return map[area || ''] || area || '-'
-}
 
 const getProviderName = (provider: string | undefined): string => {
   if (!provider) return '-'
@@ -348,6 +437,21 @@ const formatTime = (time: string | number | undefined) => {
 .mono {
   font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
   font-size: 12px;
+}
+
+// 缓存配置
+.cache-section {
+  min-height: 200px;
+
+  .cache-note {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+
+  .ttl-no-cache {
+    color: var(--el-color-warning);
+  }
 }
 
 // 源站配置

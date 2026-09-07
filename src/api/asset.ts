@@ -426,6 +426,22 @@ export function getCDNAssetApi(assetId: string, params?: { tenant_id?: string; p
     })
 }
 
+/** CDN 缓存规则(统一格式;ttl: >0 秒 / 0 不缓存 / -1 跟随源站) */
+export interface CDNCacheRule {
+    path: string
+    type: string
+    ttl: number
+    priority?: number
+}
+
+/** 按需查询CDN域名缓存配置(实时经厂商 API,不落库) */
+export function getCDNCacheConfigApi(params: { account_id: number; domain_name?: string; domain_id?: string }) {
+    return instance.get<{ code: number; data: { domain: string; rules: CDNCacheRule[] }; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/cdn/cache-config`,
+        params,
+    })
+}
+
 // ==================== WAF (Web应用防火墙) API ====================
 
 /** 获取WAF实例列表 */

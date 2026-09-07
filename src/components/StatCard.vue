@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { formatNumber } from '@/utils/formatters'
-import { Box, Clock, Connection, CircleCheck, Coin, DataLine, Money, User } from '@element-plus/icons-vue'
+import { Box, Clock, Connection, CircleCheck, Coin, DataLine, Lock, Money, User } from '@element-plus/icons-vue'
 import { computed, type Component } from 'vue'
 
 interface Props {
@@ -57,6 +57,7 @@ const iconMap: Record<string, Component> = {
     CircleCheck,
     Coin,
     DataLine,
+    Lock,
 }
 
 const iconComponent = computed(() => iconMap[props.icon] || Box)

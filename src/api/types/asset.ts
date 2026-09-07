@@ -47,6 +47,12 @@ export interface ListAssetsParams {
     status?: string
     name?: string
     vpc_id?: string
+    /** CDN:统一业务类型枚举(后端展开历史原始值兼容) */
+    business_type?: string
+    /** CDN:统一服务区域枚举 */
+    service_area?: string
+    /** CDN:'true'/'false',HTTPS 启用过滤 */
+    https_enabled?: string
     offset?: number
     limit?: number
 }

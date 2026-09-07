@@ -21,10 +21,11 @@
       </template>
     </ManagerHeader>
 
-    <!-- 统计卡片 -->
+    <!-- 统计卡片(全局真实计数,不受筛选影响) -->
     <div class="page-stats">
-      <StatCard title="加速域名" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
-      <StatCard title="在线域名" :value="onlineCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="onlineRateText" />
+      <StatCard title="加速域名" :value="stats.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="在线域名" :value="stats.online" icon="CircleCheck" icon-color="#16a34a" :subtitle="onlineRateText" />
+      <StatCard title="HTTPS 启用" :value="stats.https" icon="Lock" icon-color="#d97706" :subtitle="httpsRateText" />
     </div>
 
     <!-- 筛选器 -->
@@ -46,12 +47,13 @@
           <el-option label="正常" value="online" />
           <el-option label="配置中" value="configuring" />
           <el-option label="已停用" value="offline" />
+          <el-option label="审核中" value="checking" />
         </el-select>
-        <el-select v-model="filters.business_type" placeholder="业务类型" clearable @change="handleSearch" style="width: 120px">
-          <el-option label="网页加速" value="web" />
-          <el-option label="下载加速" value="download" />
-          <el-option label="流媒体" value="media" />
-          <el-option label="全站加速" value="wholeSite" />
+        <el-select v-model="filters.business_type" placeholder="业务类型" clearable @change="handleSearch" style="width: 130px">
+          <el-option v-for="o in CDN_BUSINESS_TYPE_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
+        <el-select v-model="filters.service_area" placeholder="服务区域" clearable @change="handleSearch" style="width: 120px">
+          <el-option v-for="o in CDN_SERVICE_AREA_OPTIONS" :key="o.value" :label="o.label" :value="o.value" />
         </el-select>
       </div>
       <div class="filters-right">
@@ -86,7 +88,7 @@
           </el-table-column>
           <el-table-column v-else-if="col.key === 'business_type'" label="业务类型" :width="col.width">
             <template #default="{ row }">
-              <span class="cell-text">{{ getBusinessTypeLabel(row.attributes?.business_type) }}</span>
+              <span class="cell-text">{{ cdnBusinessTypeLabel(row.attributes?.business_type) }}</span>
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'platform'" label="云平台" :width="col.width">
@@ -103,9 +105,9 @@
               <span v-else class="bool-off">—</span>
             </template>
           </el-table-column>
-          <el-table-column v-else-if="col.key === 'service_area'" label="加速区域" :width="col.width">
+          <el-table-column v-else-if="col.key === 'service_area'" label="服务区域" :width="col.width">
             <template #default="{ row }">
-              {{ getServiceAreaLabel(row.attributes?.service_area) }}
+              {{ cdnServiceAreaLabel(row.attributes?.service_area) }}
             </template>
           </el-table-column>
           <el-table-column v-else-if="col.key === 'creation_time'" label="创建时间" :width="col.width" show-overflow-tooltip>
@@ -182,7 +184,14 @@ import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import StatCard from '@/components/StatCard.vue'
-import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import {
+  CDN_BUSINESS_TYPE_OPTIONS,
+  CDN_SERVICE_AREA_OPTIONS,
+  CDN_STATUS_LABELS,
+  cdnBusinessTypeLabel,
+  cdnServiceAreaLabel,
+} from '@/utils/cdn'
+import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
@@ -194,7 +203,7 @@ import ExportDialog from './components/ExportDialog.vue'
 
 const router = useRouter()
 const loading = ref(false)
-const filters = reactive({ provider: '', name: '', business_type: '', status: '' })
+const filters = reactive({ provider: '', name: '', business_type: '', status: '', service_area: '' })
 const pagination = reactive({ page: 1, size: 20, total: 0 })
 const cdnList = ref<Asset[]>([])
 const detailVisible = ref(false)
@@ -237,35 +246,31 @@ const loadColumnSettings = () => {
 const handleColumnsUpdate = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 const handleSelectionChange = (rows: Asset[]) => { selectedIds.value = rows.map(r => r.id) }
 
-const onlineCount = computed(() => cdnList.value.filter(i =>
-  ['online', 'Deployed', 'active', 'Started'].includes(i.status)
-).length)
+// ===== 全局真实统计(独立于筛选/分页,跨全量计数) =====
+const stats = reactive({ total: 0, online: 0, https: 0 })
 
-const onlineRateText = computed(() => {
-  if (!cdnList.value.length) return '暂无数据'
-  const pct = Math.round((onlineCount.value / cdnList.value.length) * 100)
-  return `在线率 ${pct}% · 按当前页统计`
-})
+const rateText = (part: number, base: number, name: string) => {
+  if (!base) return '暂无数据'
+  return `${name}率 ${Math.round((part / base) * 100)}%`
+}
+const onlineRateText = computed(() => rateText(stats.online, stats.total, '在线'))
+const httpsRateText = computed(() => rateText(stats.https, stats.total, '启用'))
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-  online: '正常', Online: '正常', Deployed: '正常', deployed: '正常',
-  active: '正常', Active: '正常', Started: '正常', started: '正常',
-  offline: '已停用', Offline: '已停用', stopped: '已停用', Stopped: '已停用', disabled: '已停用',
-  configuring: '配置中', Configuring: '配置中',
-  checking: '审核中', Checking: '审核中', creating: '创建中',
-  check_failed: '审核失败', InProgress: '部署中', inprogress: '部署中',
-  error: '异常', failed: '失败',
+const fetchStats = async () => {
+  // 全量总数 / 在线(后端按统一枚举展开历史原始值) / HTTPS 启用,三个计数并发取
+  const base = { offset: 0, limit: 1 }
+  const [total, online, https] = await Promise.allSettled([
+    listCDNAssetsApi({ ...base }),
+    listCDNAssetsApi({ ...base, status: 'online' }),
+    listCDNAssetsApi({ ...base, https_enabled: 'true' }),
+  ])
+  if (total.status === 'fulfilled') stats.total = (total.value as any).data?.total ?? 0
+  if (online.status === 'fulfilled') stats.online = (online.value as any).data?.total ?? 0
+  if (https.status === 'fulfilled') stats.https = (https.value as any).data?.total ?? 0
 }
 
-const getBusinessTypeLabel = (type: string | undefined) => {
-  const map: Record<string, string> = { web: '网页加速', download: '下载加速', media: '流媒体', vodDomainName: '点播', wholeSite: '全站加速', page: '网页加速', api: 'API加速' }
-  return map[type || ''] || type || '-'
-}
-const getServiceAreaLabel = (area: string | undefined) => {
-  const map: Record<string, string> = { domestic: '中国大陆', overseas: '海外加速', global: '全球加速', mainland: '中国大陆' }
-  return map[area || ''] || area || '-'
-}
+/** 状态值 → 展示文案(共享映射,含历史原始值兼容) */
+const statusLabels = CDN_STATUS_LABELS
 
 const extractDomainName = (row: Asset) => {
   if (row.attributes?.domain_name) return row.attributes.domain_name
@@ -298,6 +303,7 @@ const fetchData = async () => {
     if (filters.name) params.name = filters.name
     if (filters.business_type) params.business_type = filters.business_type
     if (filters.status) params.status = filters.status
+    if (filters.service_area) params.service_area = filters.service_area
     const res = await listCDNAssetsApi(params)
     const responseData = (res as any).data || res
     cdnList.value = responseData.items || []
@@ -317,7 +323,7 @@ const handleSearchInput = () => {
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleSizeChange = () => { pagination.page = 1; fetchData() }
 const handlePageChange = () => { fetchData() }
-const handleReset = () => { Object.assign(filters, { provider: '', name: '', business_type: '', status: '' }); handleSearch() }
+const handleReset = () => { Object.assign(filters, { provider: '', name: '', business_type: '', status: '', service_area: '' }); handleSearch() }
 const handleRowClick = (row: Asset) => { detailInstance.value = row; detailVisible.value = true }
 const handleSync = () => { syncForm.provider = ''; syncDialogVisible.value = true }
 const submitSync = async () => {
@@ -334,7 +340,7 @@ const submitSync = async () => {
   } finally { syncing.value = false }
 }
 
-onMounted(() => { loadColumnSettings(); fetchData() })
+onMounted(() => { loadColumnSettings(); fetchData(); fetchStats() })
 </script>
 
 <style scoped lang="scss">
