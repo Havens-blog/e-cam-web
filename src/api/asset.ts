@@ -462,6 +462,14 @@ export interface ImageStatsResponse {
     system: number
     custom: number
     shared: number
+    /** 周趋势(当前值 - 7 天前基线),无基线时缺省 */
+    trend?: {
+        baseline_date: string
+        total: number
+        system: number
+        custom: number
+        shared: number
+    }
 }
 
 /** 获取镜像列表 */

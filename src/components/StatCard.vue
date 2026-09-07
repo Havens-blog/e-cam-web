@@ -10,6 +10,7 @@
         <span v-if="suffix" class="stat-suffix">{{ suffix }}</span>
       </div>
       <div v-if="subtitle" class="stat-subtitle">{{ subtitle }}</div>
+      <div v-if="trend" class="stat-trend" :class="trendTone">{{ trend }}</div>
     </div>
   </div>
 </template>
@@ -27,6 +28,9 @@ interface Props {
     iconColor?: string
     suffix?: string
     subtitle?: string
+    /** 趋势文案(如「本周净增 +3」),配合 trendTone 着色 */
+    trend?: string
+    trendTone?: 'up' | 'down' | 'neutral'
     clickable?: boolean
     formatValue?: boolean
 }
@@ -139,6 +143,15 @@ const handleClick = () => {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            margin-top: 3px;
+
+            &.up { color: var(--el-color-success); }
+            &.down { color: var(--el-color-danger); }
+            &.neutral { color: var(--text-tertiary); }
         }
     }
 }

@@ -21,10 +21,14 @@
 
     <!-- Stats Cards -->
     <div class="page-stats">
-      <StatCard title="标签键" :value="tagStats.total_keys" icon="Coin" icon-color="#3b82f6" subtitle="全仓标签键" />
-      <StatCard title="标签值" :value="tagStats.total_values" icon="EditPen" icon-color="#8b5cf6" subtitle="全仓标签值" />
-      <StatCard title="已打标资源" :value="tagStats.tagged_resources" icon="CircleCheck" icon-color="#16a34a" :subtitle="`共 ${tagStats.total_resources} 个资源`" />
-      <StatCard title="资源覆盖率" :value="`${tagStats.coverage_percent}%`" icon="DataLine" icon-color="#0891b2" subtitle="已打标 / 总资源" />
+      <StatCard title="标签键" :value="tagStats.total_keys" icon="Coin" icon-color="#3b82f6" subtitle="全仓标签键"
+                :trend="weekTrendText(tagStats.trend?.total_keys)" :trend-tone="weekTrendTone(tagStats.trend?.total_keys)" />
+      <StatCard title="标签值" :value="tagStats.total_values" icon="EditPen" icon-color="#8b5cf6" subtitle="全仓标签值"
+                :trend="weekTrendText(tagStats.trend?.total_values)" :trend-tone="weekTrendTone(tagStats.trend?.total_values)" />
+      <StatCard title="已打标资源" :value="tagStats.tagged_resources" icon="CircleCheck" icon-color="#16a34a" :subtitle="`共 ${tagStats.total_resources} 个资源`"
+                :trend="weekTrendText(tagStats.trend?.tagged_resources)" :trend-tone="weekTrendTone(tagStats.trend?.tagged_resources)" />
+      <StatCard title="资源覆盖率" :value="`${tagStats.coverage_percent}%`" icon="DataLine" icon-color="#0891b2" subtitle="已打标 / 总资源"
+                :trend="coverageTrendText" :trend-tone="weekTrendTone(tagStats.trend?.coverage_delta)" />
     </div>
 
     <!-- Tab Bar -->
@@ -190,6 +194,19 @@ import TagPolicyPanel from './components/TagPolicyPanel.vue'
 import TagResourceDrawer from './components/TagResourceDrawer.vue'
 import TagRulePanel from './components/TagRulePanel2.vue'
 import StatCard from '@/components/StatCard.vue'
+
+// 周趋势文案/色调:后端快照基线(7 天前),无基线时 trend 缺省不展示
+const weekTrendText = (n?: number) => {
+  if (n === undefined || n === null) return ''
+  return `较上周${n >= 0 ? '+' : ''}${n}`
+}
+const weekTrendTone = (n?: number) =>
+  n === undefined || n === null ? 'neutral' : n > 0 ? 'up' : n < 0 ? 'down' : 'neutral'
+const coverageTrendText = computed(() => {
+  const d = tagStats.trend?.coverage_delta
+  if (d === undefined || d === null) return ''
+  return `较上周${d >= 0 ? '+' : ''}${d.toFixed(1)}pp`
+})
 
 // State
 const activeTab = ref<'tagList' | 'policies' | 'compliance' | 'autoTag'>('tagList')

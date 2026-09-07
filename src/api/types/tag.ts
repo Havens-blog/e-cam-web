@@ -19,6 +19,14 @@ export interface TagStats {
     tagged_resources: number
     total_resources: number
     coverage_percent: number
+    /** 周趋势(当前值 - 7 天前基线),无基线时缺省;coverage_delta 为百分点差 */
+    trend?: {
+        baseline_date: string
+        total_keys: number
+        total_values: number
+        tagged_resources: number
+        coverage_delta: number
+    }
 }
 
 /** 标签列表查询参数 */

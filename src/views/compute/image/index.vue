@@ -25,7 +25,8 @@
       <div class="image-main-content">
         <!-- 统计卡片 -->
         <div class="page-stats">
-          <StatCard title="镜像总数" :value="stats.total" icon="Box" icon-color="#8b5cf6" subtitle="公共/自定义/共享合计" />
+          <StatCard title="镜像总数" :value="stats.total" icon="Box" icon-color="#8b5cf6" subtitle="公共/自定义/共享合计"
+                     :trend="totalTrendText" :trend-tone="totalTrendTone" />
           <StatCard title="公共镜像" :value="stats.system" icon="Monitor" icon-color="#0891b2" :subtitle="shareOf(stats.total, stats.system)" />
           <StatCard title="自定义镜像" :value="stats.custom" icon="User" icon-color="#16a34a" :subtitle="shareOf(stats.total, stats.custom)" />
           <StatCard title="共享镜像" :value="stats.shared" icon="Connection" icon-color="#d97706" :subtitle="shareOf(stats.total, stats.shared)" />
@@ -236,7 +237,16 @@ const filters = reactive({
 const stats = ref<ImageStatsResponse>({ total: 0, system: 0, custom: 0, shared: 0 })
 
 const shareOf = (total: number, part: number) =>
-  total > 0 ? `占 ${Math.round((part / total) * 100)}%` : '-' 
+  total > 0 ? `占 ${Math.round((part / total) * 100)}%` : '-'
+
+// 周趋势来自后端快照基线(7 天前),无基线时不展示
+const totalTrendText = computed(() => {
+  const t = stats.value.trend
+  if (!t) return ''
+  const n = t.total
+  return `本周${n >= 0 ? '新增' : '减少'} ${Math.abs(n)}`
+})
+const totalTrendTone = computed(() => (stats.value.trend?.total ?? 0) > 0 ? 'up' : (stats.value.trend?.total ?? 0) < 0 ? 'down' : 'neutral')
 const selectedRows = ref<Asset[]>([])
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
