@@ -489,6 +489,7 @@ import { listECSAssetsApi } from '@/api/asset'
 import { listTagsApi } from '@/api/tag'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import {
   ArrowDown,
   ArrowLeft,
@@ -999,15 +1000,7 @@ const getPlatformIcon = (provider: string | undefined): string => {
   return 'Alibaba_Cloud'
 }
 
-const getChargeTypeText = (chargeType: string | undefined) => {
-  const map: Record<string, string> = {
-    PrePaid: '包年包月',
-    PostPaid: '按量付费',
-    prepaid: '包年包月',
-    postpaid: '按量付费',
-  }
-  return map[chargeType || ''] || chargeType || '包年包月'
-}
+const getChargeTypeText = (chargeType: string | undefined) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType, '包年包月')
 
 const getProviderName = (provider: string | undefined): string => {
   if (!provider) return '-'

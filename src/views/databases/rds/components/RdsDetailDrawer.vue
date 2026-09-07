@@ -91,6 +91,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { ArrowDown, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -135,11 +136,7 @@ const getProviderName = (provider?: string) => {
   return provider
 }
 
-const getChargeTypeText = (chargeType?: string) => {
-  if (!chargeType) return '-'
-  const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费' }
-  return map[chargeType] || chargeType
-}
+const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return '-'

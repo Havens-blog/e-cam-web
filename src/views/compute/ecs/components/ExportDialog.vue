@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -177,10 +178,7 @@ const getFieldValue = (instance: Asset, key: string): string => {
     const map: Record<string, string> = { RUNNING: '运行中', STOPPED: '已关机', Running: '运行中', Stopped: '已关机' }
     return map[attr.status] || attr.status || ''
   }
-  if (key === 'charge_type') {
-    const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费' }
-    return map[attr.charge_type] || attr.charge_type || ''
-  }
+  if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
   if (key === 'provider') {
     const map: Record<string, string> = {
       aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS',

@@ -202,6 +202,7 @@
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS } from '@/utils/constants'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
@@ -252,16 +253,7 @@ const getRegionLabel = computed(() => {
   return regionItem?.label || props.instance.region || '-'
 })
 
-const getChargeTypeText = (chargeType: string | undefined): string => {
-  if (!chargeType) return '-'
-  const map: Record<string, string> = {
-    PrePaid: '包年包月',
-    PostPaid: '按量付费',
-    Prepaid: '包年包月',
-    Postpaid: '按量付费',
-  }
-  return map[chargeType] || chargeType
-}
+const getChargeTypeText = (chargeType: string | undefined): string => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 
 const getInstanceTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = {

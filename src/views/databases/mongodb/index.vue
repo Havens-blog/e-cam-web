@@ -129,6 +129,7 @@
 import { listMongoDBAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -204,7 +205,7 @@ const handleAction = (cmd: string, item: Asset) => { if (cmd === 'view') handleV
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s === 'running') return 'running'; if (['stopped', 'shutdown'].includes(s)) return 'stopped'; return 'pending' }
 const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', stopped: '已停止', shutdown: '已停止', creating: '创建中' }; return map[status.toLowerCase()] || status }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
-const getChargeTypeText = (chargeType?: string) => { if (!chargeType) return '-'; const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费' }; return map[chargeType] || chargeType }
+const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 const formatTime = (time?: number) => { if (!time) return '-'; return new Date(time).toLocaleString('zh-CN') }
 

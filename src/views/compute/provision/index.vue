@@ -493,7 +493,7 @@
             <el-divider />
             <div class="summary-item">
               <span class="summary-label">计费方式</span>
-              <span class="summary-value">{{ form.charge_type === 'PrePaid' ? '包年包月' : form.charge_type === 'PostPaid' ? '按量付费' : '未选择' }}</span>
+              <span class="summary-value">{{ labelOf(CHARGE_TYPE_LABELS, form.charge_type, '未选择') }}</span>
             </div>
             <div class="summary-item highlight">
               <span class="summary-label">购买数量</span>
@@ -567,6 +567,7 @@ import type {
 } from '@/api/types/template'
 import type { TagType } from '@/utils/constants'
 import { getProviderLabel } from '@/utils/constants'
+import { CHARGE_TYPE_LABELS, labelOf } from '@/utils/fieldLabels'
 import {
   Box,
   Check,

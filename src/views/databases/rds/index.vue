@@ -185,6 +185,7 @@
 import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -299,11 +300,7 @@ const getPlatformIcon = (provider?: string) => {
   return 'Alibaba_Cloud'
 }
 
-const getChargeTypeText = (chargeType?: string) => {
-  if (!chargeType) return '-'
-  const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费', prepaid: '包年包月', postpaid: '按量付费' }
-  return map[chargeType] || chargeType
-}
+const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return '-'

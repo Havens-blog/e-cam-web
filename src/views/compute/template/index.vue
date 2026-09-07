@@ -159,7 +159,7 @@
           <div class="template-tags">
             <span v-if="tpl?.region" class="template-tag env">{{ tpl.region }}</span>
             <span v-if="tpl?.charge_type" class="template-tag billing">
-              {{ tpl.charge_type === 'PrePaid' ? '包年包月' : tpl.charge_type === 'PostPaid' ? '按量付费' : tpl.charge_type }}
+              {{ labelOfLenient(CHARGE_TYPE_LABELS, tpl.charge_type) }}
             </span>
             <span
               v-for="(val, key) in (tpl?.tags || {})"
@@ -224,6 +224,7 @@ import { createTemplateApi, deleteTemplateApi, listTemplatesApi } from '@/api/te
 import type { CloudAccount } from '@/api/types/account'
 import type { VMTemplate } from '@/api/types/template'
 import { getProviderLabel } from '@/utils/constants'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Loading, Monitor, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'

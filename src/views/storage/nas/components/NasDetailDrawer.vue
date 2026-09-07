@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { ArrowDown, Close, Document, FolderOpened, PriceTag } from '@element-plus/icons-vue';
 import { computed, ref } from 'vue';
 
@@ -155,7 +156,7 @@ const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; const 
 const formatCapacity = (capacity?: number) => { if (capacity === undefined || capacity === null) return '-'; if (capacity === 0) return '0'; if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`; if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`; return `${capacity} MB` }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => { if (!provider) return '-'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return '阿里云'; if (p.includes('tencent')) return '腾讯云'; if (p.includes('huawei')) return '华为云'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return '火山引擎'; return provider }
-const getChargeTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { PrePaid: '包年包月', PostPaid: '按量付费', prepaid: '包年包月', postpaid: '按量付费' }; return map[type] || type }
+const getChargeTypeText = (type?: string) => labelOfLenient(CHARGE_TYPE_LABELS, type)
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>
 
