@@ -225,7 +225,7 @@ import { deleteCmdbInstanceApi, listCmdbInstancesApi, listCmdbModelsApi } from '
 import type { InstanceVO, ModelVO } from '@/api/types/cmdb'
 import IconFont from '@/components/IconFont/index.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
-import { safeTagType } from '@/utils/constants'
+import { safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -356,16 +356,8 @@ const getProviderIcon = (provider: string) => {
   return iconMap[provider] || 'caise-public_cloud'
 }
 
-const getProviderLabel = (provider: string) => {
-  const labelMap: Record<string, string> = {
-    aliyun: '阿里云',
-    tencent: '腾讯云',
-    huawei: '华为云',
-    aws: 'AWS',
-    volcengine: '火山引擎',
-  }
-  return labelMap[provider] || provider || '-'
-}
+/** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
+const getProviderLabel = (provider: string) => (provider ? getProviderLabelShared(provider) : '-')
 
 // 获取状态样式和标签
 const getStatusClass = (status: string) => {

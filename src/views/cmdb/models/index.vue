@@ -191,6 +191,7 @@ import {
   initBuiltinModelGroupsApi, listModelGroupsWithModelsApi, updateModelGroupApi
 } from '@/api/cmdb'
 import type { ModelGroupWithModelsVO, ModelVO } from '@/api/types/cmdb'
+import { getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import {
   Coin, Connection, Delete, Edit, Folder, FolderAdd, Grid, List, Monitor, MoreFilled, Plus, Search
 } from '@element-plus/icons-vue'
@@ -280,10 +281,8 @@ const getCategoryIcon = (category: string) => {
   return map[category] || Grid
 }
 
-const getProviderLabel = (provider: string) => {
-  const map: Record<string, string> = { aliyun: '阿里云', aws: 'AWS', azure: 'Azure', all: '通用' }
-  return map[provider] || provider
-}
+/** 云厂商展示名统一走 utils/constants 单源；`all` 是模型模板的「通用」标记,非云厂商,保留本地映射 */
+const getProviderLabel = (provider: string) => (provider === 'all' ? '通用' : getProviderLabelShared(provider))
 
 const isImageUrl = (v: string) => {
   return v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:image/')

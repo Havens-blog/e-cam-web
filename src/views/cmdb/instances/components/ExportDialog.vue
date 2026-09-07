@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import type { InstanceVO } from '@/api/types/cmdb';
+import { getProviderLabel } from '@/utils/constants';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -180,13 +181,7 @@ const getFieldValue = (instance: InstanceVO, key: string): string => {
     }
     return map[attr.status] || attr.status || ''
   }
-  if (key === 'provider') {
-    const map: Record<string, string> = {
-      aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS',
-      volcengine: '火山引擎', volcano: '火山引擎'
-    }
-    return map[attr.provider] || attr.provider || ''
-  }
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'tags') {
     const tags = attr.tags
     if (tags && typeof tags === 'object') {
