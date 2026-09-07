@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -59,13 +60,22 @@ const exportForm = reactive({ scope: 'current' as 'current' | 'selected' | 'all'
 const selectAllFields = () => { exportForm.fields = availableFields.map(f => f.key) }
 const deselectAllFields = () => { exportForm.fields = [] }
 
+/** 状态 → 展示文案。键值与列表页 eip/index.vue 的 statusLabels 完全一致(键值勿改),
+ *  列表页未导出该映射故此处复制;待 P2 单源收敛时一并迁走,导出不再裸出 InUse/Available */
+const EIP_STATUS_LABELS: Record<string, string> = {
+  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定',
+  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+  Bindable: '可绑定',
+}
+
 const getFieldValue = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
   if (key === 'provider') { const map: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS' }; return map[instance.provider] || instance.provider || '' }
   if (key === 'region') return instance.region || ''
-  if (key === 'status') return instance.status || ''
+  if (key === 'status') return labelOfLenient(EIP_STATUS_LABELS, instance.status, '')
   if (key === 'bandwidth') return attr.bandwidth ? `${attr.bandwidth}Mbps` : ''
+  if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
   return attr[key] || ''
 }
 

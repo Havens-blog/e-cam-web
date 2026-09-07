@@ -102,9 +102,10 @@
             </template>
             <!-- 计费方式列 -->
             <template v-else-if="col.key === 'charge_type'">
-              <el-tag :type="row.attributes?.charge_type === 'Prepaid' ? 'warning' : 'info'" size="small">
-                {{ row.attributes?.charge_type === 'Prepaid' ? '包年包月' : '按量付费' }}
+              <el-tag v-if="row.attributes?.charge_type" :type="getChargeTypeTone(row.attributes.charge_type)" size="small">
+                {{ getChargeTypeLabel(row.attributes.charge_type) }}
               </el-tag>
+              <span v-else>-</span>
             </template>
             <!-- 平台列 -->
             <template v-else-if="col.key === 'platform'">
@@ -217,6 +218,7 @@ import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
+import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -342,6 +344,13 @@ const getInstanceTypeLabel = (type: string) => {
   }
   return map[type] || type || '-'
 }
+
+// 计费方式:统一走 fieldLabels 单源(含 Prepaid/PrePaid/prepaid 三种大小写),
+// 空值显示 -,不再把空值误报成「按量付费」
+/** 计费方式 → 展示文案 */
+const getChargeTypeLabel = (value: string | undefined | null): string => labelOfLenient(CHARGE_TYPE_LABELS, value)
+/** 计费方式 → 标签色调(包年包月=warning,按量付费/未知=info) */
+const getChargeTypeTone = (value: string | undefined | null): 'warning' | 'info' => (getChargeTypeLabel(value) === '包年包月' ? 'warning' : 'info')
 
 // 获取数据
 const fetchData = async () => {

@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
+import { labelOfLenient } from '@/utils/fieldLabels';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -71,11 +72,26 @@ const deselectAllFields = () => { exportForm.fields = [] }
 
 const providerMap: Record<string, string> = { aliyun: '阿里云', tencent: '腾讯云', huawei: '华为云', aws: 'AWS', volcano: '火山引擎' }
 
+/** 状态 → 展示文案。键值与列表页 eni/index.vue 的 statusLabels 完全一致(键值勿改),
+ *  列表页未导出该映射故此处复制;待 P2 单源收敛时一并迁走,导出不再裸出 in_use/available */
+const ENI_STATUS_LABELS: Record<string, string> = {
+  in_use: '使用中', InUse: '使用中', inuse: '使用中',
+  available: '可用', Available: '可用',
+  attaching: '绑定中', Attaching: '绑定中',
+  detaching: '解绑中', Detaching: '解绑中',
+  creating: '创建中', Creating: '创建中',
+  deleting: '删除中', Deleting: '删除中',
+  error: '异常', Error: '异常',
+  ACTIVE: '使用中', DOWN: '可用',
+  BINDBOUND: '使用中', BINDUNBOUND: '可用',
+  PENDING: '创建中',
+}
+
 const getFieldValue = (inst: Asset, key: string): string => {
   const attr = inst.attributes || {}
   if (key === 'eni_id') return inst.asset_id || ''
   if (key === 'eni_name') return inst.asset_name || ''
-  if (key === 'status') return inst.status || ''
+  if (key === 'status') return labelOfLenient(ENI_STATUS_LABELS, inst.status, '')
   if (key === 'type') return attr.type === 'Primary' ? '主网卡' : '辅助网卡'
   if (key === 'primary_private_ip') return attr.primary_private_ip || ''
   if (key === 'mac_address') return attr.mac_address || ''
