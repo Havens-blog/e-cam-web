@@ -266,6 +266,7 @@
       :groups="groups"
       :selected-groups="selectedGroups"
       :total-count="pagination.total"
+      :fetch-all-rows="fetchAllExportRows"
       @success="handleExportSuccess"
     />
 
@@ -304,6 +305,7 @@ import type { ListGroupsParams, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { formatDateTime } from '@/utils/format'
 import {
     ArrowLeft,
@@ -436,6 +438,20 @@ const handleSearch = () => {
   pagination.page = 1
   fetchGroups()
 }
+
+/** 导出「全部用户组」：按当前筛选分页拉取全量（iam-1 H3），供 ExportGroupsDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<PermissionGroup[]> =>
+  fetchAllRows<PermissionGroup>(async (page, pageSize) => {
+    const response = await listGroupsApi({ ...filters, page, size: pageSize })
+    const responseData = response.data as any
+    const list: PermissionGroup[] = Array.isArray(responseData)
+      ? responseData
+      : responseData?.data || responseData?.groups || []
+    const total = Array.isArray(responseData)
+      ? list.length
+      : (typeof responseData?.total === 'number' ? responseData.total : list.length)
+    return { list, total }
+  }, { onProgress })
 
 const handleReset = () => {
   filters.provider = undefined

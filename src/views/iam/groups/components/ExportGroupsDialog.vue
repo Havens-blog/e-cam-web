@@ -13,6 +13,7 @@
             已选用户组 ({{ selectedGroups.length }} 个)
           </el-radio>
         </el-radio-group>
+        <div v-if="fetchingAll" class="fetch-progress">正在获取全量数据 {{ fetchedCount }}/{{ progressTotal }}...</div>
       </el-form-item>
 
       <el-form-item label="导出格式">
@@ -45,7 +46,7 @@
 
     <template #footer>
       <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" :loading="exporting" @click="handleExport">
+      <el-button type="primary" :loading="exporting" :disabled="fetchingAll" @click="handleExport">
         导出
       </el-button>
     </template>
@@ -63,6 +64,8 @@ interface Props {
   groups: PermissionGroup[]
   selectedGroups: PermissionGroup[]
   totalCount: number
+  /** 导出「全部用户组」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前已加载的 groups */
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<PermissionGroup[]>
 }
 
 interface Emits {
@@ -74,6 +77,10 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const exporting = ref(false)
+/** 「全部用户组」分页拉取进行中（按钮禁用 + 行内进度文案） */
+const fetchingAll = ref(false)
+const fetchedCount = ref(0)
+const progressTotal = ref(0)
 
 const formData = reactive({
   exportType: 'all' as 'all' | 'selected',
@@ -125,10 +132,22 @@ const handleExport = async () => {
   exporting.value = true
 
   try {
-    // 确定要导出的数据
-    let dataToExport = formData.exportType === 'all' 
-      ? props.groups 
-      : props.selectedGroups
+    // 确定要导出的数据：「全部用户组」按当前筛选分页拉全量（iam-1 H3），未提供闭包则退回当前已加载数据
+    let dataToExport = formData.exportType === 'selected' ? props.selectedGroups : props.groups
+    if (formData.exportType === 'all' && props.fetchAllRows) {
+      fetchingAll.value = true
+      fetchedCount.value = 0
+      progressTotal.value = props.totalCount
+      try {
+        dataToExport = await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; progressTotal.value = total })
+      } catch (error: any) {
+        console.error('获取全量用户组失败:', error)
+        ElMessage.error('全量数据获取失败，请重试')
+        return
+      } finally {
+        fetchingAll.value = false
+      }
+    }
 
     if (dataToExport.length === 0) {
       ElMessage.warning('没有可导出的数据')
@@ -291,5 +310,13 @@ const getTimestamp = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+// 「全部用户组」全量分页拉取进行中的行内进度文案
+.fetch-progress {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent-blue, #409eff);
 }
 </style>
