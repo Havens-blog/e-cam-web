@@ -233,6 +233,7 @@ import type {
     LogType,
     LogTypeMeta,
 } from '@/api/types/logs'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogStats from './components/LogStats.vue'
@@ -331,8 +332,9 @@ onMounted(async () => {
     try {
         typeMetas.value = await getLogTypesApi()
     } catch {
-        // 字段字典失败仍可手输检索,提示空字典
+        // 字段字典失败:给出可见报错(不静默)。类型 Tab 与动态列不可用,但时间窗约束与手输检索仍可用
         typeMetas.value = []
+        ElMessage.error('日志字段字典加载失败,请刷新重试')
     }
     await loadSources()
 })
