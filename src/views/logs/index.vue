@@ -73,7 +73,7 @@
             <el-option v-for="n in LIMIT_OPTIONS" :key="n" :label="`${n} 条/源`" :value="n" />
           </el-select>
         </el-tooltip>
-        <el-button type="primary" :loading="searching" @click="doSearch">查询</el-button>
+        <el-button type="primary" :loading="searching" :disabled="!timeRange" @click="doSearch">查询</el-button>
       </div>
 
       <!-- 未开启投递的源:引导卡片 -->
@@ -404,7 +404,11 @@ async function doSearch() {
     // 按钮与回车共用入口:查询进行中(联邦跨多云,耗时可观)直接忽略再次触发,
     // 否则并发叠加请求且响应乱序时后返回的旧结果会覆盖新结果
     if (searching.value) return
-    if (!timeRange.value) return
+    if (!timeRange.value) {
+        // 时间范围被清空(datetimerange 默认可 clear)时给可见提示,而非静默无响应
+        ElMessage.warning('请选择查询时间范围')
+        return
+    }
     searching.value = true
     searchError.value = ''
     detailVisible.value = false // 新查询收敛到统计视图
