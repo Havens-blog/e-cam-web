@@ -352,7 +352,10 @@ async function loadSources() {
             selectedClouds.value = DEFAULT_CLOUDS.filter((c) => available.has(c))
         }
     } catch {
+        // 加载失败:清空源列表并给出可见报错;云选择保持原值不动(上方云收敛只在成功路径执行),
+        // 避免退化成全云联邦扫
         sources.value = []
+        ElMessage.error('日志源列表加载失败,请刷新重试')
     } finally {
         sourcesLoading.value = false
     }
