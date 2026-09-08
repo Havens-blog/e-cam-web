@@ -168,7 +168,7 @@
     <!-- 详情抽屉 -->
     <OssDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="ossList" :selected-ids="selectedIds" :total="pagination.total" />
+    <ExportDialog v-model:visible="exportDialogVisible" :instances="ossList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
@@ -179,6 +179,7 @@ import { listOSSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import type { TagType } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { Box, Download, Folder, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -226,18 +227,20 @@ const initColumnSettings = () => {
 
 const handleColumnSettingsChange = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number) => ({
+  offset: (page - 1) * size,
+  limit: size,
+  name: searchKeyword.value || undefined,
+  provider: filters.provider || undefined,
+  storage_class: filters.storage_class || undefined,
+  acl: filters.acl || undefined,
+})
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const params = {
-      offset: (pagination.page - 1) * pagination.size,
-      limit: pagination.size,
-      name: searchKeyword.value || undefined,
-      provider: filters.provider || undefined,
-      storage_class: filters.storage_class || undefined,
-      acl: filters.acl || undefined,
-    }
-    const res = await listOSSAssetsApi(params)
+    const res = await listOSSAssetsApi(buildListParams(pagination.page, pagination.size))
     ossList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
   } catch (e) {
@@ -250,6 +253,13 @@ const fetchData = async () => {
 }
 
 const handleRefresh = () => fetchData()
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A storage S-H2），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listOSSAssetsApi(buildListParams(page, pageSize))
+    return { list: res.data?.items || [], total: res.data?.total || 0 }
+  }, { onProgress })
+
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleFilterChange = () => { pagination.page = 1; fetchData() }
 const handleSizeChange = (size: number) => { pagination.size = size; pagination.page = 1; fetchData() }

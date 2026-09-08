@@ -170,7 +170,7 @@
     <!-- 详情抽屉 -->
     <NasDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" />
+    <ExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
@@ -183,6 +183,7 @@ import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { fetchAllRows } from '@/utils/exportAll'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
@@ -241,19 +242,21 @@ const initColumnSettings = () => {
 
 const handleColumnSettingsChange = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number) => ({
+  offset: (page - 1) * size,
+  limit: size,
+  name: searchKeyword.value || undefined,
+  provider: filters.provider || undefined,
+  file_system_type: filters.file_system_type || undefined,
+  protocol_type: filters.protocol_type || undefined,
+  status: filters.status || undefined,
+})
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const params = {
-      offset: (pagination.page - 1) * pagination.size,
-      limit: pagination.size,
-      name: searchKeyword.value || undefined,
-      provider: filters.provider || undefined,
-      file_system_type: filters.file_system_type || undefined,
-      protocol_type: filters.protocol_type || undefined,
-      status: filters.status || undefined,
-    }
-    const res = await listNASAssetsApi(params)
+    const res = await listNASAssetsApi(buildListParams(pagination.page, pagination.size))
     nasList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
   } catch (e) {
@@ -266,6 +269,13 @@ const fetchData = async () => {
 }
 
 const handleRefresh = () => fetchData()
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A storage S-H1），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listNASAssetsApi(buildListParams(page, pageSize))
+    return { list: res.data?.items || [], total: res.data?.total || 0 }
+  }, { onProgress })
+
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleFilterChange = () => { pagination.page = 1; fetchData() }
 const handleSizeChange = (size: number) => { pagination.size = size; pagination.page = 1; fetchData() }

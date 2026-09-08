@@ -9,7 +9,8 @@
             <button type="button" class="scope-btn" :class="{ active: exportForm.scope === 'current' }" @click="exportForm.scope = 'current'">当前页数据</button>
             <button type="button" class="scope-btn" :class="{ active: exportForm.scope === 'selected', disabled: !selectedCount }" :disabled="!selectedCount" @click="selectedCount && (exportForm.scope = 'selected')">已选中数据</button>
           </div>
-          <span class="scope-count">共计 {{ scopeDataCount }} 条</span>
+          <span v-if="!fetchingAll" class="scope-count">共计 {{ scopeDataCount }} 条</span>
+          <span v-else class="scope-count scope-progress">正在获取全量数据 {{ fetchedCount }}/{{ totalCount }}...</span>
         </div>
       </div>
       <div class="form-section">
@@ -28,7 +29,7 @@
     </div>
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button type="primary" :loading="exporting" :disabled="!exportForm.fields.length" @click="handleExport"><el-icon><Download /></el-icon>导出</el-button>
+      <el-button type="primary" :loading="exporting" :disabled="!exportForm.fields.length || fetchingAll" @click="handleExport"><el-icon><Download /></el-icon>导出</el-button>
     </template>
   </el-dialog>
 </template>
@@ -40,13 +41,23 @@ import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
 
-const props = defineProps<{ visible: boolean; instances: Asset[]; selectedIds: number[]; total: number }>()
+const props = defineProps<{
+  visible: boolean
+  instances: Asset[]
+  selectedIds: number[]
+  total: number
+  /** 导出「全部数据」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前页 */
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<Asset[]>
+}>()
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const exporting = ref(false)
 const currentCount = ref(0)
 const selectedCount = ref(0)
 const totalCount = ref(0)
+/** 「全部数据」分页拉取进行中（按钮禁用 + 行内进度文案） */
+const fetchingAll = ref(false)
+const fetchedCount = ref(0)
 
 watch(() => props.visible, (val) => {
   if (val) { currentCount.value = props.instances.length; selectedCount.value = props.selectedIds.length; totalCount.value = props.total; exportForm.scope = props.selectedIds.length > 0 ? 'selected' : 'current' }
@@ -79,11 +90,30 @@ const getFieldValue = (instance: Asset, key: string): string => {
   return attr[key] || ''
 }
 
+/** 组装导出行：selected=选中行 / all=父级全量拉取（未提供闭包则退回当前页）/ current=当前页。
+ *  返回 null 表示全量拉取失败（已在内部提示），调用方直接结束。 */
+const resolveExportRows = async (): Promise<Asset[] | null> => {
+  if (exportForm.scope === 'selected') return props.instances.filter(i => props.selectedIds.includes(i.id))
+  if (exportForm.scope === 'all' && props.fetchAllRows) {
+    fetchingAll.value = true
+    fetchedCount.value = 0
+    try {
+      return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; totalCount.value = total })
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '全量数据获取失败，请重试'
+      ElMessage.error(msg)
+      return null
+    } finally { fetchingAll.value = false }
+  }
+  return props.instances
+}
+
 const handleExport = async () => {
   if (!exportForm.fields.length) { ElMessage.warning('请至少选择一个导出字段'); return }
   exporting.value = true
   try {
-    const dataToExport: Asset[] = exportForm.scope === 'selected' ? props.instances.filter(i => props.selectedIds.includes(i.id)) : props.instances
+    const dataToExport = await resolveExportRows()
+    if (!dataToExport) return
     const headers = exportForm.fields.map(key => availableFields.find(f => f.key === key)?.label || key)
     const rows = dataToExport.map(instance => exportForm.fields.map(key => getFieldValue(instance, key)))
     const BOM = '\uFEFF'
