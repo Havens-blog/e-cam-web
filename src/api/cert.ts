@@ -1039,6 +1039,8 @@ export function deleteCrdRegistrationApi(id: string) {
 /** 集群凭证视图（白名单：永不携带 kubeconfig 任何形态） */
 export interface K8sCredentialItem {
     clusterName: string
+    /** 可读集群名（云端拉取=ACK 集群名；手动登记为空） */
+    displayName?: string
     apiEndpoint?: string
     createdAt: string
 }

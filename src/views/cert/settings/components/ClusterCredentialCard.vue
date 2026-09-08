@@ -18,6 +18,7 @@
       <thead>
         <tr>
           <th scope="col">集群名</th>
+          <th scope="col">集群 ID</th>
           <th scope="col">API Endpoint</th>
           <th scope="col">登记时间</th>
           <th scope="col" class="op-col"><span class="sr-only">操作</span></th>
@@ -25,7 +26,8 @@
       </thead>
       <tbody>
         <tr v-for="c in creds" :key="c.clusterName">
-          <td class="cell-mono">{{ c.clusterName }}</td>
+          <td>{{ c.displayName || c.clusterName }}</td>
+          <td class="cell-mono">{{ c.displayName ? c.clusterName : '—' }}</td>
           <td class="cell-mono endpoint">{{ c.apiEndpoint || '—' }}</td>
           <td>{{ c.createdAt || '—' }}</td>
           <td class="op-col">
@@ -37,7 +39,7 @@
           </td>
         </tr>
         <tr v-if="!creds.length">
-          <td colspan="4" class="empty-row">尚未登记集群凭证</td>
+          <td colspan="5" class="empty-row">尚未登记集群凭证</td>
         </tr>
       </tbody>
     </table>
