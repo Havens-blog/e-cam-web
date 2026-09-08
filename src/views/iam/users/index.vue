@@ -409,6 +409,7 @@
       :users="users"
       :selected-users="selectedUsers"
       :total-count="pagination.total"
+      :fetch-all-rows="fetchAllExportRows"
       @success="handleExportSuccess"
     />
 
@@ -442,6 +443,7 @@ import {
   USER_STATUS,
   USER_TYPES,
 } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
 import {
@@ -664,6 +666,28 @@ const fetchUsers = async () => {
     loading.value = false
   }
 }
+
+/** 导出「全部」：按当前筛选分页拉取全量（iam-2 IAM2-009），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<CloudUser[]> =>
+  fetchAllRows<CloudUser>(async (page, pageSize) => {
+    const params = {
+      keyword: filters.keyword || undefined,
+      provider: filters.provider as any,
+      user_type: filters.user_type as any,
+      status: filters.status as any,
+      page,
+      size: pageSize,
+    }
+    const response = await listUsersApi(params)
+    const responseData = response.data as any
+    const list: CloudUser[] = Array.isArray(responseData)
+      ? responseData
+      : responseData?.data || responseData?.users || responseData?.items || []
+    const total = Array.isArray(responseData)
+      ? list.length
+      : (typeof responseData?.total === 'number' ? responseData.total : list.length)
+    return { list, total }
+  }, { onProgress })
 
 // 获取用户组列表
 const fetchPermissionGroups = async () => {

@@ -15,6 +15,7 @@
           <el-radio value="current">导出当前页 ({{ users.length }})</el-radio>
           <el-radio value="all">导出全部 ({{ totalCount }})</el-radio>
         </el-radio-group>
+        <div v-if="fetchingAll" class="fetch-progress">正在获取全量数据 {{ fetchedCount }}/{{ progressTotal }}...</div>
       </el-form-item>
 
       <!-- 导出字段 -->
@@ -54,7 +55,7 @@
       <el-button
         type="primary"
         :loading="exporting"
-        :disabled="selectedFields.length === 0"
+        :disabled="selectedFields.length === 0 || fetchingAll"
         @click="handleExport"
       >
         导出
@@ -75,6 +76,8 @@ interface Props {
   users: CloudUser[]
   selectedUsers: CloudUser[]
   totalCount: number
+  /** 导出「全部」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前已加载数据 */
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<CloudUser[]>
 }
 
 const props = defineProps<Props>()
@@ -117,6 +120,10 @@ const selectedFields = ref<string[]>([
 ])
 const exportFormat = ref<'xlsx' | 'csv'>('xlsx')
 const exporting = ref(false)
+/** 「导出全部」分页拉取进行中（按钮禁用 + 行内进度文案） */
+const fetchingAll = ref(false)
+const fetchedCount = ref(0)
+const progressTotal = ref(0)
 
 // 全选状态
 const selectAll = ref(false)
@@ -150,15 +157,29 @@ const handleSelectAll = (checked: boolean | string | number) => {
   }
 }
 
-// 获取要导出的用户数据
-const getExportUsers = (): CloudUser[] => {
+// 获取要导出的用户数据：「导出全部」按当前筛选分页拉全量（iam-2 IAM2-009），
+// 未提供闭包则退回当前已加载数据；返回 null 表示全量拉取失败（已在内部提示）
+const getExportUsers = async (): Promise<CloudUser[] | null> => {
   switch (exportScope.value) {
     case 'selected':
       return props.selectedUsers
     case 'current':
       return props.users
     case 'all':
-      // TODO: 如果需要导出全部，需要调用 API 获取所有数据
+      if (props.fetchAllRows) {
+        fetchingAll.value = true
+        fetchedCount.value = 0
+        progressTotal.value = props.totalCount
+        try {
+          return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; progressTotal.value = total })
+        } catch (error: any) {
+          console.error('获取全量用户失败:', error)
+          ElMessage.error('全量数据获取失败，请重试')
+          return null
+        } finally {
+          fetchingAll.value = false
+        }
+      }
       return props.users
     default:
       return []
@@ -211,7 +232,8 @@ const handleExport = async () => {
   exporting.value = true
   try {
     // 获取要导出的用户
-    const exportUsers = getExportUsers()
+    const exportUsers = await getExportUsers()
+    if (!exportUsers) return
     if (exportUsers.length === 0) {
       ElMessage.warning('没有可导出的数据')
       return
@@ -279,5 +301,13 @@ const handleCancel = () => {
   :deep(.el-divider) {
     margin: 12px 0;
   }
+}
+
+// 「导出全部」全量分页拉取进行中的行内进度文案
+.fetch-progress {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent-blue, #409eff);
 }
 </style>
