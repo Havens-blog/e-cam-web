@@ -181,7 +181,7 @@
     <!-- 详情抽屉 -->
     <EniDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <EniExportDialog v-model:visible="exportDialogVisible" :instances="eniList" :selected-ids="selectedIds" :total="pagination.total" />
+    <EniExportDialog v-model:visible="exportDialogVisible" :instances="eniList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
   </PageContainer>
 </template>
 
@@ -193,6 +193,7 @@ import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { Download, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
@@ -263,15 +264,20 @@ const formatTime = (time: string | number | undefined) => {
   return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number): Record<string, any> => {
+  const params: Record<string, any> = { offset: (page - 1) * size, limit: size }
+  if (filters.provider) params.provider = filters.provider
+  if (filters.name) params.name = filters.name
+  if (filters.status) params.status = filters.status
+  if (filters.type) params.type = filters.type
+  return params
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = { offset: (pagination.page - 1) * pagination.size, limit: pagination.size }
-    if (filters.provider) params.provider = filters.provider
-    if (filters.name) params.name = filters.name
-    if (filters.status) params.status = filters.status
-    if (filters.type) params.type = filters.type
-    const res = await listENIAssetsApi(params)
+    const res = await listENIAssetsApi(buildListParams(pagination.page, pagination.size))
     const responseData = (res as any).data || res
     eniList.value = responseData.items || []
     pagination.total = responseData.total || 0
@@ -282,6 +288,14 @@ const fetchData = async () => {
     pagination.total = 0
   } finally { loading.value = false }
 }
+
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-ENI-01），供 EniExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listENIAssetsApi(buildListParams(page, pageSize))
+    const responseData = (res as any).data || res
+    return { list: responseData.items || [], total: responseData.total || 0 }
+  }, { onProgress })
 
 const handleSearchInput = () => {
   if (searchTimer) clearTimeout(searchTimer)

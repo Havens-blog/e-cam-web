@@ -169,7 +169,7 @@
     <!-- 详情抽屉 -->
     <CdnDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="cdnList" :selected-ids="selectedIds" :total="pagination.total" />
+    <ExportDialog v-model:visible="exportDialogVisible" :instances="cdnList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnsUpdate" />
   </PageContainer>
@@ -192,6 +192,7 @@ import {
   cdnServiceAreaLabel,
 } from '@/utils/cdn'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
@@ -295,16 +296,21 @@ const formatTime = (time: string | number | undefined) => {
   return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number): Record<string, any> => {
+  const params: Record<string, any> = { offset: (page - 1) * size, limit: size }
+  if (filters.provider) params.provider = filters.provider
+  if (filters.name) params.name = filters.name
+  if (filters.business_type) params.business_type = filters.business_type
+  if (filters.status) params.status = filters.status
+  if (filters.service_area) params.service_area = filters.service_area
+  return params
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = { offset: (pagination.page - 1) * pagination.size, limit: pagination.size }
-    if (filters.provider) params.provider = filters.provider
-    if (filters.name) params.name = filters.name
-    if (filters.business_type) params.business_type = filters.business_type
-    if (filters.status) params.status = filters.status
-    if (filters.service_area) params.service_area = filters.service_area
-    const res = await listCDNAssetsApi(params)
+    const res = await listCDNAssetsApi(buildListParams(pagination.page, pagination.size))
     const responseData = (res as any).data || res
     cdnList.value = responseData.items || []
     pagination.total = responseData.total || 0
@@ -315,6 +321,14 @@ const fetchData = async () => {
     pagination.total = 0
   } finally { loading.value = false }
 }
+
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-CDN-01），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listCDNAssetsApi(buildListParams(page, pageSize))
+    const responseData = (res as any).data || res
+    return { list: responseData.items || [], total: responseData.total || 0 }
+  }, { onProgress })
 
 const handleSearchInput = () => {
   if (searchTimer) clearTimeout(searchTimer)
