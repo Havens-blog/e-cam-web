@@ -82,6 +82,7 @@
         </tbody>
       </table>
       <div v-if="clustersLoading" class="hint" role="status">正在列出集群…</div>
+      <div v-if="fetching" class="hint" role="status" data-testid="fetch-progress">正在拉取 kubeconfig 并登记（{{ checked.length }} 个集群，云侧调用约需数秒）…</div>
 
       <div class="fetch-option">
         <label class="opt-label">
@@ -151,8 +152,11 @@ import {
     deleteK8sCredentialApi,
     fetchK8sCredentialsApi,
     listAliyunK8sClustersApi,
+    listCertsApi,
     listK8sCredentialsApi,
+    triggerCertScanApi,
 } from '@/api/cert'
+import { CertRequestError } from '@/api/cert'
 import type { AliyunK8sCluster, K8sCredentialFetchResult, K8sCredentialItem } from '@/api/cert'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
@@ -276,7 +280,15 @@ async function onFetch() {
             privateIp: privateIp.value,
         })
         const ok = fetchResults.value.filter((r) => r.status === 'registered').length
-        if (ok) ElMessage.success(`已登记 ${ok} 个集群`)
+        const dup = fetchResults.value.filter((r) => r.status === 'duplicate').length
+        const failed = fetchResults.value.filter((r) => r.status === 'failed').length
+        if (ok) {
+            ElMessage.success(`已登记 ${ok} 个集群`)
+        } else if (dup && !failed) {
+            ElMessage.info(`所选 ${dup} 个集群均已登记过（见下方明细）`)
+        } else if (failed) {
+            ElMessage.warning(`登记结果：成功 ${ok} / 已存在 ${dup} / 失败 ${failed}（见下方明细）`)
+        }
         await load()
         emit('changed')
     } catch (err) {
