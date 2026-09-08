@@ -116,7 +116,7 @@
     </div>
 
     <DiskDetailDrawer v-model:visible="detailVisible" :instance="currentInstance" />
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :total="pagination.total" />
+    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
 </template>
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { listDiskAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import { fetchAllRows } from '@/utils/exportAll'
 import IconFont from '@/components/IconFont/index.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -159,10 +160,20 @@ const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible
 const inUseCount = computed(() => instances.value.filter(i => i.status?.toLowerCase().includes('use')).length)
 const availableCount = computed(() => instances.value.filter(i => i.status?.toLowerCase().includes('available')).length)
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number) => ({
+  offset: (page - 1) * size,
+  limit: size,
+  provider: (filters.provider || undefined) as any,
+  status: filters.status || undefined,
+  name: filters.keyword || undefined,
+  disk_type: filters.disk_type || undefined,
+})
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listDiskAssetsApi({ offset: (pagination.page - 1) * pagination.size, limit: pagination.size, provider: (filters.provider || undefined) as any, status: filters.status || undefined, name: filters.keyword || undefined, disk_type: filters.disk_type || undefined })
+    const res = await listDiskAssetsApi(buildListParams(pagination.page, pagination.size))
     const data = res.data as any
     instances.value = data?.items || []
     pagination.total = data?.total || 0
@@ -173,6 +184,14 @@ const fetchData = async () => {
     pagination.total = 0
   } finally { loading.value = false }
 }
+
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A compute-1 F-H1），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listDiskAssetsApi(buildListParams(page, pageSize))
+    const data = res.data as any
+    return { list: data?.items || [], total: data?.total || 0 }
+  }, { onProgress })
 
 const handleSearch = () => { pagination.page = 1; fetchData() }
 const handlePageChange = (page: number) => { pagination.page = page; fetchData() }

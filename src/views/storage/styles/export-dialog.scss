@@ -39,6 +39,11 @@
     color: var(--text-tertiary, #909399);
     flex-shrink: 0;
   }
+
+  // 「全部数据」全量分页拉取进行中的行内进度文案
+  .scope-progress {
+    color: var(--accent-blue, #409eff);
+  }
 }
 
 .scope-buttons {

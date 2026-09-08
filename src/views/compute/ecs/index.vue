@@ -473,6 +473,7 @@
       :instances="instances"
       :selected-ids="selectedIds"
       :total="pagination.total"
+      :fetch-all-rows="fetchAllExportRows"
     />
 
     <!-- 自定义列对话框 -->
@@ -490,6 +491,7 @@ import { listTagsApi } from '@/api/tag'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import {
   ArrowDown,
@@ -1086,28 +1088,32 @@ const fetchModels = async () => {
   // 新API不需要模型列表
 }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number): Record<string, any> => {
+  const params: Record<string, any> = {
+    name: filters.keyword || undefined,
+    offset: (page - 1) * size,
+    limit: size,
+  }
+
+  // 添加筛选条件
+  if (filters.status) params.status = filters.status
+  if (filters.region) params.region = filters.region
+  if (filters.provider) params.provider = filters.provider
+  if (filters.private_ip) params.private_ip = filters.private_ip
+  if (filters.public_ip) params.public_ip = filters.public_ip
+  if (filters.vpc_id) params.vpc_id = filters.vpc_id
+  if (filters.charge_type) params.charge_type = filters.charge_type
+  return params
+}
+
 // 获取实例列表
 const fetchInstances = async () => {
   loading.value = true
   selectedIds.value = []
   selectAll.value = false
   try {
-    const params: Record<string, any> = {
-      name: filters.keyword || undefined,
-      offset: (pagination.page - 1) * pagination.size,
-      limit: pagination.size,
-    }
-    
-    // 添加筛选条件
-    if (filters.status) params.status = filters.status
-    if (filters.region) params.region = filters.region
-    if (filters.provider) params.provider = filters.provider
-    if (filters.private_ip) params.private_ip = filters.private_ip
-    if (filters.public_ip) params.public_ip = filters.public_ip
-    if (filters.vpc_id) params.vpc_id = filters.vpc_id
-    if (filters.charge_type) params.charge_type = filters.charge_type
-
-    const res = await listECSAssetsApi(params)
+    const res = await listECSAssetsApi(buildListParams(pagination.page, pagination.size))
     const responseData = (res as any).data || res
     instances.value = responseData.items || []
     pagination.total = responseData.total || 0
@@ -1127,6 +1133,14 @@ const fetchInstances = async () => {
 const handleRefresh = () => {
   fetchInstances()
 }
+
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A compute-1 F-H2），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
+  fetchAllRows<Asset>(async (page, pageSize) => {
+    const res = await listECSAssetsApi(buildListParams(page, pageSize))
+    const responseData = (res as any).data || res
+    return { list: responseData.items || [], total: responseData.total || 0 }
+  }, { onProgress })
 
 // 分页
 const handleSizeChange = (size: number) => {
