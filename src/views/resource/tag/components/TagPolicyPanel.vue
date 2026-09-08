@@ -250,6 +250,7 @@
       :current-page-data="complianceResults"
       :selected-data="selectedCompliance"
       :total-count="complianceData.total"
+      :fetch-all-rows="fetchAllComplianceRows"
     />
   </div>
 </template>
@@ -264,6 +265,7 @@ import {
 } from '@/api/tag'
 import type { ComplianceResult, TagPolicy, Violation } from '@/api/types/tag'
 import { getProviderLabel } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
 import ComplianceExportDialog from './ComplianceExportDialog.vue'
@@ -353,6 +355,18 @@ const loadCompliance = async () => {
     complianceLoading.value = false
   }
 }
+
+/** 导出「全部不合规数据」：按当前合规筛选(policy/资源类型)分页拉取全量（resource-cam F-H6），供 ComplianceExportDialog 调用 */
+const fetchAllComplianceRows = async (onProgress?: (fetched: number, total: number) => void): Promise<ComplianceResult[]> =>
+  fetchAllRows<ComplianceResult>(async (page, pageSize) => {
+    const res = await checkComplianceApi({
+      policy_id: complianceFilter.policy_id,
+      resource_type: complianceFilter.resource_type || undefined,
+      offset: (page - 1) * pageSize,
+      limit: pageSize,
+    })
+    return { list: res.data?.items || [], total: res.data?.total || res.data?.non_compliant_count || 0 }
+  }, { onProgress })
 
 const openCreateDialog = () => {
   editingPolicy.value = null

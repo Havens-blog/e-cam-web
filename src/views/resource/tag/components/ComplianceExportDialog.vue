@@ -9,7 +9,8 @@
             <button type="button" class="scope-btn" :class="{ active: form.scope === 'current' }" @click="form.scope = 'current'">当前页数据</button>
             <button type="button" class="scope-btn" :class="{ active: form.scope === 'selected', disabled: !selectedCount }" :disabled="!selectedCount" @click="selectedCount && (form.scope = 'selected')">已选中数据</button>
           </div>
-          <span style="font-size: 13px; color: var(--text-tertiary); flex-shrink: 0">共计 {{ scopeCount }} 条</span>
+          <span v-if="!fetchingAll" style="font-size: 13px; color: var(--text-tertiary); flex-shrink: 0">共计 {{ scopeCount }} 条</span>
+          <span v-else style="font-size: 13px; color: var(--accent-blue, #409eff); flex-shrink: 0">正在获取全量数据 {{ fetchedCount }}/{{ totalCount }}...</span>
         </div>
       </div>
       <div>
@@ -37,7 +38,7 @@
     </div>
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button type="primary" :disabled="!form.fields.length" @click="handleExport">📥 导出</el-button>
+      <el-button type="primary" :loading="exporting" :disabled="!form.fields.length || fetchingAll" @click="handleExport">📥 导出</el-button>
     </template>
   </el-dialog>
 </template>
@@ -52,11 +53,17 @@ const props = defineProps<{
   currentPageData: ComplianceResult[]
   selectedData: ComplianceResult[]
   totalCount: number
+  /** 导出「全部不合规数据」时的全量拉取闭包（父级用合规检查接口+当前筛选实现）；未提供则退回当前页 */
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<ComplianceResult[]>
 }>()
 
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const selectedCount = ref(0)
+const exporting = ref(false)
+/** 「全部不合规数据」分页拉取进行中（按钮禁用 + 行内进度文案） */
+const fetchingAll = ref(false)
+const fetchedCount = ref(0)
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -97,30 +104,52 @@ const getFieldValue = (row: ComplianceResult, key: string): string => {
   return (row as any)[key] ?? ''
 }
 
-const handleExport = () => {
-  let data: ComplianceResult[]
-  if (form.scope === 'selected') data = props.selectedData
-  else if (form.scope === 'current') data = props.currentPageData
-  else data = props.currentPageData // all scope falls back to current page for now
+/** 组装导出行：selected=选中行 / all=父级全量拉取（未提供闭包则退回当前页）/ current=当前页。
+ *  返回 null 表示全量拉取失败（已在内部提示），调用方直接结束。 */
+const resolveExportRows = async (): Promise<ComplianceResult[] | null> => {
+  if (form.scope === 'selected') return props.selectedData
+  if (form.scope === 'current') return props.currentPageData
+  if (props.fetchAllRows) {
+    fetchingAll.value = true
+    fetchedCount.value = 0
+    try {
+      return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; totalCount.value = total })
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '全量数据获取失败，请重试'
+      ElMessage.error(msg)
+      return null
+    } finally { fetchingAll.value = false }
+  }
+  return props.currentPageData
+}
 
+const handleExport = async () => {
+  const data = await resolveExportRows()
+  if (!data) return
   if (data.length === 0) { ElMessage.warning('没有可导出的数据'); return }
 
-  const headers = form.fields.map(k => fields.find(f => f.key === k)?.label || k)
-  const rows = data.map(r => form.fields.map(k => getFieldValue(r, k)))
-  const BOM = '\uFEFF'
-  const sep = form.format === 'csv' ? ',' : '\t'
-  const content = [headers.join(sep), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(sep))].join('\n')
-  const ext = form.format === 'csv' ? 'csv' : 'xlsx'
-  const mime = form.format === 'csv' ? 'text/csv;charset=utf-8' : 'application/vnd.ms-excel;charset=utf-8'
-  const blob = new Blob([BOM + content], { type: mime })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `合规检查_${new Date().toISOString().slice(0, 10)}.${ext}`
-  a.click()
-  URL.revokeObjectURL(url)
-  ElMessage.success('导出成功')
-  emit('update:visible', false)
+  exporting.value = true
+  try {
+    const headers = form.fields.map(k => fields.find(f => f.key === k)?.label || k)
+    const rows = data.map(r => form.fields.map(k => getFieldValue(r, k)))
+    const BOM = '\uFEFF'
+    const sep = form.format === 'csv' ? ',' : '\t'
+    const content = [headers.join(sep), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(sep))].join('\n')
+    const ext = form.format === 'csv' ? 'csv' : 'xlsx'
+    const mime = form.format === 'csv' ? 'text/csv;charset=utf-8' : 'application/vnd.ms-excel;charset=utf-8'
+    const blob = new Blob([BOM + content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `合规检查_${new Date().toISOString().slice(0, 10)}.${ext}`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+    emit('update:visible', false)
+  } catch (error: unknown) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
+  } finally { exporting.value = false }
 }
 </script>
 
