@@ -23,6 +23,7 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="详情" name="detail" />
             <el-tab-pane label="缓存配置" name="cache" />
+            <el-tab-pane label="功能配置" name="settings" />
             <el-tab-pane label="源站配置" name="origins" />
             <el-tab-pane label="标签" name="tags" />
           </el-tabs>
@@ -201,6 +202,45 @@
             </div>
           </template>
 
+          <!-- 功能配置 Tab -->
+          <template v-else-if="activeTab === 'settings'">
+            <div v-loading="settingsLoading" class="settings-section">
+              <template v-if="settingsError">
+                <div class="empty-tab">
+                  <el-icon :size="48"><WarningFilled /></el-icon>
+                  <p>{{ settingsError }}</p>
+                  <el-button size="small" type="primary" plain @click="fetchDomainSettings">重试</el-button>
+                </div>
+              </template>
+              <template v-else-if="settingsGroups.length > 0">
+                <div class="cache-note">
+                  实时读取自云厂商 API,按功能分组展示;悬停配置项查看参数明细,敏感参数已脱敏
+                </div>
+                <div v-for="g in settingsGroups" :key="g.category" class="settings-group">
+                  <div class="settings-group-title">
+                    {{ g.label }}
+                    <span class="group-count">{{ g.items.length }} 项</span>
+                  </div>
+                  <div v-for="it in g.items" :key="it.key" class="settings-item">
+                    <el-tooltip placement="top" :content="settingsTooltip(it)" :disabled="!settingsTooltip(it)">
+                      <div class="settings-item-main">
+                        <el-tag v-if="it.enabled === true" size="small" type="success" effect="plain" class="state-tag">开</el-tag>
+                        <el-tag v-else-if="it.enabled === false" size="small" type="info" effect="plain" class="state-tag">关</el-tag>
+                        <span v-else class="state-tag" />
+                        <span class="item-name">{{ it.name }}</span>
+                        <span class="item-summary">{{ it.summary || '-' }}</span>
+                      </div>
+                    </el-tooltip>
+                  </div>
+                </div>
+              </template>
+              <div v-else-if="!settingsLoading" class="empty-tab">
+                <el-icon :size="48"><Connection /></el-icon>
+                <p>该云厂商暂无功能配置数据</p>
+              </div>
+            </div>
+          </template>
+
           <!-- 源站配置 Tab -->
           <template v-else-if="activeTab === 'origins'">
             <div v-if="originList.length > 0" class="origins-section">
@@ -262,7 +302,7 @@
 </template>
 
 <script setup lang="ts">
-import { getCDNCacheConfigApi, type CDNCacheRule } from '@/api/asset'
+import { getCDNCacheConfigApi, getCDNDomainSettingsApi, type CDNCacheRule, type CDNConfigGroup, type CDNConfigSetting } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
@@ -334,22 +374,68 @@ const fetchCacheRules = async () => {
   }
 }
 
-// 切换实例时重置 tab 与缓存配置状态
+// ===== 功能配置全景(按需实时查询) =====
+const settingsLoading = ref(false)
+const settingsGroups = ref<CDNConfigGroup[]>([])
+const settingsError = ref('')
+const settingsFetchedKey = ref('')
+
+/** 配置项 tooltip:函数名 + 参数明细(敏感参数后端已脱敏) */
+const settingsTooltip = (it: CDNConfigSetting): string => {
+  const entries = Object.entries(it.params || {})
+  if (entries.length === 0) return it.key
+  return [it.key, ...entries.map(([k, v]) => `${k} = ${v}`)].join('\n')
+}
+
+const fetchDomainSettings = async () => {
+  const inst = props.instance
+  if (!inst) return
+  const accountId = Number(inst.attributes?.cloud_account_id || 0)
+  const domainName = attr.value.domain_name || ''
+  const domainId = String(inst.attributes?.domain_id || inst.asset_id || '')
+  if (!accountId || (!domainName && !domainId)) {
+    settingsError.value = '缺少账号或域名标识,无法查询'
+    return
+  }
+  settingsLoading.value = true
+  settingsError.value = ''
+  try {
+    const res = await getCDNDomainSettingsApi({
+      account_id: accountId,
+      domain_name: domainName || undefined,
+      domain_id: domainId || undefined,
+    })
+    settingsGroups.value = (res as any).data?.groups || []
+    settingsFetchedKey.value = `${accountId}:${domainId}:${domainName}`
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '查询功能配置失败'
+    settingsError.value = msg.includes('不支持') ? msg : `功能配置查询失败: ${msg}`
+  } finally {
+    settingsLoading.value = false
+  }
+}
+
+// 切换实例时重置 tab 与按需查询状态
 watch(() => props.instance, () => {
   activeTab.value = 'detail'
   cacheRules.value = []
   cacheError.value = ''
   cacheFetchedKey.value = ''
+  settingsGroups.value = []
+  settingsError.value = ''
+  settingsFetchedKey.value = ''
 })
 
-// 打开抽屉或切到缓存 Tab 时按需拉取
+// 打开抽屉或切到按需查询 Tab 时拉取(缓存配置 / 功能配置同构)
 watch(
   () => [props.visible, activeTab.value] as const,
   ([visible, tab]) => {
-    if (!visible || tab !== 'cache') return
+    if (!visible || (tab !== 'cache' && tab !== 'settings')) return
     const inst = props.instance
     const key = inst ? `${Number(inst.attributes?.cloud_account_id || 0)}:${inst.attributes?.domain_id || inst.asset_id || ''}:${inst.attributes?.domain_name || ''}` : ''
-    if (key && key !== cacheFetchedKey.value && !cacheError.value) fetchCacheRules()
+    if (!key) return
+    if (tab === 'cache' && key !== cacheFetchedKey.value && !cacheError.value) fetchCacheRules()
+    if (tab === 'settings' && key !== settingsFetchedKey.value && !settingsError.value) fetchDomainSettings()
   }
 )
 
@@ -499,6 +585,60 @@ const formatTime = (time: string | number | undefined) => {
     .behavior-plain {
       cursor: default;
       text-decoration: none;
+    }
+  }
+}
+
+// 功能配置
+.settings-section {
+  min-height: 200px;
+
+  .settings-group {
+    margin-bottom: 20px;
+
+    .settings-group-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--glass-border);
+
+      .group-count {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-tertiary);
+      }
+    }
+
+    .settings-item-main {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      cursor: default;
+
+      .state-tag {
+        flex-shrink: 0;
+        align-self: center;
+        min-width: 22px;
+        justify-content: center;
+      }
+
+      .item-name {
+        color: var(--text-primary);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .item-summary {
+        color: var(--text-secondary);
+        word-break: break-all;
+      }
     }
   }
 }

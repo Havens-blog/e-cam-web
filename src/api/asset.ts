@@ -449,6 +449,36 @@ export function getCDNCacheConfigApi(params: { account_id: number; domain_name?:
     })
 }
 
+/** CDN 域名功能配置项(enabled: true/false 启停可判定;undefined=该项不适用) */
+export interface CDNConfigSetting {
+    key: string
+    name: string
+    enabled?: boolean
+    summary: string
+    params?: Record<string, string>
+}
+
+/** CDN 功能分组(按语义归类:访问控制/流量限制/性能优化/HTTPS/重定向/回源/基础) */
+export interface CDNConfigGroup {
+    category: string
+    label: string
+    items: CDNConfigSetting[]
+}
+
+/** CDN 域名功能配置全景 */
+export interface CDNDomainSettings {
+    domain: string
+    groups: CDNConfigGroup[]
+}
+
+/** 按需查询CDN域名功能配置全景(实时经厂商 API,不落库) */
+export function getCDNDomainSettingsApi(params: { account_id: number; domain_name?: string; domain_id?: string }) {
+    return instance.get<{ code: number; data: CDNDomainSettings; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/cdn/domain-settings`,
+        params,
+    })
+}
+
 // ==================== WAF (Web应用防火墙) API ====================
 
 /** 获取WAF实例列表 */
