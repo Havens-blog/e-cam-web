@@ -10,7 +10,7 @@
             <button type="button" class="scope-btn" :class="{ active: form.scope === 'selected', disabled: !selectedCount }" :disabled="!selectedCount" @click="selectedCount && (form.scope = 'selected')">已选中数据</button>
           </div>
           <span v-if="!fetchingAll" style="font-size: 13px; color: var(--text-tertiary); flex-shrink: 0">共计 {{ scopeCount }} 条</span>
-          <span v-else style="font-size: 13px; color: var(--accent-blue, #409eff); flex-shrink: 0">正在获取全量数据 {{ fetchedCount }}/{{ totalCount }}...</span>
+          <span v-else style="font-size: 13px; color: var(--accent-blue, #409eff); flex-shrink: 0">正在获取全量数据 {{ fetchedCount }}/{{ progressTotal }}...</span>
         </div>
       </div>
       <div>
@@ -64,6 +64,7 @@ const exporting = ref(false)
 /** 「全部不合规数据」分页拉取进行中（按钮禁用 + 行内进度文案） */
 const fetchingAll = ref(false)
 const fetchedCount = ref(0)
+const progressTotal = ref(0)
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -113,7 +114,7 @@ const resolveExportRows = async (): Promise<ComplianceResult[] | null> => {
     fetchingAll.value = true
     fetchedCount.value = 0
     try {
-      return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; totalCount.value = total })
+      return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; progressTotal.value = total })
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '全量数据获取失败，请重试'
       ElMessage.error(msg)

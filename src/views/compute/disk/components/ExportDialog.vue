@@ -9,7 +9,7 @@
             <button type="button" class="scope-btn" :class="{ active: exportForm.scope === 'current' }" @click="exportForm.scope = 'current'">当前页数据</button>
           </div>
           <span v-if="!fetchingAll" class="scope-count">共计 {{ scopeDataCount }} 条</span>
-          <span v-else class="scope-count scope-progress">正在获取全量数据 {{ fetchedCount }}/{{ totalCount }}...</span>
+          <span v-else class="scope-count scope-progress">正在获取全量数据 {{ fetchedCount }}/{{ totalRows }}...</span>
         </div>
       </div>
       <div class="form-section">
