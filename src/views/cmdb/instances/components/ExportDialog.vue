@@ -39,7 +39,8 @@
               已选中数据
             </button>
           </div>
-          <span class="scope-count">共计 {{ scopeDataCount }} 条</span>
+          <span v-if="!fetchingAll" class="scope-count">共计 {{ scopeDataCount }} 条</span>
+          <span v-else class="scope-count scope-progress">正在获取全量数据 {{ fetchedCount }}/{{ totalCount }}...</span>
         </div>
       </div>
 
@@ -79,7 +80,7 @@
 
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button type="primary" :loading="exporting" :disabled="!exportForm.fields.length" @click="handleExport">
+      <el-button type="primary" :loading="exporting" :disabled="!exportForm.fields.length || fetchingAll" @click="handleExport">
         <el-icon><Download /></el-icon>
         导出
       </el-button>
@@ -99,6 +100,8 @@ const props = defineProps<{
   instances: InstanceVO[]
   selectedIds: number[]
   total: number
+  /** 导出「全部数据」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前页 */
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<InstanceVO[]>
 }>()
 
 const emit = defineEmits<{
@@ -106,6 +109,9 @@ const emit = defineEmits<{
 }>()
 
 const exporting = ref(false)
+/** 「全部数据」分页拉取进行中（按钮禁用 + 行内进度文案） */
+const fetchingAll = ref(false)
+const fetchedCount = ref(0)
 
 const currentCount = ref(0)
 const selectedCount = ref(0)
@@ -199,6 +205,25 @@ const getFieldValue = (instance: InstanceVO, key: string): string => {
   return attr[key] || ''
 }
 
+/** 组装导出行：selected=选中行 / all=父级全量拉取（未提供闭包则退回当前页）/ current=当前页。
+ *  返回 null 表示全量拉取失败（已在内部提示），调用方直接结束。 */
+const resolveExportRows = async (): Promise<InstanceVO[] | null> => {
+  if (exportForm.scope === 'current') return props.instances
+  if (exportForm.scope === 'selected') return props.instances.filter(i => props.selectedIds.includes(i.id))
+  if (props.fetchAllRows) {
+    fetchingAll.value = true
+    fetchedCount.value = 0
+    try {
+      return await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; totalCount.value = total })
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '全量数据获取失败，请重试'
+      ElMessage.error(msg)
+      return null
+    } finally { fetchingAll.value = false }
+  }
+  return props.instances
+}
+
 const handleExport = async () => {
   if (!exportForm.fields.length) {
     ElMessage.warning('请至少选择一个导出字段')
@@ -207,15 +232,8 @@ const handleExport = async () => {
 
   exporting.value = true
   try {
-    let dataToExport: InstanceVO[] = []
-    if (exportForm.scope === 'current') {
-      dataToExport = props.instances
-    } else if (exportForm.scope === 'selected') {
-      dataToExport = props.instances.filter(i => props.selectedIds.includes(i.id))
-    } else {
-      dataToExport = props.instances
-      ElMessage.info('全量导出将导出当前已加载的数据')
-    }
+    const dataToExport = await resolveExportRows()
+    if (!dataToExport) return
 
     const headers = exportForm.fields.map(key => {
       const field = availableFields.find(f => f.key === key)
@@ -323,6 +341,11 @@ const formatDate = () => {
     font-size: 13px;
     color: var(--text-tertiary);
     flex-shrink: 0;
+  }
+
+  // 「全部数据」全量分页拉取进行中的行内进度文案
+  .scope-progress {
+    color: var(--accent-blue, #409eff);
   }
 }
 

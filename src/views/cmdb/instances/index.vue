@@ -209,6 +209,7 @@
       :instances="instances"
       :selected-ids="selectedIds"
       :total="pagination.total"
+      :fetch-all-rows="fetchAllExportRows"
     />
 
     <!-- 自定义列对话框 -->
@@ -226,6 +227,7 @@ import type { InstanceVO, ModelVO } from '@/api/types/cmdb'
 import IconFont from '@/components/IconFont/index.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import { safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
+import { fetchAllRows } from '@/utils/exportAll'
 import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -418,20 +420,24 @@ const formatTags = (tags: Record<string, string> | undefined) => {
   return entries.slice(0, 3).map(([k, v]) => `${k}:${v}`).join(', ') + (entries.length > 3 ? '...' : '')
 }
 
+/** 组装列表查询参数（列表分页与导出全量拉取共用，保证筛选口径一致） */
+const buildListParams = (page: number, size: number): Record<string, any> => {
+  const params: Record<string, any> = {
+    offset: (page - 1) * size,
+    limit: size,
+  }
+  if (filters.keyword) params.keyword = filters.keyword
+  if (filters.asset_type) params.uid = filters.asset_type
+  if (filters.provider) params.provider = filters.provider
+  if (filters.region) params.region = filters.region
+  return params
+}
+
 // 加载数据
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = {
-      offset: (pagination.page - 1) * pagination.size,
-      limit: pagination.size,
-    }
-    if (filters.keyword) params.keyword = filters.keyword
-    if (filters.asset_type) params.uid = filters.asset_type
-    if (filters.provider) params.provider = filters.provider
-    if (filters.region) params.region = filters.region
-
-    const res = await listCmdbInstancesApi(params)
+    const res = await listCmdbInstancesApi(buildListParams(pagination.page, pagination.size))
     const data = res.data?.data || res.data
     instances.value = data?.instances || []
     pagination.total = data?.total || 0
@@ -460,6 +466,14 @@ const fetchModels = async () => {
     ElMessage.error('加载模型列表失败')
   }
 }
+
+/** 导出「全部数据」：按当前筛选分页拉取全量（cmdb H-04），供 ExportDialog 调用 */
+const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<InstanceVO[]> =>
+  fetchAllRows<InstanceVO>(async (page, pageSize) => {
+    const res = await listCmdbInstancesApi(buildListParams(page, pageSize))
+    const data = res.data?.data || res.data
+    return { list: data?.instances || [], total: data?.total || 0 }
+  }, { onProgress })
 
 // 搜索
 const handleSearch = () => {
