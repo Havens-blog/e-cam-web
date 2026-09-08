@@ -287,4 +287,13 @@ const trendOption = computed(() => {
     color: var(--el-text-color-primary);
     margin-bottom: 8px;
 }
+/* 窄屏断点:KPI 四列→两列、图表三列→一列,避免 240px 高的图在窄视口被压得过窄导致文字/图例重叠 */
+@media (max-width: 1280px) {
+    .kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
