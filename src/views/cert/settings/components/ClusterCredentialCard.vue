@@ -6,6 +6,9 @@
         <p class="card-desc">ACK 集群 kubeconfig（信封加密落库）；登记后 AlbConfig/Ingress 等内置 CRD 自动随扫描生效</p>
       </div>
       <div class="head-actions">
+        <el-button size="small" :loading="scanning" data-testid="cred-scan-btn" @click="onScanNow">
+          {{ scanning ? '扫描中' : '立即扫描引用' }}
+        </el-button>
         <el-button size="small" @click="openFetch">从云端拉取</el-button>
         <el-button size="small" @click="openManual">手动登记</el-button>
       </div>
@@ -176,6 +179,33 @@ const manualVisible = ref(false)
 const manualName = ref('')
 const manualKubeconfig = ref('')
 const manualSaving = ref(false)
+
+// ---- 立即扫描引用（登记凭证后验证托管标注；台账取首条证书 ID 作触发锚点，
+// 与 DiscoveryImportModal 无快照引导同口径——扫描为全量，与锚点证书无关） ----
+const scanning = ref(false)
+
+async function onScanNow() {
+    if (scanning.value) return
+    scanning.value = true
+    try {
+        const res = await listCertsApi({ page: 1, pageSize: 1 })
+        if (!res.items.length) {
+            ElMessage.warning('台账为空，无法触发引用扫描')
+            return
+        }
+        await triggerCertScanApi(res.items[0]!.id)
+        ElMessage.success('引用扫描已触发，约 2 分钟完成；可在证书详情引用面板查看托管标注')
+    } catch (err) {
+        const code = err instanceof CertRequestError ? err.code : ''
+        if (code === 'SCAN_IN_PROGRESS') {
+            ElMessage.info('扫描正在进行中，无需重复触发')
+            return
+        }
+        ElMessage.error(err instanceof Error ? err.message : '触发扫描失败')
+    } finally {
+        scanning.value = false
+    }
+}
 
 const allChecked = ref(false)
 
