@@ -15,6 +15,13 @@
     </div>
 
     <table class="cred-table" aria-label="已登记集群">
+      <colgroup>
+        <col class="col-name" />
+        <col class="col-id" />
+        <col class="col-endpoint" />
+        <col class="col-time" />
+        <col class="col-op" />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">集群名</th>
@@ -26,8 +33,8 @@
       </thead>
       <tbody>
         <tr v-for="c in creds" :key="c.clusterName">
-          <td>{{ c.displayName || c.clusterName }}</td>
-          <td class="cell-mono">{{ c.displayName ? c.clusterName : '—' }}</td>
+          <td class="cell-ellipsis" :title="c.displayName || c.clusterName">{{ c.displayName || c.clusterName }}</td>
+          <td class="cell-mono cell-ellipsis" :title="c.displayName ? c.clusterName : ''">{{ c.displayName ? c.clusterName : '—' }}</td>
           <td class="cell-mono endpoint">{{ c.apiEndpoint || '—' }}</td>
           <td>{{ c.createdAt || '—' }}</td>
           <td class="op-col">
@@ -64,6 +71,13 @@
       </div>
 
       <table v-if="clusters.length" class="cred-table cluster-table" aria-label="ACK 集群清单">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-name" />
+          <col class="col-id" />
+          <col class="col-region" />
+          <col class="col-state" />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col" class="check-col"><input type="checkbox" :checked="allChecked" aria-label="全选集群" @change="toggleAll" /></th>
@@ -76,8 +90,8 @@
         <tbody>
           <tr v-for="cl in clusters" :key="cl.clusterId">
             <td class="check-col"><input v-model="checked" type="checkbox" :value="cl.clusterId" :aria-label="`选择 ${cl.name}`" /></td>
-            <td>{{ cl.name }}</td>
-            <td class="cell-mono">{{ cl.clusterId }}</td>
+            <td class="cell-ellipsis" :title="cl.name">{{ cl.name }}</td>
+            <td class="cell-mono cell-ellipsis" :title="cl.clusterId">{{ cl.clusterId }}</td>
             <td>{{ cl.regionId }}</td>
             <td><span class="state-tag" :class="{ degraded: cl.state !== 'running' }">{{ cl.state }}</span></td>
           </tr>
@@ -385,6 +399,7 @@ onMounted(load)
   width: 100%;
   margin-top: 12px;
   border-collapse: collapse;
+  table-layout: fixed; // 列宽恒定，表头与各行单元格纵向对齐
 
   th {
     font-size: 12px;
@@ -405,6 +420,22 @@ onMounted(load)
   tr:last-child td {
     border-bottom: none;
   }
+}
+
+// 列宽分配（两张表共用 name/id 档位；px 列优先，% 均摊剩余）
+.col-check { width: 36px; }
+.col-name { width: 24%; }
+.col-id { width: 34%; }
+.col-endpoint { width: 26%; }
+.col-time { width: 110px; }
+.col-op { width: 70px; }
+.col-region { width: 90px; }
+.col-state { width: auto; }
+
+.cell-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cell-mono {
