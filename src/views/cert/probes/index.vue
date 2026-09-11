@@ -110,7 +110,7 @@
                   </td>
                 </tr>
                 <template v-if="isExpanded(g.root)">
-                  <tr v-for="r in g.rows" :key="r.domain" class="sub-row">
+                  <tr v-for="r in planFor(g.root).rows" :key="r.domain" class="sub-row">
                     <td class="cell-mono sub-domain">{{ r.domain }}</td>
                     <td class="cell-mono">{{ recordTypeLabel(r.recordType) }}</td>
                     <td class="cell-mono record-value" :title="r.recordValue || ''">{{ recordValueText(r.recordValue) }}</td>
@@ -139,6 +139,9 @@
                       <span v-else>—</span>
                     </td>
                     <td class="cell-mono">{{ relativeTimeDash(r.probeAt) }}</td>
+                  </tr>
+                  <tr v-if="planFor(g.root).truncated && planFor(g.root).rows.length" class="truncated-row">
+                    <td colspan="9">{{ truncatedText(planFor(g.root)) }}</td>
                   </tr>
                 </template>
               </template>
@@ -210,7 +213,19 @@ watch(keywordInput, (v) => {
     }, KEYWORD_DEBOUNCE_MS)
 })
 
-const collapsed = ref<Record<string, boolean>>({})
+// ---- 分组展开与渲染上限（整机卡死根因防御）----
+// 数据实况：最新一轮 2622 行 / 69 组 / 最大单组 472 行。此前默认全展开 +
+// 筛选态全展开 → 每次按键/轮询都全量渲染 2.4 万个单元格，Chrome 渲染进程
+// 内存尖峰导致整机假死。三层防御：默认折叠（首屏仅组头）、单组渲染上限、
+// 筛选态总渲染上限。
+const expanded = ref<Record<string, boolean>>({})
+const GROUP_RENDER_LIMIT = 200
+const FILTER_RENDER_TOTAL = 600
+
+interface GroupRenderPlan {
+    rows: CertProbeResult[]
+    truncated: number
+}
 
 /** 根域分组视图（过滤后的行按根域折叠；搜索/筛选激活时全部展开） */
 const groups = computed<ProbeResultGroup[]>(() => groupProbeResults(filtered.value))
@@ -218,12 +233,41 @@ const groups = computed<ProbeResultGroup[]>(() => groupProbeResults(filtered.val
 /** 搜索/状态/链路任一筛选激活 → 全部展开（否则命中组被折叠看不见） */
 const filterActive = computed(() => isProbeFilterActive(keyword.value, statusFilter.value, linkFilter.value))
 
+/** 筛选态：预算内逐组截断（短关键词全量命中时保住渲染上限）；浏览态：仅展开组 */
+const renderPlan = computed<Record<string, GroupRenderPlan>>(() => {
+    const plan: Record<string, GroupRenderPlan> = {}
+    if (filterActive.value) {
+        let budget = FILTER_RENDER_TOTAL
+        for (const g of groups.value) {
+            const take = Math.min(g.rows.length, budget)
+            plan[g.root] = { rows: g.rows.slice(0, take), truncated: g.rows.length - take }
+            budget -= take
+        }
+    } else {
+        for (const g of groups.value) {
+            if (!expanded.value[g.root]) continue
+            const take = Math.min(g.rows.length, GROUP_RENDER_LIMIT)
+            plan[g.root] = { rows: g.rows.slice(0, take), truncated: g.rows.length - take }
+        }
+    }
+    return plan
+})
+
+function planFor(root: string): GroupRenderPlan {
+    return renderPlan.value[root] ?? { rows: [], truncated: 0 }
+}
+
+function truncatedText(p: GroupRenderPlan): string {
+    if (!p.rows.length) return `已达渲染上限（${FILTER_RENDER_TOTAL} 条），请细化搜索关键词`
+    return `已展示前 ${p.rows.length} 条（共 ${p.rows.length + p.truncated} 条）——细化搜索关键词可减少匹配`
+}
+
 function isExpanded(root: string): boolean {
-    return filterActive.value || !collapsed.value[root]
+    return filterActive.value || expanded.value[root] === true
 }
 
 function toggleGroup(root: string): void {
-    collapsed.value = { ...collapsed.value, [root]: !collapsed.value[root] }
+    expanded.value = { ...expanded.value, [root]: !expanded.value[root] }
 }
 
 const filtered = computed(() =>
@@ -555,6 +599,13 @@ onUnmounted(() => {
 
 .sub-row .sub-domain {
   padding-left: 30px;
+}
+
+.truncated-row td {
+  padding: 8px 14px 8px 30px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .record-value {

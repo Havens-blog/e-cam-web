@@ -123,3 +123,62 @@ describe('ProbesIndex（搜索交互回归）', () => {
         }
     })
 })
+
+describe('ProbesIndex（渲染量防御回归）', () => {
+    // 2622 行全量渲染是整机卡死根因：默认必须折叠，展开单组有上限，筛选态有总上限。
+    const bigPayload = Array.from({ length: 250 }, (_, i) => ({
+        domain: `svc-${String(i).padStart(3, '0')}.jlcerp.com`,
+        status: 'consistent',
+        probeAt: '2026-09-02T08:00:00Z',
+    })) as never
+
+    it('默认折叠：首屏不渲染子行（仅组头）', async () => {
+        probesApi.mockResolvedValue(payload as never)
+        const w = mountPage()
+        await flushPromises()
+        expect(w.findAll('.group-row').length).toBe(2)
+        expect(w.findAll('.sub-row').length).toBe(0)
+    })
+
+    it('展开组头按需渲染子行', async () => {
+        probesApi.mockResolvedValue(payload as never)
+        const w = mountPage()
+        await flushPromises()
+        await w.find('.group-row').trigger('click')
+        await flushPromises()
+        expect(w.findAll('.sub-row').length).toBe(2)
+    })
+
+    it('单组渲染上限：超限截断并提示', async () => {
+        probesApi.mockResolvedValue(bigPayload)
+        const w = mountPage()
+        await flushPromises()
+        await w.find('.group-row').trigger('click')
+        await flushPromises()
+        expect(w.findAll('.sub-row').length).toBeLessThanOrEqual(200)
+        expect(w.text()).toContain('已展示前')
+    })
+
+    it('筛选态总渲染上限：短关键词全量命中时预算截断', async () => {
+        // 700 行 > FILTER_RENDER_TOTAL(600)：筛选激活全展开时预算截断出提示
+        const hugePayload = Array.from({ length: 700 }, (_, i) => ({
+            domain: `svc-${String(i).padStart(3, '0')}.jlcerp.com`,
+            status: 'consistent',
+            probeAt: '2026-09-02T08:00:00Z',
+        })) as never
+        probesApi.mockResolvedValue(hugePayload)
+        vi.useFakeTimers()
+        try {
+            const w = mountPage()
+            await flushPromises()
+            const input = w.find('.toolbar-search input')
+            await input.setValue('jlcerp')
+            vi.advanceTimersByTime(300)
+            await flushPromises()
+            expect(w.findAll('.sub-row').length).toBeLessThanOrEqual(600)
+            expect(w.text()).toContain('已展示前')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+})
