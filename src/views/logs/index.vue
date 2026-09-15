@@ -623,7 +623,7 @@ function columnWidth(key: string): number {
     min-width: 200px;
     max-width: 320px;
 }
-// 结构化字段筛选
+/* 结构化字段筛选 */
 .filter-fields {
     margin-top: 10px;
     padding: 10px 12px 6px;
@@ -669,7 +669,7 @@ function columnWidth(key: string): number {
 .delivery-note {
     color: var(--el-text-color-regular);
 }
-// 分组聚合条
+/* 分组聚合条 */
 .aggr-bar {
     display: flex;
     flex-wrap: wrap;
