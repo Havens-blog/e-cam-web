@@ -143,9 +143,20 @@
     <!-- 分组聚合:自定义维度 + 指标,全窗真实下推(影响上方 TopN 图) -->
     <div v-if="resp" class="aggr-bar" aria-label="分组聚合">
       <span class="aggr-label">分组聚合</span>
-      <el-select v-model="aggrDimension" class="aggr-dim" placeholder="分组字段(默认按类型)" clearable>
-        <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
-      </el-select>
+      <el-tooltip placement="top" :content="DIM_TIP">
+        <el-select
+          v-model="aggrDimension"
+          class="aggr-dim"
+          placeholder="分组字段(默认按类型)"
+          filterable
+          allow-create
+          default-first-option
+          clearable
+          aria-label="分组字段"
+        >
+          <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+        </el-select>
+      </el-tooltip>
       <el-select v-model="aggrMetric" class="aggr-metric" aria-label="聚合指标">
         <el-option v-for="m in METRIC_OPTS" :key="m.value" :label="m.label" :value="m.value" />
       </el-select>
@@ -351,6 +362,9 @@ function buildFilters(): FieldFilter[] | undefined {
 const aggrDimension = ref('')
 const aggrMetric = ref('count')
 const aggrLoading = ref(false)
+/** 维度可输入任意云上原始字段名(后端对合法标识符透传 group by) */
+const DIM_TIP =
+    '可从下拉选统一字段,或直接输入云上原始列名\n(如 real_client_ip / user_agent),按该字段全部取值计数'
 const METRIC_OPTS = [
     { value: 'count', label: '计数' },
     { value: 'sum_bytes', label: '下行字节' },
