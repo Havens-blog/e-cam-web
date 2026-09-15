@@ -42,6 +42,7 @@
 import type { EChartsOption } from 'echarts'
 import { computed } from 'vue'
 import type { LogAggregateResponse, LogEntry, LogType } from '@/api/types/logs'
+import { formatBytes } from '../format'
 import {
     SERIES_COLOR,
     buildActionSlices,
@@ -61,7 +62,23 @@ const props = defineProps<{
     logType: LogType
     /** 服务端聚合结果(真实总数/趋势/TopN;null=聚合失败,回退采样) */
     aggregate?: LogAggregateResponse | null
+    /** 当前聚合指标(count/sum_bytes/avg_latency/p99_latency),TopN 数值图用 */
+    metric?: string
 }>()
+
+/** 指标展示单位与标题(图题标注真实指标名,避免只看百分比猜语义) */
+const metricMeta = computed(() => {
+    switch (props.metric) {
+        case 'sum_bytes':
+            return { label: '下行字节', unit: 'B', fmt: (v: number) => formatBytes(v) }
+        case 'avg_latency':
+            return { label: '平均耗时', unit: 'ms', fmt: (v: number) => `${Math.round(v).toLocaleString()} ms` }
+        case 'p99_latency':
+            return { label: 'P99 耗时', unit: 'ms', fmt: (v: number) => `${Math.round(v).toLocaleString()} ms` }
+        default:
+            return { label: '计数', unit: '条', fmt: (v: number) => `${v.toLocaleString()} 条` }
+    }
+})
 
 const kpis = computed(() => buildKpis(props.logType, props.entries))
 
@@ -100,8 +117,9 @@ function donutOption(slices: Slice[]): EChartsOption {
     }
 }
 
-/** TopN 横向条形:单一蓝色,直接标数值(文本用文字色,不染色) */
-function topBarOption(data: { name: string; value: number }[]): EChartsOption {
+/** TopN 横向条形:单一蓝色,直接标数值(文本用文字色,不染色;可带指标格式化) */
+function topBarOption(data: { name: string; value: number }[], fmt?: (v: number) => string): EChartsOption {
+    const show = fmt ?? ((v: number) => `${v.toLocaleString()} 条`)
     const rows = [...data].reverse() // yAxis 自下而上,反转后第一名在顶部
     return {
         tooltip: {
@@ -110,7 +128,7 @@ function topBarOption(data: { name: string; value: number }[]): EChartsOption {
             formatter: (ps: unknown) => {
                 const p = (ps as Array<{ name: string; value: number }>)[0]
                 if (!p) return ''
-                return `${p.name}: ${p.value.toLocaleString()} 条`
+                return `${p.name}: ${show(p.value)}`
             },
         },
         grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
@@ -137,7 +155,7 @@ function topBarOption(data: { name: string; value: number }[]): EChartsOption {
                     position: 'right',
                     color: 'var(--text-secondary)',
                     fontSize: 11,
-                    formatter: (p: unknown) => ((p as { value: number }).value || 0).toLocaleString(),
+                    formatter: (p: unknown) => show((p as { value: number }).value || 0),
                 },
             },
         ],
@@ -204,13 +222,19 @@ const secondOption = computed<EChartsOption>(() => {
 const hasAggregate = computed(() => !!props.aggregate && (props.aggregate.buckets.length > 0 || props.aggregate.topn.length > 0))
 
 const thirdChartTitle = computed(() => {
-    const base = props.logType === 'waf' ? '规则 Top' : '域名 Top'
+    // 全窗下展示真实指标名(自定义分组时维度/指标可能不是默认域名/计数)
+    const base = hasAggregate.value && props.aggregate!.topn.length > 0
+        ? `${metricMeta.value.label} Top`
+        : (props.logType === 'waf' ? '规则 Top' : '域名 Top')
     return hasAggregate.value ? base : `${base}(采样)`
 })
 
 const thirdOption = computed<EChartsOption>(() => {
     if (hasAggregate.value && props.aggregate!.topn.length > 0) {
-        return topBarOption(props.aggregate!.topn.map((t) => ({ name: t.name, value: t.count })))
+        return topBarOption(
+            props.aggregate!.topn.map((t) => ({ name: t.name, value: t.value ?? t.count })),
+            metricMeta.value.fmt,
+        )
     }
     if (props.logType === 'waf') return topBarOption(buildTopRules(props.entries))
     return topBarOption(buildTopHosts(props.entries))

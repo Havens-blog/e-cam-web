@@ -76,6 +76,35 @@
         <el-button type="primary" :loading="searching" :disabled="!timeRange" @click="doSearch">查询</el-button>
       </div>
 
+      <!-- 结构化字段筛选(多条件 AND 叠加,语义在统一字段上): -->
+      <div v-if="filterableFields.length" class="filter-fields" aria-label="字段筛选">
+        <div v-for="(f, i) in fieldFilters" :key="i" class="field-filter-row">
+          <el-select v-model="f.field" class="ff-field" placeholder="字段" aria-label="筛选字段">
+            <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+          </el-select>
+          <el-select v-model="f.op" class="ff-op" aria-label="操作符">
+            <el-option v-for="o in FILTER_OPS" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+          <el-input
+            v-model="f.value"
+            class="ff-value"
+            placeholder="筛选值(回车查询)"
+            clearable
+            @keyup.enter="doSearch"
+          />
+          <el-button text type="danger" aria-label="删除条件" @click="fieldFilters.splice(i, 1)">
+            <el-icon><Delete /></el-icon>
+          </el-button>
+        </div>
+        <div class="filter-fields-actions">
+          <el-button size="small" text type="primary" :disabled="fieldFilters.length >= 4" @click="addFilterRow">
+            ＋ 添加字段筛选
+          </el-button>
+          <el-button v-if="fieldFilters.length" size="small" text @click="fieldFilters = []">清空</el-button>
+          <span class="fields-hint">多条件叠加;作用于 域名/状态码/IP/规则 等字段,与关键词 AND 生效</span>
+        </div>
+      </div>
+
       <!-- 未开启投递的源:引导卡片 -->
       <el-alert
         v-if="disabledSources.length"
@@ -111,6 +140,23 @@
       <span class="strip-total">共 {{ resp.total }} 条</span>
     </div>
 
+    <!-- 分组聚合:自定义维度 + 指标,全窗真实下推(影响上方 TopN 图) -->
+    <div v-if="resp" class="aggr-bar" aria-label="分组聚合">
+      <span class="aggr-label">分组聚合</span>
+      <el-select v-model="aggrDimension" class="aggr-dim" placeholder="分组字段(默认按类型)" clearable>
+        <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+      </el-select>
+      <el-select v-model="aggrMetric" class="aggr-metric" aria-label="聚合指标">
+        <el-option v-for="m in METRIC_OPTS" :key="m.value" :label="m.label" :value="m.value" />
+      </el-select>
+      <el-button size="small" type="primary" plain :loading="aggrLoading" :disabled="!timeRange" @click="doAggregate">
+        查分组
+      </el-button>
+      <span v-if="aggregate?.topn_skip" class="aggr-skip" :title="aggregate.topn_skip">
+        ⚠ 部分源不支持该维度/指标,TopN 可能有缺失(趋势/总数仍全窗准确)
+      </span>
+    </div>
+
     <!-- 结果区:统计视图为主,明细默认折叠 -->
     <div v-if="searching || searchError || !resp || resp.entries.length === 0" class="table-card">
       <template v-if="searching">
@@ -139,7 +185,7 @@
       </div>
     </div>
     <template v-else>
-      <LogStats :entries="resp.entries" :log-type="activeType" :aggregate="aggregate" />
+      <LogStats :entries="resp.entries" :log-type="activeType" :aggregate="aggregate" :metric="aggrMetric" />
 
       <!-- 明细(默认折叠) -->
       <div class="table-card">
@@ -223,9 +269,10 @@
  * - 结果区统计视图为主(KPI + 图表,前端聚合),明细默认折叠;
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
  */
-import { ArrowDown, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowRight, Delete } from '@element-plus/icons-vue'
 import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type {
+    FieldFilter,
     LogAggregateResponse,
     LogEntry,
     LogSearchResponse,
@@ -274,6 +321,64 @@ const resp = ref<LogSearchResponse | null>(null)
 const aggregate = ref<LogAggregateResponse | null>(null)
 /** 明细表格默认折叠(统计视图为主) */
 const detailVisible = ref(false)
+
+// ---- 结构化字段筛选(多条件 AND;与 keyword 叠加) ----
+const FIELD_FILTER_MAX = 4
+const fieldFilters = ref<FieldFilter[]>([])
+const FILTER_OPS = [
+    { value: 'eq', label: '等于' },
+    { value: 'neq', label: '不等于' },
+    { value: 'contains', label: '包含' },
+    { value: 'prefix', label: '前缀' },
+]
+/** 可筛选字段:字段字典中非固定列(剔除 meta.* / 时间) */
+const filterableFields = computed(() =>
+    currentFields.value.filter((f) => !f.key.startsWith('meta.') && f.key !== 'timestamp'),
+)
+
+function addFilterRow() {
+    if (fieldFilters.value.length >= FIELD_FILTER_MAX) return
+    fieldFilters.value.push({ field: filterableFields.value[0]?.key ?? '', op: 'eq', value: '' })
+}
+
+/** 组装有效筛选(字段与值齐全的行;空值行不参与,避免误过滤) */
+function buildFilters(): FieldFilter[] | undefined {
+    const valid = fieldFilters.value.filter((f) => f.field && f.value.trim() !== '')
+    return valid.length ? valid.map((f) => ({ ...f, value: f.value.trim() })) : undefined
+}
+
+// ---- 自定义分组聚合(维度/指标;影响 TopN 图,趋势/总数不变) ----
+const aggrDimension = ref('')
+const aggrMetric = ref('count')
+const aggrLoading = ref(false)
+const METRIC_OPTS = [
+    { value: 'count', label: '计数' },
+    { value: 'sum_bytes', label: '下行字节' },
+    { value: 'avg_latency', label: '平均耗时' },
+    { value: 'p99_latency', label: 'P99 耗时' },
+]
+
+async function doAggregate() {
+    if (aggrLoading.value || !timeRange.value) return
+    aggrLoading.value = true
+    try {
+        const agg = await aggregateLogsApi({
+            log_type: activeType.value,
+            start_time: timeRange.value[0].getTime(),
+            end_time: timeRange.value[1].getTime(),
+            query: keyword.value || undefined,
+            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+            resources: selectedResources.value.length ? selectedResources.value : undefined,
+            filters: buildFilters(),
+            dimension: aggrDimension.value || undefined,
+            metric: aggrMetric.value === 'count' ? undefined : aggrMetric.value,
+        }).catch(() => null)
+        aggregate.value = agg
+        if (!agg) ElMessage.warning('分组聚合失败(可能不支持的维度/指标),TopN 已还原')
+    } finally {
+        aggrLoading.value = false
+    }
+}
 
 const drawerVisible = ref(false)
 const detailEntry = ref<LogEntry | null>(null)
@@ -365,6 +470,10 @@ function onTypeChange() {
     resp.value = null
     aggregate.value = null
     selectedResources.value = []
+    // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
+    fieldFilters.value = []
+    aggrDimension.value = ''
+    aggrMetric.value = 'count'
     resetTimeRange()
     void loadSources()
 }
@@ -412,6 +521,7 @@ async function doSearch() {
     searching.value = true
     searchError.value = ''
     detailVisible.value = false // 新查询收敛到统计视图
+    const filters = buildFilters()
     const params = {
         log_type: activeType.value,
         start_time: timeRange.value[0].getTime(),
@@ -419,12 +529,17 @@ async function doSearch() {
         query: keyword.value || undefined,
         clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
         resources: selectedResources.value.length ? selectedResources.value : undefined,
+        filters: filters as FieldFilter[] | undefined,
     }
     try {
         // search(采样明细)+ aggregate(全窗真实统计)并行;聚合失败降级采样视图
         const [searchRes, aggRes] = await Promise.all([
             searchLogsApi({ ...params, limit: limit.value }),
-            aggregateLogsApi(params).catch(() => null),
+            aggregateLogsApi({
+                ...params,
+                dimension: aggrDimension.value || undefined,
+                metric: aggrMetric.value === 'count' ? undefined : aggrMetric.value,
+            }).catch(() => null),
         ])
         resp.value = searchRes
         aggregate.value = aggRes
@@ -508,6 +623,30 @@ function columnWidth(key: string): number {
     min-width: 200px;
     max-width: 320px;
 }
+// 结构化字段筛选
+.filter-fields {
+    margin-top: 10px;
+    padding: 10px 12px 6px;
+    border: 1px dashed var(--el-border-color-lighter);
+    border-radius: 6px;
+    background: var(--el-fill-color-blank);
+}
+.field-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.ff-field { width: 160px; }
+.ff-op { width: 110px; }
+.ff-value { flex: 1; min-width: 160px; max-width: 300px; }
+.filter-fields-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    .fields-hint { font-size: 12px; color: var(--text-tertiary); margin-left: 4px; }
+}
 .filter-limit {
     width: 110px;
 }
@@ -529,6 +668,29 @@ function columnWidth(key: string): number {
 }
 .delivery-note {
     color: var(--el-text-color-regular);
+}
+// 分组聚合条
+.aggr-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+}
+.aggr-label {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+}
+.aggr-dim { width: 190px; }
+.aggr-metric { width: 130px; }
+.aggr-skip {
+    color: var(--el-color-warning);
+    cursor: help;
 }
 .sources-strip {
     display: flex;

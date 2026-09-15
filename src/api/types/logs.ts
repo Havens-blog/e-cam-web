@@ -119,6 +119,15 @@ export interface SLBLogEntry {
 /** 统一日志条目(三 schema 联合;按 timestamp 排序展示) */
 export type LogEntry = CDNLogEntry | WAFLogEntry | SLBLogEntry
 
+/** 结构化字段筛选条件(字段字典 key;AND 叠加,语义在归一化字段上) */
+export interface FieldFilter {
+    /** client_ip / host / status / rule_name ...(/types 字段字典 key) */
+    field: string
+    /** eq / neq / contains / prefix */
+    op: string
+    value: string
+}
+
 /** 联邦查询请求 */
 export interface LogSearchRequest {
     log_type: LogType
@@ -133,6 +142,8 @@ export interface LogSearchRequest {
     account_ids?: number[]
     /** 可选,限定资源(域名 / LB ID) */
     resources?: string[]
+    /** 可选,结构化字段筛选(AND 叠加) */
+    filters?: FieldFilter[]
     /** 单源上限(默认 100,硬顶 500) */
     limit?: number
 }
@@ -167,6 +178,12 @@ export interface LogAggregateRequest {
     query?: string
     clouds?: string[]
     resources?: string[]
+    /** 可选,结构化字段筛选(可下推的源生效,否则显式标注) */
+    filters?: FieldFilter[]
+    /** 分组维度(/types 字段 key;空 = 该类型默认维度) */
+    dimension?: string
+    /** count / sum_bytes / avg_latency / p99_latency(空 = count) */
+    metric?: string
 }
 
 /** 时间分桶(窗口真实分布) */
@@ -176,10 +193,13 @@ export interface AggregateBucket {
     count: number
 }
 
-/** 聚合 TopN 条目(域名/规则按类型维度) */
+/** 聚合 TopN 条目(自定义维度/指标) */
 export interface TopNItem {
     name: string
+    /** 组内条目数(跨源按名求和) */
     count: number
+    /** 指标值(count 时 = count;avg/p99/sum 数值指标时承载) */
+    value?: number
 }
 
 /** 单源聚合状态(不支持聚合的源显式标注) */
@@ -202,4 +222,6 @@ export interface LogAggregateResponse {
     buckets: AggregateBucket[]
     topn: TopNItem[]
     sources: AggregateSourceOutcome[]
+    /** 部分源维度/指标不可下推的说明(趋势/总数仍有效,仅 TopN 缺失) */
+    topn_skip?: string
 }
