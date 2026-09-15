@@ -5,7 +5,7 @@
     size="680px"
     :destroy-on-close="true"
     @update:model-value="emit('update:visible', $event)"
-    @open="handleOpen"
+    @opened="handleOpen"
   >
     <div v-loading="loading" class="cost-panel">
       <template v-if="!loading">
