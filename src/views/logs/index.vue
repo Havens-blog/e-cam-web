@@ -169,7 +169,7 @@
     </div>
 
     <!-- 结果区:统计视图为主,明细默认折叠 -->
-    <div v-if="searching || searchError || !resp || resp.entries.length === 0" class="table-card">
+    <div v-if="searching || searchError || !resp || allEntries.length === 0" class="table-card">
       <template v-if="searching">
         <div class="table-skeleton" aria-hidden="true">
           <div v-for="i in 6" :key="i" class="skeleton-row" />
@@ -356,12 +356,11 @@ const searchError = ref('')
 const resp = ref<LogSearchResponse | null>(null)
 /**
  * 累积明细(跨页追加,时间倒序)。分页 = 时间游标翻页:下一页把窗口上界
- * 改为当前最旧一条 timestamp-1,重新 search 并追加 —— 窗口严格前移天然
- * 无重复;同毫秒批次在页边界可能被跳过(UI 已标注)。
+ * 改为当前最旧一条 - 1 秒(覆盖秒级时间戳源如 WAF3,整批不丢不重),
+ * 重新 search 并追加 —— 窗口严格前移天然无重复,不做逐条去重(曾用
+ * ts:resource:source 做 key,把 WAF3 同秒数百条整批滤成 1 条)。
  */
 const allEntries = ref<LogEntry[]>([])
-/** 已见过条目的 (ts:source) 集合,追加去重保险(游标前移理论上不重) */
-const entryKeys = ref(new Set<string>())
 const pageLoading = ref(false)
 /** 上次翻页增量(条);null=尚未翻过页 */
 const pageInc = ref<number | null>(null)
@@ -531,7 +530,6 @@ function onTypeChange() {
     aggregate.value = null
     selectedResources.value = []
     allEntries.value = []
-    entryKeys.value = new Set()
     // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
     fieldFilters.value = []
     aggrDimension.value = ''
@@ -585,7 +583,6 @@ async function doSearch() {
     detailVisible.value = false // 新查询收敛到统计视图
     // 新查询重置分页游标(回到最新/首页)
     allEntries.value = []
-    entryKeys.value = new Set()
     pageLoading.value = false
     pageInc.value = null
     pageBottom.value = false
@@ -623,13 +620,8 @@ async function doSearch() {
 
 // ---- 时间游标翻页(明细) ----
 function appendEntries(rows: LogEntry[]) {
-    const fresh = rows.filter((e) => {
-        const key = `${e.timestamp}:${e.meta?.resource_id || ''}:${e.meta?.source || ''}`
-        if (entryKeys.value.has(key)) return false
-        entryKeys.value.add(key)
-        return true
-    })
-    allEntries.value = [...allEntries.value, ...fresh]
+    // 上游窗口严格前移(end = 上一页最旧秒 - 1s),页间无重复,直接追加
+    allEntries.value = [...allEntries.value, ...rows]
 }
 
 async function loadEarlier() {
@@ -647,8 +639,9 @@ async function loadEarlier() {
         const pageRes = await searchLogsApi({
             log_type: activeType.value,
             start_time: timeRange.value[0].getTime(),
-            // 窗口上界前移到当前最旧一条 - 1ms:严格更早,页间无重复
-            end_time: oldestTs.value - 1,
+            // 窗口上界前移当前最旧一条 - 1 秒:WAF3 等秒级时间戳源整批完整
+            // 迁移(1ms 前移会把整个秒批次跳过;毫秒级源丢 1 秒无感知)
+            end_time: oldestTs.value - 1000,
             query: keyword.value || undefined,
             clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
             resources: selectedResources.value.length ? selectedResources.value : undefined,
