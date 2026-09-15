@@ -36,11 +36,11 @@
         @click="costPanelVisible = true"
       />
       <StatCard
-        title="今日流量"
+        title="近2日流量"
         :value="todayTrafficText"
         icon="DataLine"
         icon-color="#0891b2"
-        subtitle="近 1 日 Top 100 域名流量合计"
+        subtitle="近 2 日 Top 100 域名流量合计"
       />
     </div>
 
@@ -311,13 +311,15 @@ const fetchCost = async () => {
   }
 }
 
-/** 今日流量卡:带宽峰值需逐域名实时查询成本高,故以「近 1 日流量合计」口径展示 */
+/** 近2日流量卡:带宽峰值需逐域名实时查询成本高,故以「近 2 日流量合计」口径展示 */
 const TODAY_TRAFFIC_TOP_LIMIT = 100 // 对齐后端 top 接口上限,口径为 top 100 域名流量合计
+// 采集任务凌晨补采,当日行仅含凌晨部分;days=2 读昨日全量+今日累计,保证卡片全天有完整数据
+const TODAY_TRAFFIC_DAYS = 2
 const todayTrafficText = ref('-')
 
 const fetchTodayTraffic = async () => {
   try {
-    const { data } = await getCdnTopDomainsApi({ metric: 'bytes', days: 1, limit: TODAY_TRAFFIC_TOP_LIMIT })
+    const { data } = await getCdnTopDomainsApi({ metric: 'bytes', days: TODAY_TRAFFIC_DAYS, limit: TODAY_TRAFFIC_TOP_LIMIT })
     const total = (data?.items || []).reduce((sum, it) => sum + (it.bytes || 0), 0)
     todayTrafficText.value = formatFileSize(total)
   } catch {
