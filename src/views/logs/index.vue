@@ -196,7 +196,7 @@
       </div>
     </div>
     <template v-else>
-      <LogStats :entries="resp.entries" :log-type="activeType" :aggregate="aggregate" :metric="aggrMetric" />
+      <LogStats :entries="allEntries" :log-type="activeType" :aggregate="aggregate" :metric="aggrMetric" />
 
       <!-- 明细(默认折叠) -->
       <div class="table-card">
@@ -210,16 +210,16 @@
             <ArrowDown v-if="detailVisible" />
             <ArrowRight v-else />
           </el-icon>
-          <span class="toggle-title">明细数据({{ resp.entries.length }} 条)</span>
+          <span class="toggle-title">明细数据({{ allEntries.length }} 条)</span>
           <span class="toggle-hint">点击{{ detailVisible ? '收起' : '展开' }} · 点击行查看详情</span>
         </button>
         <div v-show="detailVisible" class="detail-body">
           <el-table
-            :data="resp.entries"
+            :data="allEntries"
             class="log-table"
             size="small"
             stripe
-            max-height="480"
+            max-height="520"
             @row-click="openDetail"
           >
             <el-table-column
@@ -262,6 +262,30 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <!-- 时间游标翻页:窗口上界前移续拉更早日志并追加,无重复 -->
+          <div class="pager-bar">
+            <span class="pager-info">已加载 {{ allEntries.length }} 条</span>
+            <span v-if="allEntries.length" class="pager-oldest">最早 {{ formatLogTime(oldestTs) }}</span>
+            <el-button
+              size="small"
+              type="primary"
+              plain
+              :loading="pageLoading"
+              :disabled="!canLoadEarlier"
+              @click="loadEarlier"
+            >
+              加载更早
+            </el-button>
+            <el-button size="small" text :disabled="pageLoading" @click="backToLatest">回到最新</el-button>
+            <el-tooltip placement="top">
+              <template #content>
+                按时间游标向前翻页(窗口上界 = 当前最旧一条 - 1ms),逐页追加,不会重复;<br />
+                同毫秒批次可能在页边界被跳过;翻到窗口起点即止。
+              </template>
+              <span class="pager-note">ⓘ 翻页说明</span>
+            </el-tooltip>
+          </div>
         </div>
       </div>
     </template>
@@ -321,13 +345,28 @@ const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
 const cloudsTouched = ref(false)
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
-/** 每日志源采样上限(后端单源硬顶 500、联邦 1000;默认拉满提高样本覆盖) */
-const LIMIT_OPTIONS = [100, 500, 1000]
+/** 每日志源采样上限(后端单源硬顶 2000、联邦 3000;默认 1000 提高样本覆盖) */
+const LIMIT_OPTIONS = [100, 500, 1000, 2000]
 const limit = ref(1000)
 
 const searching = ref(false)
 const searchError = ref('')
 const resp = ref<LogSearchResponse | null>(null)
+/**
+ * 累积明细(跨页追加,时间倒序)。分页 = 时间游标翻页:下一页把窗口上界
+ * 改为当前最旧一条 timestamp-1,重新 search 并追加 —— 窗口严格前移天然
+ * 无重复;同毫秒批次在页边界可能被跳过(UI 已标注)。
+ */
+const allEntries = ref<LogEntry[]>([])
+/** 已见过条目的 (ts:source) 集合,追加去重保险(游标前移理论上不重) */
+const entryKeys = ref(new Set<string>())
+const pageLoading = ref(false)
+/** 累积明细最旧时间戳(时间倒序,末位即最旧);无数据时 0 */
+const oldestTs = computed(() => (allEntries.value.length ? allEntries.value[allEntries.value.length - 1]!.timestamp : 0))
+const canLoadEarlier = computed(() => {
+    if (!resp.value || !timeRange.value || allEntries.value.length === 0) return false
+    return oldestTs.value > timeRange.value[0].getTime()
+})
 /** 服务端聚合(真实总数/趋势/TopN;null=失败,统计图回退采样) */
 const aggregate = ref<LogAggregateResponse | null>(null)
 /** 明细表格默认折叠(统计视图为主) */
@@ -484,6 +523,8 @@ function onTypeChange() {
     resp.value = null
     aggregate.value = null
     selectedResources.value = []
+    allEntries.value = []
+    entryKeys.value = new Set()
     // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
     fieldFilters.value = []
     aggrDimension.value = ''
@@ -535,6 +576,10 @@ async function doSearch() {
     searching.value = true
     searchError.value = ''
     detailVisible.value = false // 新查询收敛到统计视图
+    // 新查询重置分页游标(回到最新/首页)
+    allEntries.value = []
+    entryKeys.value = new Set()
+    pageLoading.value = false
     const filters = buildFilters()
     const params = {
         log_type: activeType.value,
@@ -557,6 +602,7 @@ async function doSearch() {
         ])
         resp.value = searchRes
         aggregate.value = aggRes
+        appendEntries(searchRes.entries)
     } catch (e) {
         resp.value = null
         aggregate.value = null
@@ -564,6 +610,57 @@ async function doSearch() {
     } finally {
         searching.value = false
     }
+}
+
+// ---- 时间游标翻页(明细) ----
+function appendEntries(rows: LogEntry[]) {
+    const fresh = rows.filter((e) => {
+        const key = `${e.timestamp}:${e.meta?.resource_id || ''}:${e.meta?.source || ''}`
+        if (entryKeys.value.has(key)) return false
+        entryKeys.value.add(key)
+        return true
+    })
+    allEntries.value = [...allEntries.value, ...fresh]
+}
+
+async function loadEarlier() {
+    if (pageLoading.value || !timeRange.value) return
+    if (!resp.value) {
+        await doSearch()
+        return
+    }
+    if (!canLoadEarlier.value) {
+        ElMessage.info('已到窗口起点,没有更早的日志')
+        return
+    }
+    pageLoading.value = true
+    try {
+        const pageRes = await searchLogsApi({
+            log_type: activeType.value,
+            start_time: timeRange.value[0].getTime(),
+            // 窗口上界前移到当前最旧一条 - 1ms:严格更早,页间无重复
+            end_time: oldestTs.value - 1,
+            query: keyword.value || undefined,
+            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+            resources: selectedResources.value.length ? selectedResources.value : undefined,
+            filters: buildFilters(),
+            limit: limit.value,
+        })
+        appendEntries(pageRes.entries)
+        // per-source 状态条随当前页刷新(统计图仍整窗,不受影响)
+        resp.value = pageRes
+        if (pageRes.entries.length === 0) ElMessage.info('没有更早的日志,已到窗口起点')
+    } catch (e) {
+        ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
+    } finally {
+        pageLoading.value = false
+    }
+}
+
+/** 回到窗口起点重置为最新一批 */
+function backToLatest() {
+    if (searching.value) return
+    void doSearch()
 }
 
 // ---- 详情 ----
@@ -682,6 +779,28 @@ function columnWidth(key: string): number {
 }
 .delivery-note {
     color: var(--el-text-color-regular);
+}
+/* 明细翻页条 */
+.pager-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--el-border-color-lighter);
+    font-size: 12px;
+}
+.pager-info {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+}
+.pager-oldest {
+    color: var(--el-text-color-secondary);
+}
+.pager-note {
+    color: var(--el-text-color-secondary);
+    cursor: help;
 }
 /* 分组聚合条 */
 .aggr-bar {
