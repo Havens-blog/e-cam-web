@@ -401,9 +401,10 @@ function buildFilters(): FieldFilter[] | undefined {
 const aggrDimension = ref('')
 const aggrMetric = ref('count')
 const aggrLoading = ref(false)
-/** 维度可输入任意云上原始字段名(后端对合法标识符透传 group by) */
+/** 维度可输入任意云上原始字段名(后端校验该列已建分析索引,未索引给出可用清单) */
 const DIM_TIP =
-    '可从下拉选统一字段,或直接输入云上原始列名\n(如 real_client_ip / user_agent),按该字段全部取值计数'
+    '可从下拉选统一字段,或输入云上原始列名\n(如 real_client_ip / UA),按该字段全部取值计数;\n' +
+    '列未开启分析索引时会提示该日志源可用字段清单'
 const METRIC_OPTS = [
     { value: 'count', label: '计数' },
     { value: 'sum_bytes', label: '下行字节' },
