@@ -530,6 +530,74 @@ export function getCdnCostApi(params?: GetCDNCostParams) {
     })
 }
 
+// ==================== CDN 流量指标 API ====================
+
+/** CDN 域名单日流量指标 */
+export interface CDNMetricItem {
+    /** 日期 YYYY-MM-DD */
+    date: string
+    /** 当日流量合计(字节) */
+    bytes: number
+    /** 当日带宽峰值(bps) */
+    bandwidth: number
+    /** 命中率 0-1;-1 表示当日无数据(展示为「—」) */
+    hit_rate: number
+}
+
+/** GET /assets/cdn/metrics 响应体 */
+export interface CDNDomainMetricsView {
+    domain: string
+    items: CDNMetricItem[]
+}
+
+/** CDN 流量 Top 域名项 */
+export interface CDNTopDomainItem {
+    domain: string
+    /** 近 N 天流量合计(字节) */
+    bytes: number
+}
+
+/** GET /assets/cdn/top 响应体 */
+export interface CDNTopDomainsView {
+    items: CDNTopDomainItem[]
+}
+
+/** 查询 CDN 域名近 N 天单日指标参数 */
+export interface GetCDNMetricsParams {
+    account_id: number
+    domain_name: string
+    /** 回看天数(缺省 30) */
+    days?: number
+}
+
+/** 获取 CDN 域名近 N 天单日流量/命中率指标(读指标表,采集任务落库) */
+export function getCdnMetricsApi(params: GetCDNMetricsParams) {
+    return instance.get<CDNDomainMetricsView>({
+        url: `${API_SERVICE.CAM}/assets/cdn/metrics`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 查询 CDN 流量 Top 域名参数 */
+export interface GetCDNTopDomainsParams {
+    /** 指标(一期仅支持 bytes) */
+    metric?: 'bytes'
+    /** 回看天数(缺省 7) */
+    days?: number
+    /** 返回条数(缺省 10) */
+    limit?: number
+}
+
+/** 获取 CDN 流量 Top 域名(近 N 天字节合计降序) */
+export function getCdnTopDomainsApi(params?: GetCDNTopDomainsParams) {
+    return instance.get<CDNTopDomainsView>({
+        url: `${API_SERVICE.CAM}/assets/cdn/top`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== WAF (Web应用防火墙) API ====================
 
 /** 获取WAF实例列表 */

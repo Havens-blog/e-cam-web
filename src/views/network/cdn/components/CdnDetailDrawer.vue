@@ -22,6 +22,7 @@
         <div class="drawer-tabs">
           <el-tabs v-model="activeTab">
             <el-tab-pane label="详情" name="detail" />
+            <el-tab-pane label="流量/命中率" name="metrics" />
             <el-tab-pane label="缓存配置" name="cache" />
             <el-tab-pane label="功能配置" name="settings" />
             <el-tab-pane label="源站配置" name="origins" />
@@ -129,6 +130,29 @@
                     <span class="info-value">{{ originList.length }} 个</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 流量/命中率 Tab -->
+          <template v-else-if="activeTab === 'metrics'">
+            <div v-loading="metricsLoading" class="metrics-section">
+              <template v-if="metricsError">
+                <div class="empty-tab">
+                  <el-icon :size="48"><WarningFilled /></el-icon>
+                  <p>{{ metricsError }}</p>
+                  <el-button size="small" type="primary" plain @click="fetchDomainMetrics">重试</el-button>
+                </div>
+              </template>
+              <template v-else-if="metricsItems.length > 0">
+                <div class="metrics-note">
+                  近 30 天流量与命中率(读采集指标表);命中率为「—」表示当日无数据
+                </div>
+                <div ref="metricsChartRef" class="metrics-chart"></div>
+              </template>
+              <div v-else-if="!metricsLoading" class="empty-tab">
+                <el-icon :size="48"><DataLine /></el-icon>
+                <p>暂无流量指标数据</p>
               </div>
             </div>
           </template>
@@ -302,7 +326,7 @@
 </template>
 
 <script setup lang="ts">
-import { getCDNCacheConfigApi, getCDNDomainSettingsApi, type CDNCacheRule, type CDNConfigGroup, type CDNConfigSetting } from '@/api/asset'
+import { getCDNCacheConfigApi, getCDNDomainSettingsApi, getCdnMetricsApi, type CDNCacheRule, type CDNConfigGroup, type CDNConfigSetting, type CDNMetricItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
@@ -315,9 +339,11 @@ import {
   cdnTtlText,
 } from '@/utils/cdn'
 import { getProviderLabel } from '@/utils/constants'
-import { Connection, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
+import { formatNumber } from '@/utils/formatters'
+import { Connection, DataLine, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
 import dayjs from 'dayjs'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 /** 状态值 → 展示文案(与列表页共用同一份映射) */
 const statusLabels = CDN_STATUS_LABELS
@@ -415,6 +441,151 @@ const fetchDomainSettings = async () => {
   }
 }
 
+// ===== 流量/命中率趋势(按需查询,读采集指标表) =====
+// 与 dashboard 图表一致的暗色配色(echarts 渲染在 canvas 上,CSS 变量不可用)
+const AXIS_LABEL_COLOR = '#a1a1aa'
+const SPLIT_LINE_COLOR = 'rgba(255,255,255,0.08)'
+const TOOLTIP_BG = 'rgba(23,23,23,0.92)'
+const METRICS_DAYS = 30
+
+const metricsLoading = ref(false)
+const metricsItems = ref<CDNMetricItem[]>([])
+const metricsError = ref('')
+const metricsFetchedKey = ref('')
+const metricsChartRef = ref<HTMLElement>()
+let metricsChart: echarts.ECharts | null = null
+
+/** 图表横轴需从早到晚,后端按 date 降序返回,这里统一升序 */
+const sortedMetrics = computed(() =>
+  [...metricsItems.value].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+)
+
+/** 字节 → GB(保留两位) */
+const bytesToGB = (bytes: number) => Math.round((bytes / 1024 ** 3) * 100) / 100
+
+const fetchDomainMetrics = async () => {
+  const inst = props.instance
+  if (!inst) return
+  const accountId = Number(inst.attributes?.cloud_account_id || 0)
+  const domainName = attr.value.domain_name || ''
+  if (!accountId || !domainName) {
+    metricsError.value = '缺少账号或域名标识,无法查询'
+    return
+  }
+  metricsLoading.value = true
+  metricsError.value = ''
+  try {
+    const { data } = await getCdnMetricsApi({ account_id: accountId, domain_name: domainName, days: METRICS_DAYS })
+    metricsItems.value = data?.items || []
+    metricsFetchedKey.value = `${accountId}:${domainName}`
+    // 数据到位后模板才渲染出图表容器,nextTick 确保 DOM 就位再 init
+    await nextTick()
+    renderMetricsChart()
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '查询流量指标失败'
+    metricsError.value = `流量指标查询失败: ${msg}`
+  } finally {
+    metricsLoading.value = false
+  }
+}
+
+/** 双轴图:柱=每日流量(GB,左轴),线=命中率(%,右轴;-1 未知置空断线) */
+const renderMetricsChart = () => {
+  const items = sortedMetrics.value
+  if (!metricsChartRef.value || items.length === 0) return
+
+  if (metricsChart && metricsChart.getDom() !== metricsChartRef.value) {
+    metricsChart.dispose()
+    metricsChart = null
+  }
+  if (!metricsChart) metricsChart = echarts.init(metricsChartRef.value)
+
+  metricsChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: TOOLTIP_BG,
+      borderColor: SPLIT_LINE_COLOR,
+      textStyle: { color: '#d4d4d8', fontSize: 12 },
+      formatter: (params: any) => {
+        const lines = [String(params[0]?.axisValue ?? '')]
+        for (const p of params) {
+          if (p.seriesType === 'bar') {
+            lines.push(`${p.marker}流量: ${formatNumber(p.value)} GB`)
+          } else {
+            const unknown = p.value == null || p.value === '-'
+            lines.push(`${p.marker}命中率: ${unknown ? '—' : `${p.value}%`}`)
+          }
+        }
+        return lines.join('<br/>')
+      }
+    },
+    legend: {
+      top: 0,
+      right: 8,
+      textStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 }
+    },
+    grid: { left: 56, right: 56, top: 36, bottom: 28 },
+    xAxis: {
+      type: 'category',
+      data: items.map(m => (m.date.length >= 10 ? m.date.slice(5, 10) : m.date)),
+      axisLabel: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+      axisLine: { lineStyle: { color: SPLIT_LINE_COLOR } },
+      axisTick: { show: false }
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: '流量(GB)',
+        nameTextStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+        axisLabel: {
+          color: AXIS_LABEL_COLOR,
+          fontSize: 11,
+          formatter: (val: number) => (val >= 10000 ? `${(val / 10000).toFixed(1)}万` : `${val}`)
+        },
+        splitLine: { lineStyle: { color: SPLIT_LINE_COLOR, type: 'dashed' } }
+      },
+      {
+        type: 'value',
+        name: '命中率',
+        min: 0,
+        max: 100,
+        nameTextStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+        axisLabel: { color: AXIS_LABEL_COLOR, fontSize: 11, formatter: '{value}%' },
+        splitLine: { show: false }
+      }
+    ],
+    series: [
+      {
+        name: '流量',
+        type: 'bar',
+        data: items.map(m => bytesToGB(m.bytes || 0)),
+        barMaxWidth: 18,
+        itemStyle: { color: '#3b82f6', borderRadius: [3, 3, 0, 0] },
+        emphasis: { itemStyle: { color: '#60a5fa' } }
+      },
+      {
+        name: '命中率',
+        type: 'line',
+        yAxisIndex: 1,
+        data: items.map(m => (m.hit_rate == null || m.hit_rate < 0 ? null : Math.round(m.hit_rate * 1000) / 10)),
+        connectNulls: false,
+        symbol: 'circle',
+        symbolSize: 5,
+        lineStyle: { color: '#16a34a', width: 2 },
+        itemStyle: { color: '#16a34a' }
+      }
+    ]
+  }, true)
+}
+
+const handleMetricsResize = () => { metricsChart?.resize() }
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleMetricsResize)
+  metricsChart?.dispose()
+  metricsChart = null
+})
+
 // 切换实例时重置 tab 与按需查询状态
 watch(() => props.instance, () => {
   activeTab.value = 'detail'
@@ -424,20 +595,38 @@ watch(() => props.instance, () => {
   settingsGroups.value = []
   settingsError.value = ''
   settingsFetchedKey.value = ''
+  metricsItems.value = []
+  metricsError.value = ''
+  metricsFetchedKey.value = ''
 })
 
-// 打开抽屉或切到按需查询 Tab 时拉取(缓存配置 / 功能配置同构)
+// 打开抽屉或切到按需查询 Tab 时拉取(缓存配置 / 功能配置 / 流量指标同构)
 watch(
   () => [props.visible, activeTab.value] as const,
   ([visible, tab]) => {
-    if (!visible || (tab !== 'cache' && tab !== 'settings')) return
+    if (!visible) return
+    if (tab !== 'cache' && tab !== 'settings' && tab !== 'metrics') return
     const inst = props.instance
     const key = inst ? `${Number(inst.attributes?.cloud_account_id || 0)}:${inst.attributes?.domain_id || inst.asset_id || ''}:${inst.attributes?.domain_name || ''}` : ''
     if (!key) return
     if (tab === 'cache' && key !== cacheFetchedKey.value && !cacheError.value) fetchCacheRules()
     if (tab === 'settings' && key !== settingsFetchedKey.value && !settingsError.value) fetchDomainSettings()
+    if (tab === 'metrics') {
+      if (key !== metricsFetchedKey.value && !metricsError.value) {
+        fetchDomainMetrics()
+      } else if (metricsItems.value.length > 0) {
+        // 抽屉关闭再打开时 el-drawer 用 v-show 保留 DOM,图表容器尺寸可能变化,重渲染兜底
+        nextTick(() => renderMetricsChart())
+      }
+    }
   }
 )
+
+// 抽屉打开期间监听窗口尺寸,保证趋势图随窗口缩放
+watch(() => props.visible, (val) => {
+  if (val) window.addEventListener('resize', handleMetricsResize)
+  else window.removeEventListener('resize', handleMetricsResize)
+})
 
 /** 安全获取 attributes */
 const attr = computed(() => props.instance?.attributes || {} as Record<string, any>)
@@ -586,6 +775,22 @@ const formatTime = (time: string | number | undefined) => {
       cursor: default;
       text-decoration: none;
     }
+  }
+}
+
+// 流量/命中率
+.metrics-section {
+  min-height: 200px;
+
+  .metrics-note {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+
+  .metrics-chart {
+    width: 100%;
+    height: 320px;
   }
 }
 

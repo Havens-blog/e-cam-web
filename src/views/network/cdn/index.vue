@@ -3,7 +3,7 @@
     <ManagerHeader
       title="CDN 加速"
       subtitle="管理所有云平台的内容分发网络加速域名"
-      @refresh="fetchData"
+      @refresh="handleRefresh"
     >
       <template #actions>
         <el-button @click="columnSettingsVisible = true">
@@ -34,6 +34,13 @@
         subtitle="点击查看成本明细"
         clickable
         @click="costPanelVisible = true"
+      />
+      <StatCard
+        title="今日流量"
+        :value="todayTrafficText"
+        icon="DataLine"
+        icon-color="#0891b2"
+        subtitle="近 1 日全部域名流量合计"
       />
     </div>
 
@@ -188,7 +195,7 @@
 
 <script setup lang="ts">
 import { submitSyncAssetsTaskApi } from '@/api'
-import { getCdnCostApi, listCDNAssetsApi } from '@/api/asset'
+import { getCdnCostApi, getCdnTopDomainsApi, listCDNAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
@@ -204,7 +211,7 @@ import {
 } from '@/utils/cdn'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { formatNumber } from '@/utils/formatters'
+import { formatFileSize, formatNumber } from '@/utils/formatters'
 import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
@@ -304,6 +311,21 @@ const fetchCost = async () => {
   }
 }
 
+/** 今日流量卡:带宽峰值需逐域名实时查询成本高,故以「近 1 日流量合计」口径展示 */
+const TODAY_TRAFFIC_TOP_LIMIT = 1000
+const todayTrafficText = ref('-')
+
+const fetchTodayTraffic = async () => {
+  try {
+    const { data } = await getCdnTopDomainsApi({ metric: 'bytes', days: 1, limit: TODAY_TRAFFIC_TOP_LIMIT })
+    const total = (data?.items || []).reduce((sum, it) => sum + (it.bytes || 0), 0)
+    todayTrafficText.value = formatFileSize(total)
+  } catch {
+    // 流量数据获取失败不阻塞页面,卡片保持占位
+    todayTrafficText.value = '-'
+  }
+}
+
 const extractDomainName = (row: Asset) => {
   if (row.attributes?.domain_name) return row.attributes.domain_name
   const name = row.asset_name || row.asset_id || ''
@@ -385,7 +407,9 @@ const submitSync = async () => {
   } finally { syncing.value = false }
 }
 
-onMounted(() => { loadColumnSettings(); fetchData(); fetchStats(); fetchCost() })
+const handleRefresh = () => { fetchData(); fetchTodayTraffic() }
+
+onMounted(() => { loadColumnSettings(); fetchData(); fetchStats(); fetchCost(); fetchTodayTraffic() })
 </script>
 
 <style scoped lang="scss">
