@@ -26,6 +26,15 @@
       <StatCard title="加速域名" :value="stats.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
       <StatCard title="在线域名" :value="stats.online" icon="CircleCheck" icon-color="#16a34a" :subtitle="onlineRateText" />
       <StatCard title="HTTPS 启用" :value="stats.https" icon="Lock" icon-color="#d97706" :subtitle="httpsRateText" />
+      <StatCard
+        title="本月成本"
+        :value="costValueText"
+        icon="Money"
+        icon-color="#d97706"
+        subtitle="点击查看成本明细"
+        clickable
+        @click="costPanelVisible = true"
+      />
     </div>
 
     <!-- 筛选器 -->
@@ -168,6 +177,8 @@
 
     <!-- 详情抽屉 -->
     <CdnDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
+    <!-- 成本面板 -->
+    <CdnCostPanel v-model:visible="costPanelVisible" />
     <!-- 导出对话框 -->
     <ExportDialog v-model:visible="exportDialogVisible" :instances="cdnList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
     <!-- 自定义列对话框 -->
@@ -177,7 +188,7 @@
 
 <script setup lang="ts">
 import { submitSyncAssetsTaskApi } from '@/api'
-import { listCDNAssetsApi } from '@/api/asset'
+import { getCdnCostApi, listCDNAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
@@ -193,11 +204,13 @@ import {
 } from '@/utils/cdn'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
+import { formatNumber } from '@/utils/formatters'
 import { CircleCheck, Download, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
@@ -272,6 +285,24 @@ const fetchStats = async () => {
 
 /** 状态值 → 展示文案(共享映射,含历史原始值兼容) */
 const statusLabels = CDN_STATUS_LABELS
+
+// ===== 本月成本(月度 latest 的 cdn+dcdn,点击卡片打开成本面板) =====
+const costPanelVisible = ref(false)
+const costValueText = ref('¥-')
+
+const fetchCost = async () => {
+  try {
+    const { data } = await getCdnCostApi({ months: 1 })
+    const latest = data.monthly?.[data.monthly.length - 1]
+    if (latest) {
+      const total = Math.round(latest.cdn_amount + latest.dcdn_amount)
+      costValueText.value = `¥${formatNumber(total)}`
+    }
+  } catch {
+    // 成本数据获取失败不阻塞页面,卡片保持占位
+    costValueText.value = '¥-'
+  }
+}
 
 const extractDomainName = (row: Asset) => {
   if (row.attributes?.domain_name) return row.attributes.domain_name
@@ -354,7 +385,7 @@ const submitSync = async () => {
   } finally { syncing.value = false }
 }
 
-onMounted(() => { loadColumnSettings(); fetchData(); fetchStats() })
+onMounted(() => { loadColumnSettings(); fetchData(); fetchStats(); fetchCost() })
 </script>
 
 <style scoped lang="scss">

@@ -479,6 +479,57 @@ export function getCDNDomainSettingsApi(params: { account_id: number; domain_nam
     })
 }
 
+// ==================== CDN 成本 API ====================
+
+/** CDN 单月成本(cdn 与 dcdn 分列) */
+export interface CDNMonthCost {
+    month: string
+    cdn_amount: number
+    dcdn_amount: number
+}
+
+/** CDN 按账号维度成本(一期 account_name 为空,展示层补充) */
+export interface CDNAccountCost {
+    account_id: number
+    account_name: string
+    amount: number
+    share: number
+}
+
+/** CDN 域名成本分摊项(二期接流量指标后生效,一期为空数组) */
+export interface CDNDomainCost {
+    domain: string
+    amount_est: number
+    bytes: number
+    is_estimate: boolean
+}
+
+/** GET /cost/cdn 响应体 */
+export interface CDNCostView {
+    monthly: CDNMonthCost[]
+    by_account: CDNAccountCost[]
+    domain_cost: CDNDomainCost[]
+}
+
+/** 查询 CDN 经营成本参数 */
+export interface GetCDNCostParams {
+    /** 起始月 YYYY-MM,缺省取当前月 */
+    start_month?: string
+    /** 回看月数(1-24,缺省 6) */
+    months?: number
+    /** 云账号 ID,>0 时按账号过滤 */
+    account_id?: number
+}
+
+/** 获取多云 CDN 经营成本(月度趋势/账号占比/域名分摊) */
+export function getCdnCostApi(params?: GetCDNCostParams) {
+    return instance.get<CDNCostView>({
+        url: `${API_SERVICE.CAM}/cost/cdn`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== WAF (Web应用防火墙) API ====================
 
 /** 获取WAF实例列表 */
