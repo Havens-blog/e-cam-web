@@ -266,7 +266,9 @@
           <!-- 时间游标翻页:窗口上界前移续拉更早日志并追加,无重复 -->
           <div class="pager-bar">
             <span class="pager-info">已加载 {{ allEntries.length }} 条</span>
-            <span v-if="allEntries.length" class="pager-oldest">最早 {{ formatLogTime(oldestTs) }}</span>
+            <span v-if="pageInc !== null" class="pager-oldest">本次 +{{ pageInc }} 条</span>
+            <span v-if="pageBottom" class="pager-bottom">已到窗口起点,没有更早日志</span>
+            <span v-else-if="allEntries.length" class="pager-oldest">最早 {{ formatLogTime(oldestTs) }}</span>
             <el-button
               size="small"
               type="primary"
@@ -275,7 +277,7 @@
               :disabled="!canLoadEarlier"
               @click="loadEarlier"
             >
-              加载更早
+              {{ pageBottom ? '没有更早' : '加载更早' }}
             </el-button>
             <el-button size="small" text :disabled="pageLoading" @click="backToLatest">回到最新</el-button>
             <el-tooltip placement="top">
@@ -361,11 +363,15 @@ const allEntries = ref<LogEntry[]>([])
 /** 已见过条目的 (ts:source) 集合,追加去重保险(游标前移理论上不重) */
 const entryKeys = ref(new Set<string>())
 const pageLoading = ref(false)
+/** 上次翻页增量(条);null=尚未翻过页 */
+const pageInc = ref<number | null>(null)
+/** 已到底:窗口起点已无更早日志 */
+const pageBottom = ref(false)
 /** 累积明细最旧时间戳(时间倒序,末位即最旧);无数据时 0 */
 const oldestTs = computed(() => (allEntries.value.length ? allEntries.value[allEntries.value.length - 1]!.timestamp : 0))
 const canLoadEarlier = computed(() => {
     if (!resp.value || !timeRange.value || allEntries.value.length === 0) return false
-    return oldestTs.value > timeRange.value[0].getTime()
+    return oldestTs.value > timeRange.value[0].getTime() && !pageBottom.value
 })
 /** 服务端聚合(真实总数/趋势/TopN;null=失败,统计图回退采样) */
 const aggregate = ref<LogAggregateResponse | null>(null)
@@ -581,6 +587,8 @@ async function doSearch() {
     allEntries.value = []
     entryKeys.value = new Set()
     pageLoading.value = false
+    pageInc.value = null
+    pageBottom.value = false
     const filters = buildFilters()
     const params = {
         log_type: activeType.value,
@@ -647,10 +655,16 @@ async function loadEarlier() {
             filters: buildFilters(),
             limit: limit.value,
         })
+        const before = allEntries.value.length
         appendEntries(pageRes.entries)
+        pageInc.value = allEntries.value.length - before
         // per-source 状态条随当前页刷新(统计图仍整窗,不受影响)
         resp.value = pageRes
-        if (pageRes.entries.length === 0) ElMessage.info('没有更早的日志,已到窗口起点')
+        // 该源剩余窗口已无数据(42 条即该源真实量的末页迹象):扣一次到底
+        if (pageRes.entries.length === 0 || oldestTs.value <= timeRange.value[0].getTime()) {
+            pageBottom.value = true
+            if (pageRes.entries.length === 0) ElMessage.info('没有更早的日志,已到窗口起点')
+        }
     } catch (e) {
         ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
     } finally {
