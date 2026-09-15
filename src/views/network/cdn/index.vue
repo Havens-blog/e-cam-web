@@ -40,7 +40,7 @@
         :value="todayTrafficText"
         icon="DataLine"
         icon-color="#0891b2"
-        subtitle="近 1 日全部域名流量合计"
+        subtitle="近 1 日 Top 100 域名流量合计"
       />
     </div>
 
@@ -312,7 +312,7 @@ const fetchCost = async () => {
 }
 
 /** 今日流量卡:带宽峰值需逐域名实时查询成本高,故以「近 1 日流量合计」口径展示 */
-const TODAY_TRAFFIC_TOP_LIMIT = 1000
+const TODAY_TRAFFIC_TOP_LIMIT = 100 // 对齐后端 top 接口上限,口径为 top 100 域名流量合计
 const todayTrafficText = ref('-')
 
 const fetchTodayTraffic = async () => {
