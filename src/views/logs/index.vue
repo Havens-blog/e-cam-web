@@ -567,7 +567,7 @@ function friendlySearchError(raw: string): string {
     if (msg.includes('truncat') || raw.includes('截断')) {
         return '结果被截断:命中数据超出单次查询上限,本次为采样视图;可缩小时间范围或加字段筛选后重试。'
     }
-    if (msg.includes('network') || msg.includes('network error') || raw.includes('网络')) {
+    if (msg.includes('network') || raw.includes('网络')) {
         return '网络异常:查询服务暂不可达,请检查网络连接后重试。'
     }
     return '查询失败:云端检索未正常返回,可缩小时间范围或放宽筛选条件后重试。'
