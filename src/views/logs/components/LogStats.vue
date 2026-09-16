@@ -345,9 +345,10 @@ watch(thirdOption, () => {
     font-size: 12px;
     color: var(--el-text-color-secondary);
 }
+/* 自适应栅格:窄容器自动折行(每列最小 280px),长分组值/长标题不撑破轨道 */
 .chart-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 12px;
 }
 .chart-cell {
@@ -355,8 +356,11 @@ watch(thirdOption, () => {
     border: 1px solid var(--el-border-color-lighter);
     border-radius: 8px;
     padding: 12px;
+    /* 允许内容收缩:防止 grid 轨道被不可收缩内容(长文本)撑破 */
+    min-width: 0;
 
     &.chart-cell-wide {
+        /* 趋势图恒占整行(全宽),不随三小图折行挤压 */
         grid-column: 1 / -1;
     }
 }
@@ -365,14 +369,13 @@ watch(thirdOption, () => {
     font-weight: 600;
     color: var(--el-text-color-primary);
     margin-bottom: 8px;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
-/* 窄屏断点:KPI 四列→两列、图表三列→一列,避免 240px 高的图在窄视口被压得过窄导致文字/图例重叠 */
+/* 窄屏断点:KPI 四列→两列;图表栅格由 auto-fit 按容器宽度自动折行,无需固定断点 */
 @media (max-width: 1280px) {
     .kpi-row {
         grid-template-columns: repeat(2, 1fr);
-    }
-    .chart-grid {
-        grid-template-columns: 1fr;
     }
 }
 </style>

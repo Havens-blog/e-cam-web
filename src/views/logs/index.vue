@@ -291,7 +291,6 @@
               class="log-table"
               size="small"
               stripe
-              max-height="520"
               @row-click="openDetail"
             >
             <el-table-column
@@ -1181,8 +1180,11 @@ function columnWidth(key: string): number {
     font-size: 12px;
     font-weight: normal;
 }
+/* 明细区外层滚动容器:内容超过一屏高时区内滚动(明细分屏),表头吸顶依赖此滚动上下文 */
 .detail-body {
     margin-top: 4px;
+    max-height: 72vh;
+    overflow: auto;
 }
 /* 明细 云·账号 分组 */
 .group-toolbar {
@@ -1235,6 +1237,17 @@ function columnWidth(key: string): number {
 .log-table {
     width: 100%;
     cursor: pointer;
+    /* 放开 el-table 根节点的 overflow:hidden 裁剪,否则 header-wrapper 的
+       position:sticky 只能相对表格自身(不滚动),吸顶相对 detail-body 失效;
+       横向滚动仍由表格内部 body-wrapper 的 scrollbar 承担,不外溢 */
+    overflow: visible;
+}
+/* 表头吸顶:行随 .detail-body 滚动,各分组表头钉在其所属表格顶部,
+   滚出表格范围即随表格带走,分组结构互不干扰 */
+.detail-body :deep(.log-table .el-table__header-wrapper) {
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 .cell-mono {
     font-family: var(--el-font-family-mono, 'JetBrains Mono', Consolas, monospace);

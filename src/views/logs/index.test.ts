@@ -345,6 +345,34 @@ describe('LogsIndex(明细按云·账号折叠分组,组头含条数/耗时)', (
         expect(w.find('.pager-info').text()).toContain('已加载 3 条')
         w.unmount()
     })
+
+    it('明细区外层滚动:组表不再自带 max-height(占位交给 detail-body,表头吸顶由 CSS sticky 承担)', async () => {
+        // 用透传 attrs 的 ElTable 桩捕获 max-height:若有人把每表 max-height 加回来,
+        // 外层滚动 + sticky 吸顶设计(改 max-height 为占位+外层滚动)即被破坏
+        searchApi.mockResolvedValueOnce(groupedResp())
+        const w = mount(LogsIndex, {
+            global: {
+                plugins: [ElementPlus],
+                stubs: {
+                    LogStats: true,
+                    LogDetailDrawer: true,
+                    ElTooltip: true,
+                    ElTable: { name: 'ElTable', template: '<div class="etable-stub" v-bind="$attrs" />' },
+                },
+            },
+        })
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+        await w.find('.detail-toggle').trigger('click')
+
+        const tables = w.findAll('.etable-stub')
+        expect(tables.length).toBe(2)
+        expect(tables.every((t) => t.attributes('max-height') === undefined)).toBe(true)
+        // 表格位于明细滚动容器内(吸顶的滚动上下文)
+        expect(w.find('.detail-body .etable-stub').exists()).toBe(true)
+        w.unmount()
+    })
 })
 
 describe('LogsIndex(TopN 下钻:图点击 → 字段筛选重查,可清除)', () => {
