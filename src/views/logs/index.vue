@@ -249,14 +249,43 @@
           <span class="toggle-hint">点击{{ detailVisible ? '收起' : '展开' }} · 点击行查看详情</span>
         </button>
         <div v-show="detailVisible" class="detail-body">
-          <el-table
-            :data="allEntries"
-            class="log-table"
-            size="small"
-            stripe
-            max-height="520"
-            @row-click="openDetail"
-          >
+          <!-- 组工具条:全部折叠/展开;组头用按钮(非表格行),与行点击开详情互不冲突 -->
+          <div class="group-toolbar">
+            <span class="group-toolbar-label">按 云 · 账号 分组</span>
+            <el-button size="small" text type="primary" :disabled="!entryGroups.length" @click="toggleAllGroups">
+              {{ allGroupsCollapsed ? '全部展开' : '全部折叠' }}
+            </el-button>
+          </div>
+          <section v-for="g in entryGroups" :key="g.key" class="entry-group">
+            <button
+              type="button"
+              class="group-header"
+              :aria-expanded="!collapsedGroups.has(g.key)"
+              :title="groupErrorText(g.key) || undefined"
+              @click="toggleGroup(g.key)"
+            >
+              <el-icon :size="12">
+                <ArrowDown v-if="!collapsedGroups.has(g.key)" />
+                <ArrowRight v-else />
+              </el-icon>
+              <span class="group-name">{{ g.label }}</span>
+              <span class="group-count">{{ g.entries.length }} 条</span>
+              <!-- 该组源状态(resp.sources 派生):失败标注 + 错误可查;成功给耗时 -->
+              <template v-for="o in groupOutcomes.get(g.key) ?? []" :key="o.account_id">
+                <el-tag v-if="o.error" type="danger" size="small" class="group-failed" :title="o.error">失败</el-tag>
+                <span v-else class="group-duration">{{ o.duration_ms }}ms</span>
+              </template>
+              <span class="group-hint">{{ collapsedGroups.has(g.key) ? '展开' : '收起' }}</span>
+            </button>
+            <el-table
+              v-if="!collapsedGroups.has(g.key)"
+              :data="g.entries"
+              class="log-table"
+              size="small"
+              stripe
+              max-height="520"
+              @row-click="openDetail"
+            >
             <el-table-column
               v-for="f in currentFields"
               :key="f.key"
@@ -297,6 +326,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </section>
 
           <!-- 时间游标翻页:窗口上界前移续拉更早日志并追加,无重复 -->
           <div class="pager-bar">
@@ -348,6 +378,7 @@
  * - 日志源按云·账号分组,未开启投递的源禁用并给引导文案;
  * - 联邦查询 per-source 状态条(失败不静默)+ 截断提示;
  * - 结果区统计视图为主(KPI + 图表,前端聚合),明细默认折叠;
+ * - 明细按 云·账号 折叠分组,组头含条数/源状态(失败不静默),组内仍统一时间倒序;
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
  */
 import { ArrowDown, ArrowRight, Delete } from '@element-plus/icons-vue'
@@ -358,6 +389,7 @@ import type {
     LogEntry,
     LogSearchResponse,
     LogSource,
+    LogSourceOutcome,
     LogType,
     LogTypeMeta,
 } from '@/api/types/logs'
@@ -422,6 +454,66 @@ const canLoadEarlier = computed(() => {
 const aggregate = ref<LogAggregateResponse | null>(null)
 /** 明细表格默认折叠(统计视图为主) */
 const detailVisible = ref(false)
+
+// ---- 明细按 云·账号 折叠分组(组头:账号名/条数/源状态;翻页追加 allEntries 后自动重排) ----
+/**
+ * 分组键 = meta.cloud + meta.account_name;组数据 = allEntries 过滤 —— allEntries
+ * 本身时间倒序,过滤天然保持组内倒序不变;翻页追加后 computed 自动重算。
+ * 组序按 cloudOrder 固定云序,与上方日志源下拉分组一致。
+ */
+const entryGroups = computed(() => {
+    const map = new Map<string, { cloud: string; accountName: string; entries: LogEntry[] }>()
+    for (const e of allEntries.value) {
+        const key = `${e.meta.cloud}·${e.meta.account_name}`
+        if (!map.has(key)) map.set(key, { cloud: e.meta.cloud, accountName: e.meta.account_name, entries: [] })
+        map.get(key)!.entries.push(e)
+    }
+    // 失败且无样本的源也要有组头可标注(0 条 + 失败 tag),避免整组失败被隐藏
+    for (const o of resp.value?.sources ?? []) {
+        const key = `${o.cloud}·${o.account_name}`
+        if (!map.has(key)) map.set(key, { cloud: o.cloud, accountName: o.account_name, entries: [] })
+    }
+    return Array.from(map.entries())
+        .sort((a, b) => groupRank(a[0]) - groupRank(b[0]))
+        .map(([key, g]) => ({ key, label: `${cloudLabel(g.cloud)}·${g.accountName}`, entries: g.entries }))
+})
+
+/** 组 → 单源状态(失败/耗时,来自 resp.sources;翻页后随当前页刷新) */
+const groupOutcomes = computed<Map<string, LogSourceOutcome[]>>(() => {
+    const map = new Map<string, LogSourceOutcome[]>()
+    for (const o of resp.value?.sources ?? []) {
+        const key = `${o.cloud}·${o.account_name}`
+        if (!map.has(key)) map.set(key, [])
+        map.get(key)!.push(o)
+    }
+    return map
+})
+
+/** 组头 title:该组失败源错误原因(hover 可查) */
+function groupErrorText(key: string): string {
+    return (groupOutcomes.value.get(key) ?? [])
+        .filter((o) => o.error)
+        .map((o) => o.error)
+        .join(';')
+}
+
+/** 折叠态(默认空 = 全展开);键随组稳定,翻页不重置,切类型重置 */
+const collapsedGroups = ref<Set<string>>(new Set())
+
+function toggleGroup(key: string) {
+    const next = new Set(collapsedGroups.value)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    collapsedGroups.value = next
+}
+
+const allGroupsCollapsed = computed(() =>
+    entryGroups.value.length > 0 && entryGroups.value.every((g) => collapsedGroups.value.has(g.key)),
+)
+
+function toggleAllGroups() {
+    collapsedGroups.value = allGroupsCollapsed.value ? new Set() : new Set(entryGroups.value.map((g) => g.key))
+}
 
 // ---- 查询进行中进度态(文字化回馈:源数/已耗时;不必轮询真实进度) ----
 const searchElapsed = ref(0)
@@ -650,6 +742,8 @@ function onTypeChange() {
     aggregate.value = null
     selectedResources.value = []
     allEntries.value = []
+    // 切类型:分组折叠态重置为全展开(组键跨类型语义不同)
+    collapsedGroups.value = new Set()
     // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
     fieldFilters.value = []
     aggrDimension.value = ''
@@ -1043,6 +1137,54 @@ function columnWidth(key: string): number {
 }
 .detail-body {
     margin-top: 4px;
+}
+/* 明细 云·账号 分组 */
+.group-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+.group-toolbar-label {
+    color: var(--el-text-color-secondary);
+}
+.entry-group {
+    margin-bottom: 8px;
+}
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 8px;
+    border: none;
+    background: var(--el-fill-color-light);
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    text-align: left;
+
+    &:hover {
+        background: var(--el-fill-color);
+    }
+}
+.group-name {
+    font-weight: 600;
+}
+.group-count,
+.group-duration {
+    color: var(--el-text-color-secondary);
+}
+.group-failed {
+    font-size: 12px;
+    cursor: help;
+}
+.group-hint {
+    margin-left: auto;
+    color: var(--el-text-color-secondary);
+    font-weight: normal;
 }
 .log-table {
     width: 100%;

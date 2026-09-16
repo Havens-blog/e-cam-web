@@ -234,6 +234,119 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
     })
 })
 
+describe('LogsIndex(明细按云·账号折叠分组,组头含条数/耗时)', () => {
+    // 时间用相对值:翻页 canLoadEarlier 要求最旧一条晚于窗口起点(默认 6h)
+    const NOW = Date.now()
+    const aliEntry = { ...entry, timestamp: NOW - 1000 } as never
+    const awsEntry = {
+        ...entry,
+        meta: { ...entry.meta, cloud: 'aws', account_id: 'acc-2', account_name: 'AWS B' },
+        timestamp: NOW - 2000,
+    } as never
+
+    const okAli = { cloud: 'aliyun', account_id: 'acc-1', account_name: '阿里A', count: 1, error: '', duration_ms: 12 }
+    const okAws = { cloud: 'aws', account_id: 'acc-2', account_name: 'AWS B', count: 1, error: '', duration_ms: 7 }
+
+    function groupedResp(): LogSearchResponse {
+        return searchResp({
+            entries: [aliEntry, awsEntry],
+            sources: [okAli, okAws],
+        })
+    }
+
+    /** 查询成功并展开明细区(分组 UI 在明细体内) */
+    async function mountWithGroups(): Promise<VueWrapper> {
+        searchApi.mockResolvedValueOnce(groupedResp())
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+        await w.find('.detail-toggle').trigger('click')
+        return w
+    }
+
+    it('明细按 云·账号 分组,组头含账号展示名/条数/耗时,组序按云固定序', async () => {
+        const w = await mountWithGroups()
+        const headers = w.findAll('.group-header')
+        expect(headers.length).toBe(2)
+        expect(headers[0]!.text()).toContain('阿里云·阿里A')
+        expect(headers[0]!.text()).toContain('1 条')
+        expect(headers[0]!.text()).toContain('12ms')
+        expect(headers[1]!.text()).toContain('AWS·AWS B')
+        // 云固定排序(cloudOrder):阿里云组在 AWS 组前
+        expect(headers.findIndex((h) => h.text().includes('阿里云'))).toBeLessThan(
+            headers.findIndex((h) => h.text().includes('AWS')),
+        )
+        w.unmount()
+    })
+
+    it('组头点击可折叠/展开;全部折叠/全部展开按钮生效(默认全展开)', async () => {
+        const w = await mountWithGroups()
+        // 默认全展开:每组都有表
+        expect(w.findAll('el-table-stub').length).toBe(2)
+        expect(w.findAll('.group-header')[0]!.attributes('aria-expanded')).toBe('true')
+
+        // 单组折叠:该组表消失,另一组不受影响
+        await w.findAll('.group-header')[0]!.trigger('click')
+        expect(w.findAll('.group-header')[0]!.attributes('aria-expanded')).toBe('false')
+        expect(w.findAll('el-table-stub').length).toBe(1)
+
+        // 全部折叠
+        const collapseAll = () => w.findAll('button').find((b) => b.text().includes('全部折叠'))
+        await collapseAll()!.trigger('click')
+        expect(w.findAll('el-table-stub').length).toBe(0)
+        expect(w.findAll('.group-header').every((h) => h.attributes('aria-expanded') === 'false')).toBe(true)
+
+        // 全部展开
+        const expandAll = () => w.findAll('button').find((b) => b.text().includes('全部展开'))
+        expect(expandAll()).toBeTruthy()
+        await expandAll()!.trigger('click')
+        expect(w.findAll('el-table-stub').length).toBe(2)
+        w.unmount()
+    })
+
+    it('单源失败不整组报错:失败源在组头标注,错误可查;成功组不受影响', async () => {
+        searchApi.mockResolvedValueOnce(
+            searchResp({
+                entries: [aliEntry, awsEntry],
+                sources: [
+                    okAli,
+                    { cloud: 'aws', account_id: 'acc-2', account_name: 'AWS B', count: 0, error: 'rate exceeded', duration_ms: 3 },
+                ],
+            }),
+        )
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+        await w.find('.detail-toggle').trigger('click')
+
+        expect(w.find('.error-state').exists()).toBe(false)
+        const headers = w.findAll('.group-header')
+        const awsHeader = headers.find((h) => h.text().includes('AWS B'))!
+        expect(awsHeader).toBeTruthy()
+        expect(awsHeader.text()).toContain('失败')
+        // 错误原因可通过组头 title(hover)查看
+        expect(awsHeader.attributes('title')).toContain('rate exceeded')
+        const aliHeader = headers.find((h) => h.text().includes('阿里A'))!
+        expect(aliHeader.text()).not.toContain('失败')
+        w.unmount()
+    })
+
+    it('翻页追加后组内条数自动更新(allEntries 累积 → 分组派生),翻页条不受影响', async () => {
+        const w = await mountWithGroups()
+        expect(w.findAll('.group-header')[0]!.text()).toContain('1 条')
+
+        searchApi.mockResolvedValueOnce(searchResp({ entries: [aliEntry] }))
+        const earlier = w.findAll('button').find((b) => b.text().includes('加载更早'))!
+        await earlier.trigger('click')
+        await flushPromises()
+
+        // 同账号再 +1 条 → 组头条数自动 2;翻页条照常显示
+        expect(w.findAll('.group-header')[0]!.text()).toContain('2 条')
+        expect(w.find('.pager-info').text()).toContain('已加载 3 条')
+        w.unmount()
+    })
+})
+
 describe('LogsIndex(字段筛选快捷值:样本回填 chips,零额外请求)', () => {
     const addFilterBtn = (w: VueWrapper) => w.findAll('button').find((b) => b.text().includes('添加字段筛选'))
     const valueInput = (w: VueWrapper) => w.find('.ff-value input').element as HTMLInputElement
