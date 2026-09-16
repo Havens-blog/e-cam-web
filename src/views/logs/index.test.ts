@@ -347,6 +347,76 @@ describe('LogsIndex(明细按云·账号折叠分组,组头含条数/耗时)', (
     })
 })
 
+describe('LogsIndex(TopN 下钻:图点击 → 字段筛选重查,可清除)', () => {
+    /** LogStats 桩:一个点击即发出 bar-click 的按钮(默认维度 cdn 域名 Top → host) */
+    const LogStatsDrillStub = {
+        name: 'LogStats',
+        template: `<button class="stats-drill" @click="$emit('bar-click', { name: 'a.com' })" />`,
+    }
+
+    async function mountWithDrill(): Promise<VueWrapper> {
+        searchApi.mockResolvedValue(searchResp())
+        const w = mount(LogsIndex, {
+            global: {
+                plugins: [ElementPlus],
+                stubs: { LogStats: LogStatsDrillStub, LogDetailDrawer: true, ElTooltip: true, ElTable: true },
+            },
+        })
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+        return w
+    }
+
+    const clearDrillBtn = (w: VueWrapper) => w.findAll('button').find((b) => b.text().includes('清除下钻'))
+
+    it('点击 TopN 图项 → 新增字段筛选行(host eq)并自动重查,明细/统计同步带上新筛选', async () => {
+        const w = await mountWithDrill()
+        expect(w.findAll('.field-filter-row').length).toBe(0)
+
+        await w.find('.stats-drill').trigger('click')
+        await flushPromises()
+
+        expect(searchApi).toHaveBeenCalledTimes(2)
+        expect(aggregateApi).toHaveBeenCalledTimes(2)
+        expect(searchApi.mock.calls.at(-1)![0].filters).toEqual([{ field: 'host', op: 'eq', value: 'a.com' }])
+        expect(w.findAll('.field-filter-row').length).toBe(1)
+        w.unmount()
+    })
+
+    it('已存在同字段 eq 条件 → 更新值不重复加行(仍只有一行)', async () => {
+        const w = await mountWithDrill()
+        await w.find('.stats-drill').trigger('click')
+        await flushPromises()
+        await w.find('.stats-drill').trigger('click')
+        await flushPromises()
+
+        expect(searchApi).toHaveBeenCalledTimes(3)
+        expect(w.findAll('.field-filter-row').length).toBe(1)
+        w.unmount()
+    })
+
+    it('「清除下钻」仅移除下钻行,用户手动条件保留并重查还原', async () => {
+        const w = await mountWithDrill()
+        await w.find('.stats-drill').trigger('click')
+        await flushPromises()
+        expect(clearDrillBtn(w)).toBeTruthy()
+
+        // 用户手动加一行并填值(与下钻行不同字段)
+        const addBtn = w.findAll('button').find((b) => b.text().includes('添加字段筛选'))
+        await addBtn!.trigger('click')
+        await (w.findAll('.ff-value input')[1]!).setValue('custom')
+
+        await clearDrillBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(w.findAll('.field-filter-row').length).toBe(1)
+        expect(searchApi.mock.calls.at(-1)![0].filters).toEqual([{ field: 'host', op: 'eq', value: 'custom' }])
+        expect(clearDrillBtn(w)).toBeUndefined()
+        w.unmount()
+    })
+})
+
 describe('LogsIndex(字段筛选快捷值:样本回填 chips,零额外请求)', () => {
     const addFilterBtn = (w: VueWrapper) => w.findAll('button').find((b) => b.text().includes('添加字段筛选'))
     const valueInput = (w: VueWrapper) => w.find('.ff-value input').element as HTMLInputElement

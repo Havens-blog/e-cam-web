@@ -122,6 +122,8 @@
           <el-button size="small" text type="primary" :disabled="fieldFilters.length >= 4" @click="addFilterRow">
             ＋ 添加字段筛选
           </el-button>
+          <!-- 清除下钻:仅移除 TopN 图下钻产生的条件行,用户手动条件与关键词保留 -->
+          <el-button v-if="hasDrilldown" size="small" text type="warning" @click="clearDrilldown">清除下钻</el-button>
           <el-button v-if="fieldFilters.length" size="small" text @click="fieldFilters = []">清空</el-button>
           <span class="fields-hint">多条件叠加;作用于 域名/状态码/IP/规则 等字段,与关键词 AND 生效</span>
         </div>
@@ -231,7 +233,13 @@
       </div>
     </div>
     <template v-else>
-      <LogStats :entries="allEntries" :log-type="activeType" :aggregate="aggregate" :metric="aggrMetric" />
+      <LogStats
+        :entries="allEntries"
+        :log-type="activeType"
+        :aggregate="aggregate"
+        :metric="aggrMetric"
+        @bar-click="onBarDrilldown"
+      />
 
       <!-- 明细(默认折叠) -->
       <div class="table-card">
@@ -397,6 +405,8 @@ import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogStats from './components/LogStats.vue'
+import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
+import type { FieldFilterRow } from './drilldown'
 import {
     actionTagType,
     cacheHitTagType,
@@ -566,7 +576,7 @@ function friendlySearchError(raw: string): string {
 
 // ---- 结构化字段筛选(多条件 AND;与 keyword 叠加) ----
 const FIELD_FILTER_MAX = 4
-const fieldFilters = ref<FieldFilter[]>([])
+const fieldFilters = ref<FieldFilterRow[]>([])
 const FILTER_OPS = [
     { value: 'eq', label: '等于' },
     { value: 'neq', label: '不等于' },
@@ -608,10 +618,46 @@ function applyQuickValue(f: FieldFilter, value: string) {
     void doSearch()
 }
 
-/** 组装有效筛选(字段与值齐全的行;空值行不参与,避免误过滤) */
+/** 组装有效筛选(字段与值齐全的行;空值行不参与,避免误过滤;下钻标记为前端态,提交时剥除) */
 function buildFilters(): FieldFilter[] | undefined {
     const valid = fieldFilters.value.filter((f) => f.field && f.value.trim() !== '')
-    return valid.length ? valid.map((f) => ({ ...f, value: f.value.trim() })) : undefined
+    return valid.length
+        ? valid.map((f) => ({ field: f.field, op: f.op, value: f.value.trim() }))
+        : undefined
+}
+
+// ---- TopN 分组图下钻(LogStats bar-click → 字段筛选;维度映射在本组件,子组件不感知父级 state) ----
+/** 是否存在下钻条件(「清除下钻」按钮可见性) */
+const hasDrilldown = computed(() => fieldFilters.value.some((f) => f.drilldown))
+
+/**
+ * 点击 TopN 条形图项:映射到当前图维度的筛选字段,同字段 eq 行更新值、否则新增下钻行,
+ * 随后按新筛选重查(doSearch 并行刷新明细 + 聚合,统计图同步)。
+ */
+function onBarDrilldown(payload: { name: string }) {
+    if (!filterableFields.value.length) {
+        ElMessage.warning('字段字典未加载,暂不支持图表下钻')
+        return
+    }
+    // 以「聚合 topn 是否实际生效」判定维度:聚合失败/无 topn 时图回退采样默认 TopN,
+    // 此刻即使选了自定义维度也应映射默认字段,否则筛选与图上分组对不上
+    const hasTopn = !!aggregate.value && aggregate.value.topn.length > 0
+    const field = topnDrilldownField(hasTopn, aggrDimension.value, activeType.value)
+    const next = applyDrilldown(fieldFilters.value, field, payload.name, FIELD_FILTER_MAX)
+    if (!next) {
+        ElMessage.warning(`字段筛选已达上限(${FIELD_FILTER_MAX}),请先删除一条再加下钻条件`)
+        return
+    }
+    fieldFilters.value = next
+    void doSearch()
+}
+
+/** 清除下钻:仅移除带下钻标记的条件行(用户手动条件与 keyword 原样保留),并重查还原 */
+function clearDrilldown() {
+    const next = stripDrilldown(fieldFilters.value)
+    if (!next) return
+    fieldFilters.value = next
+    void doSearch()
 }
 
 // ---- 自定义分组聚合(维度/指标;影响 TopN 图,趋势/总数不变) ----

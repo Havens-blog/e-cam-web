@@ -22,7 +22,7 @@
       </div>
       <div class="chart-cell">
         <div class="chart-title">{{ thirdChartTitle }}</div>
-        <ChartCard :title="thirdChartTitle" :option="thirdOption" height="240px" />
+        <ChartCard ref="topnChartRef" :title="thirdChartTitle" :option="thirdOption" height="240px" />
       </div>
       <div class="chart-cell chart-cell-wide">
         <div class="chart-title">{{ trendChartTitle }}</div>
@@ -40,8 +40,9 @@
  * 颜色纪律:语义切片用状态色板并固定顺序,排名/趋势单一蓝;身份靠图例/标签。
  */
 import type { EChartsOption } from 'echarts'
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { LogAggregateResponse, LogEntry, LogType } from '@/api/types/logs'
+import ChartCard from '@/components/ChartCard.vue'
 import { formatBytes } from '../format'
 import {
     SERIES_COLOR,
@@ -65,6 +66,9 @@ const props = defineProps<{
     /** 当前聚合指标(count/sum_bytes/avg_latency/p99_latency),TopN 数值图用 */
     metric?: string
 }>()
+
+/** TopN 条形图点击下钻:只上报被点击的分组名,维度映射与重查由父组件完成(不反向改父级 state) */
+const emit = defineEmits<{ 'bar-click': [payload: { name: string }] }>()
 
 /** 指标展示单位与标题(图题标注真实指标名,避免只看百分比猜语义) */
 const metricMeta = computed(() => {
@@ -256,6 +260,49 @@ const trendOption = computed(() => {
         return trendChartOption(buildTrendFromBuckets(props.aggregate!.buckets))
     }
     return trendChartOption(buildTrend(props.entries))
+})
+
+// ---- TopN 条形图点击下钻(仅第三图;占比环图/趋势图不参与) ----
+const topnChartRef = ref<InstanceType<typeof ChartCard> | null>(null)
+
+interface BarClickParams {
+    componentType?: string
+    seriesType?: string
+    name?: string
+}
+
+function onBarClick(params: BarClickParams): void {
+    if (params.componentType !== 'series' || params.seriesType !== 'bar' || !params.name) return
+    emit('bar-click', { name: params.name })
+}
+
+/** 给 TopN 图实例挂点击事件;off+on 幂等,重复绑定不会叠加监听 */
+function bindTopnBarClick(): boolean {
+    const chart = topnChartRef.value?.getInstance()
+    if (!chart) return false
+    chart.off('click', onBarClick)
+    chart.on('click', onBarClick)
+    return true
+}
+
+onMounted(async () => {
+    // ChartCard 在动态 import('echarts') 完成后才创建实例,轮询等就绪(上限约 1s)
+    for (let i = 0; i < 20; i++) {
+        await nextTick()
+        if (bindTopnBarClick()) return
+        await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+})
+
+onBeforeUnmount(() => {
+    topnChartRef.value?.getInstance()?.off('click', onBarClick)
+})
+
+// 图 option 更新后补绑一次(off+on 幂等,防实例重建后监听丢失)
+watch(thirdOption, () => {
+    void nextTick(() => {
+        bindTopnBarClick()
+    })
 })
 </script>
 
