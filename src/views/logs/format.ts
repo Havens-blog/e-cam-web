@@ -115,6 +115,30 @@ export function cellValue(row: LogEntry, key: string): string | number {
     return (row as unknown as Record<string, unknown>)[key] as string | number
 }
 
+/** 字段快捷值上限(频率降序去重后保留的高频值个数) */
+export const QUICK_VALUES_MAX = 8
+
+/**
+ * 字段快捷值:从「已返回样本」按 cellValue 聚合常见值(频率降序、去重、上限 max)。
+ * 纯函数、零额外接口请求(Hard Rule:仅来自已加载样本,不轮询/不预取);
+ * 数值字段(状态码)与 meta.* 字段统一走 cellValue,与表格列取值口径一致。
+ */
+export function quickValuesFor(entries: readonly LogEntry[], fieldKey: string, max: number = QUICK_VALUES_MAX): string[] {
+    const counts = new Map<string, number>()
+    for (const row of entries) {
+        const raw = cellValue(row, fieldKey)
+        // 空串/缺失不参与聚合(渲染层另有 dash 占位,不代表真实取值)
+        if (raw === undefined || raw === null || raw === '') continue
+        const value = String(raw)
+        counts.set(value, (counts.get(value) ?? 0) + 1)
+    }
+    return Array.from(counts.entries())
+        // 频率降序;同频字典序保证去重列表稳定(重算不闪烁)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, max)
+        .map(([value]) => value)
+}
+
 /** 默认时间窗口(毫秒):按类型上限取整 7d/3d */
 export function defaultWindowMs(maxWindowDays: number): number {
     const days = Math.min(maxWindowDays || 7, 7)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LogSourceOutcome, WAFLogEntry } from '@/api/types/logs'
+import type { LogEntry, LogSourceOutcome, WAFLogEntry } from '@/api/types/logs'
 import {
     actionTagType,
     cacheHitTagType,
@@ -9,6 +9,7 @@ import {
     dashIfEmpty,
     formatBytes,
     formatLogTime,
+    quickValuesFor,
     severityTagType,
     sourceSummary,
     sourcesHealth,
@@ -85,6 +86,67 @@ describe('sourcesHealth', () => {
     it('summarizes outcome text', () => {
         expect(sourceSummary(ok)).toBe('阿里云·a:3 条')
         expect(sourceSummary(bad)).toBe('阿里云·a:失败(boom)')
+    })
+})
+
+describe('quickValuesFor(字段筛选快捷值:仅来自样本,零额外请求)', () => {
+    function entryOf(values: Record<string, unknown>): LogEntry {
+        return {
+            meta: {
+                cloud: 'aliyun',
+                account_id: 'acc-1',
+                account_name: '阿里A',
+                region: 'r',
+                resource_id: 'd1',
+                source: 's',
+            },
+            timestamp: 1787824562000,
+            ...values,
+        } as unknown as LogEntry
+    }
+
+    it('按频率降序去重,返回 chip 值列表', () => {
+        const entries = [
+            entryOf({ host: 'a.com' }),
+            entryOf({ host: 'a.com' }),
+            entryOf({ host: 'b.com' }),
+            entryOf({ host: 'a.com' }),
+        ]
+        expect(quickValuesFor(entries, 'host')).toEqual(['a.com', 'b.com'])
+    })
+
+    it('数值字段(状态码)与 meta.* 字段口径一致(统一走 cellValue)', () => {
+        const entries = [
+            entryOf({ status: 404 }),
+            entryOf({ status: 404 }),
+            entryOf({ status: 200 }),
+            entryOf({}),
+        ]
+        expect(quickValuesFor(entries, 'status')).toEqual(['404', '200'])
+        expect(quickValuesFor(entries, 'meta.cloud')).toEqual(['aliyun'])
+    })
+
+    it('跳过空串/缺失值,全空样本整洁降级为空列表', () => {
+        const entries = [entryOf({ host: '' }), entryOf({}), entryOf({ host: null })]
+        expect(quickValuesFor(entries, 'host')).toEqual([])
+        expect(quickValuesFor([], 'status')).toEqual([])
+    })
+
+    it('上限 8 个:高频值优先保留', () => {
+        const entries = Array.from({ length: 12 }, (_, i) => entryOf({ client_ip: i === 0 ? 'hot' : `ip-${i}` }))
+        entries.unshift(...Array.from({ length: 5 }, () => entryOf({ client_ip: 'hot' })))
+        const values = quickValuesFor(entries, 'client_ip')
+        expect(values.length).toBe(8)
+        expect(values[0]).toBe('hot')
+        expect(values).toContain('ip-1')
+        // 同频按字典序截断:ip-10/ip-11 排在 ip-2 前,被挤出的是 ip-6 之后
+        expect(values).not.toContain('ip-6')
+    })
+
+    it('同频值排序稳定(字典序),多次调用结果一致', () => {
+        const entries = [entryOf({ method: 'GET' }), entryOf({ method: 'POST' }), entryOf({ method: 'PUT' })]
+        expect(quickValuesFor(entries, 'method')).toEqual(['GET', 'POST', 'PUT'])
+        expect(quickValuesFor(entries, 'method')).toEqual(quickValuesFor(entries, 'method'))
     })
 })
 

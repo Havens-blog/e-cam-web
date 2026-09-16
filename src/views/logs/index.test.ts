@@ -233,3 +233,61 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         w.unmount()
     })
 })
+
+describe('LogsIndex(字段筛选快捷值:样本回填 chips,零额外请求)', () => {
+    const addFilterBtn = (w: VueWrapper) => w.findAll('button').find((b) => b.text().includes('添加字段筛选'))
+    const valueInput = (w: VueWrapper) => w.find('.ff-value input').element as HTMLInputElement
+
+    it('未加载数据时不显示快捷值区(整洁降级)', async () => {
+        const w = await mountPage()
+        await addFilterBtn(w)!.trigger('click')
+        expect(w.find('.quick-values').exists()).toBe(false)
+        w.unmount()
+    })
+
+    it('查询后展示所选字段快捷值 chips;点击填入 value 并重查;再次点击取消(toggle)', async () => {
+        // 每次重查返回同样本,保证 chip 在 toggle 期间不因样本变化消失
+        searchApi.mockResolvedValue(searchResp())
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        await addFilterBtn(w)!.trigger('click')
+        const chips = w.findAll('.qv-chip')
+        expect(chips.length).toBe(1)
+        expect(chips[0]!.text()).toBe('a.com')
+
+        // 点击 chip → 填入该行 value 并直接重查(复用 doSearch,零额外接口)
+        await chips[0]!.trigger('click')
+        await flushPromises()
+        expect(searchApi).toHaveBeenCalledTimes(2)
+        expect(valueInput(w).value).toBe('a.com')
+
+        // 再次点击 → toggle 取消(清空 value,该行退出筛选组合)并重查
+        await w.find('.qv-chip').trigger('click')
+        await flushPromises()
+        expect(searchApi).toHaveBeenCalledTimes(3)
+        expect(valueInput(w).value).toBe('')
+        w.unmount()
+    })
+
+    it('样本变化后快捷值自动重算,不残留旧值;用户已填 value 不被覆盖', async () => {
+        searchApi.mockResolvedValueOnce(searchResp())
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        await addFilterBtn(w)!.trigger('click')
+        expect(w.findAll('.qv-chip').map((c) => c.text())).toEqual(['a.com'])
+
+        // 下一次查询样本 host 全为 b.com:chips 重算,不残留 a.com
+        searchApi.mockResolvedValueOnce(
+            searchResp({ entries: [{ ...entry, host: 'b.com' } as never] }),
+        )
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+        expect(searchApi).toHaveBeenCalledTimes(2)
+        expect(w.findAll('.qv-chip').map((c) => c.text())).toEqual(['b.com'])
+        w.unmount()
+    })
+})

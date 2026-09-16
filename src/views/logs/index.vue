@@ -78,23 +78,45 @@
 
       <!-- 结构化字段筛选(多条件 AND 叠加,语义在统一字段上): -->
       <div v-if="filterableFields.length" class="filter-fields" aria-label="字段筛选">
-        <div v-for="(f, i) in fieldFilters" :key="i" class="field-filter-row">
-          <el-select v-model="f.field" class="ff-field" placeholder="字段" aria-label="筛选字段">
-            <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
-          </el-select>
-          <el-select v-model="f.op" class="ff-op" aria-label="操作符">
-            <el-option v-for="o in FILTER_OPS" :key="o.value" :label="o.label" :value="o.value" />
-          </el-select>
-          <el-input
-            v-model="f.value"
-            class="ff-value"
-            placeholder="筛选值(回车查询)"
-            clearable
-            @keyup.enter="doSearch"
-          />
-          <el-button text type="danger" aria-label="删除条件" @click="fieldFilters.splice(i, 1)">
-            <el-icon><Delete /></el-icon>
-          </el-button>
+        <div v-for="(f, i) in fieldFilters" :key="i" class="field-filter-item">
+          <div class="field-filter-row">
+            <el-select v-model="f.field" class="ff-field" placeholder="字段" aria-label="筛选字段">
+              <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+            </el-select>
+            <el-select v-model="f.op" class="ff-op" aria-label="操作符">
+              <el-option v-for="o in FILTER_OPS" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+            <el-input
+              v-model="f.value"
+              class="ff-value"
+              placeholder="筛选值(回车查询)"
+              clearable
+              @keyup.enter="doSearch"
+            />
+            <el-button text type="danger" aria-label="删除条件" @click="fieldFilters.splice(i, 1)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+          <!-- 快捷值:仅来自已返回样本(零额外请求),样本/字段变化随 computed 自动重算 -->
+          <div
+            v-if="quickValuesByField.get(f.field)?.length"
+            class="quick-values"
+            role="group"
+            :aria-label="`快捷值:${fieldLabel(f.field)}(来自当前样本)`"
+          >
+            <span class="qv-label">快捷值:</span>
+            <button
+              v-for="v in quickValuesByField.get(f.field)"
+              :key="v"
+              type="button"
+              class="qv-chip"
+              :class="{ 'qv-active': f.value.trim() === v }"
+              :aria-label="`${f.value.trim() === v ? '取消' : '填入'}快捷值 ${v}`"
+              @click="applyQuickValue(f, v)"
+            >
+              {{ v }}
+            </button>
+          </div>
         </div>
         <div class="filter-fields-actions">
           <el-button size="small" text type="primary" :disabled="fieldFilters.length >= 4" @click="addFilterRow">
@@ -352,6 +374,8 @@ import {
     defaultWindowMs,
     formatBytes,
     formatLogTime,
+    QUICK_VALUES_MAX,
+    quickValuesFor,
     severityTagType,
     statusTagType,
 } from './format'
@@ -465,6 +489,31 @@ const filterableFields = computed(() =>
 function addFilterRow() {
     if (fieldFilters.value.length >= FIELD_FILTER_MAX) return
     fieldFilters.value.push({ field: filterableFields.value[0]?.key ?? '', op: 'eq', value: '' })
+}
+
+// ---- 字段快捷值(仅来自已返回样本 allEntries,零额外接口请求;不轮询/不预取) ----
+/**
+ * {field: quickValues} 映射:对每个可筛选字段从当前样本聚合高频值(频率降序去重,
+ * 上限 QUICK_VALUES_MAX)。依赖 allEntries + filterableFields,样本/类型/字段变化
+ * 自动重算,不残留旧值;未加载数据或字段无可抽取值时为空 → chips 区整行隐藏。
+ */
+const quickValuesByField = computed<Map<string, string[]>>(() => {
+    const map = new Map<string, string[]>()
+    if (allEntries.value.length === 0) return map
+    for (const f of filterableFields.value) {
+        map.set(f.key, quickValuesFor(allEntries.value, f.key, QUICK_VALUES_MAX))
+    }
+    return map
+})
+
+function fieldLabel(fieldKey: string): string {
+    return filterableFields.value.find((f) => f.key === fieldKey)?.label ?? fieldKey
+}
+
+/** 点选快捷值:已选中则取消(toggle 清空 value,该行退出筛选组合),随后按当前筛选组合重查 */
+function applyQuickValue(f: FieldFilter, value: string) {
+    f.value = f.value.trim() === value ? '' : value
+    void doSearch()
 }
 
 /** 组装有效筛选(字段与值齐全的行;空值行不参与,避免误过滤) */
@@ -830,11 +879,50 @@ function columnWidth(key: string): number {
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    margin-bottom: 8px;
 }
 .ff-field { width: 160px; }
 .ff-op { width: 110px; }
 .ff-value { flex: 1; min-width: 160px; max-width: 300px; }
+/* 字段快捷值 chips(样本回填) */
+.field-filter-item {
+    margin-bottom: 8px;
+}
+.quick-values {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: -2px 0 6px;
+    padding-left: 2px;
+}
+.qv-label {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+}
+.qv-chip {
+    max-width: 220px;
+    padding: 1px 8px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    background: var(--el-fill-color-blank);
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    line-height: 18px;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+        border-color: var(--el-color-primary-light-5);
+        color: var(--el-color-primary);
+    }
+}
+.qv-chip.qv-active {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+}
 .filter-fields-actions {
     display: flex;
     align-items: center;
