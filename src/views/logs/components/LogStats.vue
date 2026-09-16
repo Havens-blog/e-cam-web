@@ -142,7 +142,15 @@ function topBarOption(data: { name: string; value: number }[], fmt?: (v: number)
             data: rows.map((r) => r.name),
             axisTick: { show: false },
             axisLine: { show: false },
-            axisLabel: { color: 'var(--text-secondary)', fontSize: 12 },
+            axisLabel: {
+                color: 'var(--text-secondary)',
+                fontSize: 12,
+                // 长分组值(如 IPv6 / 完整 UA)限宽省略,避免 echarts 按真实
+                // 标签宽度撑大左侧留白把图压瘪;完整值在 tooltip 里
+                width: 200,
+                overflow: 'truncate',
+                formatter: (v: string) => (v.length > 26 ? `${v.slice(0, 25)}…` : v),
+            },
         },
         series: [
             {
