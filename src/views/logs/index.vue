@@ -171,16 +171,29 @@
     <!-- 结果区:统计视图为主,明细默认折叠 -->
     <div v-if="searching || searchError || !resp || allEntries.length === 0" class="table-card">
       <template v-if="searching">
-        <div class="table-skeleton" aria-hidden="true">
-          <div v-for="i in 6" :key="i" class="skeleton-row" />
+        <!-- 文字进度态(20s 级联邦查询不白屏:源数/已耗时文本化 + aria,骨架仅作背景) -->
+        <div
+          class="search-progress"
+          role="status"
+          aria-live="polite"
+          :aria-label="progressAria"
+        >
+          <div class="table-skeleton" aria-hidden="true">
+            <div v-for="i in 6" :key="i" class="skeleton-row" />
+          </div>
+          <div class="search-progress-text">
+            <span class="progress-main">{{ progressText }} · 已耗时 {{ searchElapsed }} 秒</span>
+            <span class="progress-hint">多云联邦查询耗时较长,请稍候,无需重复点击</span>
+          </div>
         </div>
       </template>
       <div v-else-if="searchError" class="state-card">
         <div class="error-state">
           <div class="state-icon state-icon-error" aria-hidden="true">⚠</div>
           <div class="state-title">查询失败</div>
-          <div class="state-desc">{{ searchError }}</div>
-          <el-button class="state-cta" @click="doSearch">重试</el-button>
+          <div class="state-desc">{{ friendlySearchError(searchError) }}</div>
+          <div class="state-raw">原始错误:{{ searchError }}</div>
+          <el-button class="state-cta" type="primary" aria-label="重试查询" @click="doSearch">重试</el-button>
         </div>
       </div>
       <div v-else class="state-card">
@@ -266,6 +279,15 @@
           <!-- 时间游标翻页:窗口上界前移续拉更早日志并追加,无重复 -->
           <div class="pager-bar">
             <span class="pager-info">已加载 {{ allEntries.length }} 条</span>
+            <span
+              v-if="pageLoading"
+              class="pager-progress"
+              role="status"
+              aria-live="polite"
+              :aria-label="`加载更早日志进行中,已耗时 ${searchElapsed} 秒`"
+            >
+              正在加载更早日志 · 已耗时 {{ searchElapsed }} 秒
+            </span>
             <span v-if="pageInc !== null" class="pager-oldest">本次 +{{ pageInc }} 条</span>
             <span v-if="pageBottom" class="pager-bottom">已到窗口起点,没有更早日志</span>
             <span v-else-if="allEntries.length" class="pager-oldest">最早 {{ formatLogTime(oldestTs) }}</span>
@@ -318,7 +340,7 @@ import type {
     LogTypeMeta,
 } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogStats from './components/LogStats.vue'
 import {
@@ -376,6 +398,55 @@ const canLoadEarlier = computed(() => {
 const aggregate = ref<LogAggregateResponse | null>(null)
 /** 明细表格默认折叠(统计视图为主) */
 const detailVisible = ref(false)
+
+// ---- 查询进行中进度态(文字化回馈:源数/已耗时;不必轮询真实进度) ----
+const searchElapsed = ref(0)
+let progressTimer: ReturnType<typeof setInterval> | null = null
+
+function startProgress() {
+    stopProgress()
+    searchElapsed.value = 0
+    progressTimer = setInterval(() => {
+        searchElapsed.value += 1
+    }, 1000)
+}
+
+function stopProgress() {
+    if (progressTimer) {
+        clearInterval(progressTimer)
+        progressTimer = null
+    }
+}
+
+onBeforeUnmount(stopProgress)
+
+/** 预期查询源数:当前云/资源选择下已开启投递的源(与后端联邦范围一致的前端近似) */
+const querySourceCount = computed(() => {
+    const enabled = filteredSources.value.filter((s) => s.enabled)
+    if (!selectedResources.value.length) return enabled.length
+    const picked = new Set(selectedResources.value)
+    return enabled.filter((s) => picked.has(s.resource_id)).length
+})
+
+const progressText = computed(() =>
+    querySourceCount.value > 0 ? `正在查询 ${querySourceCount.value} 个云账号` : '正在查询所选日志源',
+)
+const progressAria = computed(() => `查询进行中:${progressText.value},已耗时 ${searchElapsed.value} 秒`)
+
+/** 整页失败原因映射:裸错误串转可读中文降级说明(原始串仍附在下方供排查) */
+function friendlySearchError(raw: string): string {
+    const msg = raw.toLowerCase()
+    if (msg.includes('timeout') || raw.includes('超时')) {
+        return '查询超时:云端检索耗时过长,可缩小时间范围、减少所选源或降低条数上限后重试。'
+    }
+    if (msg.includes('truncat') || raw.includes('截断')) {
+        return '结果被截断:命中数据超出单次查询上限,本次为采样视图;可缩小时间范围或加字段筛选后重试。'
+    }
+    if (msg.includes('network') || msg.includes('network error') || raw.includes('网络')) {
+        return '网络异常:查询服务暂不可达,请检查网络连接后重试。'
+    }
+    return '查询失败:云端检索未正常返回,可缩小时间范围或放宽筛选条件后重试。'
+}
 
 // ---- 结构化字段筛选(多条件 AND;与 keyword 叠加) ----
 const FIELD_FILTER_MAX = 4
@@ -580,6 +651,7 @@ async function doSearch() {
     }
     searching.value = true
     searchError.value = ''
+    startProgress()
     detailVisible.value = false // 新查询收敛到统计视图
     // 新查询重置分页游标(回到最新/首页)
     allEntries.value = []
@@ -614,6 +686,7 @@ async function doSearch() {
         aggregate.value = null
         searchError.value = e instanceof Error ? e.message : String(e)
     } finally {
+        stopProgress()
         searching.value = false
     }
 }
@@ -635,6 +708,7 @@ async function loadEarlier() {
         return
     }
     pageLoading.value = true
+    startProgress()
     try {
         const pageRes = await searchLogsApi({
             log_type: activeType.value,
@@ -661,6 +735,7 @@ async function loadEarlier() {
     } catch (e) {
         ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
     } finally {
+        stopProgress()
         pageLoading.value = false
     }
 }
@@ -908,12 +983,39 @@ function columnWidth(key: string): number {
     color: var(--el-text-color-secondary);
     font-size: 13px;
     margin-bottom: 12px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.state-raw {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    margin: -8px 0 12px;
+    word-break: break-all;
 }
 .table-skeleton {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 12px;
+}
+.search-progress-text {
+    padding: 0 12px 12px;
+    font-size: 13px;
+}
+.progress-main {
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+}
+.progress-hint {
+    margin-left: 8px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--el-text-color-secondary);
+}
+.pager-progress {
+    color: var(--el-text-color-primary);
+    font-weight: 600;
 }
 .skeleton-row {
     height: 28px;
