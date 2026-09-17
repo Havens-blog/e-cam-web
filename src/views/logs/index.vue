@@ -60,6 +60,17 @@
             </el-option>
           </el-option-group>
         </el-select>
+        <el-tooltip content="源列表已按类型本地缓存;新增域名/源时点此强制刷新" placement="top">
+          <el-button
+            class="filter-refresh"
+            size="default"
+            :loading="sourcesLoading"
+            aria-label="刷新日志源列表"
+            @click="refreshSources"
+          >
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </el-tooltip>
         <el-input
           v-model="keyword"
           class="filter-keyword"
@@ -388,7 +399,7 @@
  * - 明细按 云·账号 折叠分组,组头含条数/源状态(失败不静默),组内仍统一时间倒序;
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
  */
-import { ArrowDown, ArrowRight, Delete } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowRight, Delete, Refresh } from '@element-plus/icons-vue'
 import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type {
     FieldFilter,
@@ -425,6 +436,12 @@ const typeMetas = ref<LogTypeMeta[]>([])
 const activeType = ref<LogType>('cdn')
 const sources = ref<LogSource[]>([])
 const sourcesLoading = ref(false)
+/**
+ * 各类型日志源本地缓存:源清单(CDN/WAF 域名、S3 前缀、LTS 流)变动频率
+ * 远低于请求频率,切 Tab 复用缓存立即渲染(零请求);「刷新源列表」按钮
+ * 强制重拉兜底。云选择过滤是本地 computed,不再触发重拉。
+ */
+const sourcesCache = ref<Record<string, LogSource[]>>({})
 
 const timeRange = ref<[Date, Date] | null>(null)
 /** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
@@ -760,10 +777,19 @@ onMounted(async () => {
     await loadSources()
 })
 
-async function loadSources() {
+async function loadSources(force = false) {
     sourcesLoading.value = true
     try {
-        sources.value = await getLogSourcesApi({ log_type: activeType.value })
+        // 源清单变动频率低(CDN/WAF 域名、S3 前缀、LTS 流):切 Tab 复用本地
+        // 缓存立即渲染,零请求;force=true(手动「刷新源列表」)强制重拉。
+        const cached = sourcesCache.value[activeType.value]
+        if (cached && cached.length > 0 && !force) {
+            sources.value = cached
+        } else {
+            const list = await getLogSourcesApi({ log_type: activeType.value })
+            sources.value = list
+            sourcesCache.value = { ...sourcesCache.value, [activeType.value]: list }
+        }
         // 清除已失效的资源选择
         const valid = new Set(sources.value.map((s) => s.resource_id))
         selectedResources.value = selectedResources.value.filter((r) => valid.has(r))
@@ -782,6 +808,11 @@ async function loadSources() {
     }
 }
 
+/** 手动强制刷新源列表(新增域名/源时兜底;平时缓存即可) */
+function refreshSources() {
+    void loadSources(true)
+}
+
 function onTypeChange() {
     resp.value = null
     aggregate.value = null
@@ -794,13 +825,14 @@ function onTypeChange() {
     aggrDimension.value = ''
     aggrMetric.value = 'count'
     resetTimeRange()
+    // 切类型复用本地缓存(缓存有该类型即零请求);无缓存才拉一次
     void loadSources()
 }
 
 function onCloudsChange() {
     cloudsTouched.value = true
-    // 云变化只影响可选源展示,已有资源选择按有效性保留(loadSources 会清理)
-    void loadSources()
+    // 云变化只是本地展示过滤(availableClouds/filteredSources 均为 computed),
+    // 源清单不变,不再重拉接口(曾每次切云都重新枚举源)
 }
 
 // ---- 时间窗口约束(与后端一致:按类型上限) ----
