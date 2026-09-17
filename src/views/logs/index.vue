@@ -831,8 +831,16 @@ function onTypeChange() {
 
 function onCloudsChange() {
     cloudsTouched.value = true
-    // 云变化只是本地展示过滤(availableClouds/filteredSources 均为 computed),
-    // 源清单不变,不再重拉接口(曾每次切云都重新枚举源)
+    // 跨云残留的已选源从选中移除:源归属云,切云后原选中的 AWS/华为源
+    // 不再匹配(否则选中项残留 + 旧结果含其它云源,观感像"选阿里却有 AWS")
+    const cloudSet = new Set(selectedClouds.value)
+    selectedResources.value = selectedResources.value.filter((r) => {
+        const owner = sources.value.find((s) => s.resource_id === r)
+        return !owner || cloudSet.has(owner.cloud) // 无归属信息则保留
+    })
+    // 已有查询结果时按新云自动重查:保持"所见即所选"(doSearch 自带 searching
+    // 防并发;查询有 SWR 结果缓存,代价低)
+    if (resp.value) void doSearch()
 }
 
 // ---- 时间窗口约束(与后端一致:按类型上限) ----
