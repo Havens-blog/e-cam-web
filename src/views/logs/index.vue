@@ -189,7 +189,21 @@
           clearable
           aria-label="分组字段"
         >
-          <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+          <!-- 可聚合白名单(后端索引探测):统一字段 + 原始列分组;探测失败回退全量字典 -->
+          <template v-if="aggregatableFields.length">
+            <el-option-group v-if="aggregatableDictFields.length" label="统一字段(可聚合)">
+              <el-option v-for="fd in aggregatableDictFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+            </el-option-group>
+            <el-option-group v-if="aggregatableRawFields.length" label="原始可聚合列(云上字段)">
+              <el-option v-for="k in aggregatableRawFields" :key="k" :label="k" :value="k" />
+            </el-option-group>
+            <el-option-group v-if="nonAggregatableDictFields.length" label="暂不支持聚合(未收录字段映射)">
+              <el-option v-for="fd in nonAggregatableDictFields" :key="fd.key" :label="fd.label" :value="fd.key" disabled />
+            </el-option-group>
+          </template>
+          <template v-else>
+            <el-option v-for="fd in filterableFields" :key="fd.key" :label="fd.label" :value="fd.key" />
+          </template>
         </el-select>
       </el-tooltip>
       <el-select v-model="aggrMetric" class="aggr-metric" aria-label="聚合指标">
@@ -604,6 +618,24 @@ const filterableFields = computed(() =>
     currentFields.value.filter((f) => !f.key.startsWith('meta.') && f.key !== 'timestamp'),
 )
 
+// ---- 分组聚合维度白名单(后端索引探测:列必须开过 KV 分析索引才能 group by) ----
+/** 当前类型可聚合字段清单(空 = 探测失败/无账号 → 维度下拉回退全量字典,不劣化) */
+const aggregatableFields = computed(() => currentMeta.value?.aggregatable ?? [])
+const aggregatableSet = computed(() => new Set(aggregatableFields.value))
+/** 白名单内的统一字段(带中文标签,可直接选) */
+const aggregatableDictFields = computed(() =>
+    filterableFields.value.filter((f) => aggregatableSet.value.has(f.key)),
+)
+/** 白名单内的云上原始列(非统一字段,按列名展示;allow-create 亦可输) */
+const aggregatableRawFields = computed(() =>
+    aggregatableFields.value.filter((k) => !filterableFields.value.some((f) => f.key === k)),
+)
+/** 字典中不在白名单的字段(未开分析索引):禁用展示说明,不再盲选撞错 */
+const nonAggregatableDictFields = computed(() => {
+    if (!aggregatableFields.value.length) return []
+    return filterableFields.value.filter((f) => !aggregatableSet.value.has(f.key))
+})
+
 function addFilterRow() {
     if (fieldFilters.value.length >= FIELD_FILTER_MAX) return
     fieldFilters.value.push({ field: filterableFields.value[0]?.key ?? '', op: 'eq', value: '' })
@@ -682,8 +714,10 @@ const aggrMetric = ref('count')
 const aggrLoading = ref(false)
 /** 维度可输入任意云上原始字段名(后端校验该列已建分析索引,未索引给出可用清单) */
 const DIM_TIP =
-    '可从下拉选统一字段,或输入云上原始列名\n(如 real_client_ip / UA),按该字段全部取值计数;\n' +
-    '列未开启分析索引时会提示该日志源可用字段清单'
+    '分组维度(下拉按可聚合性分组):\n' +
+    '· 统一字段:host/status/URL/耗时 等已映射,直接选;\n' +
+    '· 原始列:可输入云上字段名(如 real_client_ip / UA)按原始列聚合;\n' +
+    '· 置灰项:多列拼接/归一化字段(如后端 IP),暂不可下推聚合'
 const METRIC_OPTS = [
     { value: 'count', label: '计数' },
     { value: 'sum_bytes', label: '下行字节' },

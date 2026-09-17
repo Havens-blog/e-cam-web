@@ -18,6 +18,11 @@ export interface LogTypeMeta {
     label: string
     fields: LogFieldDef[]
     max_window_days: number
+    /**
+     * 该类型已建分析索引(可聚合)的字段清单:分组聚合维度白名单。
+     * 含字典字段键与云上原始列名;空 = 探测失败/无账号,维度下拉回退全量字典。
+     */
+    aggregatable?: string[]
 }
 
 /** 日志源(域名 / LB 实例 / WAF 流) */
