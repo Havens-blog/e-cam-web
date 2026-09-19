@@ -67,8 +67,7 @@
               <div class="detail-column">
                 <div class="column-title">容量与配置</div>
                 <div class="info-list">
-                  <div class="info-row"><span class="info-label">总容量</span><span class="info-value">{{ formatCapacity(instance.attributes?.capacity) }}</span></div>
-                  <div class="info-row"><span class="info-label">已用容量</span><span class="info-value">{{ formatCapacity(instance.attributes?.used_capacity) }}</span></div>
+                  <!-- S-Hard：资产表 capacity/used_capacity 为坏值,不在 NAS 界面展示;容量数值统一见「监控」tab(指标表来源) -->
                   <div class="info-row"><span class="info-label">挂载点数量</span><span class="info-value">{{ instance.attributes?.mount_target_count || 0 }}</span></div>
                   <div class="info-row"><span class="info-label">VPC</span><span class="info-value link">{{ instance.attributes?.vpc_id || '-' }}</span></div>
                   <div class="info-row"><span class="info-label">加密</span><span class="info-value">{{ instance.attributes?.encrypt_type ? '已加密' : '未加密' }}</span></div>
@@ -117,6 +116,38 @@
               <div v-else class="empty-tab"><el-icon :size="48"><PriceTag /></el-icon><p>暂无标签</p></div>
             </div>
           </template>
+          <template v-else-if="activeTab === 'monitor'">
+            <div v-loading="metricsLoading" class="metrics-section">
+              <template v-if="metricsError">
+                <div class="empty-tab">
+                  <el-icon :size="48"><WarningFilled /></el-icon>
+                  <p>{{ metricsError }}</p>
+                  <el-button size="small" type="primary" plain @click="fetchNasMetrics">重试</el-button>
+                </div>
+              </template>
+              <template v-else-if="hasMetricData">
+                <el-alert
+                  v-if="metricZeroException"
+                  class="metrics-alert"
+                  type="warning"
+                  :closable="false"
+                  show-icon
+                  title="部分日期容量为 0(采集异常行),不代表真实零容量,已按容量异常标记"
+                />
+                <div class="metrics-note">近 {{ METRICS_DAYS }} 天容量与使用率(读采集指标表);断线表示当日无数据</div>
+                <div class="metrics-latest">
+                  <div class="summary-item"><span class="summary-label">最新容量</span><span class="summary-value">{{ formatCapacityGB(latestSummary?.capacity) }}</span></div>
+                  <div class="summary-item"><span class="summary-label">已用容量</span><span class="summary-value">{{ formatCapacityGB(latestSummary?.used) }}</span></div>
+                  <div class="summary-item"><span class="summary-label">使用率</span><span class="summary-value">{{ formatUtilization(latestSummary?.utilization) }}</span></div>
+                </div>
+                <div ref="metricsChartRef" class="metrics-chart"></div>
+              </template>
+              <div v-else-if="!metricsLoading" class="empty-tab">
+                <el-icon :size="48"><DataLine /></el-icon>
+                <p>暂无容量指标数据(未采集或该厂商未启用指标采集)</p>
+              </div>
+            </div>
+          </template>
           <template v-else>
             <div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p>{{ activeTab }} 功能开发中...</p></div>
           </template>
@@ -127,12 +158,16 @@
 </template>
 
 <script setup lang="ts">
+import { getNasMetricsApi, type NASFsMetricsView, type NASMetricPoint } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
-import { ArrowDown, Close, Document, FolderOpened, PriceTag } from '@element-plus/icons-vue';
-import { computed, ref } from 'vue';
+import { formatNumber } from '@/utils/formatters';
+import { formatCapacityGB, formatUtilization, hasZeroException } from '@/views/storage/nas/nasMetrics';
+import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFilled } from '@element-plus/icons-vue';
+import * as echarts from 'echarts';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -154,7 +189,195 @@ const tagList = computed(() => {
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); return s === 'running' ? 'running' : s === 'stopped' ? 'stopped' : '' }
 const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', stopped: '已停止', pending: '创建中', Running: '运行中', Stopped: '已停止' }; return map[status] || status }
 const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }; return map[type] || type }
-const formatCapacity = (capacity?: number) => { if (capacity === undefined || capacity === null) return '-'; if (capacity === 0) return '0'; if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`; if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`; return `${capacity} MB` }
+
+// ===== 监控 tab:容量/已用/使用率趋势(按需查询,读 ecam_nas_metric 指标表) =====
+// 与 CdnDetailDrawer 指标 tab 同构;echarts 渲染在 canvas 上,CSS 变量不可用
+const AXIS_LABEL_COLOR = '#a1a1aa'
+const SPLIT_LINE_COLOR = 'rgba(255,255,255,0.08)'
+const TOOLTIP_BG = 'rgba(23,23,23,0.92)'
+const METRICS_DAYS = 30
+
+const metricsLoading = ref(false)
+const metricsResp = ref<NASFsMetricsView | null>(null)
+const metricsError = ref('')
+const metricsFetchedKey = ref('')
+const metricsChartRef = ref<HTMLElement>()
+let metricsChart: echarts.ECharts | null = null
+
+/** 文件系统 ID(fs_id = 实例 asset_id)与云账号 ID */
+const fsId = computed(() => String(props.instance?.asset_id || ''))
+const accountId = computed(() => Number(props.instance?.attributes?.cloud_account_id || 0))
+
+/** 后端已按日期升序返回,防御式再排一次(横轴须从早到晚) */
+const metricPoints = computed<NASMetricPoint[]>(() => {
+  const days = metricsResp.value?.days || []
+  return [...days].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+})
+/** 窗口内至少一天有真实数据(缺失日 capacity/used 均为 null) */
+const hasMetricData = computed(() => metricPoints.value.some(p => p.capacity != null || p.used != null))
+const metricZeroException = computed(() => hasZeroException(metricPoints.value))
+const latestSummary = computed(() => metricsResp.value?.latest || null)
+
+const fetchNasMetrics = async () => {
+  if (!accountId.value || !fsId.value) {
+    metricsError.value = '缺少账号或文件系统标识,无法查询'
+    return
+  }
+  metricsLoading.value = true
+  metricsError.value = ''
+  try {
+    const { data } = await getNasMetricsApi({ fs_id: fsId.value, account_id: accountId.value, days: METRICS_DAYS })
+    metricsResp.value = data || null
+    metricsFetchedKey.value = `${accountId.value}:${fsId.value}`
+    // 数据到位后模板才渲染出图表容器,nextTick 确保 DOM 就位再 init
+    await nextTick()
+    renderNasChart()
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '查询容量指标失败'
+    metricsError.value = `容量指标查询失败: ${msg}`
+  } finally {
+    metricsLoading.value = false
+  }
+}
+
+/** 双轴图:柱=容量/已用(GB,左轴),线=使用率(%,右轴;缺失日/异常日置空断线) */
+const renderNasChart = () => {
+  const items = metricPoints.value
+  if (!metricsChartRef.value || !hasMetricData.value) return
+
+  if (metricsChart && metricsChart.getDom() !== metricsChartRef.value) {
+    metricsChart.dispose()
+    metricsChart = null
+  }
+  if (!metricsChart) metricsChart = echarts.init(metricsChartRef.value)
+
+  // 供 tooltip 标注 capacity=0 异常日(qc_status 读取侧闭环)
+  const statusByDate = new Map(items.map(p => [p.date, p.data_status]))
+
+  metricsChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: TOOLTIP_BG,
+      borderColor: SPLIT_LINE_COLOR,
+      textStyle: { color: '#d4d4d8', fontSize: 12 },
+      formatter: (params: any) => {
+        const date = String(params[0]?.axisValue ?? '')
+        const fullDate = items.find(p => p.date.slice(5, 10) === date)?.date || date
+        const lines = [date]
+        for (const p of params) {
+          if (p.value == null) {
+            lines.push(`${p.marker}${p.seriesName}: —`)
+            continue
+          }
+          const suffix = p.seriesType === 'line' ? '%' : ' GB'
+          lines.push(`${p.marker}${p.seriesName}: ${formatNumber(p.value)}${suffix}`)
+        }
+        if (statusByDate.get(fullDate) === 'zero_exception') {
+          lines.push('⚠ 容量异常(capacity=0 采集异常行)')
+        }
+        return lines.join('<br/>')
+      }
+    },
+    legend: { top: 0, right: 8, textStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 } },
+    grid: { left: 56, right: 56, top: 36, bottom: 28 },
+    xAxis: {
+      type: 'category',
+      data: items.map(p => (p.date.length >= 10 ? p.date.slice(5, 10) : p.date)),
+      axisLabel: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+      axisLine: { lineStyle: { color: SPLIT_LINE_COLOR } },
+      axisTick: { show: false }
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: '容量(GB)',
+        nameTextStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+        axisLabel: {
+          color: AXIS_LABEL_COLOR,
+          fontSize: 11,
+          formatter: (val: number) => (val >= 10000 ? `${(val / 10000).toFixed(1)}万` : `${val}`)
+        },
+        splitLine: { lineStyle: { color: SPLIT_LINE_COLOR, type: 'dashed' } }
+      },
+      {
+        type: 'value',
+        name: '使用率',
+        min: 0,
+        max: 100,
+        nameTextStyle: { color: AXIS_LABEL_COLOR, fontSize: 11 },
+        axisLabel: { color: AXIS_LABEL_COLOR, fontSize: 11, formatter: '{value}%' },
+        splitLine: { show: false }
+      }
+    ],
+    series: [
+      {
+        name: '容量',
+        type: 'bar',
+        data: items.map(p => p.capacity),
+        barMaxWidth: 18,
+        itemStyle: { color: '#3b82f6', borderRadius: [3, 3, 0, 0] },
+        emphasis: { itemStyle: { color: '#60a5fa' } }
+      },
+      {
+        name: '已用',
+        type: 'bar',
+        data: items.map(p => p.used),
+        barMaxWidth: 18,
+        itemStyle: { color: '#f59e0b', borderRadius: [3, 3, 0, 0] },
+        emphasis: { itemStyle: { color: '#fbbf24' } }
+      },
+      {
+        name: '使用率',
+        type: 'line',
+        yAxisIndex: 1,
+        data: items.map(p => (p.utilization == null || p.utilization < 0 ? null : Math.round(p.utilization * 1000) / 10)),
+        connectNulls: false,
+        symbol: 'circle',
+        symbolSize: 5,
+        lineStyle: { color: '#16a34a', width: 2 },
+        itemStyle: { color: '#16a34a' }
+      }
+    ]
+  }, true)
+}
+
+const handleMetricsResize = () => { metricsChart?.resize() }
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleMetricsResize)
+  metricsChart?.dispose()
+  metricsChart = null
+})
+
+// 切换实例时重置 tab 与按需查询状态
+watch(() => props.instance, () => {
+  activeTab.value = 'detail'
+  metricsResp.value = null
+  metricsError.value = ''
+  metricsFetchedKey.value = ''
+})
+
+// 打开抽屉或切到监控 tab 时按需拉取(fs_id + account_id + days)
+watch(
+  () => [props.visible, activeTab.value] as const,
+  ([visible, tab]) => {
+    if (!visible || tab !== 'monitor') return
+    const key = `${accountId.value}:${fsId.value}`
+    if (!key || key === ':') return
+    if (key !== metricsFetchedKey.value && !metricsError.value) {
+      fetchNasMetrics()
+    } else if (hasMetricData.value) {
+      // 抽屉关闭再打开时 el-drawer 用 v-show 保留 DOM,图表容器尺寸可能变化,重渲染兜底
+      nextTick(() => renderNasChart())
+    }
+  }
+)
+
+// 抽屉打开期间监听窗口尺寸,保证趋势图随窗口缩放
+watch(() => props.visible, (val) => {
+  if (val) window.addEventListener('resize', handleMetricsResize)
+  else window.removeEventListener('resize', handleMetricsResize)
+})
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const getChargeTypeText = (type?: string) => labelOfLenient(CHARGE_TYPE_LABELS, type)
@@ -171,6 +394,35 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 .tab-section {
   padding: 16px;
   .section-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: var(--text-primary); }
+}
+
+// 监控 tab:容量/已用/使用率趋势
+.metrics-section {
+  min-height: 200px;
+
+  .metrics-alert { margin-bottom: 12px; }
+
+  .metrics-note {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+  }
+
+  .metrics-latest {
+    display: flex; gap: 32px; padding: 12px 16px; margin-bottom: 16px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+
+    .summary-item {
+      display: flex; flex-direction: column; gap: 4px;
+      .summary-label { font-size: 12px; color: var(--text-tertiary); }
+      .summary-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+    }
+  }
+
+  .metrics-chart {
+    width: 100%;
+    height: 320px;
+  }
 }
 
 .mount-list {

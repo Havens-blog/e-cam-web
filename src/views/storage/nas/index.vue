@@ -21,6 +21,42 @@
       </div>
     </div>
 
+    <!-- 运营卡:数据来源 ecam_nas_metric 指标表(经 /assets/nas/top,fs_id 去重聚合,不跨账号求和/平均);
+         判定顺序「采集失败→警示」优先于「无数据→0 占位」,失败计数以 nas:collect_metrics 任务 Result 为准 -->
+    <div class="ops-card" :class="opsState">
+      <template v-if="opsState === 'warn'">
+        <el-icon class="ops-warn-icon" :size="18"><WarningFilled /></el-icon>
+        <div class="ops-warn-text">
+          <div class="ops-warn-title">NAS 指标采集异常,容量数据可能不完整</div>
+          <div class="ops-warn-detail">{{ opsWarnDetail }}</div>
+        </div>
+        <el-button size="small" type="warning" plain @click="fetchOpsCard">重试</el-button>
+      </template>
+      <template v-else-if="opsState === 'empty'">
+        <el-icon class="ops-empty-icon" :size="18"><DataLine /></el-icon>
+        <span class="ops-empty-text">暂无容量指标数据(未采集或未启用指标采集)</span>
+      </template>
+      <template v-else>
+        <div class="ops-metric">
+          <span class="ops-metric-label">总容量</span>
+          <span class="ops-metric-value">{{ formatCapacityGB(opsSummary.totalCapacity) }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">已用容量</span>
+          <span class="ops-metric-value">{{ formatCapacityGB(opsSummary.totalUsed) }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">平均使用率</span>
+          <span class="ops-metric-value">{{ formatUtilization(opsSummary.avgUtilization) }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">文件系统</span>
+          <span class="ops-metric-value">{{ opsSummary.fsCount }}</span>
+        </div>
+        <span class="ops-note">读采集指标表<template v-if="opsAsOf"> · 截至 {{ opsAsOf }}</template></span>
+      </template>
+    </div>
+
     <!-- 操作栏 -->
     <div class="action-bar">
       <div class="action-left">
@@ -115,8 +151,17 @@
                 <template v-else-if="col.key === 'file_system_type'">{{ getFileSystemTypeText(item.attributes?.file_system_type) }}</template>
                 <template v-else-if="col.key === 'protocol_type'">{{ item.attributes?.protocol_type || '-' }}</template>
                 <template v-else-if="col.key === 'storage_type'">{{ item.attributes?.storage_type || '-' }}</template>
-                <template v-else-if="col.key === 'capacity'">{{ formatCapacity(item.attributes?.capacity) }}</template>
-                <template v-else-if="col.key === 'used_capacity'">{{ formatCapacity(item.attributes?.used_capacity) }}</template>
+                <!-- S-Hard：容量数值一律来自指标表(fs_id 去重代表行);无指标数据显示 "-",不再回退资产表坏值 -->
+                <template v-else-if="col.key === 'capacity'">
+                  <span v-if="rowMetric(item)?.data_status === 'zero_exception'" class="cap-exception">
+                    0
+                    <el-tooltip content="容量异常:capacity=0(采集异常行,不代表真实零容量)" placement="top">
+                      <el-icon :size="12"><WarningFilled /></el-icon>
+                    </el-tooltip>
+                  </span>
+                  <span v-else>{{ formatCapacityGB(rowMetric(item)?.latest.capacity) }}</span>
+                </template>
+                <template v-else-if="col.key === 'used_capacity'">{{ formatCapacityGB(rowMetric(item)?.latest.used) }}</template>
                 <template v-else-if="col.key === 'mount_target_count'">{{ getMountTargetCount(item) }}</template>
                 <template v-else-if="col.key === 'platform'">
                   <IconFont :type="getPlatformIcon(item.attributes?.provider)" class="platform-icon" />
@@ -170,20 +215,33 @@
     <!-- 详情抽屉 -->
     <NasDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <ExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :metric-map="fsMetricMap" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { listNASAssetsApi } from '@/api/asset'
+import { getNasTopApi, listNASAssetsApi } from '@/api/asset'
+import { listTasksApi } from '@/api'
+import type { NASTopItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import type { TaskType } from '@/api/types/task'
 import IconFont from '@/components/IconFont/index.vue'
-import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { Box, DataLine, Download, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchAllRows } from '@/utils/exportAll'
+import {
+  deriveNasCardState,
+  extractNasCollectFailures,
+  formatCapacityGB,
+  formatUtilization,
+  NAS_COLLECT_TASK_TYPE,
+  summarizeNasTop,
+  type NasCardState,
+  type NasCardSummary,
+} from './nasMetrics'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ExportDialog from './components/ExportDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
@@ -229,12 +287,73 @@ const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible
 const runningCount = computed(() => nasList.value.filter(i => i.attributes?.status?.toLowerCase() === 'running').length)
 const stoppedCount = computed(() => nasList.value.filter(i => i.attributes?.status?.toLowerCase() === 'stopped').length)
 
+// ===== 运营卡(总容量/已用/平均使用率,数据来源 ecam_nas_metric 指标表) =====
+// 采集凌晨补采,当日行仅含凌晨部分;days=2 读昨日全量+今日初态,保证全天有最新完整快照
+const NAS_CARD_DAYS = 2
+const NAS_TOP_PAGE_SIZE = 50
+const NAS_TOP_MAX_PAGES = 20
+
+const opsState = ref<NasCardState>('empty')
+const opsSummary = ref<NasCardSummary>({ totalCapacity: 0, totalUsed: 0, avgUtilization: null, fsCount: 0 })
+const opsWarnDetail = ref('')
+const opsAsOf = ref('')
+/** Top 全量项(供运营卡聚合 + 列表行容量列取指标值) */
+const opsTopItems = ref<NASTopItem[]>([])
+
+/** 分页拉全量 Top(page_size 上限 50,翻页直到取满 total) */
+const fetchAllNasTop = async (): Promise<NASTopItem[]> => {
+  const items: NASTopItem[] = []
+  let total = 0
+  for (let page = 1; page <= NAS_TOP_MAX_PAGES; page++) {
+    const { data } = await getNasTopApi({ days: NAS_CARD_DAYS, sort: 'capacity', page, page_size: NAS_TOP_PAGE_SIZE })
+    const batch = data?.items || []
+    total = data?.total ?? total
+    items.push(...batch)
+    if (batch.length === 0 || items.length >= total) break
+  }
+  return items
+}
+
+const fetchOpsCard = async () => {
+  const [topRes, taskRes] = await Promise.allSettled([
+    fetchAllNasTop(),
+    listTasksApi({ type: NAS_COLLECT_TASK_TYPE as unknown as TaskType, status: 'completed', offset: 0, limit: 1 }),
+  ])
+  const topFailed = topRes.status === 'rejected'
+  const items = topRes.status === 'fulfilled' ? topRes.value : []
+  const latestTask = taskRes.status === 'fulfilled' ? ((taskRes.value as any).data?.tasks || [])[0] : null
+  const failures = extractNasCollectFailures(latestTask)
+
+  opsTopItems.value = items
+  opsState.value = deriveNasCardState({ topFailed, itemCount: items.length, failures })
+  opsSummary.value = summarizeNasTop(items)
+  opsAsOf.value = items.reduce((acc, it) => (it.latest?.date && it.latest.date > acc ? it.latest.date : acc), '')
+  opsWarnDetail.value = failures
+    .map(f => `${f.provider}(账号 ${f.account_id})失败 ${f.error_count} 次${f.last_error ? `:${f.last_error}` : ''}`)
+    .join(';')
+}
+
+/** 列表行容量列取值来源:指标表 Top 项(fs_id = 实例 asset_id) */
+const fsMetricMap = computed(() => {
+  const map = new Map<string, NASTopItem>()
+  for (const it of opsTopItems.value) map.set(String(it.fs_id || ''), it)
+  return map
+})
+const rowMetric = (item: Asset) => fsMetricMap.value.get(String(item?.asset_id || ''))
+
 const initColumnSettings = () => {
   const saved = localStorage.getItem('nas-column-settings')
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) { columnSettings.value = parsed; return }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 以默认列标签为准回填(修复历史保存的错位标签),保留用户的显隐/宽度设置
+        const labelByKey = new Map(defaultColumnSettings.map(c => [c.key, c.label]))
+        columnSettings.value = parsed
+          .filter((c: ColumnConfig) => c && typeof c.key === 'string')
+          .map((c: ColumnConfig) => ({ ...c, label: labelByKey.get(c.key) ?? c.label }))
+        return
+      }
     } catch { /* ignore */ }
   }
   columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
@@ -268,7 +387,7 @@ const fetchData = async () => {
   finally { loading.value = false }
 }
 
-const handleRefresh = () => fetchData()
+const handleRefresh = () => { fetchData(); fetchOpsCard() }
 /** 导出「全部数据」：按当前筛选分页拉取全量（主题A storage S-H1），供 ExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
@@ -314,13 +433,6 @@ const getMountTargetCount = (item: Asset) => {
   if (Array.isArray(targets)) return targets.length
   return 0
 }
-const formatCapacity = (capacity?: number) => {
-  if (capacity === undefined || capacity === null) return '-'
-  if (capacity === 0) return '0'
-  if (capacity >= 1024 * 1024) return `${(capacity / 1024 / 1024).toFixed(1)} TB`
-  if (capacity >= 1024) return `${(capacity / 1024).toFixed(1)} GB`
-  return `${capacity} MB`
-}
 const getPlatformIcon = (provider?: string) => {
   if (!provider) return 'Alibaba_Cloud'
   const p = provider.toLowerCase()
@@ -336,9 +448,56 @@ const formatDateTime = (dateStr?: string) => {
   try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
 }
 
-onMounted(() => { initColumnSettings(); fetchData() })
+onMounted(() => { initColumnSettings(); fetchData(); fetchOpsCard() })
 </script>
 
 <style scoped lang="scss">
 @import '../styles/storage.scss';
+
+// 运营卡(数据来源:ecam_nas_metric 指标表)
+.ops-card {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+
+  &.warn {
+    gap: 12px;
+    border-color: rgba(217, 119, 6, 0.45);
+
+    .ops-warn-icon { color: #d97706; }
+    .ops-warn-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .ops-warn-detail { font-size: 12px; color: var(--text-tertiary); word-break: break-all; }
+  }
+
+  &.empty {
+    gap: 10px;
+    .ops-empty-icon { color: var(--text-tertiary); }
+    .ops-empty-text { font-size: 13px; color: var(--text-tertiary); }
+  }
+
+  .ops-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .ops-metric-label { font-size: 12px; color: var(--text-tertiary); }
+    .ops-metric-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  }
+
+  .ops-note { margin-left: auto; font-size: 12px; color: var(--text-tertiary); }
+}
+
+// 列表行 capacity=0 异常行标记(不当正常零容量)
+.cap-exception {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #d97706;
+}
 </style>

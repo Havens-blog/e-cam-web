@@ -35,8 +35,10 @@
 </template>
 
 <script setup lang="ts">
+import type { NASTopItem } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
 import { getProviderLabel } from '@/utils/constants';
+import { formatCapacityGB } from '@/views/storage/nas/nasMetrics';
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -48,6 +50,8 @@ const props = defineProps<{
   total: number
   /** 导出「全部数据」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前页 */
   fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<Asset[]>
+  /** 指标表 Top 项映射(fs_id → Top 项);容量数值唯一来源(Hard Rule:不展示资产表坏值) */
+  metricMap?: Map<string, NASTopItem>
 }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
 
@@ -86,7 +90,13 @@ const getFieldValue = (instance: Asset, key: string): string => {
   const attr = instance.attributes || {}
   if (key === 'status') { const map: Record<string, string> = { Running: '运行中', Stopped: '已停止' }; return map[attr.status] || attr.status || '' }
   if (key === 'provider') return getProviderLabel(attr.provider || '')
-  if (key === 'capacity' || key === 'used_capacity') { const v = attr[key]; if (!v) return ''; if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(1)}TB`; if (v >= 1024) return `${(v / 1024).toFixed(1)}GB`; return `${v}MB` }
+  if (key === 'capacity' || key === 'used_capacity') {
+    // S-Hard：容量数值一律来自指标表(fs_id 去重代表行);无指标数据导出空串,不回退资产表坏值
+    const m = props.metricMap?.get(String(instance.asset_id || ''))
+    const v = key === 'capacity' ? m?.latest?.capacity : m?.latest?.used
+    if (v === null || v === undefined || !Number.isFinite(v)) return ''
+    return formatCapacityGB(v)
+  }
   return attr[key] || ''
 }
 

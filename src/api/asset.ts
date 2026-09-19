@@ -184,6 +184,103 @@ export function getNASAssetApi(assetId: string, params?: { tenant_id?: string; p
     })
 }
 
+// ===== NAS 指标(读 ecam_nas_metric 指标表;NAS 界面容量数值唯一来源) =====
+
+/** NAS 单日指标点:缺失日 capacity/used/utilization 为 null(不填充假值,以 data_status=missing 标注) */
+export interface NASMetricPoint {
+    /** 日期 YYYY-MM-DD(Asia/Shanghai) */
+    date: string
+    /** 总容量(GB,二进制 GiB);缺失日 null */
+    capacity: number | null
+    /** 已用容量(GB);缺失日 null */
+    used: number | null
+    /** used/capacity(0-1);capacity=0 异常行或缺失日 null */
+    utilization: number | null
+    /** ok | zero_exception | missing */
+    data_status: string
+    /** 落库 qc_status 原样透出(空=正常;zero_exception=capacity=0 异常行) */
+    qc_status?: string
+}
+
+/** 「最新一天」/「近 N 天均值」摘要;无可用行时各字段为 null */
+export interface NASMetricSummary {
+    date?: string
+    capacity: number | null
+    used: number | null
+    utilization: number | null
+}
+
+/** GET /assets/nas/metrics 响应体(days[] 按日期升序) */
+export interface NASFsMetricsView {
+    fs_id: string
+    days: NASMetricPoint[]
+    latest: NASMetricSummary | null
+    average: NASMetricSummary | null
+}
+
+/** 查询 NAS 单文件系统近 N 天容量/使用率趋势参数 */
+export interface GetNASMetricsParams {
+    /** 文件系统 ID */
+    fs_id: string
+    /** 云账号 ID(必填,服务端校验租户归属) */
+    account_id: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+}
+
+/** 获取 NAS 文件系统近 N 天容量/使用率趋势(读指标表,采集任务落库) */
+export function getNasMetricsApi(params: GetNASMetricsParams) {
+    return instance.get<NASFsMetricsView>({
+        url: `${API_SERVICE.CAM}/assets/nas/metrics`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** NAS Top 单项:按 fs_id 去重后的代表行(最新一天)+ 近 N 天均值 */
+export interface NASTopItem {
+    fs_id: string
+    fs_name: string
+    provider: string
+    /** 跨账号同 fs 并存时为去重后的账号列表 */
+    account_id: number[]
+    /** ok | zero_exception */
+    data_status: string
+    qc_status?: string
+    latest: NASMetricSummary
+    average: NASMetricSummary
+}
+
+/** GET /assets/nas/top 响应体 */
+export interface NASTopView {
+    total: number
+    page: number
+    page_size: number
+    items: NASTopItem[]
+}
+
+/** 查询 NAS 容量/使用率 Top 参数(account_id 缺省 = 全部租户账号) */
+export interface GetNASTopParams {
+    account_id?: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+    /** 排序键:capacity | utilization(缺省 capacity) */
+    sort?: 'capacity' | 'utilization'
+    /** 返回条数(缺省 10,最大 50) */
+    top?: number
+    page?: number
+    page_size?: number
+}
+
+/** 获取 NAS 容量/使用率 Top(fs_id 去重聚合,不跨账号求和/平均) */
+export function getNasTopApi(params?: GetNASTopParams) {
+    return instance.get<NASTopView>({
+        url: `${API_SERVICE.CAM}/assets/nas/top`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== OSS API ====================
 
 /** OSS 列表查询参数 */
