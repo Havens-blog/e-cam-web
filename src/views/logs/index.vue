@@ -217,6 +217,9 @@
       </span>
     </div>
 
+    <!-- WAF 流量诊断卡(手动触发;独立于统计/明细区块,不影响既有行为) -->
+    <LogDiagnoseCard v-if="activeType === 'waf'" :context="diagnoseContext" />
+
     <!-- 结果区:统计视图为主,明细默认折叠 -->
     <div v-if="searching || searchError || !resp || allEntries.length === 0" class="table-card">
       <template v-if="searching">
@@ -418,6 +421,7 @@ import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } fro
 import type {
     FieldFilter,
     LogAggregateResponse,
+    LogDiagnoseContext,
     LogEntry,
     LogSearchResponse,
     LogSource,
@@ -428,6 +432,7 @@ import type {
 import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
+import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
 import LogStats from './components/LogStats.vue'
 import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
 import type { FieldFilterRow } from './drilldown'
@@ -749,6 +754,20 @@ async function doAggregate() {
 
 const drawerVisible = ref(false)
 const detailEntry = ref<LogEntry | null>(null)
+
+// ---- WAF 流量诊断(手动触发):诊断请求上下文 = 当前查询字段(与聚合对齐,
+// 无 dimension/metric;维度集由后端诊断编排固定)。独立于统计/明细,只读引用。 ----
+const diagnoseContext = computed<LogDiagnoseContext | null>(() => {
+    if (!timeRange.value) return null
+    return {
+        start_time: timeRange.value[0].getTime(),
+        end_time: timeRange.value[1].getTime(),
+        query: keyword.value || undefined,
+        clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+        resources: selectedResources.value.length ? selectedResources.value : undefined,
+        filters: buildFilters(),
+    }
+})
 
 const currentMeta = computed(() => typeMetas.value.find((t) => t.type === activeType.value))
 const currentFields = computed(() => currentMeta.value?.fields ?? [])

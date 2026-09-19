@@ -10,7 +10,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
+import { aggregateLogsApi, diagnoseLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type { LogSearchResponse, LogSource, LogTypeMeta } from '@/api/types/logs'
 import LogsIndex from './index.vue'
 
@@ -22,6 +22,7 @@ vi.mock('@/api/logs', async (importOriginal) => {
         getLogSourcesApi: vi.fn(),
         searchLogsApi: vi.fn(),
         aggregateLogsApi: vi.fn(),
+        diagnoseLogsApi: vi.fn(),
     }
 })
 
@@ -499,6 +500,90 @@ describe('LogsIndex(字段筛选快捷值:样本回填 chips,零额外请求)', 
         await flushPromises()
         expect(searchApi).toHaveBeenCalledTimes(2)
         expect(w.findAll('.qv-chip').map((c) => c.text())).toEqual(['b.com'])
+        w.unmount()
+    })
+})
+
+describe('LogsIndex(WAF Tab 流量诊断入口,任务 3)', () => {
+    const diagnoseApi = vi.mocked(diagnoseLogsApi)
+
+    const wafMeta: LogTypeMeta = {
+        type: 'waf',
+        label: 'WAF',
+        max_window_days: 7,
+        fields: [
+            { key: 'timestamp', label: '时间', fixed: true },
+            { key: 'client_ip', label: '客户端 IP', fixed: false },
+        ],
+    }
+
+    /** 挂载 CDN+WAF 双类型页面(诊断入口仅 WAF Tab 展示) */
+    async function mountDualType(): Promise<VueWrapper> {
+        typesApi.mockResolvedValue([...typeMetas, wafMeta])
+        return mountPage()
+    }
+
+    const tabItem = (w: VueWrapper, label: string) =>
+        w.findAll('.el-tabs__item').find((t) => t.text().includes(label))
+
+    it('仅 WAF Tab 展示「流量诊断」折叠卡,切 Tab 随类型显隐', async () => {
+        const w = await mountDualType()
+        // 默认 CDN Tab:无诊断卡
+        expect(w.find('.diagnose-card').exists()).toBe(false)
+        // 切到 WAF:诊断卡出现(折叠态)
+        await tabItem(w, 'WAF')!.trigger('click')
+        await flushPromises()
+        const card = w.find('.diagnose-card')
+        expect(card.exists()).toBe(true)
+        expect(card.find('.diagnose-toggle').attributes('aria-expanded')).toBe('false')
+        // 切回 CDN:入口消失
+        await tabItem(w, 'CDN')!.trigger('click')
+        await flushPromises()
+        expect(w.find('.diagnose-card').exists()).toBe(false)
+        w.unmount()
+    })
+
+    it('诊断独立于既有查询:页内触发诊断不触碰 search/aggregate,统计/明细行为不变', async () => {
+        diagnoseApi.mockResolvedValue({
+            log_type: 'waf',
+            window_sec: 3600,
+            total: 0,
+            buckets: [],
+            top_ips: [],
+            top_uas: [],
+            status_codes: [],
+            actions: [],
+            result: {
+                risk_score: 0,
+                risk_level: 'none',
+                attack_type: 'normal',
+                measures: ['m1', 'm2', 'm3'],
+                top_sources: [],
+                degraded: false,
+                surge_multiplier: 0,
+            },
+            sources: [],
+            aggregate_frames: 2,
+            summary: '',
+            cached: false,
+            cache_stale: false,
+        })
+        const w = await mountDualType()
+        await tabItem(w, 'WAF')!.trigger('click')
+        await flushPromises()
+
+        // 未查询过:整页仍是无结果态,诊断卡已可用
+        expect(w.find('.diagnose-card').exists()).toBe(true)
+        await w.find('.diagnose-actions button').trigger('click')
+        await flushPromises()
+
+        expect(diagnoseApi).toHaveBeenCalledTimes(1)
+        expect(diagnoseApi.mock.calls[0]![0].log_type).toBe('waf')
+        expect(diagnoseApi.mock.calls[0]![0].start_time).toBeTypeOf('number')
+        // 纯新增区块:既有明细/聚合查询零调用
+        expect(searchApi).not.toHaveBeenCalled()
+        expect(aggregateApi).not.toHaveBeenCalled()
+        expect(w.find('.error-state').exists()).toBe(false)
         w.unmount()
     })
 })

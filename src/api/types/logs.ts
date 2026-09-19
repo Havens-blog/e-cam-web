@@ -230,3 +230,87 @@ export interface LogAggregateResponse {
     /** 部分源维度/指标不可下推的说明(趋势/总数仍有效,仅 TopN 缺失) */
     topn_skip?: string
 }
+
+// ---- WAF 流量诊断(POST /cam/logs/diagnose;对应 e-cam-service service.DiagnoseResponse) ----
+
+/** WAF 流量诊断请求(字段与聚合请求对齐,无 dimension/metric —— 维度集由诊断编排固定) */
+export interface LogDiagnoseRequest {
+    log_type: LogType
+    start_time: number
+    end_time: number
+    /** 可选,原生检索式透传 */
+    query?: string
+    clouds?: string[]
+    resources?: string[]
+    /** 可选,结构化字段筛选(AND 叠加) */
+    filters?: FieldFilter[]
+}
+
+/** 诊断上下文:由视图按当前查询组装(诊断卡不含 log_type,仅 WAF Tab 开放) */
+export type LogDiagnoseContext = Omit<LogDiagnoseRequest, 'log_type'>
+
+/** 前一等长窗口对比值(突增判据) */
+export interface LogDiagnosePrevWindow {
+    total: number
+    /** 前窗 Top1 IP 请求数(0 = 无 Top IP 数据) */
+    top_ip_count: number
+}
+
+/** Top 攻击源(占比 = 该 IP 请求数 / 当前窗 Total) */
+export interface LogDiagnoseSource {
+    ip: string
+    count: number
+    share: number
+}
+
+/** 规则引擎判定结论 */
+export interface LogDiagnoseResult {
+    /** 0-100 */
+    risk_score: number
+    /** none / low / medium / high */
+    risk_level: 'none' | 'low' | 'medium' | 'high'
+    /** normal / cc_flood / crawler / brute_force / normal_burst */
+    attack_type: 'normal' | 'cc_flood' | 'crawler' | 'brute_force' | 'normal_burst'
+    /** 措施文案(≥3 条,含具体值插值) */
+    measures: string[]
+    /** Top 攻击源 IP(后端默认前 5,含占比) */
+    top_sources: LogDiagnoseSource[]
+    /** 判据缺失降级标注(前窗无数据/窗口时长缺失) */
+    degraded: boolean
+    /** 降级原因(空 = 未降级) */
+    degraded_reason?: string
+    /** 突增倍数(0 = 前窗无数据未计算) */
+    surge_multiplier: number
+}
+
+/** WAF 流量诊断响应(判定结论 + 判据输入明细 + per-source 状态) */
+export interface LogDiagnoseResponse {
+    log_type: string
+    /** 当前窗口时长(秒) */
+    window_sec: number
+    /** 当前窗总请求数(全源精确求和) */
+    total: number
+    buckets: AggregateBucket[]
+    top_ips: TopNItem[]
+    top_uas: TopNItem[]
+    status_codes: TopNItem[]
+    actions: TopNItem[]
+    /** 前窗对比;缺省 = 前窗不可用(见 prev_error),total=0 = 前窗确实无数据 */
+    prev?: LogDiagnosePrevWindow
+    /** 前窗不可用原因(空 = 成功/无数据) */
+    prev_error?: string
+    /** 前窗 per-source 状态 */
+    prev_sources?: AggregateSourceOutcome[]
+    /** 规则引擎判定结论 */
+    result: LogDiagnoseResult
+    /** 当前窗 per-source 状态(来源分布按云账号展示用) */
+    sources: AggregateSourceOutcome[]
+    /** 非主维度缺失说明(某源维度聚合失败/不可下推) */
+    dimension_notes?: string
+    /** 本次诊断扫过的窗口帧数(当前窗 + 前窗,成本标注) */
+    aggregate_frames: number
+    /** AI 解读(后置占位:模型接入前恒空串,前端不引入任何模型调用) */
+    summary: string
+    cached: boolean
+    cache_stale: boolean
+}

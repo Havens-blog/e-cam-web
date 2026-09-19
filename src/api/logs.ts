@@ -6,6 +6,8 @@ import instance from './request/service';
 import type {
     LogAggregateRequest,
     LogAggregateResponse,
+    LogDiagnoseRequest,
+    LogDiagnoseResponse,
     LogSearchRequest,
     LogSearchResponse,
     LogSource,
@@ -65,4 +67,17 @@ export async function aggregateLogsApi(data: LogAggregateRequest): Promise<LogAg
         data,
     })
     return unwrap<LogAggregateResponse>(res)
+}
+
+/**
+ * WAF 流量诊断(手动触发:当前窗 + 前一等长窗口规则判定;仅 waf 类型,
+ * SLB/CDN 返回明确错误)。前窗不可用/判据降级不报错,由响应内
+ * prev_error / result.degraded 标注,调用方据此降级展示。
+ */
+export async function diagnoseLogsApi(data: LogDiagnoseRequest): Promise<LogDiagnoseResponse> {
+    const res = await instance.post<LogDiagnoseResponse>({
+        url: `${BASE}/diagnose`,
+        data,
+    })
+    return unwrap<LogDiagnoseResponse>(res)
 }
