@@ -2,7 +2,7 @@
   <div class="permission-compare-page">
     <PageHeader
       title="权限对比"
-      description="对比不同云平台的权限策略差异"
+      description="对比不同云账号的 IAM 用户与权限组差异"
     />
 
     <el-card class="filter-card">
@@ -84,6 +84,16 @@
         </div>
       </template>
 
+      <!-- 部分账号查询失败提示（不阻塞其它账号） -->
+      <el-alert
+        v-if="failedAccounts.length > 0"
+        :title="`以下账号数据查询失败：${failedAccounts.join('、')}，对应数据以「—」显示`"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="load-warning"
+      />
+
       <!-- 概览统计 -->
       <div class="overview-stats">
         <el-row :gutter="16">
@@ -92,24 +102,36 @@
             :key="account.accountId"
             :span="24 / compareData.length"
           >
-            <el-statistic :value="account.userCount" title="用户数量">
-              <template #prefix>
-                <CloudPlatformTag
-                  :provider="account.provider"
-                  size="small"
-                />
-              </template>
-            </el-statistic>
-            <el-statistic
-              :value="account.groupCount"
-              title="权限组数量"
-              style="margin-top: 16px"
-            />
-            <el-statistic
-              :value="account.policyCount"
-              title="策略数量"
-              style="margin-top: 16px"
-            />
+            <template v-for="stat in getOverviewStats(account)" :key="stat.key">
+              <el-statistic
+                v-if="stat.value !== null"
+                :value="stat.value"
+                :title="stat.title"
+              >
+                <template v-if="stat.primary" #prefix>
+                  <CloudPlatformTag
+                    :provider="account.provider"
+                    size="small"
+                  />
+                </template>
+              </el-statistic>
+              <!-- 查询失败/未接入：诚实显示「—」，不虚构计数 -->
+              <div
+                v-else
+                class="stat-unavailable"
+                :title="`${stat.title}暂无数据`"
+              >
+                <div class="stat-unavailable__title">{{ stat.title }}</div>
+                <div class="stat-unavailable__value">
+                  <CloudPlatformTag
+                    v-if="stat.primary"
+                    :provider="account.provider"
+                    size="small"
+                  />
+                  <span>—</span>
+                </div>
+              </div>
+            </template>
           </el-col>
         </el-row>
       </div>
@@ -145,15 +167,20 @@
               </template>
               <template #default="{ row }">
                 <el-tag
-                  v-if="row.accounts[account.accountId]"
+                  v-if="row.accounts[account.accountId]?.state === 'exists'"
                   type="success"
                   size="small"
                 >
                   存在
                 </el-tag>
-                <el-tag v-else type="info" size="small">
+                <el-tag
+                  v-else-if="row.accounts[account.accountId]?.state === 'missing'"
+                  type="info"
+                  size="small"
+                >
                   不存在
                 </el-tag>
+                <span v-else class="cell-unavailable">—</span>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
@@ -197,17 +224,22 @@
                 </div>
               </template>
               <template #default="{ row }">
-                <div v-if="row.accounts[account.accountId]">
+                <div v-if="row.accounts[account.accountId]?.state === 'exists'">
                   <el-tag type="success" size="small">
                     存在
                   </el-tag>
                   <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                    {{ row.accounts[account.accountId].memberCount }} 个成员
+                    {{ row.accounts[account.accountId]?.memberCount ?? 0 }} 个成员
                   </div>
                 </div>
-                <el-tag v-else type="info" size="small">
+                <el-tag
+                  v-else-if="row.accounts[account.accountId]?.state === 'missing'"
+                  type="info"
+                  size="small"
+                >
                   不存在
                 </el-tag>
+                <span v-else class="cell-unavailable">—</span>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
@@ -225,59 +257,13 @@
           </el-table>
         </el-tab-pane>
 
-        <!-- 策略对比 -->
+        <!-- 策略对比：未接入，诚实占位（无 per-account 策略查询接口） -->
         <el-tab-pane label="策略对比" name="policies">
-          <el-table
-            :data="policyCompareData"
-            border
-            stripe
-            style="width: 100%"
-          >
-            <el-table-column prop="policyName" label="策略名称" width="200" fixed />
-            <el-table-column prop="policyType" label="策略类型" width="120" />
-            <el-table-column
-              v-for="account in compareData"
-              :key="account.accountId"
-              :label="account.accountName"
-              align="center"
-            >
-              <template #header>
-                <div>
-                  <div>{{ account.accountName }}</div>
-                  <CloudPlatformTag
-                    :provider="account.provider"
-                    size="small"
-                    style="margin-top: 4px"
-                  />
-                </div>
-              </template>
-              <template #default="{ row }">
-                <div v-if="row.accounts[account.accountId]">
-                  <el-tag type="success" size="small">
-                    存在
-                  </el-tag>
-                  <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                    {{ row.accounts[account.accountId].attachmentCount }} 个附加
-                  </div>
-                </div>
-                <el-tag v-else type="info" size="small">
-                  不存在
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right">
-              <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  size="small"
-                  link
-                  @click="viewPolicyDetail(row)"
-                >
-                  查看详情
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+          <el-empty description="策略对比暂未接入">
+            <div class="policy-placeholder-tip">
+              暂无按云账号维度的策略查询数据，无法提供真实策略对比；接口接入后将在此展示。
+            </div>
+          </el-empty>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -291,51 +277,53 @@
 </template>
 
 <script setup lang="ts">
-import { listCloudAccountsApi } from '@/api'
+import { listCloudAccountsApi, listGroupsApi, listUsersApi } from '@/api'
 import type { CloudAccount } from '@/api/types/account'
-import type { CloudProvider } from '@/api/types/iam'
+import type { CloudProvider, CloudUser, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { Download, RefreshLeft, View } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 
+// 每账号拉取的用户/组行数上限：计数取响应 total，对比行只取首屏行
+const COMPARE_FETCH_SIZE = 200
+
 // 数据
 const loading = ref(false)
 const cloudAccounts = ref<CloudAccount[]>([])
 const selectedAccounts = ref<string[]>([])
 const activeTab = ref('users')
+// 查询失败的账号名（单账号失败降级「—」，不阻塞其它账号）
+const failedAccounts = ref<string[]>([])
 
 interface CompareAccountData {
   accountId: string
   accountName: string
   provider: CloudProvider
-  userCount: number
-  groupCount: number
-  policyCount: number
+  /** null = 该账号该数据查询失败/未接入，展示「—」 */
+  userCount: number | null
+  groupCount: number | null
+  /** 策略对比未接入，恒为 null */
+  policyCount: number | null
 }
 
 const compareData = ref<CompareAccountData[]>([])
 
+type CompareCellState = 'exists' | 'missing' | 'unavailable'
+
 interface UserCompareRow {
   username: string
-  accounts: Record<string, { exists: boolean; userType?: string }>
+  accounts: Record<string, { state: CompareCellState; userType?: string }>
 }
 
 interface GroupCompareRow {
   groupName: string
-  accounts: Record<string, { exists: boolean; memberCount?: number }>
-}
-
-interface PolicyCompareRow {
-  policyName: string
-  policyType: string
-  accounts: Record<string, { exists: boolean; attachmentCount?: number }>
+  accounts: Record<string, { state: CompareCellState; memberCount?: number }>
 }
 
 const userCompareData = ref<UserCompareRow[]>([])
 const groupCompareData = ref<GroupCompareRow[]>([])
-const policyCompareData = ref<PolicyCompareRow[]>([])
 
 // 加载云账号列表
 const loadCloudAccounts = async () => {
@@ -346,6 +334,113 @@ const loadCloudAccounts = async () => {
     console.error('加载云账号列表失败:', error)
     ElMessage.error('加载云账号列表失败')
   }
+}
+
+/** list 接口响应（拦截器归一化后）可能出现的列表载体字段 */
+interface ListResPayload<T> {
+  data?: T[]
+  users?: T[]
+  groups?: T[]
+  items?: T[]
+  total?: number
+}
+
+/** 从 list 接口响应提取列表与总数：优先 total 字段，无则取列表长度 */
+const extractListPage = <T>(
+  res: { data?: ListResPayload<T> | T[] }
+): { list: T[]; total: number } => {
+  const payload = res?.data
+  if (Array.isArray(payload)) {
+    return { list: payload, total: payload.length }
+  }
+  const list = payload?.data ?? payload?.users ?? payload?.groups ?? payload?.items ?? []
+  const total = typeof payload?.total === 'number' ? payload.total : list.length
+  return { list, total }
+}
+
+/** 单账号的用户/组查询结果（failed=true 表示查询失败，展示「—」） */
+interface AccountIamData {
+  account: CloudAccount
+  users: { list: CloudUser[]; total: number; failed: boolean }
+  groups: { list: PermissionGroup[]; total: number; failed: boolean }
+}
+
+/** 拉取单账号的用户/组数据：users/groups 相互独立，失败不互相影响 */
+const fetchAccountIamData = async (account: CloudAccount): Promise<AccountIamData> => {
+  const [usersRes, groupsRes] = await Promise.allSettled([
+    listUsersApi({ cloud_account_id: account.id, page: 1, size: COMPARE_FETCH_SIZE }),
+    listGroupsApi({ cloud_account_id: account.id, page: 1, size: COMPARE_FETCH_SIZE })
+  ])
+
+  const users: AccountIamData['users'] = { list: [], total: 0, failed: true }
+  if (usersRes.status === 'fulfilled') {
+    const page = extractListPage<CloudUser>(usersRes.value)
+    users.list = page.list
+    users.total = page.total
+    users.failed = false
+  } else {
+    console.error(`账号 ${account.name} 用户列表查询失败:`, usersRes.reason)
+  }
+
+  const groups: AccountIamData['groups'] = { list: [], total: 0, failed: true }
+  if (groupsRes.status === 'fulfilled') {
+    const page = extractListPage<PermissionGroup>(groupsRes.value)
+    groups.list = page.list
+    groups.total = page.total
+    groups.failed = false
+  } else {
+    console.error(`账号 ${account.name} 权限组列表查询失败:`, groupsRes.reason)
+  }
+
+  return { account, users, groups }
+}
+
+/** 用户对比行：各账号用户名的并集，按名称排序；失败账号整列 unavailable */
+const buildUserCompareRows = (results: AccountIamData[]): UserCompareRow[] => {
+  const usernames = new Set<string>()
+  results.forEach(result => result.users.list.forEach(user => usernames.add(user.username)))
+
+  return Array.from(usernames)
+    .sort((a, b) => a.localeCompare(b))
+    .map(username => {
+      const accounts: UserCompareRow['accounts'] = {}
+      results.forEach(result => {
+        const accountId = result.account.id.toString()
+        if (result.users.failed) {
+          accounts[accountId] = { state: 'unavailable' }
+          return
+        }
+        const user = result.users.list.find(u => u.username === username)
+        accounts[accountId] = user
+          ? { state: 'exists', userType: user.user_type }
+          : { state: 'missing' }
+      })
+      return { username, accounts }
+    })
+}
+
+/** 权限组对比行：各账号组名的并集，按名称排序；成员数取 member_count（兼容 user_count） */
+const buildGroupCompareRows = (results: AccountIamData[]): GroupCompareRow[] => {
+  const groupNames = new Set<string>()
+  results.forEach(result => result.groups.list.forEach(group => groupNames.add(group.name)))
+
+  return Array.from(groupNames)
+    .sort((a, b) => a.localeCompare(b))
+    .map(groupName => {
+      const accounts: GroupCompareRow['accounts'] = {}
+      results.forEach(result => {
+        const accountId = result.account.id.toString()
+        if (result.groups.failed) {
+          accounts[accountId] = { state: 'unavailable' }
+          return
+        }
+        const group = result.groups.list.find(g => g.name === groupName)
+        accounts[accountId] = group
+          ? { state: 'exists', memberCount: group.member_count ?? group.user_count ?? 0 }
+          : { state: 'missing' }
+      })
+      return { groupName, accounts }
+    })
 }
 
 // 加载对比数据
@@ -360,30 +455,36 @@ const loadCompareData = async () => {
     return
   }
 
+  const accounts = selectedAccounts.value
+    .map(id => cloudAccounts.value.find(account => account.id.toString() === String(id)))
+    .filter((account): account is CloudAccount => account !== undefined)
+
+  if (accounts.length < 2) {
+    ElMessage.error('云账号信息缺失，请刷新页面后重试')
+    return
+  }
+
   loading.value = true
+  failedAccounts.value = []
   try {
-    // 模拟数据加载
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 每账号独立查询（≤4 账号 × 用户/组 = ≤8 请求），单账号失败降级不阻塞
+    const results = await Promise.all(accounts.map(account => fetchAccountIamData(account)))
 
-    // 构建对比数据
-    compareData.value = selectedAccounts.value.map(accountId => {
-      const account = cloudAccounts.value.find(a => a.id.toString() === accountId)!
-      return {
-        accountId: account.id.toString(),
-        accountName: account.name,
-        provider: account.provider,
-        userCount: Math.floor(Math.random() * 100) + 10,
-        groupCount: Math.floor(Math.random() * 20) + 5,
-        policyCount: Math.floor(Math.random() * 50) + 10
-      }
-    })
+    compareData.value = results.map(({ account, users, groups }) => ({
+      accountId: account.id.toString(),
+      accountName: account.name,
+      provider: account.provider,
+      userCount: users.failed ? null : users.total,
+      groupCount: groups.failed ? null : groups.total,
+      // 无 per-account 策略查询接口，策略对比未接入，不虚构数据
+      policyCount: null
+    }))
+    failedAccounts.value = results
+      .filter(({ users, groups }) => users.failed || groups.failed)
+      .map(({ account }) => account.name)
 
-    // 构建用户对比数据
-    userCompareData.value = generateUserCompareData()
-    groupCompareData.value = generateGroupCompareData()
-    policyCompareData.value = generatePolicyCompareData()
-
-    ElMessage.success('对比数据加载成功')
+    userCompareData.value = buildUserCompareRows(results)
+    groupCompareData.value = buildGroupCompareRows(results)
   } catch (error) {
     console.error('加载对比数据失败:', error)
     ElMessage.error('加载对比数据失败')
@@ -392,62 +493,20 @@ const loadCompareData = async () => {
   }
 }
 
-// 生成用户对比数据
-const generateUserCompareData = (): UserCompareRow[] => {
-  const users = ['admin', 'developer', 'operator', 'viewer', 'auditor']
-  return users.map(username => {
-    const accounts: Record<string, { exists: boolean; userType?: string }> = {}
-    compareData.value.forEach(account => {
-      accounts[account.accountId] = {
-        exists: Math.random() > 0.3,
-        userType: 'iam_user'
-      }
-    })
-    return { username, accounts }
-  })
+interface OverviewStat {
+  key: string
+  title: string
+  value: number | null
+  /** 是否在数值前展示云平台标签（首个统计项） */
+  primary?: boolean
 }
 
-// 生成权限组对比数据
-const generateGroupCompareData = (): GroupCompareRow[] => {
-  const groups = ['管理员组', '开发者组', '运维组', '只读组', '审计组']
-  return groups.map(groupName => {
-    const accounts: Record<string, { exists: boolean; memberCount?: number }> = {}
-    compareData.value.forEach(account => {
-      const exists = Math.random() > 0.3
-      accounts[account.accountId] = {
-        exists,
-        memberCount: exists ? Math.floor(Math.random() * 20) + 1 : undefined
-      }
-    })
-    return { groupName, accounts }
-  })
-}
-
-// 生成策略对比数据
-const generatePolicyCompareData = (): PolicyCompareRow[] => {
-  const policies = [
-    { name: 'AdministratorAccess', type: '系统策略' },
-    { name: 'ReadOnlyAccess', type: '系统策略' },
-    { name: 'PowerUserAccess', type: '系统策略' },
-    { name: 'CustomDeveloperPolicy', type: '自定义策略' },
-    { name: 'CustomAuditorPolicy', type: '自定义策略' }
-  ]
-  return policies.map(policy => {
-    const accounts: Record<string, { exists: boolean; attachmentCount?: number }> = {}
-    compareData.value.forEach(account => {
-      const exists = Math.random() > 0.3
-      accounts[account.accountId] = {
-        exists,
-        attachmentCount: exists ? Math.floor(Math.random() * 10) + 1 : undefined
-      }
-    })
-    return {
-      policyName: policy.name,
-      policyType: policy.type,
-      accounts
-    }
-  })
-}
+// 概览统计项：策略数量恒为「—」（策略对比未接入，无真实数据源）
+const getOverviewStats = (account: CompareAccountData): OverviewStat[] => [
+  { key: 'users', title: '用户数量', value: account.userCount, primary: true },
+  { key: 'groups', title: '权限组数量', value: account.groupCount },
+  { key: 'policies', title: '策略数量', value: null }
+]
 
 // 重置对比
 const resetCompare = () => {
@@ -455,7 +514,7 @@ const resetCompare = () => {
   compareData.value = []
   userCompareData.value = []
   groupCompareData.value = []
-  policyCompareData.value = []
+  failedAccounts.value = []
   activeTab.value = 'users'
 }
 
@@ -466,20 +525,12 @@ const exportCompare = () => {
 
 // 查看用户详情
 const viewUserDetail = (row: UserCompareRow) => {
-  console.log('查看用户详情:', row)
-  ElMessage.info('用户详情功能开发中')
+  ElMessage.info(`用户「${row.username}」详情功能开发中`)
 }
 
 // 查看权限组详情
 const viewGroupDetail = (row: GroupCompareRow) => {
-  console.log('查看权限组详情:', row)
-  ElMessage.info('权限组详情功能开发中')
-}
-
-// 查看策略详情
-const viewPolicyDetail = (row: PolicyCompareRow) => {
-  console.log('查看策略详情:', row)
-  ElMessage.info('策略详情功能开发中')
+  ElMessage.info(`权限组「${row.groupName}」详情功能开发中`)
 }
 
 onMounted(() => {
@@ -502,9 +553,46 @@ onMounted(() => {
       align-items: center;
     }
 
+    .load-warning {
+      margin-bottom: 16px;
+    }
+
     .overview-stats {
       margin-bottom: 20px;
+
+      .el-statistic + .el-statistic,
+      .el-statistic + .stat-unavailable,
+      .stat-unavailable + .el-statistic,
+      .stat-unavailable + .stat-unavailable {
+        margin-top: 16px;
+      }
+
+      .stat-unavailable {
+        .stat-unavailable__title {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          margin-bottom: 4px;
+        }
+
+        .stat-unavailable__value {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 24px;
+          font-weight: 600;
+          color: var(--el-text-color-secondary);
+        }
+      }
     }
+  }
+
+  .cell-unavailable {
+    color: var(--el-text-color-secondary);
+  }
+
+  .policy-placeholder-tip {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
   }
 }
 </style>
