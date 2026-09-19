@@ -29,6 +29,13 @@ export const useTopologyStore = defineStore('topology', () => {
     const domainList = ref<DomainItem[]>([])
     const loading = ref(false)
 
+    // 数据状态：idle=未加载 loading=加载中 live=真实数据加载成功 error=加载失败
+    // 用于徽章联动与空态/错误态区分，杜绝失败时误显「实时」
+    const dataStatus = ref<'idle' | 'loading' | 'live' | 'error'>('idle')
+
+    // 最近一次加载失败的错误信息（成功加载后清除；null=无错误）
+    const loadError = ref<string | null>(null)
+
     // 计算属性：当前筛选参数
     const queryParams = computed<TopologyQueryParams>(() => ({
         mode: 'business',
@@ -91,7 +98,7 @@ export const useTopologyStore = defineStore('topology', () => {
         selectedDomain, selectedProviders, selectedSourceCollectors,
         hideSilent, showBrokenOnly, showInternalCalls, showApmEdges, layoutMode,
         selectedNodeId, detailPanelOpen,
-        graphData, domainList, loading,
+        graphData, domainList, loading, dataStatus, loadError,
         queryParams, filteredNodes,
         selectNode, closeDetailPanel, toggleLayout, resetFilters,
     }

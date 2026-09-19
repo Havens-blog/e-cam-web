@@ -4,9 +4,9 @@
     <div class="topology-toolbar">
       <div class="toolbar-left">
         <h2 class="page-title">业务链路拓扑</h2>
-        <div class="live-indicator">
+        <div class="live-indicator" :class="`status-${store.dataStatus}`">
           <span class="live-dot"></span>
-          <span class="live-text">实时</span>
+          <span class="live-text">{{ statusText }}</span>
         </div>
       </div>
       <div class="toolbar-right">
@@ -35,6 +35,16 @@
       </div>
     </div>
 
+    <!-- 加载失败提示（诚实错误态：不回退假数据） -->
+    <el-alert
+      v-if="store.loadError"
+      class="topology-alert"
+      :title="store.loadError"
+      type="error"
+      show-icon
+      :closable="false"
+    />
+
     <!-- 三栏布局 -->
     <div class="topology-content">
       <FilterPanel class="topology-filter" />
@@ -56,7 +66,7 @@
 <script setup lang="ts">
 import { useTopologyStore } from '@/stores/topology'
 import { FullScreen, Hide, Refresh, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import DetailPanel from './components/DetailPanel.vue'
 import FilterPanel from './components/FilterPanel.vue'
@@ -67,6 +77,16 @@ const store = useTopologyStore()
 const { loadDomains, loadTopology, refresh } = useTopologyData()
 const route = useRoute()
 const canvasRef = ref<InstanceType<typeof TopologyCanvas> | null>(null)
+
+// 徽章随数据状态联动：成功=绿「实时」、失败=橙「异常」、加载中/未加载=灰，不误显实时
+const statusText = computed(() => {
+  switch (store.dataStatus) {
+    case 'live': return '实时'
+    case 'loading': return '加载中'
+    case 'error': return '异常'
+    default: return '未加载'
+  }
+})
 
 function handleSelectNode(nodeId: string) {
   store.selectNode(nodeId)
@@ -96,8 +116,14 @@ onMounted(() => {
 .toolbar-right { display: flex; align-items: center; gap: 6px; }
 .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; margin: 0; }
 .live-indicator { display: flex; align-items: center; gap: 6px; }
-.live-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
-.live-text { font-size: 12px; color: #10b981; font-weight: 500; }
+/* 默认灰（未加载/加载中），成功绿「实时」带呼吸动画，失败橙「异常」 */
+.live-dot { width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; }
+.live-text { font-size: 12px; color: #94a3b8; font-weight: 500; }
+.live-indicator.status-live .live-dot { background: #10b981; animation: pulse 2s infinite; }
+.live-indicator.status-live .live-text { color: #10b981; }
+.live-indicator.status-error .live-dot { background: #f59e0b; }
+.live-indicator.status-error .live-text { color: #f59e0b; }
+.topology-alert { margin: 8px 24px 0; flex-shrink: 0; }
 .topology-content { display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0; }
 .topology-filter { width: 260px; flex-shrink: 0; }
 .topology-canvas { flex: 1; min-height: 400px; }

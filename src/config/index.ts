@@ -25,9 +25,6 @@ export const apiConfig = {
 
     // 请求超时时间（毫秒）
     timeout: 30000,
-
-    // 是否使用 Mock 数据
-    useMock: import.meta.env.VITE_USE_MOCK === 'true',
 }
 
 /**
