@@ -49,6 +49,20 @@ export default defineConfig(({ mode }) => {
       cors: true, // 允许跨域
       // API 代理配置
       proxy: {
+        // eiam 统一身份: /api/iam/* -> eiam /api/*（对齐 nginx.dev.conf，
+        // 缺此规则时 eiamAxios 的 /api/iam/user/profile 会落到 CAM 后端 404，
+        // 路由守卫 fetchUserInfo 失败 → 5173 直连必跳登录）
+        '/api/iam': {
+          target: 'http://localhost:9000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/iam/, '/api'),
+        },
+        // ecmdb: /api/cmdb/* -> ecmdb 后端 /api/*（对齐 nginx.dev.conf）
+        '/api/cmdb': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/cmdb/, '/api'),
+        },
         '/api': {
           target: env.VITE_BACKEND_URL || 'http://localhost:8001',
           changeOrigin: true,
