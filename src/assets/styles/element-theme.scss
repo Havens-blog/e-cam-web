@@ -5,7 +5,14 @@
 // ==================== Element Plus CSS 变量覆盖 ====================
 :root {
   // 主色
-  --el-color-primary: var(--accent-blue);
+  --el-color-primary: var(--accent-primary);
+  // EP 主色阶梯 - 深色用透明度（白混色在深底会发白）
+  --el-color-primary-dark-2: #828fff;
+  --el-color-primary-light-3: rgba(94, 106, 210, 0.55);
+  --el-color-primary-light-5: rgba(94, 106, 210, 0.35);
+  --el-color-primary-light-7: rgba(94, 106, 210, 0.25);
+  --el-color-primary-light-8: rgba(94, 106, 210, 0.18);
+  --el-color-primary-light-9: rgba(94, 106, 210, 0.12);
   --el-color-success: var(--color-success);
   --el-color-warning: var(--color-warning);
   --el-color-danger: var(--color-danger);
@@ -65,6 +72,12 @@
 :root.light {
   --el-mask-color: rgba(0, 0, 0, 0.4);
   --el-mask-color-extra-light: rgba(0, 0, 0, 0.2);
+  --el-color-primary-dark-2: #4f5ab8;
+  --el-color-primary-light-3: #7e88db;
+  --el-color-primary-light-5: #afb4e9;
+  --el-color-primary-light-7: #d0d3f2;
+  --el-color-primary-light-8: #e0e2f7;
+  --el-color-primary-light-9: #f0f1fb;
 }
 
 // ==================== 组件样式覆盖 ====================
@@ -83,12 +96,12 @@
   }
   
   &--primary {
-    background: var(--accent-blue);
-    border-color: var(--accent-blue);
-    
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+
     &:hover, &:focus {
-      background: #2563eb;
-      border-color: #2563eb;
+      background: #828fff;
+      border-color: #828fff;
     }
   }
   
@@ -158,7 +171,7 @@
 
     &.is-selected, &.selected {
       color: var(--accent-blue);
-      background-color: rgba(59, 130, 246, 0.1);
+      background-color: rgba(94, 106, 210, 0.12);
       font-weight: 500;
     }
 
@@ -189,7 +202,7 @@
     
     &.is-selected, &.selected {
       color: var(--accent-blue);
-      background-color: rgba(59, 130, 246, 0.1);
+      background-color: rgba(94, 106, 210, 0.12);
     }
   }
 }
@@ -543,8 +556,8 @@
   border-radius: 8px;
   
   &--info {
-    --el-alert-bg-color: rgba(59, 130, 246, 0.1);
-    --el-alert-border-color: rgba(59, 130, 246, 0.2);
+    --el-alert-bg-color: rgba(94, 106, 210, 0.12);
+    --el-alert-border-color: rgba(94, 106, 210, 0.2);
   }
   
   &--success {
@@ -758,9 +771,9 @@
   }
   
   &--info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--bg-elevated) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
-    
+    background: linear-gradient(135deg, rgba(94, 106, 210, 0.15) 0%, var(--bg-elevated) 100%);
+    border-color: rgba(94, 106, 210, 0.3);
+
     .el-message__icon {
       color: var(--accent-blue);
     }

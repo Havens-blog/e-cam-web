@@ -25,6 +25,7 @@ body {
   background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv01', 'ss03';
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -40,7 +41,7 @@ a {
   transition: color $transition-base;
 
   &:hover {
-    color: #2563eb;
+    color: #828fff;
   }
 }
 
