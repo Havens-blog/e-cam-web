@@ -204,12 +204,13 @@
     </el-dialog>
 
     <!-- 导出对话框 -->
-    <ExportDialog
+    <AssetExportDialog
       v-model:visible="exportDialogVisible"
       :instances="instances"
       :selected-ids="selectedIds"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
+      :config="exportConfig"
     />
 
     <!-- 自定义列对话框 -->
@@ -224,16 +225,16 @@
 <script setup lang="ts">
 import { deleteCmdbInstanceApi, listCmdbInstancesApi, listCmdbModelsApi } from '@/api'
 import type { InstanceVO, ModelVO } from '@/api/types/cmdb'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
-import { safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
+import { safeTagType, getProviderLabel as getProviderLabelRaw, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import InstanceForm from './components/InstanceForm.vue'
 
 const router = useRouter()
@@ -474,6 +475,65 @@ const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) 
     const data = res.data?.data || res.data
     return { list: data?.instances || [], total: data?.total || 0 }
   }, { onProgress })
+
+/** 导出配置：字段/取值逐字自原 components/ExportDialog.vue 迁移（零漂移） */
+const exportConfig: ExportFieldConfig<InstanceVO> = {
+  fields: [
+    { key: 'asset_id', label: '资产ID' },
+    { key: 'asset_name', label: '名称' },
+    { key: 'uid', label: '资产类型' },
+    { key: 'provider', label: '云平台' },
+    { key: 'region', label: '区域' },
+    { key: 'zone', label: '可用区' },
+    { key: 'status', label: '状态' },
+    { key: 'cloud_account_name', label: '云账号' },
+    { key: 'creation_time', label: '创建时间' },
+    { key: 'tags', label: '标签' },
+  ],
+  getValue: (instance: InstanceVO, key: string): string => {
+    if (key === 'asset_id' || key === 'asset_name') {
+      return instance[key] || ''
+    }
+    if (key === 'uid') {
+      const type = instance.uid?.split('_')[0] || instance.uid
+      const typeMap: Record<string, string> = {
+        ecs: '云服务器', rds: 'RDS', redis: 'Redis', mongodb: 'MongoDB',
+        vpc: 'VPC', eip: '弹性公网IP', nas: '文件存储', oss: '对象存储',
+        kafka: 'Kafka', elasticsearch: 'Elasticsearch'
+      }
+      return typeMap[type] || type || ''
+    }
+    const attr = instance.attributes || {}
+    if (key === 'status') {
+      const map: Record<string, string> = {
+        running: '运行中', Running: '运行中', RUNNING: '运行中',
+        stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+        available: '可用', Available: '可用',
+        pending: '创建中', Pending: '创建中',
+        error: '异常', Error: '异常'
+      }
+      return map[attr.status] || attr.status || ''
+    }
+    if (key === 'provider') return getProviderLabelRaw(attr.provider || '')
+    if (key === 'tags') {
+      const tags = attr.tags
+      if (tags && typeof tags === 'object') {
+        return Object.entries(tags).map(([k, v]) => `${k}:${v}`).join('; ')
+      }
+      return ''
+    }
+    if (key === 'creation_time') {
+      const time = attr.creation_time || instance.create_time
+      if (!time) return ''
+      const date = typeof time === 'number' ? new Date(time * 1000) : new Date(time)
+      if (isNaN(date.getTime())) return ''
+      return date.toLocaleString('zh-CN')
+    }
+    return attr[key] || ''
+  },
+  filename: '资源实例列表',
+  defaultFields: ['asset_id', 'asset_name', 'uid', 'provider', 'region', 'status'],
+}
 
 // 搜索
 const handleSearch = () => {
