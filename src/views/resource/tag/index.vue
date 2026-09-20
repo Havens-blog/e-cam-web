@@ -65,7 +65,7 @@
 
     <!-- Tag List Tab -->
     <div v-show="activeTab === 'tagList'">
-      <TagFilters v-model="filters" @search="handleSearch" @export="handleExport" />
+      <TagFilters v-model="filters" @search="handleSearch" />
 
       <!-- Batch Action Bar -->
       <div v-if="selectedTags.length > 0" class="batch-bar">
@@ -382,10 +382,6 @@ const handleDrawerBatchBind = (resources: TagResource[]) => {
     resource_id: r.asset_id || '',
   }))
   showBatchDialog.value = true
-}
-
-const handleExport = () => {
-  ElMessage.info('导出功能开发中')
 }
 
 // Tag type helpers

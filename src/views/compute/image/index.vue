@@ -48,9 +48,13 @@
               <span class="batch-info">已选 <strong>{{ selectedRows.length }}</strong> 项</span>
             </div>
             <div class="batch-right">
-              <el-button size="small" @click="handleBatchExport">
-                <el-icon><Download /></el-icon> 批量导出
-              </el-button>
+              <el-tooltip content="暂未开放" placement="top">
+                <span>
+                  <el-button size="small" disabled>
+                    <el-icon><Download /></el-icon> 批量导出
+                  </el-button>
+                </span>
+              </el-tooltip>
               <el-button size="small" @click="handleBatchShare">
                 <el-icon><Share /></el-icon> 批量共享
               </el-button>
@@ -338,7 +342,6 @@ const handleQuickAction = (action: string) => {
   if (action === 'sync') { syncDialogVisible.value = true }
   else { ElMessage.info(`${action} 功能开发中`) }
 }
-const handleBatchExport = () => { ElMessage.info('批量导出功能开发中') }
 const handleBatchShare = () => { ElMessage.info('批量共享功能开发中') }
 const handleBatchDelete = () => {
   ElMessageBox.confirm(`确定要删除选中的 ${selectedRows.value.length} 个镜像吗？`, '批量删除', {

@@ -73,14 +73,14 @@
       <template #header>
         <div class="card-header">
           <span>权限对比结果</span>
-          <el-button
-            type="primary"
-            size="small"
-            @click="exportCompare"
-          >
-            <el-icon><Download /></el-icon>
-            导出对比报告
-          </el-button>
+          <el-tooltip content="暂未开放" placement="top">
+            <span>
+              <el-button type="primary" size="small" disabled>
+                <el-icon><Download /></el-icon>
+                导出对比报告
+              </el-button>
+            </span>
+          </el-tooltip>
         </div>
       </template>
 
@@ -516,11 +516,6 @@ const resetCompare = () => {
   groupCompareData.value = []
   failedAccounts.value = []
   activeTab.value = 'users'
-}
-
-// 导出对比报告
-const exportCompare = () => {
-  ElMessage.success('对比报告导出功能开发中')
 }
 
 // 查看用户详情

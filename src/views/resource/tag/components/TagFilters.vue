@@ -35,9 +35,13 @@
       </el-button>
     </div>
     <div class="filters-right">
-      <el-button size="small" @click="$emit('export')">
-        📥 导出
-      </el-button>
+      <el-tooltip content="暂未开放" placement="top">
+        <span>
+          <el-button size="small" disabled>
+            📥 导出
+          </el-button>
+        </span>
+      </el-tooltip>
     </div>
   </div>
 </template>
@@ -56,7 +60,6 @@ const props = defineProps<{ modelValue: TagFilterValues }>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: TagFilterValues): void
   (e: 'search'): void
-  (e: 'export'): void
 }>()
 
 const localFilters = reactive<TagFilterValues>({
