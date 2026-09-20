@@ -103,6 +103,12 @@
       background: #828fff;
       border-color: #828fff;
     }
+
+    // 链接型主色按钮的 hover 文字色：EP 默认消费 --el-color-primary-light-5（本主题为透明度阶梯，
+    // 适合作背景但作文字对比度不足），改指向交互紫，保证深浅两主题的可读性
+    &.is-link {
+      --el-button-hover-link-text-color: var(--accent-blue);
+    }
   }
   
   &--default {
