@@ -22,6 +22,21 @@
           :disabled-date="disableOutsideWindow"
           @change="onTimeChange"
         />
+        <!-- 快捷时间窗口:点击即设为最近 N 小时并重查(默认 1h) -->
+        <div class="quick-windows" role="group" aria-label="快捷时间窗口">
+          <button
+            v-for="w in QUICK_WINDOWS"
+            :key="w"
+            type="button"
+            class="qw-chip"
+            :class="{ 'qw-active': isActiveQuickWindow(w) }"
+            :aria-label="`最近 ${w} 小时`"
+            :aria-pressed="isActiveQuickWindow(w)"
+            @click="applyQuickWindow(w)"
+          >
+            {{ w }}h
+          </button>
+        </div>
         <el-select
           v-model="selectedClouds"
           class="filter-clouds"
@@ -896,13 +911,37 @@ function onCloudsChange() {
     if (resp.value) void doSearch()
 }
 
-// ---- 时间窗口约束(与后端一致:按类型上限) ----
+// ---- 时间窗口约束与快捷窗口(默认最近 1 小时;快捷可切 2/4/6h) ----
+/** 快捷时间窗口(小时)。点击即设为最近 N 小时并重查。 */
+const QUICK_WINDOWS = [1, 2, 4, 6] as const
+/** 快捷窗口判定容差(±1 分钟):手动微调过的时间不误标激活 */
+const QUICK_WINDOW_TOL = 60_000
+
 function resetTimeRange() {
     const end = Date.now()
     const window = defaultWindowMs(currentMeta.value?.max_window_days ?? 7)
-    // 默认 6 小时:CloudFront 标准日志小时级投递,1h 窗口内活跃域名太少;
+    // 默认最近 1 小时(用户要求:诊断/查询聚焦近期);快捷可切 2/4/6h;
     // 仍受类型上限钳制(CDN 7d / SLB 3d)
-    timeRange.value = [new Date(end - Math.min(window, 6 * 3600_000)), new Date(end)]
+    timeRange.value = [new Date(end - Math.min(window, 1 * 3600_000)), new Date(end)]
+}
+
+/** 快捷窗口按钮:点击设 timeRange=[now-Nh, now],已有结果自动重查(与云切换一致) */
+function applyQuickWindow(hours: number) {
+    const end = Date.now()
+    timeRange.value = [new Date(end - hours * 3600_000), new Date(end)]
+    if (resp.value) void doSearch()
+}
+
+/** 当前时间范围是否恰为最近 N 小时(容差内高亮对应按钮) */
+function isActiveQuickWindow(hours: number): boolean {
+    if (!timeRange.value) return false
+    const end = Date.now()
+    const wantEnd = end
+    const wantStart = end - hours * 3600_000
+    return (
+        Math.abs(timeRange.value[0].getTime() - wantStart) <= QUICK_WINDOW_TOL &&
+        Math.abs(timeRange.value[1].getTime() - wantEnd) <= QUICK_WINDOW_TOL
+    )
 }
 
 function disableOutsideWindow(d: Date): boolean {
@@ -1086,6 +1125,31 @@ function columnWidth(key: string): number {
 }
 .filter-time {
     width: 360px;
+}
+/* 快捷时间窗口 chips */
+.quick-windows {
+    display: flex;
+    gap: 4px;
+}
+.qw-chip {
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 1.2;
+    border: 1px solid var(--el-border-color);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.qw-chip:hover {
+    border-color: var(--el-color-primary);
+    color: var(--el-color-primary);
+}
+.qw-chip.qw-active {
+    background: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    color: #fff;
 }
 .filter-clouds {
     width: 180px;
