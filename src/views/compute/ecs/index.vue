@@ -468,12 +468,13 @@
     />
 
     <!-- 导出对话框 -->
-    <ExportDialog
+    <AssetExportDialog
       v-model:visible="exportDialogVisible"
       :instances="instances"
       :selected-ids="selectedIds"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
+      :config="exportConfig"
     />
 
     <!-- 自定义列对话框 -->
@@ -510,8 +511,8 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import InstanceDetailDrawer from './components/InstanceDetailDrawer.vue'
 import InstanceForm from './components/InstanceForm.vue'
 
@@ -1141,6 +1142,69 @@ const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) 
     const responseData = (res as any).data || res
     return { list: responseData.items || [], total: responseData.total || 0 }
   }, { onProgress })
+
+/** 导出配置：字段/取值逐字自原 components/ExportDialog.vue 迁移（零漂移） */
+const exportConfig: ExportFieldConfig<Asset> = {
+  fields: [
+    { key: 'asset_id', label: '云上ID' },
+    { key: 'asset_name', label: '名称' },
+    { key: 'host_name', label: '主机名' },
+    { key: 'status', label: '状态' },
+    { key: 'private_ip', label: '私网IP' },
+    { key: 'public_ip', label: '公网IP' },
+    { key: 'os_name', label: '操作系统' },
+    { key: 'instance_type', label: '规格' },
+    { key: 'cpu', label: 'CPU' },
+    { key: 'memory', label: '内存' },
+    { key: 'charge_type', label: '计费方式' },
+    { key: 'provider', label: '云平台' },
+    { key: 'cloud_account_name', label: '云账号' },
+    { key: 'region', label: '区域' },
+    { key: 'zone', label: '可用区' },
+    { key: 'vpc_id', label: 'VPC' },
+    { key: 'vswitch_id', label: '子网' },
+    { key: 'security_groups', label: '安全组' },
+    { key: 'image_id', label: '镜像ID' },
+    { key: 'expired_time', label: '到期时间' },
+    { key: 'creation_time', label: '创建时间' },
+    { key: 'tags', label: '标签' },
+  ],
+  getValue: (instance: Asset, key: string): string => {
+    if (key === 'asset_id' || key === 'asset_name') {
+      return instance[key] || ''
+    }
+    const attr = instance.attributes || {}
+    if (key === 'status') {
+      const map: Record<string, string> = { RUNNING: '运行中', STOPPED: '已关机', Running: '运行中', Stopped: '已关机' }
+      return map[attr.status] || attr.status || ''
+    }
+    if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
+    if (key === 'provider') return getProviderLabel(attr.provider || '')
+    if (key === 'memory') {
+      const mem = attr.memory
+      if (!mem) return ''
+      return mem >= 1024 ? `${(mem / 1024).toFixed(0)}GB` : `${mem}MB`
+    }
+    if (key === 'cpu') {
+      return attr.cpu ? `${attr.cpu}核` : ''
+    }
+    if (key === 'security_groups') {
+      const groups = attr.security_groups || attr.security_group_ids
+      if (Array.isArray(groups)) return groups.length.toString()
+      return ''
+    }
+    if (key === 'tags') {
+      const tags = attr.tags
+      if (tags && typeof tags === 'object') {
+        return Object.entries(tags).map(([k, v]) => `${k}:${v}`).join('; ')
+      }
+      return ''
+    }
+    return attr[key] || ''
+  },
+  filename: '虚拟机列表',
+  defaultFields: ['asset_id', 'asset_name', 'status', 'private_ip', 'public_ip', 'os_name', 'instance_type', 'charge_type', 'provider', 'region'],
+}
 
 // 分页
 const handleSizeChange = (size: number) => {
