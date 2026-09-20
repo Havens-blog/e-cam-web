@@ -5,6 +5,9 @@ import errorHandler from './plugins/error-handler'
 import router from './router'
 import pinia from './stores'
 
+// Inter Variable 字体（自托管，内网可用；Linear 规格要求 Inter Variable + cv01/ss03）
+import '@fontsource-variable/inter'
+
 // 导入全局样式
 import './assets/styles/index.scss'
 
