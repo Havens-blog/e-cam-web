@@ -36,34 +36,13 @@
       </el-col>
     </el-row>
 
-    <!-- 同比环比对比 -->
+    <!-- 同比对比（后端 /cost/comparison 仅有同比语义：当期 vs 去年同期，无环比能力） -->
     <div class="comparison-section">
       <div class="section-header">
-        <span class="section-title">同比/环比对比</span>
+        <span class="section-title">同比对比</span>
       </div>
       <el-row :gutter="16">
-        <el-col :span="12">
-          <div class="comparison-card">
-            <div class="comparison-label">环比（与上月对比）</div>
-            <div class="comparison-body" v-if="comparison">
-              <div class="comparison-row">
-                <span class="period">{{ comparison.current_period }}</span>
-                <span class="amount">¥{{ comparison.current_amount.toFixed(2) }}</span>
-              </div>
-              <div class="comparison-row muted">
-                <span class="period">{{ comparison.previous_period }}</span>
-                <span class="amount">¥{{ comparison.previous_amount.toFixed(2) }}</span>
-              </div>
-              <div class="comparison-change" :class="changeClass(comparison.change_percent)">
-                <span v-if="comparison.change_percent > 0">+</span>{{ comparison.change_percent.toFixed(1) }}%
-              </div>
-            </div>
-            <div v-else class="comparison-empty">
-              <el-empty description="暂无数据" :image-size="60" />
-            </div>
-          </div>
-        </el-col>
-        <el-col :span="12">
+        <el-col :span="24">
           <div class="comparison-card">
             <div class="comparison-label">同比（与去年同期对比）</div>
             <div class="comparison-body" v-if="yoyComparison">
@@ -148,7 +127,6 @@ const distributionLoading = ref(false)
 const trendData = ref<CostTrendPoint[]>([])
 const trendLoading = ref(false)
 
-const comparison = ref<ComparisonResult | null>(null)
 const yoyComparison = ref<ComparisonResult | null>(null)
 
 // ==================== 工具函数 ====================
@@ -217,14 +195,11 @@ const fetchTrend = async () => {
 const fetchComparison = async () => {
   try {
     const res = await getCostComparisonApi(buildFilterParams())
-    comparison.value = (res as any).data || res || null
+    yoyComparison.value = (res as any).data || res || null
   } catch (e: any) {
-    comparison.value = null
+    yoyComparison.value = null
     ElMessage.error(e.message || '获取成本对比数据失败')
   }
-  // YoY uses the same endpoint; backend differentiates via date range
-  // For now we show the same comparison data as a placeholder
-  yoyComparison.value = comparison.value
 }
 
 const refreshAll = () => {
