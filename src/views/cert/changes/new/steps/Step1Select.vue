@@ -96,7 +96,7 @@
           @focus="ensureNewOptions"
         >
           <el-option
-            v-for="c in newOptions"
+            v-for="c in sortedNewOptions"
             :key="c.id"
             :label="c.commonName"
             :value="c.id"
@@ -108,6 +108,32 @@
             </div>
           </el-option>
         </el-select>
+
+        <!-- 新证书自动匹配提示（与旧证书同名/域名相关；已自动选中时不再展示） -->
+        <el-alert
+          v-if="!newCert && strongNewMatches.length > 1"
+          type="info"
+          :closable="false"
+          show-icon
+          class="auto-match-note"
+          role="status"
+        >
+          <template #title>检测到同名完整托管证书 {{ strongNewMatches.length }} 张，请选择其一</template>
+        </el-alert>
+        <el-alert
+          v-else-if="!newCert && strongNewMatches.length === 0 && sanOverlapNewOptions.length > 0"
+          type="info"
+          :closable="false"
+          show-icon
+          class="auto-match-note"
+          role="status"
+        >
+          <template #title>未找到同名完整托管证书，已按域名相关排序（{{ sanOverlapNewOptions.length }} 张）</template>
+        </el-alert>
+
+        <div v-if="newCert && newCertIsAutoMatch" class="auto-match-selected" aria-live="polite">
+          ✓ 已自动匹配同名新证书（可手动更换）
+        </div>
 
         <div v-if="newCert" class="selected-card" aria-live="polite">
           <div class="row">
@@ -163,7 +189,7 @@
 import type { CertListItem } from '@/api/cert'
 import { listCertsApi } from '@/api/cert'
 import { ElMessage } from 'element-plus'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { hostingStatusMeta } from '../../../ledger/format'
 import { truncateMiddle } from '../../format'
 
@@ -242,8 +268,7 @@ function onOldChange(id: string | '') {
     }
     const found = oldOptions.value.find((c) => c.id === id)
     if (found) emit('update:oldCert', found)
-    // 旧证书变更后刷新新证书候选（排除项变化）
-    void searchNew('')
+    // 旧证书变化由下方 watch 统一刷新新证书候选（排除项 + 自动匹配触发）
 }
 
 function onNewChange(id: string | '') {
@@ -254,6 +279,62 @@ function onNewChange(id: string | '') {
     const found = newOptions.value.find((c) => c.id === id)
     if (found) emit('update:newCert', found)
 }
+
+// ---------------------------------------------------------------------
+// 新证书自动匹配：旧证书确定后，按同名(CN)/SAN 交集对完整托管候选排序，
+// 恰一个同名强匹配时自动带上（用户已选/多同名时不覆盖，仅提示）。
+// ---------------------------------------------------------------------
+
+/** 与旧证书的匹配评分：2=同名(CN) 1=SAN 交集 0=无关 */
+function matchScore(oldCert: CertListItem | null, c: CertListItem): number {
+    if (!oldCert) return 0
+    const norm = (s: string) => s.trim().toLowerCase()
+    if (norm(c.commonName) === norm(oldCert.commonName)) return 2
+    const oldSans = new Set(oldCert.sans.map(norm))
+    if (c.sans.some((s) => oldSans.has(norm(s)))) return 1
+    return 0
+}
+
+/** 同名强匹配候选（score>=2，自动选中依据） */
+const strongNewMatches = computed<CertListItem[]>(() =>
+    newOptions.value.filter((c) => matchScore(props.oldCert, c) >= 2),
+)
+
+/** SAN 交集候选（score>=1，排序与提示依据） */
+const sanOverlapNewOptions = computed<CertListItem[]>(() =>
+    newOptions.value.filter((c) => matchScore(props.oldCert, c) >= 1),
+)
+
+/** 新证书候选：匹配度降序（同名 → SAN 交集 → 无关），同级按到期晚优先 */
+const sortedNewOptions = computed<CertListItem[]>(() =>
+    [...newOptions.value]
+        .sort((a, b) => matchScore(props.oldCert, b) - matchScore(props.oldCert, a) || b.daysLeft - a.daysLeft),
+)
+
+/** 当前选中新证书是否为自动匹配的同名证书（回显"已自动匹配"标记） */
+const newCertIsAutoMatch = computed<boolean>(
+    () => !!props.newCert && matchScore(props.oldCert, props.newCert) >= 2,
+)
+
+/** 恰一个同名强匹配且新证书未选 → 自动带上 */
+function tryAutoSelectNew() {
+    if (props.newCert) return
+    if (strongNewMatches.value.length === 1) {
+        emit('update:newCert', strongNewMatches.value[0])
+    }
+}
+
+// 旧证书变化（含 ?certId= 预选落定）→ 刷新新证书候选（排除项 + 自动匹配）
+watch(
+    () => props.oldCert?.id,
+    () => void searchNew(''),
+)
+
+// 候选或旧证书就绪后尝试自动选中（用户已选时不覆盖）
+watch(
+    () => [newOptions.value, props.oldCert?.id] as const,
+    () => tryAutoSelectNew(),
+)
 
 /** 无完整托管候选空态（首屏加载完成后判定；检索失败时展示错误态而非空态） */
 const newEmpty = ref(false)
@@ -406,6 +487,17 @@ void searchNew('')
 .new-empty {
   margin-top: 16px;
   border-radius: 8px;
+}
+
+.auto-match-note {
+  margin-top: 12px;
+  border-radius: 8px;
+}
+
+.auto-match-selected {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #50e3c2;
 }
 
 .search-error {
