@@ -92,13 +92,13 @@ $provider-azure: #2196f3;
 $provider-tencent: #3d8bff;
 $provider-huawei: #ff4d4d;
 
-// 环境颜色（production/staging/test 保持不变；development 原为蓝 #3b82f6，随蓝色残留一并同步为交互紫）
+// 环境颜色（production/staging/test 保持不变；development 原为蓝色残留，随本次迁移一并同步为交互紫）
 $env-production: #ef4444;
 $env-staging: #f59e0b;
 $env-development: #7170ff;
 $env-test: #10b981;
 
-// 状态颜色（其余保持不变；running 原为蓝 #3b82f6，同步为交互紫）
+// 状态颜色（其余保持不变；running 原为蓝色残留，同步为交互紫）
 $status-active: #10b981;
 $status-inactive: #71717a;
 $status-running: #7170ff;
