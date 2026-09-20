@@ -135,6 +135,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import RedisDetailDrawer from './components/RedisDetailDrawer.vue'
 
@@ -236,7 +237,15 @@ const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LA
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 const formatTime = (time?: number) => { if (!time) return '-'; return new Date(time).toLocaleString('zh-CN') }
 
-onMounted(() => { initColumnSettings(); fetchInstances() })
+// H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填关键词（无 query 直达零改动）
+const route = useRoute()
+
+onMounted(() => {
+  initColumnSettings()
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.keyword = s
+  fetchInstances()
+})
 </script>
 
 <style lang="scss" scoped>
