@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import type { CloudUser } from '@/api/types/iam'
+import { getUserDetailApi } from '@/api/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import { getUserStatus, getUserTypeLabel, safeTagType } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'
@@ -135,12 +136,10 @@ const user = ref<CloudUser | null>(null)
 const fetchUserDetail = async () => {
   loading.value = true
   try {
-    // TODO: 调用获取用户详情的 API
-    // const { data } = await getUserDetailApi(props.userId)
-    // user.value = data
-    
-    // 临时模拟数据
-    console.log('获取用户详情:', props.userId)
+    const res = await getUserDetailApi(props.userId)
+    const body = (res as any)?.data ?? res
+    // 兼容 ginx 信封 {code,msg,data} 与裸对象两种返回
+    user.value = (body && typeof body === 'object' && 'data' in body && (body as any).data ? (body as any).data : body) ?? null
   } catch (error) {
     console.error('获取用户详情失败:', error)
     ElMessage.error('获取用户详情失败')
