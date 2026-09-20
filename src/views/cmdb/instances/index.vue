@@ -72,6 +72,16 @@
             :value="region"
           />
         </el-select>
+        <el-tag
+          v-if="filters.model_uid"
+          closable
+          type="warning"
+          size="small"
+          class="model-filter-tag"
+          @close="handleClearModelFilter"
+        >
+          按模型过滤: {{ filters.model_uid }}
+        </el-tag>
       </div>
       <div class="filters-right">
         <el-button size="small" circle @click="handleRefresh" title="刷新">
@@ -233,11 +243,12 @@ import { fetchAllRows } from '@/utils/exportAll'
 import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import InstanceForm from './components/InstanceForm.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // 资产类型映射 - 用于跳转到对应详情页
 const assetTypeRouteMap: Record<string, { label: string; icon: string; route: string; tagType: string }> = {
@@ -289,6 +300,7 @@ const filters = reactive({
   asset_type: '',
   provider: '',
   region: '',
+  model_uid: '',
 })
 
 // 分页
@@ -431,6 +443,8 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
   if (filters.asset_type) params.uid = filters.asset_type
   if (filters.provider) params.provider = filters.provider
   if (filters.region) params.region = filters.region
+  // H-02：模型→实例下钻，后端 instance_handler List 按 model_uid 过滤（独立参数，不混入 keyword）
+  if (filters.model_uid) params.model_uid = filters.model_uid
   return params
 }
 
@@ -541,6 +555,12 @@ const handleSearch = () => {
   fetchInstances()
 }
 
+// 清除模型过滤标签，回到全量列表
+const handleClearModelFilter = () => {
+  filters.model_uid = ''
+  handleSearch()
+}
+
 // 刷新
 const handleRefresh = () => {
   fetchInstances()
@@ -629,6 +649,11 @@ const handleDelete = async (row: InstanceVO) => {
 // 初始化
 onMounted(() => {
   initColumnSettings()
+  // H-02：必须在首次 fetch 前读取路由 query，避免先全量后过滤的二次请求
+  const queryModelUid = route.query.model_uid
+  if (typeof queryModelUid === 'string' && queryModelUid) {
+    filters.model_uid = queryModelUid
+  }
   fetchInstances()
   fetchModels()
 })
@@ -657,6 +682,10 @@ onMounted(() => {
     display: flex;
     gap: 12px;
     flex: 1;
+  }
+
+  .model-filter-tag {
+    align-self: center;
   }
 
   .filters-right {
