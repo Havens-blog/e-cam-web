@@ -53,8 +53,8 @@
         </div>
       </div>
       <div class="block-actions">
-        <el-button v-if="block.action === 'scan'" type="primary" :disabled="scanSubmitting" @click="$emit('scan')">
-          {{ scanSubmitting ? '扫描中…' : '立即扫描' }}
+        <el-button v-if="block.action === 'scan'" type="primary" :disabled="scanning" @click="$emit('scan')">
+          {{ scanning ? '扫描中…' : '立即扫描' }}
         </el-button>
         <el-button
           v-if="block.action === 'view-order'"
@@ -90,13 +90,15 @@
  * 新证书仅指纹提示。挂载时无结果自动触发预检（含从失败重试后重入）。
  */
 import type { ChangeList } from '@/api/cert'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { precheckBlockFromError } from '../../format'
 
 const props = defineProps<{
     loading: boolean
     error: { code: string; message: string } | null
     changeList: ChangeList | null
+    /** 扫描已触发、等待快照完成（父级轮询 snapshot-status 驱动） */
+    scanning?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -107,8 +109,6 @@ const emit = defineEmits<{
 }>()
 
 const block = computed(() => (props.error ? precheckBlockFromError(props.error.code) : null))
-
-const scanSubmitting = ref(false)
 
 onMounted(() => {
     // 自动执行预检（无结果且非 loading 时触发；父级防重入）

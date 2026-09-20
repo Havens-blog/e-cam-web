@@ -77,6 +77,7 @@
       :loading="precheckLoading"
       :error="precheckError"
       :change-list="changeList"
+      :scanning="scanPolling"
       @retry="runPrecheck"
       @scan="onTriggerScan"
       @back="stepViewing = 1"
@@ -220,10 +221,12 @@ import {
     generateChangeListApi,
     getCertApi,
     getChangeApi,
+    getDiscoverySnapshotStatusApi,
     triggerCertScanApi,
 } from '@/api/cert'
+import type { DiscoverySnapshotStatus } from '@/api/cert'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
@@ -379,22 +382,73 @@ async function runPrecheck() {
     }
 }
 
-/** 阻断卡「立即扫描」：触发旧证书引用扫描后重跑预检 */
+/**
+ * 阻断卡「立即扫描」：触发旧证书引用扫描后**轮询快照至 done** 再自动重跑预检
+ * （扫描分钟级完成，立即预检必仍 SCAN_STALE——「判断有误」根因修复）。
+ * SCAN_IN_PROGRESS（防重）同样转入轮询等待；failed → 展示失败原因。
+ */
+const scanPolling = ref(false)
+let scanTimer: ReturnType<typeof setInterval> | null = null
+const SCAN_POLL_INTERVAL_MS = 2000
+const SCAN_POLL_TIMEOUT_MS = 10 * 60 * 1000
+
+function stopScanPolling() {
+    if (scanTimer) clearInterval(scanTimer)
+    scanTimer = null
+    scanPolling.value = false
+}
+
 async function onTriggerScan() {
-    if (!oldCert.value) return
+    if (!oldCert.value || scanPolling.value) return
+    let triggered = false
     try {
         await triggerCertScanApi(oldCert.value.id)
-        ElMessage.success('扫描已触发，完成后将自动重新预检')
-        void runPrecheck()
+        triggered = true
     } catch (err) {
         const code = (err as { code?: string }).code ?? ''
         if (code === 'SCAN_IN_PROGRESS') {
-            ElMessage.info('扫描进行中，完成后可重试预检')
+            triggered = true // 已有扫描在跑：转入轮询等待其完成
+            ElMessage.info('扫描进行中，完成后将自动重新预检')
         } else {
             ElMessage.error('扫描触发失败，请稍后重试')
+            return
         }
     }
+    if (!triggered) return
+    scanPolling.value = true
+    announcement.value = '扫描进行中，完成后将自动重新预检…'
+    const deadline = Date.now() + SCAN_POLL_TIMEOUT_MS
+    scanTimer = setInterval(async () => {
+        if (!scanPolling.value) return
+        if (Date.now() > deadline) {
+            stopScanPolling()
+            announcement.value = ''
+            ElMessage.error('扫描等待超时，请稍后手动重试')
+            return
+        }
+        let st: DiscoverySnapshotStatus
+        try {
+            st = await getDiscoverySnapshotStatusApi()
+        } catch {
+            return // 单次轮询失败退避到下个周期，不打断等待
+        }
+        if (!st.hasSnapshot || !st.status || st.status === 'running') return
+        stopScanPolling()
+        announcement.value = ''
+        if (st.status === 'done') {
+            ElMessage.success('扫描完成，正在重新预检')
+            void runPrecheck()
+        } else {
+            precheckError.value = {
+                code: 'SCAN_FAILED',
+                message: `扫描失败：${st.failReason ?? '未知原因'}`,
+            }
+            announcement.value = '扫描失败'
+        }
+    }, SCAN_POLL_INTERVAL_MS)
 }
+
+onUnmounted(stopScanPolling)
 
 function goChangesList() {
     void router.push('/certs/changes')
