@@ -51,7 +51,7 @@ import { createGroupApi, updateGroupApi } from '@/api'
 import type { PermissionGroup, PermissionPolicy } from '@/api/types/iam'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import type { FormInstance, FormRules } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import PolicyEditor from './PolicyEditor.vue'
 
 interface Props {
@@ -138,10 +138,9 @@ defineExpose({
   reset
 })
 
-// 初始化
-onMounted(() => {
-  initFormData()
-})
+// 初始化：随 props.group 变化重建表单（父级 dialog 无 destroy-on-close，组件跨开合复用；
+// 仅 onMounted 初始化会让第二次编辑别的组时表单仍是旧数据/空表单，保存即丢数据——审计 H1(25)）
+watch(() => props.group, () => initFormData(), { immediate: true })
 </script>
 
 <style scoped lang="scss">
