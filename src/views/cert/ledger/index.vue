@@ -144,7 +144,7 @@ import type { CertListItem, CertStats, DaysLeftTier, HostingStatus } from '@/api
 import { CertRequestError, deleteCertApi, getCertStatsApi, listCertsApi } from '@/api/cert'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import BatchImportModal from './components/BatchImportModal.vue'
 import CertTable from './components/CertTable.vue'
 import DiscoveryImportModal from './components/DiscoveryImportModal.vue'
@@ -154,6 +154,7 @@ import UploadKeyModal from './components/UploadKeyModal.vue'
 import { canDeleteRow, deleteBlockedSummary, resolvePageState, type DeleteBlockedMeta } from './format'
 
 const router = useRouter()
+const route = useRoute()
 
 const rows = ref<CertListItem[]>([])
 const total = ref(0)
@@ -336,6 +337,13 @@ async function confirmDelete() {
 }
 
 onMounted(() => {
+    // 到期看板分级卡跳转：/certs?daysLeft=<档> → 服务端按档过滤（看板证书粒度
+    // 计数与台账 daysLeft 筛选分档对齐，非看板域名行口径）
+    const qDays = route.query.daysLeft
+    const tiers: readonly string[] = ['gt30', 'le30', 'le14', 'le7', 'expired']
+    if (typeof qDays === 'string' && tiers.includes(qDays)) {
+        daysLeft.value = qDays as DaysLeftTier
+    }
     refreshAll()
 })
 

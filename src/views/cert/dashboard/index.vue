@@ -45,9 +45,8 @@
       <template v-else>
         <OverviewCards
           :summary="data?.summary ?? null"
-          :selected-level="filter.level"
           :selected-special="filter.special"
-          @select-level="onLevelCard"
+          @navigate-level="onLevelCard"
           @select-special="onSpecialCard"
         />
         <DashboardTable
@@ -86,6 +85,7 @@
 import type { CertDashboardResponse, DashboardItem, DaysLeftTier } from '@/api/cert'
 import { getCertDashboardApi } from '@/api/cert'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import DashboardTable from './components/DashboardTable.vue'
 import OverviewCards from './components/OverviewCards.vue'
 import ProbeDetailDrawer from './components/ProbeDetailDrawer.vue'
@@ -106,6 +106,7 @@ const filter = ref<DashboardFilter>({ ...EMPTY_DASHBOARD_FILTER })
 const announcement = ref('')
 const drawerVisible = ref(false)
 const drawerItem = ref<DashboardItem | null>(null)
+const router = useRouter()
 
 /** 骨架延迟（全局模式：800ms 内返回则直接渲染） */
 const SKELETON_DELAY_MS = 800
@@ -154,9 +155,13 @@ async function refresh() {
     }
 }
 
-/** 状态分级卡：点击选中 / 再点取消（与工具栏下拉同一状态源） */
+/**
+ * 状态分级卡：跳转台账按该档服务端过滤（证书粒度计数 → 台账 daysLeft 过滤可见
+ * 具体证书——看板表格为域名粒度，过期/临期证书被同名新证掩盖无法页内表达）。
+ * 工具栏下拉仍按域名行页内过滤，互不影响。
+ */
 function onLevelCard(tier: DaysLeftTier) {
-    filter.value = { ...filter.value, level: filter.value.level === tier ? '' : tier }
+    void router.push({ path: '/certs', query: { daysLeft: tier } })
 }
 
 /** 差异告警卡 / 豁免卡：点击选中 / 再点取消 */

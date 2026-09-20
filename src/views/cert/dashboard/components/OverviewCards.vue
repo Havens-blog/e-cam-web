@@ -6,13 +6,11 @@
         :key="card.tier"
         type="button"
         class="stat-card hoverable"
-        :class="{ selected: selectedLevel === card.tier }"
-        :aria-pressed="selectedLevel === card.tier"
-        @click="emit('select-level', card.tier)"
+        @click="emit('navigate-level', card.tier)"
       >
         <div class="stat-label">{{ card.label }}</div>
         <div class="stat-value">{{ summary?.countsByLevel[idx] ?? '—' }}</div>
-        <div class="stat-sub">点击按分级过滤</div>
+        <div class="stat-sub">点击跳转台账按档过滤</div>
       </button>
     </div>
     <div class="special-grid">
@@ -45,21 +43,21 @@
 <script setup lang="ts">
 /**
  * 到期看板总览卡（AC1）：5 级互斥分桶卡（countsByLevel 数组序）+ 次行差异告警数 /
- * 探测豁免数卡（同等卡片形态与交互）。点击卡 → 父级过滤表格，选中卡 Accent 高亮
- * （再点取消）；aria-pressed 标记选中态，筛选变化由页面级 aria-live 区域通告。
- * summary 为 null（刷新中）时计数显示「—」，卡片保持可点（沿用既有筛选）。
+ * 探测豁免数卡。**分级卡跳转台账按档过滤**（证书粒度计数 → 台账 daysLeft 服务端
+ * 过滤，能看到具体证书）——因看板表格是域名粒度（同域多证取 notAfter 最新者独占
+ * 行），过期/临期证书常被同名新证掩盖，卡内过滤会空；差异告警/豁免卡仍页内过滤
+ * （域名行可表达）。summary 为 null（刷新中）时计数显示「—」，卡片保持可点。
  */
 import type { DashboardSummary, DaysLeftTier } from '@/api/cert'
 import { DASHBOARD_LEVEL_CARDS } from '../format'
 
 defineProps<{
     summary: DashboardSummary | null
-    selectedLevel: DaysLeftTier | ''
     selectedSpecial: '' | 'diff' | 'exempt'
 }>()
 
 const emit = defineEmits<{
-    (e: 'select-level', tier: DaysLeftTier): void
+    (e: 'navigate-level', tier: DaysLeftTier): void
     (e: 'select-special', kind: 'diff' | 'exempt'): void
 }>()
 </script>
