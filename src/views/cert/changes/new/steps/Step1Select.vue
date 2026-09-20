@@ -319,15 +319,22 @@ const newCertIsAutoMatch = computed<boolean>(
 /** 恰一个同名强匹配且新证书未选 → 自动带上 */
 function tryAutoSelectNew() {
     if (props.newCert) return
-    if (strongNewMatches.value.length === 1) {
-        emit('update:newCert', strongNewMatches.value[0])
+    const match = strongNewMatches.value[0]
+    if (strongNewMatches.value.length === 1 && match) {
+        emit('update:newCert', match)
     }
 }
 
-// 旧证书变化（含 ?certId= 预选落定）→ 刷新新证书候选（排除项 + 自动匹配）
+// 旧证书变化（含 ?certId= 预选落定）→ 以旧证书域名检索新证书候选。
+// 关键：不能用空查询——列表只回第一页（pageSize 50，按上传时间倒序），同名新证书
+// 常在分页之外导致自动匹配落空；按 CN 子串检索（后端 search=域名/SAN/指纹片段子串）
+// 保证同名完整托管候选进入候选集。
 watch(
     () => props.oldCert?.id,
-    () => void searchNew(''),
+    () => {
+        const cn = props.oldCert?.commonName ?? ''
+        void searchNew(cn.replace(/^\*\./, ''))
+    },
 )
 
 // 候选或旧证书就绪后尝试自动选中（用户已选时不覆盖）
