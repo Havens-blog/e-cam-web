@@ -597,7 +597,7 @@ const handleViewDetail = (row: InstanceVO) => {
     // 跳转到对应资产类型的列表页，带上搜索参数定位到具体实例
     router.push({
       path: routeInfo.route,
-      query: { search: row.asset_id }
+      query: { search: row.asset_name || row.asset_id }
     })
   } else {
     ElMessage.warning(`暂不支持查看 ${assetType} 类型的详情`)
