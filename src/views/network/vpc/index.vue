@@ -235,7 +235,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import VpcFilters from './components/VpcFilters.vue'
@@ -286,6 +286,7 @@ const statusLabels: Record<string, string> = {
 
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -482,6 +483,9 @@ const submitSync = async () => {
 
 onMounted(() => {
   loadColumnSettings()
+  // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填名称过滤（无 query 直达零改动）
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.name = s
   fetchData()
 })
 </script>

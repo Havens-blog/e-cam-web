@@ -233,6 +233,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import { Box, DataLine, Download, Folder, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   computeStorageGrowth,
   deriveOssCardState,
@@ -462,7 +463,16 @@ const getPlatformIcon = (provider?: string) => {
 }
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 
-onMounted(() => { initColumnSettings(); fetchData(); fetchOpsCard() })
+// H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填搜索关键词（无 query 直达零改动）
+const route = useRoute()
+
+onMounted(() => {
+  initColumnSettings()
+  const s = route.query.search
+  if (typeof s === 'string' && s) searchKeyword.value = s
+  fetchData()
+  fetchOpsCard()
+})
 </script>
 
 <style scoped lang="scss">

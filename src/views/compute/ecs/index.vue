@@ -1301,6 +1301,9 @@ onMounted(() => {
   } else if (route.query.uid) {
     filters.uid = route.query.uid as string
   }
+  // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填关键词（uid 精确 / keyword 模糊不同维度，共存无害）
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.keyword = s
   fetchModels()
   fetchInstances()
   loadAvailableTagKeys()
