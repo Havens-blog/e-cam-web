@@ -1,3 +1,7 @@
+<!--
+  共享导出弹窗（阶段 1 命名 AssetExportDialog，现已不只服务 Asset 行：
+  泛型 T 承接 Asset / InstanceVO / CloudUser 等任意含 id: number 的行类型，组件名保持不变以免 15 页 import 变动）。
+-->
 <template>
   <el-dialog
     :model-value="visible"
@@ -89,14 +93,16 @@
 </template>
 
 <script lang="ts">
-import type { Asset } from '@/api/types/asset';
-
-/** 共享导出弹窗的页面级配置：字段清单/取值映射/文件名前缀/默认勾选字段由各页提供 */
-export interface ExportFieldConfig {
+/**
+ * 共享导出弹窗的页面级配置：字段清单/取值映射/文件名前缀/默认勾选字段由各页提供。
+ * 泛型 T = 行类型；默认 any 是为既有 15 页的裸 `ExportFieldConfig` 标注兜底（页内闭包自行标注行类型），
+ * 新接入页建议显式标注（如 `ExportFieldConfig<InstanceVO>`）。
+ */
+export interface ExportFieldConfig<T = any> {
   /** 可导出字段清单（key + 列头 label），顺序即列顺序 */
   fields: Array<{ key: string; label: string }>
   /** 纯函数取值映射：(row, key) => 单元格文本；页面特例（如 nas metric-map）经闭包捕获 */
-  getValue: (row: Asset, key: string) => string
+  getValue: (row: T, key: string) => string
   /** 文件名前缀，实际文件名为 `{filename}_{YYYYMMDD}.{ext}` */
   filename: string
   /** 打开弹窗时默认勾选的字段 key */
@@ -104,20 +110,20 @@ export interface ExportFieldConfig {
 }
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends { id: number } = any">
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps<{
   visible: boolean
-  instances: Asset[]
+  instances: T[]
   selectedIds: number[]
   total: number
   /** 页面级导出配置（字段/取值/文件名/默认勾选） */
-  config: ExportFieldConfig
+  config: ExportFieldConfig<T>
   /** 导出「全部数据」时的全量拉取闭包（父级用列表接口+当前筛选实现）；未提供则退回当前页 */
-  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<Asset[]>
+  fetchAllRows?: (onProgress?: (fetched: number, total: number) => void) => Promise<T[]>
 }>()
 
 const emit = defineEmits<{
@@ -169,7 +175,7 @@ const deselectAllFields = () => {
 
 /** 组装导出行：current=当前页 / selected=选中行 / all=父级全量拉取（未提供闭包则退回当前页）。
  *  返回 null 表示全量拉取失败（已在内部提示），调用方直接结束。 */
-const resolveExportRows = async (): Promise<Asset[] | null> => {
+const resolveExportRows = async (): Promise<T[] | null> => {
   if (exportForm.scope === 'current') return props.instances
   if (exportForm.scope === 'selected') return props.instances.filter(i => props.selectedIds.includes(i.id))
   if (props.fetchAllRows) {
