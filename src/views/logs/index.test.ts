@@ -115,6 +115,9 @@ const findSearchBtn = (w: VueWrapper) => w.findAll('button').find((b) => b.text(
 
 beforeEach(() => {
     vi.clearAllMocks()
+    // URL 纯净:页面 URL 状态同步(share-hydrate)会把前序用例的 query 写进
+    // history,污染后续挂载(误判分享链接 → 自动查询/时间窗被覆盖)
+    window.history.replaceState(null, '', window.location.pathname)
     typesApi.mockResolvedValue(typeMetas)
     sourcesApi.mockResolvedValue(sources)
     aggregateApi.mockResolvedValue({ log_type: 'cdn', total: 0, buckets: [], topn: [], sources: [] })

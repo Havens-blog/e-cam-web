@@ -107,6 +107,14 @@
           aria-label="取消查询"
           @click="cancelSearch"
         >取消</el-button>
+        <el-button
+          v-if="resp"
+          size="small"
+          text
+          type="primary"
+          aria-label="复制查询链接"
+          @click="copyQueryLink"
+        >复制链接</el-button>
       </div>
 
       <!-- 结构化字段筛选(多条件 AND 叠加,语义在统一字段上): -->
@@ -478,12 +486,14 @@ import type {
     LogTypeMeta,
 } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
 import LogStats from './components/LogStats.vue'
 import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
 import { csvSerialize, downloadCsv, entryRows } from './csv'
+import { decodeUrlState, encodeUrlState, hasQueryParams } from './url-state'
+import type { LogQueryState } from './url-state'
 import type { FieldFilterRow } from './drilldown'
 import {
     actionTagType,
@@ -957,9 +967,79 @@ const drawerFields = computed(() =>
         .map((f) => ({ key: f.key, label: f.label })),
 )
 
+// ---- URL 查询条件同步(刷新还原 / 复制链接分享;history.replaceState) ----
+const urlHydrated = ref(false)
+let urlTimer: ReturnType<typeof setTimeout> | null = null
+
+/** 当前查询条件 → URL 状态(供写地址栏/复制链接) */
+function currentUrlState(): LogQueryState {
+    return {
+        t: activeType.value,
+        startMs: timeRange.value?.[0].getTime() ?? null,
+        endMs: timeRange.value?.[1].getTime() ?? null,
+        clouds: selectedClouds.value,
+        resources: selectedResources.value,
+        kw: keyword.value,
+        filters: fieldFilters.value,
+        dim: aggrDimension.value,
+        metric: aggrMetric.value,
+        limit: limit.value,
+    }
+}
+
+/** 首帧:URL 参数覆盖状态(必须在 resetTimeRange 之后调用,先落默认值再覆盖) */
+function hydrateFromUrl() {
+    const s = decodeUrlState(new URLSearchParams(window.location.search))
+    activeType.value = s.t
+    if (s.startMs != null && s.endMs != null) {
+        const now = Date.now()
+        const end = Math.min(s.endMs, now)
+        const cap = (currentMeta.value?.max_window_days ?? 7) * 24 * 3600_000
+        const start = Math.max(s.startMs, end - cap)
+        if (end - start > 1000) timeRange.value = [new Date(start), new Date(end)]
+    }
+    if (s.clouds.length) {
+        selectedClouds.value = s.clouds
+        cloudsTouched.value = true
+    }
+    selectedResources.value = s.resources
+    keyword.value = s.kw
+    fieldFilters.value = s.filters.map((f) => ({ ...f }))
+    aggrDimension.value = s.dim
+    if (METRIC_OPTS.some((m) => m.value === s.metric)) aggrMetric.value = s.metric
+    if (s.limit != null && LIMIT_OPTIONS.includes(s.limit as (typeof LIMIT_OPTIONS)[number])) limit.value = s.limit
+    urlHydrated.value = true
+}
+
+/** 状态变化 → 防抖写 URL(仅 hydrate 完成后,避免把默认态洗进地址栏) */
+function syncUrl() {
+    if (!urlHydrated.value) return
+    if (urlTimer) clearTimeout(urlTimer)
+    urlTimer = setTimeout(() => {
+        const qs = encodeUrlState(currentUrlState()).toString()
+        window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+    }, 400)
+}
+
+watch([activeType, timeRange, selectedClouds, selectedResources, keyword, fieldFilters, aggrDimension, aggrMetric, limit], syncUrl, { deep: true })
+
+/** 复制当前查询链接(协作者打开即还原条件并自动查询) */
+async function copyQueryLink() {
+    const qs = encodeUrlState(currentUrlState()).toString()
+    const url = `${window.location.origin}${window.location.pathname}${qs ? `?${qs}` : ''}`
+    try {
+        await navigator.clipboard.writeText(url)
+        ElMessage.success('查询链接已复制,打开即可还原当前条件')
+    } catch {
+        ElMessage.error('复制失败,请手动复制地址栏')
+    }
+}
+
 // ---- 加载 ----
 onMounted(async () => {
     resetTimeRange()
+    hydrateFromUrl()
+    const urlHasQuery = hasQueryParams(new URLSearchParams(window.location.search))
     try {
         typeMetas.value = await getLogTypesApi()
     } catch {
@@ -968,6 +1048,8 @@ onMounted(async () => {
         ElMessage.error('日志字段字典加载失败,请刷新重试')
     }
     await loadSources()
+    // 分享进入:URL 携带查询条件时自动跑一次,还原协作者看到的场景
+    if (urlHasQuery && timeRange.value) void doSearch()
 })
 
 async function loadSources(force = false) {
