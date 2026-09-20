@@ -857,6 +857,22 @@ export function triggerCertScanApi(id: string) {
     )
 }
 
+/** 最近引用扫描快照状态（变更向导「立即扫描」轮询；无快照 → hasSnapshot=false） */
+export interface ScanStatus {
+    hasSnapshot: boolean
+    status?: 'running' | 'done' | 'failed'
+    startedAt?: string
+    finishedAt?: string
+    failReason?: string
+}
+
+/** 引用扫描状态（GET /certs/scan/status；区别于 /certs/discovery/snapshot-status 云发现快照） */
+export function getScanStatusApi() {
+    return unwrapCertEnvelope<ScanStatus>(
+        certAxios.get<CertEnvelope<ScanStatus>>('/certs/scan/status')
+    )
+}
+
 // ==================== 云端发现导入 ====================
 
 /**

@@ -221,10 +221,10 @@ import {
     generateChangeListApi,
     getCertApi,
     getChangeApi,
-    getDiscoverySnapshotStatusApi,
+    getScanStatusApi,
     triggerCertScanApi,
 } from '@/api/cert'
-import type { DiscoverySnapshotStatus } from '@/api/cert'
+import type { ScanStatus } from '@/api/cert'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -383,8 +383,11 @@ async function runPrecheck() {
 }
 
 /**
- * 阻断卡「立即扫描」：触发旧证书引用扫描后**轮询快照至 done** 再自动重跑预检
- * （扫描分钟级完成，立即预检必仍 SCAN_STALE——「判断有误」根因修复）。
+ * 阻断卡「立即扫描」：触发旧证书引用扫描后**轮询引用扫描状态至 done** 再自动
+ * 重跑预检（扫描分钟级完成，立即预检必仍 SCAN_STALE——「判断有误」根因修复）。
+ * 轮询 GET /certs/scan/status（最近引用扫描快照，清单新鲜度数据源）——不可用
+ * /certs/discovery/snapshot-status（云发现快照，与 SCAN_STALE 无关，曾致扫描
+ * 完成后仍误报失败）。
  * SCAN_IN_PROGRESS（防重）同样转入轮询等待；failed → 展示失败原因。
  */
 const scanPolling = ref(false)
@@ -426,9 +429,9 @@ async function onTriggerScan() {
             ElMessage.error('扫描等待超时，请稍后手动重试')
             return
         }
-        let st: DiscoverySnapshotStatus
+        let st: ScanStatus
         try {
-            st = await getDiscoverySnapshotStatusApi()
+            st = await getScanStatusApi()
         } catch {
             return // 单次轮询失败退避到下个周期，不打断等待
         }
