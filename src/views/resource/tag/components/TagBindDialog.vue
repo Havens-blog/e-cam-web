@@ -73,11 +73,17 @@
 
 <script setup lang="ts">
 import { bindTagsApi } from '@/api/tag';
+import { listCloudAccountsApi } from '@/api';
+import type { CloudAccount } from '@/api/types/account';
 import { PROVIDER_CONFIGS } from '@/utils/constants';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = defineProps<{
+  modelValue: boolean
+  /** 编辑预填：打开时预填首个标签键值对（审计 F-H3——handleEdit 曾注释 pre-filled 却传空） */
+  initialTag?: { key: string; value: string } | null
+}>()
 const emit = defineEmits<{
   (e: 'update:modelValue', val: boolean): void
   (e: 'success'): void
@@ -107,11 +113,24 @@ const regionOptions = computed(() => {
   return config?.regions || []
 })
 
+/** 按厂商加载活跃云账号（此前下拉永久为空——审计 F-H2） */
+const loadAccounts = async (provider: string) => {
+  accountOptions.value = []
+  if (!provider) return
+  try {
+    const res = await listCloudAccountsApi({ provider, status: 'active' })
+    const body = (res as any)?.data ?? res
+    const accounts: CloudAccount[] = body?.accounts ?? body?.data?.accounts ?? []
+    accountOptions.value = accounts.map(a => ({ value: a.id, label: a.name }))
+  } catch (error: any) {
+    ElMessage.error(error?.message || '云账号加载失败')
+  }
+}
+
 const handleProviderChange = () => {
   form.region = ''
   form.account_id = 0
-  // In production, load accounts from API based on provider
-  accountOptions.value = []
+  loadAccounts(form.provider)
 }
 
 const addResource = () => {
@@ -138,6 +157,10 @@ const handleSubmit = async () => {
   // Validate
   if (!form.provider || !form.region || !form.resource_type) {
     ElMessage.warning('请填写完整的资源信息')
+    return
+  }
+  if (!form.account_id) {
+    ElMessage.warning('请选择云账号')
     return
   }
   if (form.resource_ids.length === 0) {
@@ -173,6 +196,13 @@ const handleSubmit = async () => {
     submitting.value = false
   }
 }
+
+// 编辑预填：带 initialTag 打开时预填首个标签键值对（审计 F-H3）
+watch(visible, (v) => {
+  if (v && props.initialTag?.key) {
+    form.tags = [{ key: props.initialTag.key, value: props.initialTag.value }]
+  }
+})
 
 const handleClose = () => {
   visible.value = false

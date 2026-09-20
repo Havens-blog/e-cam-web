@@ -7,7 +7,7 @@
         <p>多云标签统一管理，支持标签查询、绑定、解绑、批量操作和标签策略治理</p>
       </div>
       <div class="page-header-right">
-        <el-button type="primary" @click="showBindDialog = true">
+        <el-button type="primary" @click="editingBindTag = null; showBindDialog = true">
           ＋ 添加标签
         </el-button>
         <el-button @click="showBatchDialog = true">
@@ -158,7 +158,7 @@
     <TagRulePanel v-if="activeTab === 'autoTag'" ref="rulePanelRef" />
 
     <!-- Dialogs & Drawers -->
-    <TagBindDialog v-model="showBindDialog" @success="handleRefresh" />
+    <TagBindDialog v-model="showBindDialog" :initial-tag="editingBindTag" @success="handleRefresh" />
     <TagBatchDialog
       v-model="showBatchDialog"
       :selected-resources="selectedTags"
@@ -244,6 +244,8 @@ const drawerTagValue = ref('')
 
 // Dialog state
 const showBindDialog = ref(false)
+/** 绑定弹窗编辑预填（null = 添加态） */
+const editingBindTag = ref<{ key: string; value: string } | null>(null)
 const showBatchDialog = ref(false)
 const batchMode = ref<'normal' | 'remediate' | 'resourceBind'>('normal')
 const remediateResources = ref<ComplianceResult[]>([])
@@ -344,7 +346,8 @@ const openResourceDrawer = (row: TagSummary) => {
 }
 
 const handleEdit = (row: TagSummary) => {
-  // Open bind dialog pre-filled for editing
+  // Open bind dialog pre-filled for editing（审计 F-H3：此前注释 pre-filled 却未传参，弹窗恒为空白添加态）
+  editingBindTag.value = { key: row?.key || '', value: row?.value || '' }
   drawerTagKey.value = row?.key || ''
   drawerTagValue.value = row?.value || ''
   showBindDialog.value = true
