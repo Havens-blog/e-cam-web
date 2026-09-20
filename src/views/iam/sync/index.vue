@@ -163,15 +163,20 @@
               >
                 重试
               </el-button>
-              <el-button
+              <el-tooltip
                 v-if="row.status === 'running'"
-                link
-                type="danger"
-                size="small"
-                @click="handleCancel(row)"
+                content="任务取消暂未开放（后端无取消接口），请等待任务完成"
+                placement="top"
               >
-                取消
-              </el-button>
+                <el-button
+                  link
+                  type="info"
+                  size="small"
+                  disabled
+                >
+                  取消
+                </el-button>
+              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
@@ -360,30 +365,6 @@ const handleRetry = async (task: SyncTask) => {
     if (error !== 'cancel') {
       console.error('重试任务失败:', error)
       ElMessage.error(error.message || '重试任务失败')
-    }
-  }
-}
-
-// 取消任务
-const handleCancel = async (task: SyncTask) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要取消任务 "${task.id}" 吗？`,
-      '取消确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    // TODO: 实现取消任务 API
-    ElMessage.success('任务已取消')
-    loadSyncTasks()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('取消任务失败:', error)
-      ElMessage.error(error.message || '取消任务失败')
     }
   }
 }
