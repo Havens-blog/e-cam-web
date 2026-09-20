@@ -168,7 +168,7 @@
     <!-- 详情抽屉 -->
     <OssDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="ossList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="ossList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
@@ -178,14 +178,41 @@
 import { listOSSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import type { TagType } from '@/utils/constants'
+import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { Box, Download, Folder, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import OssDetailDrawer from './components/OssDetailDrawer.vue'
+
+
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
+  const attr = instance.attributes || {}
+  if (key === 'storage_class') { const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储' }; return map[attr.storage_class] || attr.storage_class || '' }
+  if (key === 'acl') { const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[attr.acl] || attr.acl || '' }
+  if (key === 'versioning') return attr.versioning ? '已开启' : '未开启'
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
+  if (key === 'storage_size') { const v = attr.storage_size; if (!v) return ''; if (v >= 1024 * 1024 * 1024) return `${(v / 1024 / 1024 / 1024).toFixed(2)}TB`; if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)}GB`; return `${(v / 1024).toFixed(2)}MB` }
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: '存储桶ID' }, { key: 'asset_name', label: '存储桶名称' }, { key: 'storage_class', label: '存储类型' },
+    { key: 'acl', label: '访问权限' }, { key: 'versioning', label: '版本控制' }, { key: 'object_count', label: '对象数量' },
+    { key: 'storage_size', label: '存储量' }, { key: 'provider', label: '云平台' }, { key: 'region', label: '区域' },
+    { key: 'endpoint', label: 'Endpoint' }, { key: 'creation_time', label: '创建时间' },
+  ],
+  getValue: getExportValue,
+  filename: 'OSS存储桶',
+  defaultFields: ['asset_id', 'asset_name', 'storage_class', 'acl', 'object_count', 'storage_size', 'provider', 'region'],
+}
 
 
 const loading = ref(false)

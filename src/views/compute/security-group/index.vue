@@ -75,7 +75,8 @@
     </div>
 
     <SecurityGroupDetailDrawer v-model:visible="detailVisible" :instance="currentInstance" />
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <!-- 原本地导出弹窗无「已选中」范围（不接收 selectedIds），迁移时传 [] 保持「已选中」禁用（零漂移） -->
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="[]" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
 </template>
@@ -84,13 +85,35 @@
 import { listSecurityGroupAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchAllRows } from '@/utils/exportAll'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import SecurityGroupDetailDrawer from './components/SecurityGroupDetailDrawer.vue'
+
+
+/** 共享导出取值：原本地 ExportDialog 内联取值逻辑逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return i[key] || ''
+  if (key === 'type') return i.attributes?.security_group_type === 'enterprise' ? '企业级' : '普通'
+  // provider/region 是 Asset 顶层字段，attributes 里恒空（compute-2 F-H3）
+  if (key === 'provider') return i.provider || i.attributes?.provider || ''
+  if (key === 'region') return i.region || i.attributes?.region || ''
+  return i.attributes?.[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: '安全组ID' }, { key: 'asset_name', label: '名称' }, { key: 'type', label: '类型' },
+    { key: 'vpc_id', label: 'VPC' }, { key: 'provider', label: '云平台' }, { key: 'region', label: '区域' },
+  ],
+  getValue: getExportValue,
+  filename: '安全组列表',
+  defaultFields: ['asset_id', 'asset_name', 'type', 'vpc_id', 'provider', 'region'],
+}
 
 const loading = ref(false)
 const instances = ref<Asset[]>([])

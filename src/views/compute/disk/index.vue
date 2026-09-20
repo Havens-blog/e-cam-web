@@ -116,7 +116,8 @@
     </div>
 
     <DiskDetailDrawer v-model:visible="detailVisible" :instance="currentInstance" />
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <!-- 原本地导出弹窗无「已选中」范围（不接收 selectedIds），迁移时传 [] 保持「已选中」禁用（零漂移） -->
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="[]" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
 </template>
@@ -126,12 +127,31 @@ import { listDiskAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import { fetchAllRows } from '@/utils/exportAll'
 import IconFont from '@/components/IconFont/index.vue'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import DiskDetailDrawer from './components/DiskDetailDrawer.vue'
-import ExportDialog from './components/ExportDialog.vue'
+
+
+/** 共享导出取值：原本地 ExportDialog 内联取值逻辑逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return i[key] || ''
+  return i.attributes?.[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: '云盘ID' }, { key: 'asset_name', label: '名称' }, { key: 'status', label: '状态' },
+    { key: 'disk_type', label: '磁盘类型' }, { key: 'size', label: '容量' }, { key: 'category', label: '云盘类型' },
+    { key: 'instance_id', label: '挂载实例' }, { key: 'provider', label: '云平台' }, { key: 'region', label: '区域' },
+  ],
+  getValue: getExportValue,
+  filename: '云盘列表',
+  defaultFields: ['asset_id', 'asset_name', 'status', 'disk_type', 'size', 'category', 'instance_id', 'provider', 'region'],
+}
 
 const loading = ref(false)
 const instances = ref<Asset[]>([])

@@ -215,7 +215,7 @@
     <!-- 详情抽屉 -->
     <NasDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :metric-map="fsMetricMap" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="nasList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
@@ -228,6 +228,8 @@ import type { NASTopItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import type { TaskType } from '@/api/types/task'
 import IconFont from '@/components/IconFont/index.vue'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
+import { getProviderLabel } from '@/utils/constants'
 import { Box, DataLine, Download, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -243,8 +245,37 @@ import {
   type NasCardSummary,
 } from './nasMetrics'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
+
+
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移）；metric-map 额外 prop 以闭包捕获 fsMetricMap 等价替代（不新增共享组件 prop） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
+  const attr = instance.attributes || {}
+  if (key === 'status') { const map: Record<string, string> = { Running: '运行中', Stopped: '已停止' }; return map[attr.status] || attr.status || '' }
+  if (key === 'provider') return getProviderLabel(attr.provider || '')
+  if (key === 'capacity' || key === 'used_capacity') {
+    // S-Hard：容量数值一律来自指标表(fs_id 去重代表行);无指标数据导出空串,不回退资产表坏值
+    const m = fsMetricMap.value?.get(String(instance.asset_id || ''))
+    const v = key === 'capacity' ? m?.latest?.capacity : m?.latest?.used
+    if (v === null || v === undefined || !Number.isFinite(v)) return ''
+    return formatCapacityGB(v)
+  }
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: '文件系统ID' }, { key: 'asset_name', label: '名称' }, { key: 'status', label: '状态' },
+    { key: 'file_system_type', label: '文件系统类型' }, { key: 'protocol_type', label: '协议类型' }, { key: 'storage_type', label: '存储类型' },
+    { key: 'capacity', label: '容量' }, { key: 'used_capacity', label: '已用容量' }, { key: 'mount_target_count', label: '挂载点数' },
+    { key: 'provider', label: '云平台' }, { key: 'region', label: '区域' }, { key: 'vpc_id', label: 'VPC' }, { key: 'creation_time', label: '创建时间' },
+  ],
+  getValue: getExportValue,
+  filename: 'NAS文件系统',
+  defaultFields: ['asset_id', 'asset_name', 'status', 'file_system_type', 'protocol_type', 'capacity', 'provider', 'region'],
+}
 
 
 const loading = ref(false)
