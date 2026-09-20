@@ -100,6 +100,13 @@
           </el-select>
         </el-tooltip>
         <el-button type="primary" :loading="searching" :disabled="!timeRange" @click="doSearch">查询</el-button>
+        <el-button
+          v-if="searching"
+          type="danger"
+          plain
+          aria-label="取消查询"
+          @click="cancelSearch"
+        >取消</el-button>
       </div>
 
       <!-- 结构化字段筛选(多条件 AND 叠加,语义在统一字段上): -->
@@ -230,10 +237,23 @@
       <span v-if="aggregate?.topn_skip" class="aggr-skip" :title="aggregate.topn_skip">
         ⚠ 部分源不支持该维度/指标,TopN 可能有缺失(趋势/总数仍全窗准确)
       </span>
+      <el-button
+        class="aggr-export"
+        size="small"
+        text
+        type="primary"
+        :disabled="!aggregate"
+        aria-label="导出统计 CSV"
+        @click="exportStatsCsv"
+      >导出统计</el-button>
     </div>
 
     <!-- WAF 流量诊断卡(手动触发;独立于统计/明细区块,不影响既有行为) -->
-    <LogDiagnoseCard v-if="activeType === 'waf'" :context="diagnoseContext" />
+    <LogDiagnoseCard
+      v-if="activeType === 'waf'"
+      :context="diagnoseContext"
+      @drilldown="onDiagDrilldown"
+    />
 
     <!-- 结果区:统计视图为主,明细默认折叠 -->
     <div v-if="searching || searchError || !resp || allEntries.length === 0" class="table-card">
@@ -408,6 +428,15 @@
               {{ pageBottom ? '没有更早' : '加载更早' }}
             </el-button>
             <el-button size="small" text :disabled="pageLoading" @click="backToLatest">回到最新</el-button>
+            <el-button
+              class="pager-export"
+              size="small"
+              text
+              type="primary"
+              :disabled="!allEntries.length || pageLoading"
+              aria-label="导出明细 CSV"
+              @click="exportDetailCsv"
+            >导出明细</el-button>
             <el-tooltip placement="top">
               <template #content>
                 按时间游标向前翻页(窗口上界 = 当前最旧一条 - 1ms),逐页追加,不会重复;<br />
@@ -454,6 +483,7 @@ import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
 import LogStats from './components/LogStats.vue'
 import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
+import { csvSerialize, downloadCsv, entryRows } from './csv'
 import type { FieldFilterRow } from './drilldown'
 import {
     actionTagType,
@@ -600,6 +630,18 @@ const detailSampleNote = computed(() => {
 // ---- 查询进行中进度态(文字化回馈:源数/已耗时;不必轮询真实进度) ----
 const searchElapsed = ref(0)
 let progressTimer: ReturnType<typeof setInterval> | null = null
+/** 联邦长查询取消控制器(查询/加载更早共用;取消后 axios 抛 ERR_CANCELED) */
+const searchAbort = ref<AbortController | null>(null)
+
+/** 取消进行中的查询/翻页:立即中止所有在飞请求,进度态随 finally 清理 */
+function cancelSearch() {
+    searchAbort.value?.abort()
+}
+
+/** 取消异常归一到「已取消」文案(axios CanceledError 的 code 即为 ERR_CANCELED) */
+function isCanceled(e: unknown): boolean {
+    return !!e && typeof e === 'object' && (e as { code?: string }).code === 'ERR_CANCELED'
+}
 
 function startProgress() {
     stopProgress()
@@ -740,6 +782,67 @@ function onBarDrilldown(payload: { name: string }) {
     }
     fieldFilters.value = next
     void doSearch()
+}
+
+/**
+ * 诊断卡下钻(Top 源/URI/状态码/动作 → 字段筛选):判定→定位闭环 —— 判定为
+ * 高风险后点一下攻击源即可在明细里看它的流量构成。字段映射由卡内给出
+ * (client_ip/uri/status/action,都是诊断维度的统一字段 key),此处复用图表
+ * 下钻同一套追加/覆盖逻辑。
+ */
+function onDiagDrilldown(payload: { field: string; value: string }) {
+    const known = filterableFields.value.some((f) => f.key === payload.field)
+    if (!known) {
+        ElMessage.warning(`字段 ${payload.field} 不在字段字典内,暂不支持下钻`)
+        return
+    }
+    const next = applyDrilldown(fieldFilters.value, payload.field, payload.value, FIELD_FILTER_MAX)
+    if (!next) {
+        ElMessage.warning(`字段筛选已达上限(${FIELD_FILTER_MAX}),请先删除一条再加下钻条件`)
+        return
+    }
+    fieldFilters.value = next
+    void doSearch()
+}
+
+// ---- CSV 导出(明细/统计浏览器端生成,审计汇报用) ----
+/** 明细导出:按当前字段字典列导出 allEntries,值口径与表格一致 */
+function exportDetailCsv() {
+    if (!allEntries.value.length) return
+    const columns = currentFields.value.map((f) => ({ key: f.key, label: f.label }))
+    if (!columns.length) {
+        ElMessage.warning('字段字典未加载,暂无法导出')
+        return
+    }
+    const csv = csvSerialize(columns.map((c) => c.label), entryRows(allEntries.value, columns))
+    downloadCsv(`日志明细-${activeType.value}-${datetimeStamp()}.csv`, csv)
+    ElMessage.success(`已导出明细 ${allEntries.value.length} 条`)
+}
+
+/** 统计导出:趋势(时间,请求数)+ TopN(名称,计数)两段单文件,首列类型区分 */
+function exportStatsCsv() {
+    const agg = aggregate.value
+    if (!agg) {
+        ElMessage.warning('暂无统计结果,先查询或查分组后再导出')
+        return
+    }
+    const header = ['类型', '名称/时间', '数值']
+    const rows: string[][] = []
+    for (const b of agg.buckets ?? []) {
+        rows.push(['趋势', formatLogTime(b.timestamp), String(b.count)])
+    }
+    for (const t of agg.topn ?? []) {
+        rows.push(['TopN', t.name, String(t.count)])
+    }
+    downloadCsv(`日志统计-${activeType.value}-${datetimeStamp()}.csv`, csvSerialize(header, rows))
+    ElMessage.success('已导出统计(趋势 + TopN)')
+}
+
+/** 导出文件名时间戳(本地 yyyyMMdd-HHmm) */
+function datetimeStamp(): string {
+    const d = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
 }
 
 /** 清除下钻:仅移除带下钻标记的条件行(用户手动条件与 keyword 原样保留),并重查还原 */
@@ -1010,15 +1113,18 @@ async function doSearch() {
         resources: selectedResources.value.length ? selectedResources.value : undefined,
         filters: filters as FieldFilter[] | undefined,
     }
+    // 取消控制器:查询按钮旁出现「取消」,中止即停(见 cancelSearch)
+    const ctrl = new AbortController()
+    searchAbort.value = ctrl
     try {
         // search(采样明细)+ aggregate(全窗真实统计)并行;聚合失败降级采样视图
         const [searchRes, aggRes] = await Promise.all([
-            searchLogsApi({ ...params, limit: limit.value }),
+            searchLogsApi({ ...params, limit: limit.value }, { signal: ctrl.signal }),
             aggregateLogsApi({
                 ...params,
                 dimension: aggrDimension.value || undefined,
                 metric: aggrMetric.value === 'count' ? undefined : aggrMetric.value,
-            }).catch(() => null),
+            }, { signal: ctrl.signal }).catch(() => null),
         ])
         resp.value = searchRes
         aggregate.value = aggRes
@@ -1026,10 +1132,11 @@ async function doSearch() {
     } catch (e) {
         resp.value = null
         aggregate.value = null
-        searchError.value = e instanceof Error ? e.message : String(e)
+        searchError.value = isCanceled(e) ? '查询已取消' : e instanceof Error ? e.message : String(e)
     } finally {
         stopProgress()
         searching.value = false
+        searchAbort.value = null
     }
 }
 
@@ -1051,6 +1158,8 @@ async function loadEarlier() {
     }
     pageLoading.value = true
     startProgress()
+    const ctrl = new AbortController()
+    searchAbort.value = ctrl
     try {
         const pageRes = await searchLogsApi({
             log_type: activeType.value,
@@ -1063,7 +1172,7 @@ async function loadEarlier() {
             resources: selectedResources.value.length ? selectedResources.value : undefined,
             filters: buildFilters(),
             limit: limit.value,
-        })
+        }, { signal: ctrl.signal })
         const before = allEntries.value.length
         appendEntries(pageRes.entries)
         pageInc.value = allEntries.value.length - before
@@ -1075,10 +1184,13 @@ async function loadEarlier() {
             if (pageRes.entries.length === 0) ElMessage.info('没有更早的日志,已到窗口起点')
         }
     } catch (e) {
-        ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
+        if (!isCanceled(e)) {
+            ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
+        }
     } finally {
         stopProgress()
         pageLoading.value = false
+        searchAbort.value = null
     }
 }
 

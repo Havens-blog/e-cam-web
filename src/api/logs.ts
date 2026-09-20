@@ -48,23 +48,25 @@ export async function getLogSourcesApi(params: { log_type: string; clouds?: stri
     return unwrap<LogSource[]>(res) ?? []
 }
 
-/** 联邦查询(单源失败隔离,per-source 状态随响应返回) */
-export async function searchLogsApi(data: LogSearchRequest): Promise<LogSearchResponse> {
+/** 联邦查询(单源失败隔离,per-source 状态随响应返回);signal 用于长查询取消 */
+export async function searchLogsApi(data: LogSearchRequest, opts?: { signal?: AbortSignal }): Promise<LogSearchResponse> {
     const res = await instance.post<LogSearchResponse>({
         url: `${BASE}/search`,
         data,
+        signal: opts?.signal,
     })
     return unwrap<LogSearchResponse>(res)
 }
 
 /**
  * 窗口内真实聚合(趋势/总数/TopN 下推云引擎,不受采样上限约束;
- * 不支持的源显式标注)。聚合失败由调用方降级为采样视图。
+ * 不支持的源显式标注)。聚合失败由调用方降级为采样视图;signal 同查询取消。
  */
-export async function aggregateLogsApi(data: LogAggregateRequest): Promise<LogAggregateResponse> {
+export async function aggregateLogsApi(data: LogAggregateRequest, opts?: { signal?: AbortSignal }): Promise<LogAggregateResponse> {
     const res = await instance.post<LogAggregateResponse>({
         url: `${BASE}/aggregate`,
         data,
+        signal: opts?.signal,
     })
     return unwrap<LogAggregateResponse>(res)
 }

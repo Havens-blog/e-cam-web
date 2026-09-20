@@ -92,32 +92,81 @@
             </div>
           </div>
 
-          <!-- Top 攻击源 IP(请求数 + 占比) -->
+          <!-- Top 攻击源 IP(请求数 + 占比;点击追加 client_ip 筛选) -->
           <div class="diagnose-sources">
             <div class="section-title">Top 攻击源 IP</div>
             <div v-if="result.top_sources.length" class="source-list">
-              <div v-for="(s, i) in result.top_sources" :key="s.ip" class="source-row">
+              <button
+                v-for="(s, i) in result.top_sources"
+                :key="s.ip"
+                type="button"
+                class="source-row drillable"
+                :title="`筛选 来源IP = ${s.ip}`"
+                @click="drill('client_ip', s.ip)"
+              >
                 <span class="rank">{{ i + 1 }}</span>
                 <span class="src-ip">{{ s.ip }}</span>
                 <span class="src-count">{{ formatCount(s.count) }} 次</span>
                 <span class="src-share">{{ formatShare(s.share) }}</span>
-              </div>
+              </button>
             </div>
             <div v-else class="section-empty">窗口内无 Top 攻击源数据</div>
           </div>
 
-          <!-- 请求量高的 URI/URL(攻击目标/被刷路径定位) -->
+          <!-- 请求量高的 URI/URL(攻击目标/被刷路径定位;点击追加 uri 筛选) -->
           <div class="diagnose-uris">
             <div class="section-title">请求量高的 URI/URL</div>
             <div v-if="(resp.top_uris ?? []).length" class="source-list">
-              <div v-for="(u, i) in (resp.top_uris ?? []).slice(0, 8)" :key="u.name" class="source-row">
+              <button
+                v-for="(u, i) in (resp.top_uris ?? []).slice(0, 8)"
+                :key="u.name"
+                type="button"
+                class="source-row drillable"
+                :title="`筛选 请求路径 = ${u.name}`"
+                @click="drill('uri', u.name)"
+              >
                 <span class="rank">{{ i + 1 }}</span>
-                <span class="src-ip uri-name" :title="u.name">{{ u.name }}</span>
+                <span class="src-ip uri-name">{{ u.name }}</span>
                 <span class="src-count">{{ formatCount(u.count) }} 次</span>
                 <span class="src-share">{{ formatShare(resp.total ? u.count / resp.total : 0) }}</span>
-              </div>
+              </button>
             </div>
             <div v-else class="section-empty">窗口内无 URI 分布数据(源未开索引,见上方判据标注)</div>
+          </div>
+
+          <!-- 状态码/动作分布(点击追加 status / action 筛选;用原生 button 承载
+               点击,规避 el-tag 事件透传差异,与 IP/URI 行同一交互路径) -->
+          <div class="diagnose-buckets">
+            <div class="section-title">状态码分布</div>
+            <div v-if="(resp.status_codes ?? []).length" class="bucket-tags">
+              <button
+                v-for="s in (resp.status_codes ?? []).slice(0, 6)"
+                :key="s.name"
+                type="button"
+                class="bucket-tag drillable"
+                :title="`筛选 状态码 = ${s.name}`"
+                @click="drill('status', s.name)"
+              >
+                {{ s.name }} · {{ formatCount(s.count) }}
+              </button>
+            </div>
+            <div v-else class="section-empty">窗口内无状态码分布数据</div>
+          </div>
+          <div class="diagnose-buckets">
+            <div class="section-title">动作分布</div>
+            <div v-if="(resp.actions ?? []).length" class="bucket-tags">
+              <button
+                v-for="a in (resp.actions ?? []).slice(0, 6)"
+                :key="a.name"
+                type="button"
+                class="bucket-tag drillable"
+                :title="`筛选 处置动作 = ${a.name}`"
+                @click="drill('action', a.name)"
+              >
+                {{ a.name }} · {{ formatCount(a.count) }}
+              </button>
+            </div>
+            <div v-else class="section-empty">窗口内无动作分布数据</div>
           </div>
 
           <!-- 来源分布(后端无地域聚合,按云账号展示各源窗口请求数) -->
@@ -204,6 +253,17 @@ const props = defineProps<{
     /** 诊断上下文(父组件按当前查询组装;null = 时间窗未就绪) */
     context: LogDiagnoseContext | null
 }>()
+
+/** 下钻事件:点击 Top 源/URI/状态码/动作 → 父组件追加字段筛选并重查(判定→定位闭环) */
+const emit = defineEmits<{
+    (e: 'drilldown', payload: { field: string; value: string }): void
+}>()
+
+/** 点击发射下钻;value 内部有符号时按原值(匹配语义交给筛选项,不做转义) */
+function drill(field: string, value: string) {
+    if (!value || value === '—' || value === '-') return
+    emit('drilldown', { field, value })
+}
 
 const expanded = ref(false)
 const loading = ref(false)
@@ -382,6 +442,43 @@ async function copyMeasures() {
     gap: 10px;
     padding: 3px 0;
     font-size: 13px;
+}
+/* 可下钻行/标签:按钮语义重置 + hover 提示可点击 */
+.drillable {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    border-radius: 4px;
+}
+.source-row.drillable {
+    padding: 3px 6px;
+}
+.source-row.drillable:hover {
+    background: var(--el-fill-color-light);
+}
+.bucket-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+/* 标签观感的原生按钮:视觉贴近 el-tag(背景/圆角/小字号),语义为按钮可点 */
+.bucket-tag {
+    border: 1px solid var(--el-border-color-light);
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.bucket-tag:hover {
+    border-color: var(--el-color-primary);
+    color: var(--el-color-primary);
 }
 .source-row .rank {
     width: 18px;

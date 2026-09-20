@@ -353,3 +353,66 @@ describe('LogDiagnoseCard(降级不白屏)', () => {
         w.unmount()
     })
 })
+
+describe('LogDiagnoseCard(下钻:判定→定位闭环)', () => {
+    /** 带全部分布的响应:IP/URI/状态码/动作均可下钻 */
+    const fullResp: LogDiagnoseResponse = diagResp({
+        total: 5000,
+        top_uris: [{ name: '/login', count: 600 }],
+        status_codes: [{ name: '404', count: 200 }],
+        actions: [{ name: 'block', count: 300 }],
+    })
+
+    it('点击 Top 攻击源 IP → emit drilldown(client_ip, ip)', async () => {
+        const w = await mountCard()
+        await w.find('.diagnose-toggle').trigger('click')
+        await triggerBtn(w)!.trigger('click')
+        await flushPromises()
+
+        const ipRow = w.findAll('.source-row')[0]!
+        expect(ipRow.classes()).toContain('drillable')
+        await ipRow.trigger('click')
+        expect(w.emitted('drilldown')).toEqual([[{ field: 'client_ip', value: '1.2.3.4' }]])
+        w.unmount()
+    })
+
+    it('点击 URI 行 → emit drilldown(uri, path)', async () => {
+        diagnoseApi.mockResolvedValue(fullResp)
+        const w = await mountCard()
+        await w.find('.diagnose-toggle').trigger('click')
+        await triggerBtn(w)!.trigger('click')
+        await flushPromises()
+
+        const uriRow = w.findAll('.diagnose-uris .source-row')[0]!
+        await uriRow.trigger('click')
+        expect(w.emitted('drilldown')).toEqual([[{ field: 'uri', value: '/login' }]])
+        w.unmount()
+    })
+
+    it('点击状态码/动作标签 → emit drilldown(status | action, 值)', async () => {
+        diagnoseApi.mockResolvedValue(fullResp)
+        const w = await mountCard()
+        await w.find('.diagnose-toggle').trigger('click')
+        await triggerBtn(w)!.trigger('click')
+        await flushPromises()
+
+        await w.findAll('.diagnose-buckets .bucket-tag')[0]!.trigger('click')
+        await w.findAll('.diagnose-buckets .bucket-tag')[1]!.trigger('click')
+        expect(w.emitted('drilldown')).toEqual([
+            [{ field: 'status', value: '404' }],
+            [{ field: 'action', value: 'block' }],
+        ])
+        w.unmount()
+    })
+
+    it('空态:无 URI/状态码/动作数据时不渲染下钻对象(不崩)', async () => {
+        const w = await mountCard()
+        await w.find('.diagnose-toggle').trigger('click')
+        await triggerBtn(w)!.trigger('click')
+        await flushPromises()
+        expect(w.find('.diagnose-uris .section-empty').exists()).toBe(true)
+        expect(w.findAll('.diagnose-buckets .bucket-tag').length).toBe(0)
+        expect(w.emitted('drilldown')).toBeUndefined()
+        w.unmount()
+    })
+})
