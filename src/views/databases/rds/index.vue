@@ -175,7 +175,7 @@
     <!-- 详情抽屉 -->
     <RdsDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="selectedIds" :total="pagination.total" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="selectedIds" :total="pagination.total" :config="exportConfig" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
@@ -184,14 +184,41 @@
 <script setup lang="ts">
 import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { getProviderLabel } from '@/utils/constants'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import RdsDetailDrawer from './components/RdsDetailDrawer.vue'
+
+/** 共享导出配置：字段沿用原 stub availableFields，取值走通用映射（asset_id/asset_name 直取、provider 归一、其余 attributes[key]） */
+const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
+  if (key === 'asset_id') return row.asset_id || ''
+  if (key === 'asset_name') return row.asset_name || ''
+  if (key === 'provider') return getProviderLabel(row.attributes?.provider || '')
+  return row.attributes?.[key] || ''
+}
+
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_name', label: '名称' },
+    { key: 'asset_id', label: '云上ID' },
+    { key: 'status', label: '状态' },
+    { key: 'engine', label: '数据库类型' },
+    { key: 'instance_type', label: '规格' },
+    { key: 'storage', label: '存储' },
+    { key: 'connection', label: '连接地址' },
+    { key: 'port', label: '端口' },
+    { key: 'region', label: '区域' },
+    { key: 'provider', label: '云平台' },
+  ],
+  getValue: getExportValue,
+  filename: 'RDS实例',
+  defaultFields: ['asset_name', 'asset_id', 'status', 'engine', 'region'],
+}
 
 const loading = ref(false)
 const instances = ref<Asset[]>([])

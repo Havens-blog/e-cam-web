@@ -93,7 +93,7 @@
     </div>
 
     <KafkaDetailDrawer v-model:visible="detailDrawerVisible" :instance="detailInstance" />
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="selectedIds" :total="pagination.total" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="instances" :selected-ids="selectedIds" :total="pagination.total" :config="exportConfig" />
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnSettingsChange" />
   </div>
 </template>
@@ -101,13 +101,41 @@
 <script setup lang="ts">
 import { listKafkaAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
+import { getProviderLabel } from '@/utils/constants'
 import { Box, Download, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import KafkaDetailDrawer from './components/KafkaDetailDrawer.vue'
+
+/** 共享导出配置：原 stub 无字段清单，按页面表格列补齐（key 对齐 attributes 实际字段名），取值走通用映射 */
+const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
+  if (key === 'asset_id') return row.asset_id || ''
+  if (key === 'asset_name') return row.asset_name || ''
+  if (key === 'provider') return getProviderLabel(row.attributes?.provider || '')
+  return row.attributes?.[key] || ''
+}
+
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_name', label: '名称' },
+    { key: 'asset_id', label: '云上ID' },
+    { key: 'status', label: '状态' },
+    { key: 'version', label: '版本' },
+    { key: 'spec_type', label: '规格' },
+    { key: 'topic_num', label: 'Topic数' },
+    { key: 'partition_num', label: '分区数' },
+    { key: 'disk_size', label: '存储(GB)' },
+    { key: 'endpoint', label: '接入点' },
+    { key: 'region', label: '区域' },
+    { key: 'provider', label: '云平台' },
+  ],
+  getValue: getExportValue,
+  filename: 'Kafka实例',
+  defaultFields: ['asset_name', 'asset_id', 'status', 'version', 'region'],
+}
 
 const loading = ref(false)
 const instances = ref<Asset[]>([])
