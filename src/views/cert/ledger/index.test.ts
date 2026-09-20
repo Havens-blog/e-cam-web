@@ -22,6 +22,8 @@ vi.mock('@/api/cert', async (importOriginal) => {
 
 vi.mock('vue-router', () => ({
     useRouter: () => ({ push: vi.fn() }),
+    // 页面 setup 现调用 useRoute()（cert 侧新增），mock 缺失会令全部挂载类用例失败
+    useRoute: () => ({ query: {}, params: {} }),
 }))
 
 const listApi = vi.mocked(listCertsApi)
