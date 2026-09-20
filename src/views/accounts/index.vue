@@ -116,9 +116,9 @@
             <el-icon><RefreshLeft /></el-icon>
             重置
           </el-button>
-          <el-button @click="handleRefresh">
-            <el-icon><Refresh /></el-icon>
-            批量同步
+          <el-button :loading="batchSyncing" @click="handleBatchSync">
+            <el-icon v-if="!batchSyncing"><Refresh /></el-icon>
+            {{ batchSyncing ? '同步中...' : '批量同步' }}
           </el-button>
           <el-button @click="handleRefresh">
             导出
@@ -392,18 +392,66 @@
     <!-- 创建/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
+      width="640px"
       :close-on-click-modal="false"
       append-to-body
-      class="modern-dialog"
+      class="account-form-dialog"
+      :show-header="false"
       @closed="handleDialogClosed"
     >
-      <AccountForm ref="formRef" :account="currentAccount" :is-edit="isEdit" />
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
-      </template>
+      <div class="account-dialog-modern">
+        <!-- 顶部视觉区域 -->
+        <div class="dialog-hero">
+          <div class="hero-glow"></div>
+          <div class="hero-icon" :class="isEdit ? 'hero-icon--edit' : ''">
+            <svg v-if="!isEdit" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="16" r="8" stroke="currentColor" stroke-width="2.5" fill="none" />
+              <path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" />
+              <circle cx="36" cy="36" r="8" fill="var(--bg-elevated)" stroke="currentColor" stroke-width="2.5" />
+              <path d="M36 32v8M32 36h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            </svg>
+            <svg v-else viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="16" r="8" stroke="currentColor" stroke-width="2.5" fill="none" />
+              <path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" />
+              <circle cx="36" cy="36" r="8" fill="var(--bg-elevated)" stroke="currentColor" stroke-width="2.5" />
+              <path d="M33 36l2 2 4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <h2 class="hero-title">{{ isEdit ? '编辑云账号' : '添加云账号' }}</h2>
+          <p class="hero-subtitle">{{ isEdit ? '修改云账号的配置信息和凭证' : '接入云平台账号，开始管理多云资源' }}</p>
+          <button v-if="true" class="dialog-close-btn" @click="dialogVisible = false">
+            <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 表单区域 -->
+        <div class="dialog-form-body">
+          <AccountForm ref="formRef" :account="currentAccount" :is-edit="isEdit" />
+        </div>
+
+        <!-- 底部操作区 -->
+        <div class="dialog-actions">
+          <el-button class="action-btn cancel-btn" @click="dialogVisible = false">
+            取消
+          </el-button>
+          <el-button 
+            type="primary" 
+            :loading="submitting" 
+            class="action-btn submit-btn"
+            @click="handleSubmit"
+          >
+            <svg v-if="!submitting && !isEdit" viewBox="0 0 16 16" fill="none" width="16" height="16" style="margin-right: 6px;">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <svg v-if="!submitting && isEdit" viewBox="0 0 16 16" fill="none" width="16" height="16" style="margin-right: 6px;">
+              <path d="M4 8l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ submitting ? '提交中...' : (isEdit ? '保存修改' : '添加账号') }}
+          </el-button>
+        </div>
+      </div>
     </el-dialog>
 
     <!-- 同步资产对话框 -->
@@ -575,7 +623,6 @@ const syncRegionOptions = computed(() => {
 })
 
 // 计算属性
-const dialogTitle = computed(() => (isEdit.value ? '编辑云账号' : '添加云账号'))
 const apiUrl = computed(() => getFullApiUrl('/cloud-accounts'))
 const hasFilters = computed(() => filters.provider || filters.environment || filters.status || searchKeyword.value)
 const totalPages = computed(() => Math.ceil(pagination.total / pagination.size) || 1)
@@ -771,6 +818,57 @@ const fetchAccounts = async () => {
 // 事件处理
 const handleRefresh = () => {
   cacheManager.clear('cloud-accounts')
+  fetchAccounts()
+}
+
+// 批量同步
+const batchSyncing = ref(false)
+const handleBatchSync = async () => {
+  const activeAccounts = accounts.value.filter(a => a.status === 'active')
+  if (activeAccounts.length === 0) {
+    ElMessage.warning('没有可同步的活跃账号')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `将对 ${activeAccounts.length} 个活跃账号执行资产同步，同步过程可能需要几分钟，是否继续？`,
+      '批量同步确认',
+      { confirmButtonText: '开始同步', cancelButtonText: '取消', type: 'info' }
+    )
+  } catch {
+    return
+  }
+
+  batchSyncing.value = true
+  let successCount = 0
+  let failCount = 0
+
+  const syncMsg = ElMessage({
+    type: 'info',
+    message: `正在同步 0/${activeAccounts.length} 个账号...`,
+    duration: 0,
+    showClose: true,
+  })
+
+  for (const account of activeAccounts) {
+    try {
+      await syncCloudAccountApi(account.id, {})
+      successCount++
+    } catch {
+      failCount++
+    }
+  }
+
+  syncMsg.close()
+  batchSyncing.value = false
+
+  if (failCount === 0) {
+    ElMessage.success(`批量同步完成，${successCount} 个账号全部成功`)
+  } else {
+    ElMessage.warning(`批量同步完成：${successCount} 个成功，${failCount} 个失败`)
+  }
+
   fetchAccounts()
 }
 
@@ -1920,7 +2018,154 @@ onMounted(() => {
   50% { opacity: 0.5; }
 }
 
-// 对话框
+// 添加/编辑账号对话框 - 现代化
+.account-dialog-modern {
+  margin: -20px -20px 0;
+
+  .dialog-hero {
+    position: relative;
+    text-align: center;
+    padding: 36px 32px 24px;
+    overflow: hidden;
+
+    .hero-glow {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 260px;
+      height: 180px;
+      background: radial-gradient(ellipse, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-icon {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      margin-bottom: 16px;
+
+      svg {
+        width: 34px;
+        height: 34px;
+        color: #3b82f6;
+      }
+
+      &--edit {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%);
+        border-color: rgba(34, 197, 94, 0.2);
+
+        svg { color: #22c55e; }
+      }
+    }
+
+    .hero-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .dialog-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: var(--bg-hover);
+      border-radius: 8px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 150ms ease;
+
+      &:hover {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .dialog-form-body {
+    padding: 20px 32px 8px;
+    max-height: 55vh;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-base);
+      border-radius: 4px;
+    }
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 32px 28px;
+    border-top: 1px solid var(--border-subtle, var(--border-base));
+
+    .action-btn {
+      height: 40px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 0 24px;
+      transition: all 200ms ease;
+    }
+
+    .cancel-btn {
+      background: var(--bg-surface, var(--glass-bg));
+      border-color: var(--border-base);
+      color: var(--text-secondary);
+
+      &:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+      }
+    }
+
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      border: none;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      min-width: 140px;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+// 同步对话框
 .modern-dialog {
   :deep(.el-dialog) {
     border-radius: 16px;
@@ -1938,6 +2183,84 @@ onMounted(() => {
   :deep(.el-dialog__footer) {
     padding: 16px 24px;
     border-top: 1px solid var(--border-subtle);
+  }
+}
+</style>
+
+<style lang="scss">
+// 添加账号对话框 - 全局样式覆盖（append-to-body 需要非 scoped）
+.account-form-dialog {
+  .el-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle, var(--border-base));
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  }
+
+  .el-dialog__header {
+    display: none;
+  }
+
+  .el-dialog__body {
+    padding: 0;
+  }
+
+  .el-dialog__footer {
+    display: none;
+  }
+
+  // 表单内部样式优化
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+
+  .el-form-item__label {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .el-input__wrapper,
+  .el-select .el-input__wrapper {
+    border-radius: 10px;
+    background: var(--bg-base);
+    box-shadow: 0 0 0 1px var(--border-base) inset;
+    transition: all 200ms ease;
+
+    &:hover {
+      box-shadow: 0 0 0 1px var(--border-strong, var(--border-base)) inset;
+    }
+
+    &.is-focus {
+      box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  .el-textarea__inner {
+    border-radius: 10px;
+    background: var(--bg-base);
+    box-shadow: 0 0 0 1px var(--border-base) inset;
+    transition: all 200ms ease;
+
+    &:hover {
+      box-shadow: 0 0 0 1px var(--border-strong, var(--border-base)) inset;
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  .el-divider__text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: var(--bg-elevated);
+  }
+
+  .el-divider {
+    border-color: var(--border-subtle, var(--border-base));
   }
 }
 </style>

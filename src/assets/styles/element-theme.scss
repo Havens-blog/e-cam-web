@@ -72,6 +72,15 @@
 // 按钮
 .el-button {
   transition: all 0.2s ease;
+  background: var(--glass-bg);
+  border-color: var(--border-base);
+  color: var(--text-primary);
+
+  &:hover, &:focus {
+    background: var(--glass-bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
   
   &--primary {
     background: var(--accent-blue);
@@ -134,6 +143,35 @@
   }
 }
 
+// 选择器下拉面板（teleport 到 body）
+.el-select-dropdown {
+  background-color: var(--dropdown-bg) !important;
+  border: 1px solid var(--border-base) !important;
+  box-shadow: var(--shadow-lg);
+
+  .el-select-dropdown__item {
+    color: var(--text-primary);
+
+    &:hover, &.hover {
+      background-color: var(--dropdown-hover);
+    }
+
+    &.is-selected, &.selected {
+      color: var(--accent-blue);
+      background-color: rgba(59, 130, 246, 0.1);
+      font-weight: 500;
+    }
+
+    &.is-disabled {
+      color: var(--text-muted);
+    }
+  }
+
+  .el-select-group__title {
+    color: var(--text-tertiary);
+  }
+}
+
 // 下拉菜单
 .el-select-dropdown,
 .el-dropdown-menu {
@@ -153,6 +191,25 @@
       color: var(--accent-blue);
       background-color: rgba(59, 130, 246, 0.1);
     }
+  }
+}
+
+// 下拉菜单 popper（teleport 到 body 的）
+.el-dropdown__popper,
+.el-select__popper {
+  background: var(--dropdown-bg) !important;
+  border: 1px solid var(--border-base) !important;
+  box-shadow: var(--shadow-lg);
+
+  .el-dropdown-menu {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .el-popper__arrow::before {
+    background: var(--dropdown-bg);
+    border-color: var(--border-base);
   }
 }
 
@@ -285,16 +342,23 @@
 .el-pagination {
   --el-pagination-bg-color: transparent;
   --el-pagination-text-color: var(--text-secondary);
-  --el-pagination-button-bg-color: var(--glass-bg);
+  --el-pagination-button-bg-color: var(--bg-surface);
   --el-pagination-button-color: var(--text-primary);
   --el-pagination-hover-color: var(--accent-blue);
+  --el-pagination-font-size: 14px;
+  --el-pagination-button-disabled-bg-color: transparent;
+  --el-pagination-button-disabled-color: var(--text-muted);
   
   .el-pager li {
-    background: var(--glass-bg);
-    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-base);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    min-width: 32px;
     
     &:hover {
       color: var(--accent-blue);
+      background: var(--bg-hover);
     }
     
     &.is-active {
@@ -302,12 +366,50 @@
       color: white;
       border-color: var(--accent-blue);
     }
+
+    &.is-disabled {
+      background: transparent;
+      color: var(--text-muted);
+    }
   }
   
   .btn-prev, .btn-next {
-    background: var(--glass-bg);
-    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-base);
     color: var(--text-primary);
+    border-radius: 6px;
+
+    &:hover {
+      color: var(--accent-blue);
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      background: transparent;
+      color: var(--text-muted);
+    }
+  }
+
+  .el-pagination__sizes {
+    .el-select {
+      .el-input__wrapper {
+        background: var(--bg-surface);
+        box-shadow: 0 0 0 1px var(--border-base) inset;
+      }
+    }
+  }
+
+  .el-pagination__jump {
+    color: var(--text-secondary);
+
+    .el-input__wrapper {
+      background: var(--bg-surface);
+      box-shadow: 0 0 0 1px var(--border-base) inset;
+    }
+  }
+
+  .el-pagination__total {
+    color: var(--text-secondary);
   }
 }
 
@@ -401,9 +503,27 @@
   --el-popover-bg-color: var(--dropdown-bg);
   --el-popover-border-color: var(--border-base);
   
-  background: var(--dropdown-bg);
-  border: 1px solid var(--border-base);
+  background: var(--dropdown-bg) !important;
+  border: 1px solid var(--border-base) !important;
   box-shadow: var(--shadow-lg);
+}
+
+// 弹出框 popper（teleport 到 body 的）
+.el-popper {
+  &.el-popover {
+    background: var(--dropdown-bg);
+    border-color: var(--border-base);
+  }
+}
+
+// 搜索筛选弹出框
+.search-filter-popover,
+.tag-filter-popover {
+  &.el-popover.el-popper {
+    background: var(--dropdown-bg) !important;
+    border: 1px solid var(--border-base) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
 }
 
 // 工具提示

@@ -7,6 +7,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AssetExportDialog: typeof import('./components/AssetExportDialog.vue')['default']
+    AssetStatusBadge: typeof import('./components/AssetStatusBadge.vue')['default']
     ChartCard: typeof import('./components/ChartCard.vue')['default']
     CloudPlatformTag: typeof import('./components/CloudPlatformTag.vue')['default']
     CustomIconSelect: typeof import('./components/CustomIconSelect/index.vue')['default']
@@ -50,6 +52,7 @@ declare module 'vue' {
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSlider: typeof import('element-plus/es')['ElSlider']
+    ElStatistic: typeof import('element-plus/es')['ElStatistic']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
