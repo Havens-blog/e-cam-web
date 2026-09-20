@@ -404,13 +404,13 @@
     </el-dialog>
 
     <!-- 导出对话框 -->
-    <ExportDialog
+    <AssetExportDialog
       v-model:visible="exportDialogVisible"
-      :users="users"
-      :selected-users="selectedUsers"
-      :total-count="pagination.total"
+      :instances="users"
+      :selected-ids="selectedUsers.map((u) => u.id)"
+      :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
-      @success="handleExportSuccess"
+      :config="exportConfig"
     />
 
     <!-- 用户详情抽屉 -->
@@ -432,6 +432,7 @@ import {
   listUsersApi
 } from '@/api'
 import type { CloudUser } from '@/api/types/iam'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
@@ -467,7 +468,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import ExportDialog from './components/ExportDialog.vue'
 import SyncUsersDialog from './components/SyncUsersDialog.vue'
 import UserDetailDrawer from './components/UserDetailDrawer.vue'
 import UserForm from './components/UserForm.vue'
@@ -902,8 +902,49 @@ const handleExport = () => {
   exportDialogVisible.value = true
 }
 
-const handleExportSuccess = () => {
-  exportDialogVisible.value = false
+/** 共享导出弹窗页面级配置：字段描述由原本地弹窗的 {label,value} 翻译为 {key,label}（10 字段逐字），
+ *  getValue 闭包逐字搬运自原 formatFieldValue（permission_groups 数组格式化等特例保留）。
+ *  原本地弹窗的 success emit 页面仅用于关闭弹窗（exportDialogVisible=false），
+ *  共享组件导出成功后自带 update:visible(false)，行为等价，故不再单独衔接。 */
+const exportConfig: ExportFieldConfig<CloudUser> = {
+  fields: [
+    { key: 'username', label: '用户名' },
+    { key: 'display_name', label: '显示名称' },
+    { key: 'user_type', label: '用户类型' },
+    { key: 'status', label: '状态' },
+    { key: 'provider', label: '云平台' },
+    { key: 'cloud_account_name', label: '云账号' },
+    { key: 'email', label: '邮箱' },
+    { key: 'permission_groups', label: '权限组' },
+    { key: 'create_time', label: '创建时间' },
+    { key: 'update_time', label: '更新时间' },
+  ],
+  getValue: (user: CloudUser, field: string): string => {
+    switch (field) {
+      case 'user_type':
+        return getUserTypeLabel(user.user_type) || '-'
+      case 'status':
+        return getUserStatus(user.status)?.label || '-'
+      case 'provider':
+        return getProviderLabel(user.provider) || '-'
+      case 'permission_groups':
+        return user.permission_groups?.map((g) => g.name).join(', ') || '-'
+      default:
+        return (user as any)[field] || '-'
+    }
+  },
+  filename: '用户数据',
+  defaultFields: [
+    'username',
+    'display_name',
+    'user_type',
+    'status',
+    'provider',
+    'cloud_account_name',
+    'email',
+    'permission_groups',
+    'create_time',
+  ],
 }
 
 // 初始化
