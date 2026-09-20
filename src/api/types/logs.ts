@@ -293,6 +293,8 @@ export interface LogDiagnoseResponse {
     buckets: AggregateBucket[]
     top_ips: TopNItem[]
     top_uas: TopNItem[]
+    /** 请求量高的 URI/URL TopN(某源未开索引时部分缺失,dimension_notes 说明) */
+    top_uris: TopNItem[]
     status_codes: TopNItem[]
     actions: TopNItem[]
     /** 前窗对比;缺省 = 前窗不可用(见 prev_error),total=0 = 前窗确实无数据 */

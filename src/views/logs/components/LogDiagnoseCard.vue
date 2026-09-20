@@ -106,6 +106,20 @@
             <div v-else class="section-empty">窗口内无 Top 攻击源数据</div>
           </div>
 
+          <!-- 请求量高的 URI/URL(攻击目标/被刷路径定位) -->
+          <div class="diagnose-uris">
+            <div class="section-title">请求量高的 URI/URL</div>
+            <div v-if="(resp.top_uris ?? []).length" class="source-list">
+              <div v-for="(u, i) in (resp.top_uris ?? []).slice(0, 8)" :key="u.name" class="source-row">
+                <span class="rank">{{ i + 1 }}</span>
+                <span class="src-ip uri-name" :title="u.name">{{ u.name }}</span>
+                <span class="src-count">{{ formatCount(u.count) }} 次</span>
+                <span class="src-share">{{ formatShare(resp.total ? u.count / resp.total : 0) }}</span>
+              </div>
+            </div>
+            <div v-else class="section-empty">窗口内无 URI 分布数据(源未开索引,见上方判据标注)</div>
+          </div>
+
           <!-- 来源分布(后端无地域聚合,按云账号展示各源窗口请求数) -->
           <div class="diagnose-geo">
             <div class="section-title">来源分布(按云账号)</div>
@@ -377,6 +391,15 @@ async function copyMeasures() {
     font-family: var(--el-font-family-mono, 'JetBrains Mono', Consolas, monospace);
     font-size: 12px;
     min-width: 120px;
+}
+/* 长 URI 限宽省略,完整值在 title */
+.source-row .uri-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
 }
 .source-row .src-share {
     color: var(--el-text-color-secondary);
