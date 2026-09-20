@@ -181,7 +181,7 @@
     <!-- 详情抽屉 -->
     <EniDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <EniExportDialog v-model:visible="exportDialogVisible" :instances="eniList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="eniList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
   </PageContainer>
 </template>
 
@@ -189,18 +189,19 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listENIAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
+import { labelOfLenient } from '@/utils/fieldLabels'
 import { Download, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import EniDetailDrawer from './components/EniDetailDrawer.vue'
-import EniExportDialog from './components/EniExportDialog.vue'
 import StatCard from '@/components/StatCard.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
@@ -234,6 +235,50 @@ const syncing = ref(false)
 let searchTimer: number | null = null
 
 const exportDialogVisible = ref(false)
+
+/** 状态 → 展示文案。键值与列表页 eni/index.vue 的 statusLabels 完全一致(键值勿改),
+ *  列表页未导出该映射故此处复制;待 P2 单源收敛时一并迁走,导出不再裸出 in_use/available */
+const ENI_STATUS_LABELS: Record<string, string> = {
+  in_use: '使用中', InUse: '使用中', inuse: '使用中',
+  available: '可用', Available: '可用',
+  attaching: '绑定中', Attaching: '绑定中',
+  detaching: '解绑中', Detaching: '解绑中',
+  creating: '创建中', Creating: '创建中',
+  deleting: '删除中', Deleting: '删除中',
+  error: '异常', Error: '异常',
+  ACTIVE: '使用中', DOWN: '可用',
+  BINDBOUND: '使用中', BINDUNBOUND: '可用',
+  PENDING: '创建中',
+}
+
+/** 共享导出取值：原本地 EniExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (inst: Asset, key: string): string => {
+  const attr = inst.attributes || {}
+  if (key === 'eni_id') return inst.asset_id || ''
+  if (key === 'eni_name') return inst.asset_name || ''
+  if (key === 'status') return labelOfLenient(ENI_STATUS_LABELS, inst.status, '')
+  if (key === 'type') return attr.type === 'Primary' ? '主网卡' : '辅助网卡'
+  if (key === 'primary_private_ip') return attr.primary_private_ip || ''
+  if (key === 'mac_address') return attr.mac_address || ''
+  if (key === 'provider') return getProviderLabel(inst.provider || '')
+  if (key === 'instance_id') return attr.instance_id || '未绑定'
+  if (key === 'vpc_id') return attr.vpc_id || ''
+  if (key === 'creation_time') return attr.creation_time || ''
+  return ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 EniExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'eni_id', label: '网卡ID' }, { key: 'eni_name', label: '名称' }, { key: 'status', label: '状态' },
+    { key: 'type', label: '类型' }, { key: 'primary_private_ip', label: '主私网IP' }, { key: 'mac_address', label: 'MAC地址' },
+    { key: 'provider', label: '云平台' }, { key: 'instance_id', label: '绑定实例' }, { key: 'vpc_id', label: 'VPC' },
+    { key: 'creation_time', label: '创建时间' },
+  ],
+  getValue: getExportValue,
+  filename: '弹性网卡',
+  defaultFields: ['eni_id', 'eni_name', 'status', 'type', 'primary_private_ip', 'provider', 'instance_id', 'vpc_id'],
+}
 const selectedIds = ref<number[]>([])
 
 const inUseCount = computed(() => eniList.value.filter(i =>
@@ -289,7 +334,7 @@ const fetchData = async () => {
   } finally { loading.value = false }
 }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-ENI-01），供 EniExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-ENI-01），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
     const res = await listENIAssetsApi(buildListParams(page, pageSize))

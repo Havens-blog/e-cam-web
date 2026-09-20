@@ -187,7 +187,7 @@
     <!-- 成本面板 -->
     <CdnCostPanel v-model:visible="costPanelVisible" />
     <!-- 导出对话框 -->
-    <ExportDialog v-model:visible="exportDialogVisible" :instances="cdnList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="cdnList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog v-model:visible="columnSettingsVisible" :columns="columnSettings" @update:columns="handleColumnsUpdate" />
   </PageContainer>
@@ -197,6 +197,7 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { getCdnCostApi, getCdnTopDomainsApi, listCDNAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
@@ -208,6 +209,7 @@ import {
   CDN_STATUS_LABELS,
   cdnBusinessTypeLabel,
   cdnServiceAreaLabel,
+  cdnStatusLabel,
 } from '@/utils/cdn'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
@@ -220,7 +222,31 @@ import { useRouter } from 'vue-router'
 import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  const attr = instance.attributes || {}
+  if (key === 'domain_name') return attr.domain_name || instance.asset_id || ''
+  if (key === 'cname') return attr.cname || ''
+  if (key === 'status') return cdnStatusLabel(instance.status)
+  if (key === 'business_type') return cdnBusinessTypeLabel(attr.business_type)
+  if (key === 'https_enabled') return attr.https_enabled ? '已开启' : '未开启'
+  if (key === 'service_area') return cdnServiceAreaLabel(attr.service_area)
+  if (key === 'provider') return getProviderLabel(instance.provider || '')
+  if (key === 'creation_time') return attr.creation_time || ''
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'domain_name', label: '域名' }, { key: 'cname', label: 'CNAME' }, { key: 'status', label: '状态' },
+    { key: 'business_type', label: '业务类型' }, { key: 'https_enabled', label: 'HTTPS' }, { key: 'service_area', label: '加速区域' },
+    { key: 'provider', label: '云平台' }, { key: 'creation_time', label: '创建时间' },
+  ],
+  getValue: getExportValue,
+  filename: 'CDN加速域名',
+  defaultFields: ['domain_name', 'cname', 'status', 'business_type', 'https_enabled', 'service_area', 'provider'],
+}
 
 const router = useRouter()
 const loading = ref(false)
@@ -377,7 +403,7 @@ const fetchData = async () => {
   } finally { loading.value = false }
 }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-CDN-01），供 ExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-CDN-01），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
     const res = await listCDNAssetsApi(buildListParams(page, pageSize))

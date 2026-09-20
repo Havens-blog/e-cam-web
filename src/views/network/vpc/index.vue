@@ -204,12 +204,13 @@
     />
 
     <!-- 导出对话框 -->
-    <ExportDialog
+    <AssetExportDialog
       v-model:visible="showExportDialog"
       :instances="vpcList"
       :selected-ids="selectedIds"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
+      :config="exportConfig"
     />
 
     <!-- 自定义列对话框 -->
@@ -225,20 +226,52 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listVPCAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
+import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ArrowDown, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import ExportDialog from './components/ExportDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import VpcFilters from './components/VpcFilters.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
+  const attr = instance.attributes || {}
+  if (key === 'provider') {
+    return getProviderLabel(instance.provider || '')
+  }
+  if (key === 'region') return instance.region || ''
+  if (key === 'status') return instance.status || ''
+  if (key === 'is_default') return attr.is_default ? '是' : '否'
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: 'VPC ID' },
+    { key: 'asset_name', label: '名称' },
+    { key: 'status', label: '状态' },
+    { key: 'cidr_block', label: 'IPv4网段' },
+    { key: 'ipv6_cidr_block', label: 'IPv6网段' },
+    { key: 'vswitch_count', label: '交换机数' },
+    { key: 'provider', label: '云平台' },
+    { key: 'region', label: '区域' },
+    { key: 'is_default', label: '默认VPC' },
+    { key: 'create_time', label: '创建时间' },
+  ],
+  getValue: getExportValue,
+  filename: 'VPC列表',
+  defaultFields: ['asset_id', 'asset_name', 'status', 'cidr_block', 'provider', 'region'],
+}
 
 /** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
 const statusLabels: Record<string, string> = {
@@ -397,7 +430,7 @@ const handlePageChange = () => {
   fetchData()
 }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量（主题A N2-010），供 ExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A N2-010），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
     const res = await listVPCAssetsApi(buildListParams(page, pageSize))

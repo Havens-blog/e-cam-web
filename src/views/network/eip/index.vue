@@ -194,12 +194,13 @@
     />
 
     <!-- 导出对话框 -->
-    <ExportDialog
+    <AssetExportDialog
       v-model:visible="showExportDialog"
       :instances="eipList"
       :selected-ids="selectedIds"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
+      :config="exportConfig"
     />
 
     <!-- 自定义列对话框 -->
@@ -215,10 +216,11 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listEIPAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
+import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowDown, Refresh } from '@element-plus/icons-vue'
@@ -242,7 +244,37 @@ const statusTones: Record<string, string> = {
   Bindable: 'pending',
 }
 
-import ExportDialog from './components/ExportDialog.vue'
+/** 状态 → 展示文案。键值与列表页 eip/index.vue 的 statusLabels 完全一致(键值勿改),
+ *  列表页未导出该映射故此处复制;待 P2 单源收敛时一并迁走,导出不再裸出 InUse/Available */
+const EIP_STATUS_LABELS: Record<string, string> = {
+  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定',
+  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+  Bindable: '可绑定',
+}
+
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
+  const attr = instance.attributes || {}
+  if (key === 'provider') return getProviderLabel(instance.provider || '')
+  if (key === 'region') return instance.region || ''
+  if (key === 'status') return labelOfLenient(EIP_STATUS_LABELS, instance.status, '')
+  if (key === 'bandwidth') return attr.bandwidth ? `${attr.bandwidth}Mbps` : ''
+  if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 ExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'asset_id', label: 'EIP ID' }, { key: 'asset_name', label: '名称' }, { key: 'ip_address', label: 'IP地址' },
+    { key: 'status', label: '状态' }, { key: 'bandwidth', label: '带宽' }, { key: 'charge_type', label: '计费方式' },
+    { key: 'instance_id', label: '绑定实例' }, { key: 'provider', label: '云平台' }, { key: 'region', label: '区域' },
+  ],
+  getValue: getExportValue,
+  filename: 'EIP列表',
+  defaultFields: ['asset_id', 'asset_name', 'ip_address', 'status', 'bandwidth', 'provider', 'region'],
+}
 
 const router = useRouter()
 
@@ -402,7 +434,7 @@ const handlePageChange = () => {
   fetchData()
 }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-EIP-04），供 ExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A F-EIP-04），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
     const res = await listEIPAssetsApi(buildListParams(page, pageSize))

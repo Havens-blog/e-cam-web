@@ -219,7 +219,7 @@
     <!-- 详情抽屉 -->
     <WafDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
     <!-- 导出对话框 -->
-    <WafExportDialog v-model:visible="exportDialogVisible" :instances="wafList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" />
+    <AssetExportDialog v-model:visible="exportDialogVisible" :instances="wafList" :selected-ids="selectedIds" :total="pagination.total" :fetch-all-rows="fetchAllExportRows" :config="exportConfig" />
   </PageContainer>
 </template>
 
@@ -227,6 +227,7 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listWAFAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
@@ -237,7 +238,6 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
-import WafExportDialog from './components/WafExportDialog.vue'
 import StatCard from '@/components/StatCard.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
@@ -267,6 +267,39 @@ const syncing = ref(false)
 let searchTimer: number | null = null
 
 const exportDialogVisible = ref(false)
+
+const editionMap: Record<string, string> = { basic: '基础版', pro: '专业版', business: '商业版', enterprise: '企业版' }
+
+/** 共享导出取值：原本地 WafExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
+  const attr = instance.attributes || {}
+  if (key === 'instance_name') return instance.asset_name || ''
+  if (key === 'instance_id') return instance.asset_id || ''
+  if (key === 'status') return instance.status || ''
+  if (key === 'edition') return editionMap[attr.edition] || attr.edition || ''
+  if (key === 'provider') return getProviderLabel(instance.provider || '')
+  if (key === 'domain_count') return String(attr.domain_count || 0)
+  if (key === 'region') return instance.region || ''
+  if (key === 'expired_time') return attr.expired_time || ''
+  return attr[key] || ''
+}
+
+/** 共享导出配置：字段/默认勾选沿用原本地 WafExportDialog availableFields / exportForm.fields，文件名前缀原样保留 */
+const exportConfig: ExportFieldConfig = {
+  fields: [
+    { key: 'instance_name', label: '实例名称' },
+    { key: 'instance_id', label: '实例ID' },
+    { key: 'status', label: '状态' },
+    { key: 'edition', label: '版本' },
+    { key: 'provider', label: '云平台' },
+    { key: 'domain_count', label: '防护域名' },
+    { key: 'region', label: '区域' },
+    { key: 'expired_time', label: '到期时间' },
+  ],
+  getValue: getExportValue,
+  filename: 'WAF防火墙',
+  defaultFields: ['instance_name', 'instance_id', 'status', 'edition', 'provider', 'domain_count', 'region'],
+}
 const selectedIds = ref<number[]>([])
 
 const tabs = computed(() => [
@@ -352,7 +385,7 @@ const handleSearch = () => { pagination.page = 1; fetchData() }
 const handleSizeChange = () => { pagination.page = 1; fetchData() }
 const handlePageChange = () => { fetchData() }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量（主题A N2-011），供 WafExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（主题A N2-011），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
     const res = await listWAFAssetsApi(buildListParams(page, pageSize))
