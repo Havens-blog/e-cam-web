@@ -25,6 +25,42 @@
       </div>
     </div>
 
+    <!-- 运营卡:数据来源 ecam_oss_metric 指标表(经 /assets/oss/top,bucket_name 去重聚合,不跨账号求和/平均);
+         判定顺序「采集失败→警示」优先于「无数据→0 占位」,失败计数以 oss:collect_metrics 任务 Result 为准 -->
+    <div class="ops-card" :class="opsState">
+      <template v-if="opsState === 'warn'">
+        <el-icon class="ops-warn-icon" :size="18"><WarningFilled /></el-icon>
+        <div class="ops-warn-text">
+          <div class="ops-warn-title">OSS 指标采集异常,存储量数据可能不完整</div>
+          <div class="ops-warn-detail">{{ opsWarnDetail }}</div>
+        </div>
+        <el-button size="small" type="warning" plain @click="fetchOpsCard">重试</el-button>
+      </template>
+      <template v-else-if="opsState === 'empty'">
+        <el-icon class="ops-empty-icon" :size="18"><DataLine /></el-icon>
+        <span class="ops-empty-text">暂无存储量指标数据(未采集或未启用指标采集)</span>
+      </template>
+      <template v-else>
+        <div class="ops-metric">
+          <span class="ops-metric-label">总容量</span>
+          <span class="ops-metric-value">{{ formatCapacityGB(opsSummary.totalStorageSize) }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">对象数量</span>
+          <span class="ops-metric-value">{{ formatObjectCount(opsSummary.totalObjectCount) }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">近 7 天增速</span>
+          <span class="ops-metric-value">{{ opsGrowthText }}</span>
+        </div>
+        <div class="ops-metric">
+          <span class="ops-metric-label">存储桶</span>
+          <span class="ops-metric-value">{{ opsSummary.bucketCount }}</span>
+        </div>
+        <span class="ops-note">读采集指标表<template v-if="opsAsOf"> · 截至 {{ opsAsOf }}</template></span>
+      </template>
+    </div>
+
     <!-- 操作栏 -->
     <div class="action-bar">
       <div class="action-left">
@@ -114,8 +150,17 @@
                 </template>
                 <template v-else-if="col.key === 'acl'">{{ getAclText(item.attributes?.acl) }}</template>
                 <template v-else-if="col.key === 'versioning'">{{ item.attributes?.versioning ? '已开启' : '未开启' }}</template>
-                <template v-else-if="col.key === 'object_count'">{{ formatNumber(item.attributes?.object_count) }}</template>
-                <template v-else-if="col.key === 'storage_size'">{{ formatStorageSize(item.attributes?.storage_size) }}</template>
+                <!-- S-Hard：存储量/对象数一律来自指标表(bucket_name 去重代表行);无指标数据显示 "-",不再回退资产表快照 -->
+                <template v-else-if="col.key === 'object_count'">{{ formatObjectCount(rowMetric(item)?.latest.object_count) }}</template>
+                <template v-else-if="col.key === 'storage_size'">
+                  <span v-if="rowMetric(item)?.data_status === 'zero_exception'" class="cap-exception">
+                    0
+                    <el-tooltip content="容量异常:storage_size=0(采集异常行,不代表真实空桶)" placement="top">
+                      <el-icon :size="12"><WarningFilled /></el-icon>
+                    </el-tooltip>
+                  </span>
+                  <span v-else>{{ formatCapacityGB(rowMetric(item)?.latest.storage_size) }}</span>
+                </template>
                 <template v-else-if="col.key === 'platform'">
                   <IconFont :type="getPlatformIcon(item.attributes?.provider)" class="platform-icon" />
                 </template>
@@ -175,21 +220,36 @@
 </template>
 
 <script setup lang="ts">
-import { listOSSAssetsApi } from '@/api/asset'
+import { getOssTopApi, listOSSAssetsApi } from '@/api/asset'
+import { listTasksApi } from '@/api'
+import type { OSSTopItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
+import type { TaskType } from '@/api/types/task'
 import IconFont from '@/components/IconFont/index.vue'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import type { TagType } from '@/utils/constants'
 import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { Box, Download, Folder, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import { Box, DataLine, Download, Folder, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import {
+  computeStorageGrowth,
+  deriveOssCardState,
+  extractOssCollectFailures,
+  formatCapacityGB,
+  formatObjectCount,
+  OSS_COLLECT_TASK_TYPE,
+  summarizeOssTop,
+  type OssCardState,
+  type OssCardSummary,
+} from './ossMetrics'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import OssDetailDrawer from './components/OssDetailDrawer.vue'
 
 
-/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化） */
+/** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化）；
+ *  S-Hard：存储量/对象数一律来自指标表(bucket_name 去重代表行),无指标数据导出空串,不回退资产表快照 */
 const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
@@ -197,7 +257,12 @@ const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: str
   if (key === 'acl') { const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[attr.acl] || attr.acl || '' }
   if (key === 'versioning') return attr.versioning ? '已开启' : '未开启'
   if (key === 'provider') return getProviderLabel(attr.provider || '')
-  if (key === 'storage_size') { const v = attr.storage_size; if (!v) return ''; if (v >= 1024 * 1024 * 1024) return `${(v / 1024 / 1024 / 1024).toFixed(2)}TB`; if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)}GB`; return `${(v / 1024).toFixed(2)}MB` }
+  if (key === 'storage_size' || key === 'object_count') {
+    const m = bucketMetricMap.value?.get(String(instance.asset_id || ''))
+    const v = key === 'storage_size' ? m?.latest?.storage_size : m?.latest?.object_count
+    if (v === null || v === undefined || !Number.isFinite(v)) return ''
+    return key === 'storage_size' ? formatCapacityGB(v) : formatObjectCount(v)
+  }
   return attr[key] || ''
 }
 
@@ -246,6 +311,74 @@ const standardCount = computed(() => ossList.value.filter(i => i.attributes?.sto
 const iaCount = computed(() => ossList.value.filter(i => i.attributes?.storage_class === 'IA').length)
 const archiveCount = computed(() => ossList.value.filter(i => i.attributes?.storage_class === 'Archive').length)
 
+// ===== 运营卡(总容量/对象数/近 7 天增速,数据来源 ecam_oss_metric 指标表) =====
+// 采集凌晨补采,当日行仅含凌晨部分;days=8 读昨日及前 6 天全量+今日初态,保证均值覆盖完整 7 天窗口
+const OSS_CARD_DAYS = 8
+const OSS_TOP_PAGE_SIZE = 50
+const OSS_TOP_MAX_PAGES = 20
+
+const opsState = ref<OssCardState>('empty')
+const opsSummary = ref<OssCardSummary>({ totalStorageSize: 0, totalObjectCount: 0, bucketCount: 0 })
+const opsWarnDetail = ref('')
+const opsAsOf = ref('')
+/** Top 全量项(供运营卡聚合 + 列表行存储量/对象数列取指标值) */
+const opsTopItems = ref<OSSTopItem[]>([])
+
+/** 分页拉全量 Top(page_size 上限 50,翻页直到取满 total) */
+const fetchAllOssTop = async (): Promise<OSSTopItem[]> => {
+  const items: OSSTopItem[] = []
+  let total = 0
+  for (let page = 1; page <= OSS_TOP_MAX_PAGES; page++) {
+    const { data } = await getOssTopApi({ days: OSS_CARD_DAYS, sort: 'storage_size', page, page_size: OSS_TOP_PAGE_SIZE })
+    const batch = data?.items || []
+    total = data?.total ?? total
+    items.push(...batch)
+    if (batch.length === 0 || items.length >= total) break
+  }
+  return items
+}
+
+const fetchOpsCard = async () => {
+  const [topRes, taskRes] = await Promise.allSettled([
+    fetchAllOssTop(),
+    listTasksApi({ type: OSS_COLLECT_TASK_TYPE as unknown as TaskType, status: 'completed', offset: 0, limit: 1 }),
+  ])
+  const topFailed = topRes.status === 'rejected'
+  const items = topRes.status === 'fulfilled' ? topRes.value : []
+  const latestTask = taskRes.status === 'fulfilled' ? ((taskRes.value as any).data?.tasks || [])[0] : null
+  const failures = extractOssCollectFailures(latestTask)
+
+  opsTopItems.value = items
+  opsState.value = deriveOssCardState({ topFailed, itemCount: items.length, failures })
+  opsSummary.value = summarizeOssTop(items)
+  opsAsOf.value = items.reduce((acc, it) => (it.latest?.date && it.latest.date > acc ? it.latest.date : acc), '')
+  opsWarnDetail.value = failures
+    .map(f => `${f.provider}(账号 ${f.account_id})失败 ${f.error_count} 次${f.last_error ? `:${f.last_error}` : ''}`)
+    .join(';')
+}
+
+/** 近 7 天增速(%):总最新容量 vs 总近 7 天均值(比率口径,合计后再相比,不逐桶平均) */
+const opsGrowth = computed(() => {
+  let totalAvg = 0
+  for (const it of opsTopItems.value) {
+    const avg = it.average?.storage_size
+    if (typeof avg === 'number' && Number.isFinite(avg)) totalAvg += avg
+  }
+  return computeStorageGrowth(opsSummary.value.totalStorageSize, totalAvg)
+})
+const opsGrowthText = computed(() => {
+  if (opsGrowth.value === null) return '—'
+  return `${opsGrowth.value > 0 ? '+' : ''}${opsGrowth.value}%`
+})
+
+/** 列表行存储量/对象数列取值来源:指标表 Top 项(bucket_name = 实例 asset_id) */
+const bucketMetricMap = computed(() => {
+  const map = new Map<string, OSSTopItem>()
+  for (const it of opsTopItems.value) map.set(String(it.bucket_name || ''), it)
+  return map
+})
+const rowMetric = (item: Asset) => bucketMetricMap.value.get(String(item?.asset_id || ''))
+
 const initColumnSettings = () => {
   const saved = localStorage.getItem('oss-column-settings')
   if (saved) { try { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) { columnSettings.value = parsed; return } } catch { /* ignore */ } }
@@ -279,7 +412,7 @@ const fetchData = async () => {
   finally { loading.value = false }
 }
 
-const handleRefresh = () => fetchData()
+const handleRefresh = () => { fetchData(); fetchOpsCard() }
 /** 导出「全部数据」：按当前筛选分页拉取全量（主题A storage S-H2），供 ExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
@@ -317,14 +450,6 @@ const getAclText = (acl?: string) => {
   const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }
   return map[acl] || acl
 }
-const formatNumber = (num?: number) => { if (!num) return '0'; return num.toLocaleString() }
-const formatStorageSize = (size?: number) => {
-  if (!size) return '-'
-  if (size >= 1024 * 1024 * 1024) return `${(size / 1024 / 1024 / 1024).toFixed(2)} TB`
-  if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(2)} GB`
-  if (size >= 1024) return `${(size / 1024).toFixed(2)} MB`
-  return `${size} KB`
-}
 const getPlatformIcon = (provider?: string) => {
   if (!provider) return 'Alibaba_Cloud'
   const p = provider.toLowerCase()
@@ -337,7 +462,7 @@ const getPlatformIcon = (provider?: string) => {
 }
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 
-onMounted(() => { initColumnSettings(); fetchData() })
+onMounted(() => { initColumnSettings(); fetchData(); fetchOpsCard() })
 </script>
 
 <style scoped lang="scss">
@@ -346,5 +471,52 @@ onMounted(() => { initColumnSettings(); fetchData() })
 .bucket-icon {
   color: #f0a020;
   margin-right: 8px;
+}
+
+// 运营卡(数据来源:ecam_oss_metric 指标表;与 NAS 列表页同构)
+.ops-card {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+
+  &.warn {
+    gap: 12px;
+    border-color: rgba(217, 119, 6, 0.45);
+
+    .ops-warn-icon { color: #d97706; }
+    .ops-warn-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .ops-warn-detail { font-size: 12px; color: var(--text-tertiary); word-break: break-all; }
+  }
+
+  &.empty {
+    gap: 10px;
+    .ops-empty-icon { color: var(--text-tertiary); }
+    .ops-empty-text { font-size: 13px; color: var(--text-tertiary); }
+  }
+
+  .ops-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .ops-metric-label { font-size: 12px; color: var(--text-tertiary); }
+    .ops-metric-value { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+  }
+
+  .ops-note { margin-left: auto; font-size: 12px; color: var(--text-tertiary); }
+}
+
+// 列表行 storage_size=0 异常行标记(不当正常空桶)
+.cap-exception {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #d97706;
 }
 </style>

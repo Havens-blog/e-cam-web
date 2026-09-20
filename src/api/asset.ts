@@ -314,6 +314,99 @@ export function getOSSAssetApi(assetId: string, params?: { tenant_id?: string; p
     })
 }
 
+// ===== OSS 指标(读 ecam_oss_metric 指标表;OSS 界面存储量/对象数唯一来源,资产表快照不展示) =====
+
+/** OSS 单日指标点:缺失日 storage_size/object_count 为 null(不填充假值,以 data_status=missing 标注) */
+export interface OSSMetricPoint {
+    /** 日期 YYYY-MM-DD(Asia/Shanghai) */
+    date: string
+    /** 存储量(GB,二进制 GiB);缺失日 null;zero_exception 日为 0 */
+    storage_size: number | null
+    /** 对象数量;缺失日 null */
+    object_count: number | null
+    /** ok | zero_exception | missing */
+    data_status: string
+    /** 落库 qc_status 原样透出(空=正常;zero_exception=capacity=0 异常行) */
+    qc_status?: string
+}
+
+/** 「最新一天」/「近 N 天均值」摘要;无可用行时各字段为 null */
+export interface OSSMetricSummary {
+    date?: string
+    storage_size: number | null
+    object_count: number | null
+}
+
+/** GET /assets/oss/metrics 响应体(days[] 按日期升序) */
+export interface OSSBucketMetricsView {
+    bucket_name: string
+    days: OSSMetricPoint[]
+    latest: OSSMetricSummary | null
+    average: OSSMetricSummary | null
+}
+
+/** 查询 OSS 单 bucket 近 N 天存储量/对象数趋势参数 */
+export interface GetOSSMetricsParams {
+    /** 存储桶名称(OSS asset_id 即 bucket_name) */
+    bucket_name: string
+    /** 云账号 ID(必填,服务端校验租户归属) */
+    account_id: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+}
+
+/** 获取 OSS 存储桶近 N 天存储量/对象数趋势(读指标表,采集任务落库) */
+export function getOssMetricsApi(params: GetOSSMetricsParams) {
+    return instance.get<OSSBucketMetricsView>({
+        url: `${API_SERVICE.CAM}/assets/oss/metrics`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** OSS Top 单项:按 bucket_name 去重后的代表行(最新一天)+ 近 N 天均值 */
+export interface OSSTopItem {
+    bucket_name: string
+    provider: string
+    /** 跨账号同 bucket 并存时为去重后的账号列表 */
+    account_id: number[]
+    /** ok | zero_exception */
+    data_status: string
+    qc_status?: string
+    latest: OSSMetricSummary
+    average: OSSMetricSummary
+}
+
+/** GET /assets/oss/top 响应体 */
+export interface OSSTopView {
+    total: number
+    page: number
+    page_size: number
+    items: OSSTopItem[]
+}
+
+/** 查询 OSS 存储量/对象数 Top 参数(account_id 缺省 = 全部租户账号) */
+export interface GetOSSTopParams {
+    account_id?: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+    /** 排序键:storage_size | object_count(近 N 天均值口径) */
+    sort?: 'storage_size' | 'object_count'
+    /** 返回条数(缺省 10,最大 50) */
+    top?: number
+    page?: number
+    page_size?: number
+}
+
+/** 获取 OSS 存储量/对象数 Top(bucket_name 去重聚合,不跨账号求和/平均) */
+export function getOssTopApi(params?: GetOSSTopParams) {
+    return instance.get<OSSTopView>({
+        url: `${API_SERVICE.CAM}/assets/oss/top`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== 统一搜索 API ====================
 
 /** 搜索资产 */
