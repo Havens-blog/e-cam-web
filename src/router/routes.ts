@@ -201,6 +201,15 @@ const routes: RouteRecordRaw[] = [
                     hideInMenu: true,
                 },
             },
+            {
+                path: '/iam/compare',
+                name: 'IAMCompare',
+                component: () => import('@/views/iam/compare/index.vue'),
+                meta: {
+                    title: 'IAM 对比',
+                    icon: 'DataAnalysis',
+                },
+            },
             // ==================== CMDB 管理路由 ====================
             {
                 path: '/cmdb',

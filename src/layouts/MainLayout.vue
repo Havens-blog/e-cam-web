@@ -444,6 +444,7 @@ const menuGroups = ref<MenuGroup[]>([
           { key: 'users', path: '/iam/users', title: '云账号用户', icon: 'ops-oneterm-authorization' },
           { key: 'groups', path: '/iam/groups', title: '用户组管理', icon: 'icon-xianxing-bumen' },
           { key: 'templates', path: '/iam/templates', title: '策略模板', icon: 'icon-xianxing-chanpin' },
+          { key: 'iam-compare', path: '/iam/compare', title: 'IAM 对比', icon: 'ops-oneterm-authorization' },
         ]
       },
     ]
