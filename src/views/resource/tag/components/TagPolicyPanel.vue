@@ -245,12 +245,13 @@
     </el-dialog>
 
     <!-- Export Dialog -->
-    <ComplianceExportDialog
+    <AssetExportDialog
       v-model:visible="showExportDialog"
-      :current-page-data="complianceResults"
-      :selected-data="selectedCompliance"
-      :total-count="complianceData.total"
+      :instances="complianceResults"
+      :selected-ids="selectedCompliance.map(complianceRowKey)"
+      :total="complianceData.total"
       :fetch-all-rows="fetchAllComplianceRows"
+      :config="complianceExportConfig"
     />
   </div>
 </template>
@@ -268,7 +269,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
-import ComplianceExportDialog from './ComplianceExportDialog.vue'
+import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 
 const props = defineProps<{
   activeView: 'policies' | 'compliance'
@@ -356,7 +357,36 @@ const loadCompliance = async () => {
   }
 }
 
-/** 导出「全部不合规数据」：按当前合规筛选(policy/资源类型)分页拉取全量（resource-cam F-H6），供 ComplianceExportDialog 调用 */
+/** 合规结果行标识：面板为单策略上下文，account_id+asset_id 复合键唯一（ComplianceResult 无数值 id） */
+const complianceRowKey = (r: ComplianceResult): string => `${r.account_id}:${r.asset_id}`
+
+const complianceExportConfig: ExportFieldConfig<ComplianceResult> = {
+  fields: [
+    { key: 'asset_id', label: '资源ID' },
+    { key: 'asset_name', label: '资源名称' },
+    { key: 'resource_type', label: '资源类型' },
+    { key: 'provider', label: '云厂商' },
+    { key: 'region', label: '区域' },
+    { key: 'violations', label: '违规项' },
+    { key: 'status', label: '合规状态' },
+  ],
+  // 逐字搬运自原 ComplianceExportDialog.getFieldValue（violations/status 特例保留）
+  getValue: (row, key) => {
+    if (key === 'violations') {
+      return (row.violations || []).map(v => v.type === 'missing_key' ? `缺少${v.key}` : `${v.key}值无效`).join('; ')
+    }
+    if (key === 'status') {
+      return row.violations && row.violations.length > 0 ? '不合规' : '合规'
+    }
+    return (row as any)[key] ?? ''
+  },
+  filename: '合规检查',
+  defaultFields: ['asset_id', 'asset_name', 'resource_type', 'provider', 'violations', 'status'],
+  getRowId: complianceRowKey,
+  defaultFormat: 'csv',
+}
+
+/** 导出「全部不合规数据」：按当前合规筛选(policy/资源类型)分页拉取全量（resource-cam F-H6），供导出弹窗调用 */
 const fetchAllComplianceRows = async (onProgress?: (fetched: number, total: number) => void): Promise<ComplianceResult[]> =>
   fetchAllRows<ComplianceResult>(async (page, pageSize) => {
     const res = await checkComplianceApi({

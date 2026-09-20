@@ -107,10 +107,14 @@ export interface ExportFieldConfig<T = any> {
   filename: string
   /** 打开弹窗时默认勾选的字段 key */
   defaultFields: string[]
+  /** 行标识提取（「已选中」范围按它过滤）；缺省取 `row.id`。无数值 id 的行类型（如合规结果按 account_id+asset_id 复合键）提供此函数 */
+  getRowId?: (row: T) => string | number
+  /** 初始导出格式；缺省 'xlsx' */
+  defaultFormat?: 'csv' | 'xlsx'
 }
 </script>
 
-<script setup lang="ts" generic="T extends { id: number } = any">
+<script setup lang="ts" generic="T = any">
 import { Document, Download } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
@@ -118,7 +122,7 @@ import { computed, reactive, ref, watch } from 'vue';
 const props = defineProps<{
   visible: boolean
   instances: T[]
-  selectedIds: number[]
+  selectedIds: Array<string | number>
   total: number
   /** 页面级导出配置（字段/取值/文件名/默认勾选） */
   config: ExportFieldConfig<T>
@@ -142,7 +146,7 @@ const totalCount = ref(0)
 
 const exportForm = reactive({
   scope: 'current' as 'current' | 'selected' | 'all',
-  format: 'xlsx' as 'xlsx' | 'csv',
+  format: (props.config.defaultFormat ?? 'xlsx') as 'xlsx' | 'csv',
   fields: [...props.config.defaultFields],
 })
 
@@ -173,11 +177,15 @@ const deselectAllFields = () => {
   exportForm.fields = []
 }
 
+/** 行标识：页面提供 getRowId 时用之（无数值 id 的行类型），否则回退 row.id */
+const rowIdOf = (row: T): string | number =>
+  props.config.getRowId ? props.config.getRowId(row) : (row as { id: number }).id
+
 /** 组装导出行：current=当前页 / selected=选中行 / all=父级全量拉取（未提供闭包则退回当前页）。
  *  返回 null 表示全量拉取失败（已在内部提示），调用方直接结束。 */
 const resolveExportRows = async (): Promise<T[] | null> => {
   if (exportForm.scope === 'current') return props.instances
-  if (exportForm.scope === 'selected') return props.instances.filter(i => props.selectedIds.includes(i.id))
+  if (exportForm.scope === 'selected') return props.instances.filter(i => props.selectedIds.includes(rowIdOf(i)))
   if (props.fetchAllRows) {
     fetchingAll.value = true
     fetchedCount.value = 0
@@ -202,6 +210,7 @@ const handleExport = async () => {
   try {
     const dataToExport = await resolveExportRows()
     if (!dataToExport) return
+    if (dataToExport.length === 0) { ElMessage.warning('没有可导出的数据'); return }
 
     const headers = exportForm.fields.map(key => {
       const field = props.config.fields.find(f => f.key === key)
