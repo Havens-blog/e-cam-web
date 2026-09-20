@@ -300,6 +300,10 @@
           <span class="toggle-hint">点击{{ detailVisible ? '收起' : '展开' }} · 点击行查看详情</span>
         </button>
         <div v-show="detailVisible" class="detail-body">
+          <!-- 采样标注:高流量源明细只覆盖窗口尾部(最新 N 条),避免误读窗口数据量 -->
+          <div v-if="detailSampleNote" class="detail-sample-note" role="note">
+            {{ detailSampleNote }}
+          </div>
           <!-- 组工具条:全部折叠/展开;组头用按钮(非表格行),与行点击开详情互不冲突 -->
           <div class="group-toolbar">
             <span class="group-toolbar-label">按 云 · 账号 分组</span>
@@ -460,6 +464,7 @@ import {
     defaultWindowMs,
     formatBytes,
     formatLogTime,
+    formatSpanMs,
     QUICK_VALUES_MAX,
     quickValuesFor,
     severityTagType,
@@ -574,6 +579,23 @@ const allGroupsCollapsed = computed(() =>
 function toggleAllGroups() {
     collapsedGroups.value = allGroupsCollapsed.value ? new Set() : new Set(entryGroups.value.map((g) => g.key))
 }
+
+/**
+ * 明细采样标注:表格只展示最新 limit 条/源,高流量源仅覆盖数秒~数分钟,远小于
+ * 查询窗口时给出可见提示,避免被误读为「窗口内只有这么点数据」。明细已覆盖
+ * 整窗或空表时不显示(allEntries 时间倒序:头=最新,尾=最旧)。
+ */
+const detailSampleNote = computed(() => {
+    if (!timeRange.value || allEntries.value.length === 0) return ''
+    const newest = allEntries.value[0]?.timestamp
+    const oldest = allEntries.value[allEntries.value.length - 1]?.timestamp
+    if (typeof newest !== 'number' || typeof oldest !== 'number') return ''
+    const coveredMs = newest - oldest
+    const windowMs = timeRange.value[1].getTime() - timeRange.value[0].getTime()
+    if (coveredMs >= windowMs) return '' // 明细已覆盖整窗,无需标注
+    const span = formatSpanMs(coveredMs) || '极短'
+    return `明细为最新 ${allEntries.value.length} 条采样(每源上限 ${limit.value} 条),覆盖 ${formatLogTime(oldest)} → ${formatLogTime(newest)},约 ${span};完整窗口分布见上方统计,可点「加载更早日志」向前翻页`
+})
 
 // ---- 查询进行中进度态(文字化回馈:源数/已耗时;不必轮询真实进度) ----
 const searchElapsed = ref(0)
@@ -1350,6 +1372,17 @@ function columnWidth(key: string): number {
     gap: 8px;
     margin-bottom: 6px;
     font-size: 12px;
+}
+/* 明细采样标注:高流量源明细仅覆盖窗口尾部,黄底弱提示,不打断主视觉 */
+.detail-sample-note {
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--el-color-warning-text, #b88230);
+    background: var(--el-color-warning-light-9, #fdf6ec);
+    word-break: break-all;
 }
 .group-toolbar-label {
     color: var(--el-text-color-secondary);

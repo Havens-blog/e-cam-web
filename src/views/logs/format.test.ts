@@ -9,6 +9,7 @@ import {
     dashIfEmpty,
     formatBytes,
     formatLogTime,
+    formatSpanMs,
     quickValuesFor,
     severityTagType,
     sourceSummary,
@@ -147,6 +148,24 @@ describe('quickValuesFor(字段筛选快捷值:仅来自样本,零额外请求)'
         const entries = [entryOf({ method: 'GET' }), entryOf({ method: 'POST' }), entryOf({ method: 'PUT' })]
         expect(quickValuesFor(entries, 'method')).toEqual(['GET', 'POST', 'PUT'])
         expect(quickValuesFor(entries, 'method')).toEqual(quickValuesFor(entries, 'method'))
+    })
+})
+
+describe('formatSpanMs', () => {
+    it('秒级(<60s):显示 X秒', () => {
+        expect(formatSpanMs(5_000)).toBe('5秒')
+        expect(formatSpanMs(59_400)).toBe('59秒')
+    })
+    it('分级(≥60s):分钟或分+秒', () => {
+        expect(formatSpanMs(60_000)).toBe('1分钟')
+        expect(formatSpanMs(150_000)).toBe('2分30秒')
+        expect(formatSpanMs(3600_000)).toBe('60分钟')
+    })
+    it('非法/负值/零返回空串(调用方据此不渲染标注)', () => {
+        expect(formatSpanMs(-1)).toBe('')
+        expect(formatSpanMs(0)).toBe('')
+        expect(formatSpanMs(Number.NaN)).toBe('')
+        expect(formatSpanMs(Number.POSITIVE_INFINITY)).toBe('')
     })
 })
 

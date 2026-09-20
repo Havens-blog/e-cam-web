@@ -144,3 +144,17 @@ export function defaultWindowMs(maxWindowDays: number): number {
     const days = Math.min(maxWindowDays || 7, 7)
     return days * 24 * 3600_000
 }
+
+/**
+ * 时长跨度中文描述(分钟级采样标注用;<60s 显示秒,≥60s 显示分[秒])。
+ * 非法/负值返回空串(调用方据此不渲染标注)。
+ */
+export function formatSpanMs(ms: number): string {
+    if (!Number.isFinite(ms) || ms < 0) return ''
+    const totalSec = Math.round(ms / 1000)
+    if (totalSec <= 0) return ''
+    if (totalSec < 60) return `${totalSec}秒`
+    const m = Math.floor(totalSec / 60)
+    const s = totalSec % 60
+    return s > 0 ? `${m}分${s}秒` : `${m}分钟`
+}
