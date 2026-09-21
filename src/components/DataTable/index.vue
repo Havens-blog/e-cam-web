@@ -15,6 +15,11 @@
         v-bind="$attrs"
         @selection-change="handleSelectionChange"
       >
+        <el-table-column v-if="expandable" type="expand">
+          <template #default="scope">
+            <slot name="expand" v-bind="scope" />
+          </template>
+        </el-table-column>
         <el-table-column v-if="selectable" type="selection" width="44" />
         <el-table-column
           v-for="(column, index) in columns"
@@ -66,7 +71,9 @@
  * 骨架屏 / 空数据空态 / fetch 失败错误态 + 重试，复用 StateBlock——业务页从此
  * 不再手写 v-if 加载分支）、可选多选列 + 底部批量操作条（batchActions 配置 +
  * selection-change 透传）、密度切换（default/compact，经 el-table size 透传）
- * 与冻结表头（max-height 透传）。分页不内置（由 PageContainer 底部区承载
+ * 与冻结表头（max-height 透传）；可选行内展开列（expandable + #expand 插槽，
+ * type=expand 首列透传，承载 alert/events 旧页 expand 详情行）。分页不内置
+ * （由 PageContainer 底部区承载
  * el-pagination，保持单一职责）；行内编辑/列拖拽排序等明确缓期（防 scope
  * creep）。除 el-table 声明式 props 外，$attrs 原样透传（stripe/row-key 等既有
  * 能力零包装成本）。仅消费 Phase 1 Linear CSS 变量令牌（零硬编码色）。
@@ -114,6 +121,8 @@ interface Props {
   loading?: boolean
   /** 是否开启多选列（选中行经 selection-change 透出并聚合底部批量操作条） */
   selectable?: boolean
+  /** 是否开启行内展开列（type=expand 首列；展开内容由 #expand 作用域插槽渲染） */
+  expandable?: boolean
   /** 底部批量操作条的动作按钮配置（selectable 且有选中行时展示） */
   batchActions?: DataTableBatchAction[]
   /** 表格密度：default=默认行高；compact=紧凑（el-table size=small） */
@@ -131,6 +140,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   selectable: false,
+  expandable: false,
   batchActions: () => [],
   density: 'default',
   skeletonRows: 4,
@@ -147,7 +157,10 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  /** 动态单元格插槽（插槽名由 column.slot 声明），作用域 { row, column, $index } */
+  /**
+   * 动态插槽统一签名：单元格插槽（插槽名由 column.slot 声明）与行内展开插槽
+   * （expandable 开启时用 #expand，作用域 { row, column, $index }）均走此签名
+   */
   [name: string]: (scope: { row: T; column: unknown; $index: number }) => unknown
 }>()
 

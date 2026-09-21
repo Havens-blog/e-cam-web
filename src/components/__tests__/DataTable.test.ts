@@ -48,6 +48,7 @@ interface MountOptions {
     fetch?: () => Promise<AssetRow[]>
     loading?: boolean
     selectable?: boolean
+    expandable?: boolean
     batchActions?: DataTableBatchAction[]
     density?: 'default' | 'compact'
     maxHeight?: string | number
@@ -66,6 +67,7 @@ async function mountTable(opts: MountOptions = {}) {
         fetch,
         loading,
         selectable,
+        expandable,
         batchActions,
         density,
         maxHeight,
@@ -84,6 +86,7 @@ async function mountTable(opts: MountOptions = {}) {
             ...(fetch ? { fetch } : {}),
             ...(loading === undefined ? {} : { loading }),
             ...(selectable === undefined ? {} : { selectable }),
+            ...(expandable === undefined ? {} : { expandable }),
             ...(batchActions === undefined ? {} : { batchActions }),
             ...(density === undefined ? {} : { density }),
             ...(maxHeight === undefined ? {} : { maxHeight }),
@@ -325,6 +328,38 @@ describe('DataTable 多选与批量操作', () => {
             .findAll('.data-table__batch-actions button')
             .find((btn) => btn.text().includes('禁用动作'))!
         expect(button.classes()).toContain('is-disabled')
+    })
+})
+
+// ==================== 行内展开列（expandable，alert/events 页锚点） ====================
+
+describe('DataTable 行内展开列', () => {
+    it('默认不渲染展开列（既有使用方零影响）', async () => {
+        const wrapper = await mountTable()
+        const hasExpandColumn = wrapper
+            .findAllComponents(ElTableColumn)
+            .some((col) => col.props('type') === 'expand')
+        expect(hasExpandColumn).toBe(false)
+    })
+
+    it('expandable 渲染 type=expand 首列，#expand 插槽收 row 作用域渲染展开内容', async () => {
+        const wrapper = await mountTable({
+            expandable: true,
+            slots: {
+                expand: '<template #expand="params"><pre class="expand-pre">{{ params.row.name }}</pre></template>',
+            },
+        })
+        const columns = wrapper.findAllComponents(ElTableColumn)
+        expect(columns[0]!.props('type')).toBe('expand')
+        expect(columns[1]!.props('label')).toBe('资产名称')
+
+        expect(wrapper.find('.expand-pre').exists()).toBe(false)
+        await wrapper.findAll('.el-table__expand-icon')[0]!.trigger('click')
+        await flushPromises()
+        await nextTick()
+        const pre = wrapper.find('.expand-pre')
+        expect(pre.exists()).toBe(true)
+        expect(pre.text()).toBe('vm-1')
     })
 })
 
