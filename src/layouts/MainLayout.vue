@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { searchAssetsApi } from '@/api/asset'
-import type { SearchResultItem } from '@/api/types/asset'
+import CommandPalette from '@/components/CommandPalette/index.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import TenantSelector from '@/components/TenantSelector.vue'
 import { useAppStore } from '@/stores/app'
@@ -15,14 +14,12 @@ import {
   Fold,
   FullScreen,
   Grid,
-  Loading,
   Moon,
-  Search,
   Setting,
   Sunny
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -70,119 +67,6 @@ async function handleUserCommand(command: string | number | object) {
   ElMessage.info({ message: '正在退出登录…', duration: 0 })
   // logout() 内部无论接口成功与否都会清理本地状态并跳转，故无需复位 loggingOut
   await userStore.logout()
-}
-
-// 搜索关键词
-const searchKeyword = ref('')
-const searchInputRef = ref<HTMLInputElement | null>(null)
-const showSearchResults = ref(false)
-const searchResults = ref<SearchResultItem[]>([])
-const searchLoading = ref(false)
-const searchTotal = ref(0)
-let searchDebounceTimer: number | null = null
-
-// 资产类型映射
-const assetTypeMap: Record<string, { label: string; icon: string; route: string }> = {
-  ecs: { label: 'ECS', icon: 'caise-computer', route: '/compute/ecs' },
-  rds: { label: 'RDS', icon: 'caise-database', route: '/databases/rds' },
-  redis: { label: 'Redis', icon: 'caise-database', route: '/databases/redis' },
-  mongodb: { label: 'MongoDB', icon: 'caise-database', route: '/databases/mongodb' },
-  vpc: { label: 'VPC', icon: 'caise-network_devices', route: '/network/vpc' },
-  eip: { label: 'EIP', icon: 'caise-network_devices', route: '/network/eip' },
-  vswitch: { label: '交换机', icon: 'caise-network_devices', route: '/network/vswitch' },
-  lb: { label: '负载均衡', icon: 'caise-network_devices', route: '/network/lb' },
-  cdn: { label: 'CDN 加速', icon: 'caise-network_devices', route: '/network/cdn' },
-  waf: { label: 'WAF 防火墙', icon: 'caise-network_devices', route: '/network/waf' },
-  eni: { label: '弹性网卡', icon: 'caise-network_devices', route: '/network/eni' },
-  dns: { label: 'DNS 管理', icon: 'caise-network_devices', route: '/network/dns' },
-  nas: { label: 'NAS', icon: 'caise-storage_device', route: '/storage/nas' },
-  oss: { label: 'OSS', icon: 'caise-storage_device', route: '/storage/oss' },
-  kafka: { label: 'Kafka', icon: 'caise-middleware', route: '/middleware/kafka' },
-  elasticsearch: { label: 'Elasticsearch', icon: 'caise-middleware', route: '/middleware/elasticsearch' },
-  middleware: { label: '中间件', icon: 'caise-middleware', route: '/middleware' }
-}
-
-// 搜索资产
-const handleSearch = async () => {
-  const keyword = searchKeyword.value.trim()
-  if (!keyword) {
-    searchResults.value = []
-    showSearchResults.value = false
-    return
-  }
-
-  searchLoading.value = true
-  showSearchResults.value = true
-  
-  try {
-    const res = await searchAssetsApi({ keyword, limit: 10 })
-    searchResults.value = res.data?.items || []
-    searchTotal.value = res.data?.total || 0
-  } catch (error) {
-    console.error('搜索失败:', error)
-    searchResults.value = []
-  } finally {
-    searchLoading.value = false
-  }
-}
-
-// 防抖搜索
-watch(searchKeyword, () => {
-  if (searchDebounceTimer) {
-    clearTimeout(searchDebounceTimer)
-  }
-  searchDebounceTimer = window.setTimeout(() => {
-    handleSearch()
-  }, 300)
-})
-
-// 高亮关键词
-const highlightText = (text: string, keyword: string): string => {
-  if (!keyword || !text) return text
-  const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<mark class="search-highlight">$1</mark>')
-}
-
-// 点击搜索结果
-const handleResultClick = (item: SearchResultItem) => {
-  const typeInfo = assetTypeMap[item.asset_type]
-  if (typeInfo) {
-    // 跳转到对应页面，带上搜索参数
-    router.push({
-      path: typeInfo.route,
-      query: { search: item.asset_id }
-    })
-  }
-  showSearchResults.value = false
-  searchKeyword.value = ''
-}
-
-// 关闭搜索结果
-const closeSearchResults = () => {
-  showSearchResults.value = false
-}
-
-// 键盘快捷键
-const handleKeydown = (e: KeyboardEvent) => {
-  // Cmd/Ctrl + K 聚焦搜索框
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault()
-    searchInputRef.value?.focus()
-    showSearchResults.value = true
-  }
-  // Escape 关闭搜索结果
-  if (e.key === 'Escape') {
-    closeSearchResults()
-    searchInputRef.value?.blur()
-  }
-}
-
-// 点击外部关闭
-const handleClickOutside = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  if (!target.closest('.search-box') && !target.closest('.search-results')) {
-    closeSearchResults()
-  }
 }
 
 // 侧边栏折叠状态
@@ -583,20 +467,6 @@ const toggleFullscreen = () => {
     document.documentElement.requestFullscreen()
   }
 }
-
-// 初始化
-onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown)
-  document.removeEventListener('click', handleClickOutside)
-  if (searchDebounceTimer) {
-    clearTimeout(searchDebounceTimer)
-  }
-})
 </script>
 
 <template>
@@ -627,7 +497,7 @@ onUnmounted(() => {
                 placement="right"
                 :disabled="!isCollapsed"
               >
-                <div
+                <div 
                   class="menu-item has-children"
                   :class="{ expanded: isMenuExpanded(item.key) }"
                   @click="toggleSubMenu(item.key)"
@@ -651,7 +521,7 @@ onUnmounted(() => {
                         @mouseenter="handleFlyoutEnter(child.key, $event)"
                         @mouseleave="handleFlyoutLeave"
                       >
-                        <div
+                        <div 
                           class="submenu-item has-flyout"
                           :class="{ 
                             active: child.children.some((gc: MenuItem) => activeMenuKey === gc.key),
@@ -674,7 +544,7 @@ onUnmounted(() => {
                               @mouseleave="handleFlyoutMenuLeave"
                             >
                               <div class="flyout-header">{{ child.title }}</div>
-                              <div
+                              <div 
                                 v-for="grandChild in child.children"
                                 :key="grandChild.key"
                                 class="flyout-item"
@@ -690,7 +560,7 @@ onUnmounted(() => {
                     </template>
                     <!-- 二级菜单项（无子菜单） -->
                     <template v-else>
-                      <div
+                      <div 
                         class="submenu-item"
                         :class="{ active: activeMenuKey === child.key }"
                         @click.stop="handleMenuClick(child)"
@@ -711,7 +581,7 @@ onUnmounted(() => {
                 placement="right"
                 :disabled="!isCollapsed"
               >
-                <div
+                <div 
                   class="menu-item"
                   :class="{ active: activeMenuKey === item.key }"
                   @click="handleMenuClick(item)"
@@ -768,64 +638,6 @@ onUnmounted(() => {
             <el-icon :size="14"><Grid /></el-icon>
             <span>平台导航</span>
             <el-icon :size="12" class="trigger-arrow"><ArrowDown /></el-icon>
-          </div>
-
-          <!-- 搜索框 -->
-          <div class="search-box" :class="{ 'is-focused': showSearchResults }">
-            <el-icon class="search-icon"><Search /></el-icon>
-            <input 
-              ref="searchInputRef"
-              v-model="searchKeyword" 
-              type="text" 
-              placeholder="请输入关键词..." 
-              class="search-input"
-              @focus="searchKeyword && (showSearchResults = true)"
-            />
-            <div class="search-shortcut">⌘ K</div>
-            
-            <!-- 搜索结果下拉 -->
-            <Transition name="search-dropdown">
-              <div v-if="showSearchResults && searchKeyword" class="search-results">
-                <div v-if="searchLoading" class="search-loading">
-                  <el-icon class="is-loading"><Loading /></el-icon>
-                  <span>搜索中...</span>
-                </div>
-                <template v-else-if="searchResults.length > 0">
-                  <div class="search-results-header">
-                    找到 {{ searchTotal }} 个结果
-                  </div>
-                  <div 
-                    v-for="item in searchResults" 
-                    :key="item.id" 
-                    class="search-result-item"
-                    @click="handleResultClick(item)"
-                  >
-                    <div class="result-icon">
-                      <IconFont :type="assetTypeMap[item.asset_type]?.icon || 'caise-computer'" :size="20" />
-                    </div>
-                    <div class="result-content">
-                      <div class="result-title">
-                        <span class="result-type-tag">{{ assetTypeMap[item.asset_type]?.label || item.asset_type }}</span>
-                        <span class="result-name" v-html="highlightText(item.asset_name, searchKeyword)"></span>
-                      </div>
-                      <div class="result-meta">
-                        <span class="result-id" v-html="highlightText(item.asset_id, searchKeyword)"></span>
-                        <span class="result-provider">{{ item.provider }}</span>
-                        <span class="result-region">{{ item.region }}</span>
-                      </div>
-                      <div v-if="item.matches && item.matches.length > 0" class="result-matches">
-                        <span v-for="(match, idx) in item.matches" :key="idx" class="match-item">
-                          {{ match.label }}: <span v-html="highlightText(match.value, searchKeyword)"></span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <div v-else class="search-empty">
-                  <span>未找到相关资产</span>
-                </div>
-              </div>
-            </Transition>
           </div>
         </div>
 
@@ -887,6 +699,9 @@ onUnmounted(() => {
 
       <!-- 平台导航面板 -->
       <PlatformNav v-model:visible="showPlatformNav" />
+
+      <!-- ⌘K 全局命令面板（替代原 header 简易搜索，Phase 2 任务 7；⌘K/Esc 自管） -->
+      <CommandPalette />
 
       <!-- 页面内容 -->
       <main class="main-content">
@@ -1401,213 +1216,6 @@ $navbar-height: 56px;
       color: var(--text-muted);
     }
   }
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 240px;
-  height: 36px;
-  padding: 0 12px;
-  background: var(--bg-base);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  transition: all 200ms ease;
-  flex-shrink: 0;
-  margin-left: 8px;
-  position: relative;
-
-  &:focus-within,
-  &.is-focused {
-    border-color: var(--border-strong);
-    background: var(--bg-surface);
-  }
-
-  .search-icon {
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
-
-  .search-input {
-    flex: 1;
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-size: 13px;
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-muted);
-    }
-  }
-
-  .search-shortcut {
-    padding: 2px 6px;
-    background: var(--bg-hover);
-    border-radius: 4px;
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    flex-shrink: 0;
-  }
-}
-
-// 搜索结果下拉
-.search-results {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 420px;
-  max-height: 480px;
-  overflow-y: auto;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-base);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-
-  .search-results-header {
-    padding: 12px 16px;
-    font-size: 12px;
-    color: var(--text-tertiary);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .search-loading,
-  .search-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: var(--text-tertiary);
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-
-    .is-loading {
-      animation: rotate 1s linear infinite;
-    }
-  }
-
-  .search-result-item {
-    display: flex;
-    gap: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: background 150ms ease;
-
-    &:hover {
-      background: var(--bg-hover);
-    }
-
-    .result-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--bg-base);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--text-secondary);
-    }
-
-    .result-content {
-      flex: 1;
-      min-width: 0;
-
-      .result-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-
-        .result-type-tag {
-          padding: 2px 6px;
-          background: var(--accent-blue);
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-          border-radius: 4px;
-          flex-shrink: 0;
-        }
-
-        .result-name {
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--text-primary);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      }
-
-      .result-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--text-tertiary);
-
-        .result-id {
-          max-width: 180px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .result-provider,
-        .result-region {
-          &::before {
-            content: '·';
-            margin-right: 8px;
-          }
-        }
-      }
-
-      .result-matches {
-        margin-top: 6px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-
-        .match-item {
-          font-size: 11px;
-          color: var(--text-muted);
-          background: var(--bg-base);
-          padding: 2px 8px;
-          border-radius: 4px;
-        }
-      }
-    }
-  }
-}
-
-// 搜索高亮
-:deep(.search-highlight) {
-  background: rgba(250, 204, 21, 0.4);
-  color: inherit;
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-// 搜索下拉动画
-.search-dropdown-enter-active,
-.search-dropdown-leave-active {
-  transition: all 200ms ease;
-}
-
-.search-dropdown-enter-from,
-.search-dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .navbar-right {
