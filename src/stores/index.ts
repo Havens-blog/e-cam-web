@@ -10,5 +10,6 @@ export default pinia
 export { useAccountStore } from './account'
 export { useAppStore } from './app'
 export { useAssetStore } from './asset'
+export { useRecentVisitsStore } from './recentVisits'
 export { useUserStore } from './user'
 
