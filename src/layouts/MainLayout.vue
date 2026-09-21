@@ -477,9 +477,9 @@ const toggleFullscreen = () => {
       <div class="sidebar-logo" @click="router.push('/dashboard')">
         <div class="logo-icon">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3b82f6"/>
-            <path d="M2 17L12 22L22 17" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#5e6ad2"/>
+            <path d="M2 17L12 22L22 17" stroke="#7170ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#7170ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <span v-if="!isCollapsed" class="logo-text">CloudMux</span>
@@ -650,7 +650,7 @@ const toggleFullscreen = () => {
           <!-- 主题切换 -->
           <div 
             class="navbar-btn" 
-            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : 'var(--text-regular)' }"
             :title="isDarkTheme ? '切换到浅色模式' : '切换到深色模式'" 
             @click="toggleTheme"
           >
@@ -663,7 +663,7 @@ const toggleFullscreen = () => {
           <!-- 全屏 -->
           <div 
             class="navbar-btn" 
-            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : 'var(--text-regular)' }"
             title="全屏" 
             @click="toggleFullscreen"
           >
@@ -673,7 +673,7 @@ const toggleFullscreen = () => {
           <!-- 通知 -->
           <div 
             class="navbar-btn has-badge" 
-            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : '#333333' }"
+            :style="{ color: isDarkTheme ? 'var(--text-tertiary)' : 'var(--text-regular)' }"
             title="通知"
           >
             <el-icon :size="18"><Bell /></el-icon>
@@ -896,7 +896,7 @@ $navbar-height: 56px;
   }
 
   &.active {
-    background: rgba(59, 130, 246, 0.15);
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
 
     .menu-icon {
       opacity: 1;
@@ -986,7 +986,7 @@ $navbar-height: 56px;
     }
 
     &.active {
-      background: rgba(59, 130, 246, 0.1);
+      background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 
       .submenu-icon {
         color: var(--accent-blue);
@@ -1081,7 +1081,7 @@ $navbar-height: 56px;
     }
 
     &.active {
-      background: rgba(59, 130, 246, 0.08);
+      background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
 
       .submenu-line {
         background: var(--accent-blue);
@@ -1231,8 +1231,8 @@ $navbar-height: 56px;
   gap: 5px;
   padding: 0 10px;
   height: 30px;
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -1244,8 +1244,8 @@ $navbar-height: 56px;
 
   &:hover,
   &.active {
-    background: rgba(59, 130, 246, 0.14);
-    border-color: rgba(59, 130, 246, 0.35);
+    background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
   }
 
   .trigger-arrow {
@@ -1392,7 +1392,7 @@ $navbar-height: 56px;
     }
 
     &.active {
-      background: rgba(59, 130, 246, 0.1);
+      background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
 
       .flyout-title {
         color: var(--accent-blue);

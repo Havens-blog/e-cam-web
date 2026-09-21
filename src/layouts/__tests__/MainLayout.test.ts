@@ -112,6 +112,53 @@ afterEach(() => {
     vi.useRealTimers()
 })
 
+describe('MainLayout 主题适配（ui-unify-phase3-pilot-pages 任务 1）', () => {
+    /**
+     * 硬编码色清零（AC1）：除 Logo SVG 白名单（#5e6ad2/#7170ff，Phase 1 等价令牌
+     * --accent-primary/--accent-blue 的品牌字面量）外，全文件不得再有 6 位 hex 与
+     * 旧蓝 rgba(59,130,246)；且白名单色只允许出现在 Logo SVG 区块内。
+     */
+    it('硬编码色清零：旧蓝 rgba 与非白名单 hex 无残留，白名单 hex 仅限 Logo SVG', () => {
+        const legacyBlueHits = mainLayoutSource.match(/rgba\(59, ?130, ?246[^)]*\)/g) ?? []
+        expect(legacyBlueHits, `残留旧蓝 rgba: ${[...new Set(legacyBlueHits)].join(', ')}`).toEqual([])
+
+        const LOGO_WHITELIST = ['#5e6ad2', '#7170ff']
+        const allHexHits = (mainLayoutSource.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map((h) => h.toLowerCase())
+        const offenders = [...new Set(allHexHits)].filter((h) => !LOGO_WHITELIST.includes(h))
+        expect(offenders, `非白名单硬编码色: ${offenders.join(', ')}`).toEqual([])
+
+        // 白名单色仅允许出现在 Logo SVG 内：移除 svg 区块后不应再有任何 hex
+        const sourceWithoutSvg = mainLayoutSource.replace(/<svg[\s\S]*?<\/svg>/, '')
+        const hexOutsideSvg = sourceWithoutSvg.match(/#[0-9a-fA-F]{6}\b/g) ?? []
+        expect(hexOutsideSvg, `SVG 区块外仍存在 hex: ${[...new Set(hexOutsideSvg)].join(', ')}`).toEqual([])
+    })
+
+    /** Logo 靛紫化（AC1 映射后保留）：实面 #5e6ad2 + 描边 #7170ff，旧蓝 #3b82f6 不得残留 */
+    it('Logo 靛紫化：SVG 使用 #5e6ad2 实面与 #7170ff 描边', () => {
+        const svgBlock = mainLayoutSource.match(/<svg[\s\S]*?<\/svg>/)?.[0] ?? ''
+        expect(svgBlock, '未找到 Logo SVG').not.toBe('')
+        expect(svgBlock).toContain('#5e6ad2')
+        expect(svgBlock).toContain('#7170ff')
+        expect(svgBlock).not.toContain('#3b82f6')
+    })
+
+    /**
+     * 菜单激活态/悬浮态令牌化（AC2）：8 处 rgba(59,130,246) 全部改为基于
+     * var(--accent-primary) 的 color-mix 派生（与 cert 视图既有写法一致），
+     * 滚动条保持 var(--scrollbar-thumb)，主题按钮内联色改用 var(--text-regular)。
+     */
+    it('激活态/悬浮态/入口徽标使用 var(--*) 令牌，无 #333333 内联硬编码', () => {
+        const colorMixHits =
+            mainLayoutSource.match(/color-mix\(in srgb, var\(--accent-primary\) \d+%, transparent\)/g) ?? []
+        expect(colorMixHits.length, 'color-mix 令牌化数量不足（应为 8 处激活/悬浮/入口态）').toBeGreaterThanOrEqual(8)
+
+        expect(mainLayoutSource).toContain('var(--scrollbar-thumb)')
+        expect(mainLayoutSource).not.toContain('#333333')
+        // 主题按钮/全屏/通知按钮内联色：浅色分支由 #333333 映射为等价令牌 --text-regular
+        expect(mainLayoutSource).toContain("'var(--text-regular)'")
+    })
+});
+
 describe('MainLayout × CommandPalette 集成', () => {
     it('Ctrl+K（Win）唤起 palette，且旧 .search-box 不再渲染', async () => {
         const { wrapper } = await mountLayout()
