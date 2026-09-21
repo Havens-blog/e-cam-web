@@ -28,7 +28,7 @@
           v-model="form.extraStr"
           type="textarea"
           :rows="3"
-          placeholder='可选，JSON 格式，如 {"color":"#3b82f6"}'
+          placeholder='可选，JSON 格式，如 {"color":"#7170ff"}'
         />
       </el-form-item>
     </el-form>

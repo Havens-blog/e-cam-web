@@ -23,7 +23,7 @@
 
     <!-- 统计卡片(全局真实计数,不受筛选影响) -->
     <div class="page-stats">
-      <StatCard title="加速域名" :value="stats.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="加速域名" :value="stats.total" icon="Connection" icon-color="#7170ff" subtitle="多云平台统一纳管" />
       <StatCard title="在线域名" :value="stats.online" icon="CircleCheck" icon-color="#16a34a" :subtitle="onlineRateText" />
       <StatCard title="HTTPS 启用" :value="stats.https" icon="Lock" icon-color="#d97706" :subtitle="httpsRateText" />
       <StatCard

@@ -193,7 +193,7 @@ onMounted(() => loadTypes())
 
     &.is-focus {
       border-color: var(--accent-blue);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      box-shadow: 0 0 0 2px rgba(113, 112, 255, 0.15);
     }
   }
 }
@@ -231,12 +231,12 @@ onMounted(() => loadTypes())
   }
 
   &.active {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
+    background: rgba(113, 112, 255, 0.1);
+    border-color: rgba(113, 112, 255, 0.2);
 
     .card-icon {
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
     }
 
     .card-name {

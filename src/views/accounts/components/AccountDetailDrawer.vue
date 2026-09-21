@@ -300,7 +300,7 @@ const formatDateTime = (time: string | undefined) => {
     width: 52px;
     height: 52px;
     border-radius: 14px;
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(113, 112, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -393,7 +393,7 @@ const formatDateTime = (time: string | undefined) => {
     }
 
     &.env-dev {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
 

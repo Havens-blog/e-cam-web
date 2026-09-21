@@ -399,7 +399,7 @@ onMounted(() => { loadAccounts() })
     border-radius: 50%;
     flex-shrink: 0;
 
-    &.public { background: #3b82f6; }
+    &.public { background: #7170ff; }
     &.custom { background: #8b5cf6; }
     &.shared { background: #10b981; }
     &.market { background: #f59e0b; }

@@ -252,7 +252,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, shallowRef, 
 
 // ==================== 常量 ====================
 const CATEGORY_COLORS: Record<string, string> = {
-  compute: '#3b82f6',
+  compute: '#7170ff',
   network: '#f59e0b',
   database: '#10b981',
   storage: '#8b5cf6',
@@ -434,7 +434,7 @@ const drawDragLine = () => {
   ctx.beginPath()
   ctx.moveTo(sx, sy)
   ctx.lineTo(ex, ey)
-  ctx.strokeStyle = dragState.hoverTarget ? '#3b82f6' : '#71717a'
+  ctx.strokeStyle = dragState.hoverTarget ? '#7170ff' : '#71717a'
   ctx.lineWidth = dragState.hoverTarget ? 2.5 : 1.5
   ctx.setLineDash([6, 4])
   ctx.stroke()
@@ -447,7 +447,7 @@ const drawDragLine = () => {
   ctx.lineTo(ex - arrowLen * Math.cos(angle - Math.PI / 6), ey - arrowLen * Math.sin(angle - Math.PI / 6))
   ctx.moveTo(ex, ey)
   ctx.lineTo(ex - arrowLen * Math.cos(angle + Math.PI / 6), ey - arrowLen * Math.sin(angle + Math.PI / 6))
-  ctx.strokeStyle = dragState.hoverTarget ? '#3b82f6' : '#71717a'
+  ctx.strokeStyle = dragState.hoverTarget ? '#7170ff' : '#71717a'
   ctx.lineWidth = 2
   ctx.setLineDash([])
   ctx.stroke()
@@ -456,7 +456,7 @@ const drawDragLine = () => {
   if (dragState.hoverTarget) {
     ctx.beginPath()
     ctx.arc(ex, ey, 28, 0, Math.PI * 2)
-    ctx.strokeStyle = '#3b82f6'
+    ctx.strokeStyle = '#7170ff'
     ctx.lineWidth = 2
     ctx.setLineDash([])
     ctx.stroke()
@@ -876,7 +876,7 @@ const renderModelGraph = () => {
       },
       emphasis: {
         label: { show: true },
-        lineStyle: { width: 2.5, color: '#3b82f6' },
+        lineStyle: { width: 2.5, color: '#7170ff' },
       },
       lineStyle: {
         color: getCssVar('--border-strong') || 'rgba(255,255,255,0.15)',
@@ -1048,7 +1048,7 @@ const renderInstanceGraph = () => {
     },
     emphasis: {
       label: { show: true },
-      lineStyle: { width: 2.5, color: '#3b82f6' },
+      lineStyle: { width: 2.5, color: '#7170ff' },
     },
     lineStyle: {
       color: getCssVar('--border-strong') || 'rgba(255,255,255,0.15)',
@@ -1381,13 +1381,13 @@ onUnmounted(() => {
       left: 50%;
       transform: translateX(-50%);
       padding: 6px 16px;
-      background: rgba(59, 130, 246, 0.9);
+      background: rgba(113, 112, 255, 0.9);
       color: #fff;
       font-size: 12px;
       border-radius: 20px;
       z-index: 15;
       white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 2px 8px rgba(113, 112, 255, 0.3);
     }
 
     .empty-state {

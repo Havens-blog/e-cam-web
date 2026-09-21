@@ -454,7 +454,7 @@ watch(activeTab, (tab) => {
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(113, 112, 255, 0.15);
     color: var(--accent-blue);
     display: flex;
     align-items: center;

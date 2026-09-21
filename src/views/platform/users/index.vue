@@ -484,8 +484,8 @@ onMounted(fetchUsers)
         color: white;
 
         &:hover {
-          background: #2563eb;
-          border-color: #2563eb;
+          background: #828fff;
+          border-color: #828fff;
         }
       }
     }
@@ -535,7 +535,7 @@ onMounted(fetchUsers)
     flex-shrink: 0;
 
     &.blue {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
 

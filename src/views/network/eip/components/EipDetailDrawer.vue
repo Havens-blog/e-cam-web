@@ -302,12 +302,12 @@ const getTabName = (tab: string) => {
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: rgba(59, 130, 246, 0.14);
+    background: rgba(113, 112, 255, 0.14);
     border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #60a5fa;
+    color: #818cf8;
   }
 
   .instance-info {

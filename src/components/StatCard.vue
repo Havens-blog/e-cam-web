@@ -41,7 +41,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
     icon: 'Box',
-    iconColor: '#3b82f6',
+    iconColor: '#7170ff',
     clickable: false,
     formatValue: true,
 })

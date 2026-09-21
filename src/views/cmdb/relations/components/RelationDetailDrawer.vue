@@ -167,7 +167,7 @@ const formatTime = (time: number | undefined) => {
       display: flex;
       align-items: center;
       justify-content: center;
-      &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+      &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
     }
 
     .relation-title {
@@ -237,7 +237,7 @@ const formatTime = (time: number | undefined) => {
   font-weight: 500;
 
   &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-  &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
   &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
   &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
   &.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }

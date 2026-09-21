@@ -2,7 +2,7 @@
   <el-row :gutter="16" class="summary-cards">
     <el-col :span="8">
       <div class="summary-card">
-        <div class="card-icon" style="background: #3B82F6">
+        <div class="card-icon" style="background: #7170FF">
           <el-icon :size="24"><Money /></el-icon>
         </div>
         <div class="card-info">

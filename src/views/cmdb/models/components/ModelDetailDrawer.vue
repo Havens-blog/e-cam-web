@@ -509,7 +509,7 @@ const isImageUrl = (v: string) => {
       align-items: center;
       justify-content: center;
 
-      &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+      &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
       &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
       &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
       &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
@@ -577,7 +577,7 @@ const isImageUrl = (v: string) => {
   font-size: 12px;
   font-weight: 500;
 
-  &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
   &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
   &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
   &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
@@ -648,7 +648,7 @@ const isImageUrl = (v: string) => {
         font-size: 11px;
         padding: 2px 8px;
         border-radius: 4px;
-        background: rgba(59, 130, 246, 0.15);
+        background: rgba(113, 112, 255, 0.15);
         color: var(--accent-blue);
       }
       .tag {

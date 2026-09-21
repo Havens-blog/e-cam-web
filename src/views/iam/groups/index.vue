@@ -644,8 +644,8 @@ onMounted(async () => {
         color: white;
 
         &:hover {
-          background: #2563eb;
-          border-color: #2563eb;
+          background: #828fff;
+          border-color: #828fff;
         }
       }
     }
@@ -690,7 +690,7 @@ onMounted(async () => {
     flex-shrink: 0;
 
     &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
-    &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+    &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
     &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
     &.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
   }
@@ -951,7 +951,7 @@ onMounted(async () => {
     justify-content: center;
 
     &.blue {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
 

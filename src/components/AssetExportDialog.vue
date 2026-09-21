@@ -402,7 +402,7 @@ const formatDate = () => {
 
   &.active {
     border-color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(113, 112, 255, 0.08);
   }
 
   .el-icon {

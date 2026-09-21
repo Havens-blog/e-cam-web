@@ -59,7 +59,7 @@ export function apmEdgeStyle(e: TopoEdge): Record<string, unknown> {
     } else if (errorRate > 1) {
         color = '#f97316' // 橙色：1% < error_rate <= 5%
     } else {
-        color = '#3b82f6' // 蓝色：error_rate <= 1%
+        color = '#7170ff' // 靛紫（主题交互色）：error_rate <= 1%
     }
 
     return { color, width, type: 'solid', opacity: 0.7 }

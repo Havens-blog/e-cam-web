@@ -1288,7 +1288,7 @@ onUnmounted(() => {
       }
 
       :deep(.el-tree-node.is-current > .el-tree-node__content) {
-        background: rgba(59, 130, 246, 0.15);
+        background: rgba(113, 112, 255, 0.15);
 
         .node-label {
           color: var(--accent-blue);
@@ -1499,7 +1499,7 @@ onUnmounted(() => {
           min-width: 70px;
 
           &.total {
-            background: rgba(59, 130, 246, 0.12);
+            background: rgba(113, 112, 255, 0.12);
 
             .stat-num {
               color: var(--accent-blue);

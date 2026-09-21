@@ -233,7 +233,7 @@ onMounted(() => {
   th, td { padding: 10px 12px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   th { background: var(--bg-surface); color: var(--text-secondary); font-weight: 500; }
   td { border-bottom: 1px solid var(--border-subtle); }
-  tbody tr { transition: background 150ms ease; cursor: pointer; &:hover { background: var(--bg-hover); } &.selected { background: rgba(59, 130, 246, 0.08); } }
+  tbody tr { transition: background 150ms ease; cursor: pointer; &:hover { background: var(--bg-hover); } &.selected { background: rgba(113, 112, 255, 0.08); } }
 }
 
 .col-checkbox { width: 40px; }

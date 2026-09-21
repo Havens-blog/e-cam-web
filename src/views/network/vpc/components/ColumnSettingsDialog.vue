@@ -81,7 +81,7 @@ const handleSave = () => {
 
 <style scoped lang="scss">
 .column-settings-content { display: flex; flex-direction: column; gap: 16px; }
-.settings-tip { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border-radius: 8px; font-size: 13px; color: var(--accent-blue); }
+.settings-tip { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(113, 112, 255, 0.08); border-radius: 8px; font-size: 13px; color: var(--accent-blue); }
 .columns-container { display: flex; flex-direction: column; gap: 16px; }
 .column-group { .group-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; } .group-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; } .group-header .group-title { margin-bottom: 0; } .group-actions { display: flex; gap: 4px; } }
 .column-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 260px; overflow-y: auto; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; &.fixed { background: var(--bg-hover); } }

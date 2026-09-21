@@ -321,7 +321,7 @@ const formatDateTime = (time: string | undefined) => {
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(113, 112, 255, 0.15);
     color: var(--accent-blue);
   }
 }

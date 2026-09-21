@@ -744,7 +744,7 @@ function getTemplateIcon(tpl: VMTemplate | null): string {
 function getTemplateIconBg(tpl: VMTemplate | null): string {
   if (!tpl) return 'linear-gradient(135deg, #64748b, #94a3b8)'
   const name = (tpl.name || '').toLowerCase()
-  if (name.includes('web') || name.includes('nginx')) return 'linear-gradient(135deg, #3b82f6, #60a5fa)'
+  if (name.includes('web') || name.includes('nginx')) return 'linear-gradient(135deg, #7170ff, #818cf8)'
   if (name.includes('mysql') || name.includes('数据库') || name.includes('db')) return 'linear-gradient(135deg, #f59e0b, #fbbf24)'
   if (name.includes('gpu') || name.includes('训练') || name.includes('ai')) return 'linear-gradient(135deg, #8b5cf6, #a78bfa)'
   if (name.includes('k8s') || name.includes('kubernetes') || name.includes('容器')) return 'linear-gradient(135deg, #06b6d4, #22d3ee)'

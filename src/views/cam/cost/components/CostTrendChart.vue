@@ -85,12 +85,12 @@ const renderChart = () => {
       smooth: true,
       symbol: 'circle',
       symbolSize: 6,
-      lineStyle: { width: 2, color: '#3B82F6' },
-      itemStyle: { color: '#3B82F6' },
+      lineStyle: { width: 2, color: '#7170FF' },
+      itemStyle: { color: '#7170FF' },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-          { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          { offset: 0, color: 'rgba(113, 112, 255, 0.25)' },
+          { offset: 1, color: 'rgba(113, 112, 255, 0.02)' }
         ])
       }
     }]

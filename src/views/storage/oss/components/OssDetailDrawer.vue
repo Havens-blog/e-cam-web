@@ -270,8 +270,8 @@ const renderOssChart = () => {
         type: 'bar',
         data: items.map(p => p.storage_size),
         barMaxWidth: 18,
-        itemStyle: { color: '#3b82f6', borderRadius: [3, 3, 0, 0] },
-        emphasis: { itemStyle: { color: '#60a5fa' } }
+        itemStyle: { color: '#7170ff', borderRadius: [3, 3, 0, 0] },
+        emphasis: { itemStyle: { color: '#818cf8' } }
       },
       {
         name: '对象数',

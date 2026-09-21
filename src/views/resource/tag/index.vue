@@ -21,7 +21,7 @@
 
     <!-- Stats Cards -->
     <div class="page-stats">
-      <StatCard title="标签键" :value="tagStats.total_keys" icon="Coin" icon-color="#3b82f6" subtitle="全仓标签键"
+      <StatCard title="标签键" :value="tagStats.total_keys" icon="Coin" icon-color="#7170ff" subtitle="全仓标签键"
                 :trend="weekTrendText(tagStats.trend?.total_keys)" :trend-tone="weekTrendTone(tagStats.trend?.total_keys)" />
       <StatCard title="标签值" :value="tagStats.total_values" icon="EditPen" icon-color="#8b5cf6" subtitle="全仓标签值"
                 :trend="weekTrendText(tagStats.trend?.total_values)" :trend-tone="weekTrendTone(tagStats.trend?.total_values)" />

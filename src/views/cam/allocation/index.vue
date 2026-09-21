@@ -450,7 +450,7 @@ const chartType = ref<'bar' | 'pie'>('bar')
 const allocationChartRef = ref<HTMLElement>()
 let allocationChart: any = null
 
-const CHART_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#14B8A6']
+const CHART_COLORS = ['#7170FF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#14B8A6']
 const MAX_CHART_ITEMS = 10
 
 const fetchTree = async () => {

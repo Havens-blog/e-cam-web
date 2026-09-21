@@ -701,12 +701,12 @@ html.dark .spec-card {
 
 html.dark .spec-card:hover {
   border-color: rgba(64, 158, 255, 0.4);
-  background: rgba(59, 130, 246, 0.06);
+  background: rgba(113, 112, 255, 0.06);
 }
 
 html.dark .spec-card.active {
   border-color: var(--el-color-primary);
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(113, 112, 255, 0.1);
 }
 
 html.dark .group-header {
@@ -714,7 +714,7 @@ html.dark .group-header {
 }
 
 html.dark .group-header:hover {
-  background: rgba(59, 130, 246, 0.06);
+  background: rgba(113, 112, 255, 0.06);
 }
 
 html.dark .category-tab {

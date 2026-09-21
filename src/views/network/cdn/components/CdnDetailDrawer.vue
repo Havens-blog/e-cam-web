@@ -560,8 +560,8 @@ const renderMetricsChart = () => {
         type: 'bar',
         data: items.map(m => bytesToGB(m.bytes || 0)),
         barMaxWidth: 18,
-        itemStyle: { color: '#3b82f6', borderRadius: [3, 3, 0, 0] },
-        emphasis: { itemStyle: { color: '#60a5fa' } }
+        itemStyle: { color: '#7170ff', borderRadius: [3, 3, 0, 0] },
+        emphasis: { itemStyle: { color: '#818cf8' } }
       },
       {
         name: '命中率',
@@ -682,7 +682,7 @@ const formatTime = (time: string | number | undefined) => {
 
   .instance-icon {
     width: 40px; height: 40px; border-radius: 9px;
-    background: rgba(59, 130, 246, 0.14); color: #60a5fa;
+    background: rgba(113, 112, 255, 0.14); color: #818cf8;
     display: flex; align-items: center; justify-content: center;
   }
   .instance-info {

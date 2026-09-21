@@ -70,7 +70,7 @@ defineEmits<{
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+    background: linear-gradient(135deg, rgba(113, 112, 255, 0.15), rgba(113, 112, 255, 0.05));
     border-radius: 50%;
 
     .execute-icon {

@@ -1370,7 +1370,7 @@ watch(
 
     &.active {
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(113, 112, 255, 0.1);
     }
   }
 }
@@ -1395,12 +1395,12 @@ watch(
 
   &:hover {
     border-color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.05);
+    background: rgba(113, 112, 255, 0.05);
   }
 
   &.active {
     border-color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(113, 112, 255, 0.1);
   }
 
   .stat-label {
@@ -1608,7 +1608,7 @@ watch(
     margin-bottom: 2px;
 
     &:hover {
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(113, 112, 255, 0.08);
       color: var(--accent-blue);
     }
 
@@ -1691,7 +1691,7 @@ watch(
 
     &.active {
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(113, 112, 255, 0.08);
     }
   }
 }
@@ -1704,12 +1704,12 @@ watch(
     padding: 4px 8px;
     font-size: 12px;
     color: var(--accent-blue);
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(113, 112, 255, 0.08);
     border-radius: 4px;
     cursor: pointer;
 
     &:hover {
-      background: rgba(59, 130, 246, 0.12);
+      background: rgba(113, 112, 255, 0.12);
     }
   }
 }
@@ -1738,7 +1738,7 @@ watch(
 
     &.active {
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(113, 112, 255, 0.08);
     }
   }
 
@@ -1837,7 +1837,7 @@ watch(
     }
 
     &.selected {
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(113, 112, 255, 0.08);
     }
   }
 }

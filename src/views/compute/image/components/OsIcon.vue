@@ -84,7 +84,7 @@ const osLabel = computed(() => {
 
   &.os-centos { background: linear-gradient(135deg, #9333ea, #7c3aed); }
   &.os-ubuntu { background: linear-gradient(135deg, #f97316, #ea580c); }
-  &.os-windows { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+  &.os-windows { background: linear-gradient(135deg, #7170ff, #5e6ad2); }
   &.os-debian { background: linear-gradient(135deg, #ec4899, #db2777); }
   &.os-redhat { background: linear-gradient(135deg, #ef4444, #dc2626); }
   &.os-linux { background: linear-gradient(135deg, #eab308, #ca8a04); }

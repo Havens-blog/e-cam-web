@@ -190,7 +190,7 @@ const providers = [
   { value: 'volcano', label: '火山引擎', color: '#3370ff' },
 ]
 const sources = [
-  { value: 'cloud_api', label: '云API', color: '#3b82f6' },
+  { value: 'cloud_api', label: '云API', color: '#7170ff' },
   { value: 'k8s_api', label: 'K8s', color: '#10b981' },
   { value: 'log', label: '日志', color: '#f59e0b' },
   { value: 'declaration', label: '声明', color: '#818cf8' },
@@ -229,7 +229,7 @@ function toggleSource(v: string) {
 .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-subtle); color: var(--text-secondary); transition: all 0.2s; }
 .chip:hover { border-color: var(--border-strong); color: var(--text-primary); }
-.chip.active { border-color: var(--accent-blue); background: rgba(59,130,246,0.12); color: var(--accent-blue); }
+.chip.active { border-color: var(--accent-blue); background: rgba(113,112,255,0.12); color: var(--accent-blue); }
 .chip-dot { width: 8px; height: 8px; border-radius: 50%; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 13px; color: var(--text-secondary); }
 .stat-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; font-size: 12px; color: var(--text-tertiary); }

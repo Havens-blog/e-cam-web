@@ -64,14 +64,14 @@ const providerColors: Record<string, string> = {
   aliyun: '#ff6a00',
   aws: '#ff9900',
   huawei: '#ef4444',
-  tencent: '#3b82f6',
+  tencent: '#7170ff',
   volcano: '#10b981',
 }
 
 const recordTypeColors: Record<string, string> = {
   A: '#6366f1',
   AAAA: '#8b5cf6',
-  CNAME: '#3b82f6',
+  CNAME: '#7170ff',
   MX: '#ec4899',
   TXT: '#10b981',
   NS: '#f59e0b',
@@ -102,8 +102,8 @@ const statCards = computed(() => {
       value: s?.total_records ?? 0,
       desc: '',
       icon: List,
-      iconBg: 'rgba(59,130,246,0.15)',
-      iconColor: '#60a5fa',
+      iconBg: 'rgba(113,112,255,0.15)',
+      iconColor: '#818cf8',
     },
     {
       label: '云厂商覆盖',

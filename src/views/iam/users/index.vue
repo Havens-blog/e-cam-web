@@ -1021,8 +1021,8 @@ onMounted(async () => {
         color: white;
 
         &:hover {
-          background: #2563eb;
-          border-color: #2563eb;
+          background: #828fff;
+          border-color: #828fff;
         }
       }
     }
@@ -1072,7 +1072,7 @@ onMounted(async () => {
     flex-shrink: 0;
 
     &.blue {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
 
@@ -1232,8 +1232,8 @@ onMounted(async () => {
 
 // 批量操作栏
 .batch-bar {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(113, 112, 255, 0.1);
+  border: 1px solid rgba(113, 112, 255, 0.2);
   border-radius: 12px;
   padding: 12px 20px;
   margin-bottom: 16px;
@@ -1309,7 +1309,7 @@ onMounted(async () => {
   }
 
   &.is-selected {
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(113, 112, 255, 0.08);
   }
 
   @media (max-width: 1200px) {
@@ -1387,7 +1387,7 @@ onMounted(async () => {
     color: var(--text-secondary);
 
     &.type-iam {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
 

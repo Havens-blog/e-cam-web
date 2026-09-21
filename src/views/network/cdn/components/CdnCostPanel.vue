@@ -64,7 +64,7 @@ const emit = defineEmits<{
 }>()
 
 // 与 dashboard 图表一致的暗色配色(echarts 渲染在 canvas 上,CSS 变量不可用,取暗色 token 实际值)
-const CHART_COLORS = ['#3b82f6', '#d97706', '#0891b2', '#16a34a', '#8b5cf6', '#eab308']
+const CHART_COLORS = ['#7170ff', '#d97706', '#0891b2', '#16a34a', '#8b5cf6', '#eab308']
 const AXIS_LABEL_COLOR = '#a1a1aa'
 const SPLIT_LINE_COLOR = 'rgba(255,255,255,0.08)'
 const TOOLTIP_BG = 'rgba(23,23,23,0.92)'
@@ -143,8 +143,8 @@ const renderTrendChart = () => {
       name: '总成本',
       data: monthly.map(m => Math.round((m.cdn_amount + m.dcdn_amount) * 100) / 100),
       barMaxWidth: 36,
-      itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
-      emphasis: { itemStyle: { color: '#60a5fa' } }
+      itemStyle: { color: '#7170ff', borderRadius: [4, 4, 0, 0] },
+      emphasis: { itemStyle: { color: '#818cf8' } }
     }]
   }, true)
 }

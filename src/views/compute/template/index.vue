@@ -860,7 +860,7 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 500;
 }
-.template-tag.os { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.template-tag.os { background: rgba(113, 112, 255, 0.15); color: #818cf8; }
 .template-tag.env { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 .template-tag.type { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
 .template-tag.billing { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }

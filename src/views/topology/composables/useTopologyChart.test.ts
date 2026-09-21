@@ -69,7 +69,7 @@ describe('Property 10: APM 边视觉样式映射', () => {
 
     /**
      * **Validates: Requirements 5.3**
-     * Color thresholds: error_rate ≤ 1% → blue (#3b82f6),
+     * Color thresholds: error_rate ≤ 1% → indigo (主题交互色 accent-blue),
      * 1% < error_rate ≤ 5% → orange (#f97316),
      * error_rate > 5% → red (#ef4444).
      */
@@ -87,7 +87,7 @@ describe('Property 10: APM 边视觉样式映射', () => {
                     } else if (errorRate > 1) {
                         expect(color).toBe('#f97316') // orange
                     } else {
-                        expect(color).toBe('#3b82f6') // blue
+                        expect(color).toBe('#7170ff') // indigo
                     }
                 },
             ),
@@ -101,7 +101,7 @@ describe('Property 10: APM 边视觉样式映射', () => {
      */
     it('boundary: error_rate exactly 1% is blue', () => {
         const style = apmEdgeStyle(makeApmEdge({ qps: 10, error_rate: 1 }))
-        expect(style.color).toBe('#3b82f6')
+        expect(style.color).toBe('#7170ff')
     })
 
     it('boundary: error_rate exactly 5% is orange', () => {

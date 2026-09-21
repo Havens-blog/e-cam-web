@@ -184,11 +184,11 @@ export function generateBarChartOption(
                 type: 'bar',
                 data: values,
                 itemStyle: {
-                    color: '#3B82F6'
+                    color: '#7170FF'
                 },
                 emphasis: {
                     itemStyle: {
-                        color: '#2563EB'
+                        color: '#828FFF'
                     }
                 }
             }

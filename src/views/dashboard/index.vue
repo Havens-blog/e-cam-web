@@ -210,7 +210,7 @@ const assetTypeLabel = (k: string) => assetTypeMap[k] || k
 
 // 分类色板(固定顺序,勿按排名循环):已过暗色表面六项校验
 // (CVD 区分度/正常视觉下限/对比度),更新颜色请重跑 dataviz validate_palette.js
-const COLORS = ['#3b82f6', '#d97706', '#0891b2', '#16a34a', '#8b5cf6']
+const COLORS = ['#7170ff', '#d97706', '#0891b2', '#16a34a', '#8b5cf6']
 
 // ==================== 图表 ====================
 const providerChartRef = ref<HTMLElement>()
@@ -320,7 +320,7 @@ const initAssetTypeChart = () => {
     },
     series: [{
       type: 'bar', barMaxWidth: 18,
-      itemStyle: { borderRadius: [0, 4, 4, 0], color: '#3b82f6' },
+      itemStyle: { borderRadius: [0, 4, 4, 0], color: '#7170ff' },
       label: {
         show: true, position: 'right', color: '#d4d4d8', fontSize: 11,
         formatter: (p: any) => `${p.value} · ${((p.value / total) * 100).toFixed(1)}%`,
@@ -569,7 +569,7 @@ onUnmounted(() => {
   .stat-icon {
     width: 44px; height: 44px; border-radius: 11px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    &.blue { background: rgba(59,130,246,0.14); color: #60a5fa; }
+    &.blue { background: rgba(113,112,255,0.14); color: #818cf8; }
     &.orange { background: rgba(217,119,6,0.16); color: #fbbf24; }
     &.green { background: rgba(22,163,74,0.16); color: #4ade80; }
     &.red { background: rgba(239,68,68,0.14); color: #f87171; }

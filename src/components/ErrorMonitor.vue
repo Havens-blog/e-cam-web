@@ -255,7 +255,7 @@ onUnmounted(() => {
         }
 
         &.log-info {
-          background: rgba(59, 130, 246, 0.1);
+          background: rgba(113, 112, 255, 0.1);
           border-left-color: var(--accent-blue);
         }
 

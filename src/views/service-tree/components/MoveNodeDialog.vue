@@ -252,7 +252,7 @@ watch(() => props.visible, (val) => {
       }
 
       :deep(.el-tree-node.is-current > .el-tree-node__content) {
-        background: rgba(59, 130, 246, 0.15);
+        background: rgba(113, 112, 255, 0.15);
       }
     }
 
@@ -265,8 +265,8 @@ watch(() => props.visible, (val) => {
   .preview {
     margin-top: 16px;
     padding: 12px 16px;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(113, 112, 255, 0.1);
+    border: 1px solid rgba(113, 112, 255, 0.2);
     border-radius: 8px;
 
     .label {

@@ -293,7 +293,7 @@ onMounted(() => {
 }
 .stat-icon {
   width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-  &.total { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  &.total { background: rgba(113,112,255,0.1); color: #7170ff; }
   &.success { background: rgba(16,185,129,0.1); color: #10b981; }
   &.fail { background: rgba(239,68,68,0.1); color: #ef4444; }
   &.slow { background: rgba(245,158,11,0.1); color: #f59e0b; }
@@ -331,7 +331,7 @@ onMounted(() => {
   display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
   font-family: 'SF Mono', 'Fira Code', monospace; flex-shrink: 0;
   &.get { background: rgba(16,185,129,0.15); color: #10b981; }
-  &.post { background: rgba(59,130,246,0.15); color: #3b82f6; }
+  &.post { background: rgba(113,112,255,0.15); color: #7170ff; }
   &.put { background: rgba(245,158,11,0.15); color: #f59e0b; }
   &.delete { background: rgba(239,68,68,0.15); color: #ef4444; }
   &.patch { background: rgba(139,92,246,0.15); color: #8b5cf6; }

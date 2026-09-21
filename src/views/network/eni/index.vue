@@ -19,7 +19,7 @@
 
     <!-- 统计卡片 -->
     <div class="page-stats">
-      <StatCard title="弹性网卡" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="弹性网卡" :value="pagination.total" icon="Connection" icon-color="#7170ff" subtitle="多云平台统一纳管" />
       <StatCard title="使用中" :value="inUseCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="`${bindingRate}% 绑定率`" />
       <StatCard title="可用" :value="availableCount" icon="Clock" icon-color="#d97706" subtitle="未绑定实例" />
       <StatCard title="主网卡" :value="primaryCount" icon="DataLine" icon-color="#0891b2" :subtitle="`占 ${primaryRate}%`" />

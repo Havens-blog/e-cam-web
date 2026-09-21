@@ -1399,7 +1399,7 @@ onMounted(() => {
 
     &:last-child { border-right: none; }
     &:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
-    &.active { color: var(--accent-blue); background: rgba(59, 130, 246, 0.1); }
+    &.active { color: var(--accent-blue); background: rgba(113, 112, 255, 0.1); }
   }
 }
 
@@ -1501,7 +1501,7 @@ onMounted(() => {
   &.status-active { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); .dot { background: var(--accent-green); } }
   &.status-error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); .dot { background: var(--accent-red); } }
   &.status-disabled { background: rgba(255, 255, 255, 0.05); color: var(--text-tertiary); .dot { background: var(--text-tertiary); } }
-  &.status-testing { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); .dot { background: var(--accent-blue); } }
+  &.status-testing { background: rgba(113, 112, 255, 0.1); color: var(--accent-blue); .dot { background: var(--accent-blue); } }
   &.status-inactive { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); .dot { background: var(--text-muted); } }
 }
 
@@ -1760,7 +1760,7 @@ onMounted(() => {
 
     &.env-prod { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
     &.env-staging { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
-    &.env-dev { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+    &.env-dev { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
     &.env-test { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
   }
 }
@@ -1996,7 +1996,7 @@ onMounted(() => {
     align-items: center;
     gap: 8px;
     padding: 12px;
-    background: rgba(59, 130, 246, 0.1);
+    background: rgba(113, 112, 255, 0.1);
     border-radius: 8px;
     font-size: 13px;
     color: var(--accent-blue);
@@ -2035,7 +2035,7 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 260px;
       height: 180px;
-      background: radial-gradient(ellipse, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(113, 112, 255, 0.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -2047,14 +2047,14 @@ onMounted(() => {
       width: 68px;
       height: 68px;
       border-radius: 18px;
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
-      border: 1px solid rgba(59, 130, 246, 0.2);
+      background: linear-gradient(135deg, rgba(113, 112, 255, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
+      border: 1px solid rgba(113, 112, 255, 0.2);
       margin-bottom: 16px;
 
       svg {
         width: 34px;
         height: 34px;
-        color: #3b82f6;
+        color: #7170ff;
       }
 
       &--edit {
@@ -2148,13 +2148,13 @@ onMounted(() => {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      background: linear-gradient(135deg, #7170ff 0%, #6366f1 100%);
       border: none;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 2px 8px rgba(113, 112, 255, 0.3);
       min-width: 140px;
 
       &:hover {
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 4px 16px rgba(113, 112, 255, 0.4);
         transform: translateY(-1px);
       }
 
@@ -2233,7 +2233,7 @@ onMounted(() => {
     }
 
     &.is-focus {
-      box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 1.5px #7170ff inset, 0 0 0 4px rgba(113, 112, 255, 0.1);
     }
   }
 
@@ -2248,7 +2248,7 @@ onMounted(() => {
     }
 
     &:focus {
-      box-shadow: 0 0 0 1.5px #3b82f6 inset, 0 0 0 4px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 1.5px #7170ff inset, 0 0 0 4px rgba(113, 112, 255, 0.1);
     }
   }
 

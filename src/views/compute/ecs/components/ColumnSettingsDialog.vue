@@ -167,7 +167,7 @@ const handleSave = () => {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(113, 112, 255, 0.08);
   border-radius: 8px;
   font-size: 13px;
   color: var(--accent-blue);
@@ -292,7 +292,7 @@ const handleSave = () => {
     color: var(--text-secondary);
 
     &.fixed {
-      background: rgba(59, 130, 246, 0.15);
+      background: rgba(113, 112, 255, 0.15);
       color: var(--accent-blue);
     }
   }

@@ -129,7 +129,7 @@ defineExpose({ setLoading: (val: boolean) => { deleting.value = val } })
 
   &.A { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
   &.AAAA { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-  &.CNAME { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+  &.CNAME { background: rgba(113, 112, 255, 0.15); color: #818cf8; }
   &.MX { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
   &.TXT { background: rgba(16, 185, 129, 0.15); color: #34d399; }
   &.NS { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }

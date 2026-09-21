@@ -19,7 +19,7 @@
 
     <!-- 统计卡片 -->
     <div class="page-stats">
-      <StatCard title="WAF 实例" :value="pagination.total" icon="Connection" icon-color="#3b82f6" subtitle="多云平台统一纳管" />
+      <StatCard title="WAF 实例" :value="pagination.total" icon="Connection" icon-color="#7170ff" subtitle="多云平台统一纳管" />
       <StatCard title="正常运行" :value="activeCount" icon="CircleCheck" icon-color="#16a34a" :subtitle="activeRateText" />
     </div>
 
