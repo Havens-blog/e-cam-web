@@ -1,53 +1,107 @@
 <template>
-  <PageContainer>
-    <ManagerHeader
-      title="资产管理"
-      subtitle="查看和管理所有云平台的资产"
-      @refresh="fetchAssets"
+  <PageContainer class="assets-page">
+    <template #header>
+      <div class="page-header">
+        <div class="page-heading">
+          <h2 class="page-title">资产管理</h2>
+          <p class="page-subtitle">查看和管理所有云平台的资产</p>
+        </div>
+        <div class="page-actions">
+          <el-button type="primary" @click="handleDiscover">
+            <el-icon><Search /></el-icon>
+            发现资产
+          </el-button>
+          <el-button type="primary" @click="handleSync">
+            <el-icon><Refresh /></el-icon>
+            同步资产
+          </el-button>
+        </div>
+      </div>
+    </template>
+
+    <!-- 筛选器（FilterBar 五字段等价旧 AssetFilters） -->
+    <template #filters>
+      <FilterBar v-model="filters" :fields="filterFields" @field-change="handleFilterChange">
+        <template #actions>
+          <el-button @click="resetFilters">重置</el-button>
+        </template>
+      </FilterBar>
+    </template>
+
+    <!-- 密度切换（规格指定增强） -->
+    <div class="table-toolbar">
+      <span class="table-toolbar__label">密度</span>
+      <el-button
+        size="small"
+        :type="density === 'default' ? 'primary' : undefined"
+        @click="density = 'default'"
+      >
+        默认
+      </el-button>
+      <el-button
+        size="small"
+        :type="density === 'compact' ? 'primary' : undefined"
+        @click="density = 'compact'"
+      >
+        紧凑
+      </el-button>
+    </div>
+
+    <!-- 资产表格（DataTable fetch 模式：三态/批量操作条组件内置） -->
+    <DataTable
+      ref="tableRef"
+      :columns="columns"
+      :fetch="fetchAssets"
+      selectable
+      :batch-actions="batchActions"
+      :density="density"
+      error-text="获取资产列表失败"
+      max-height="calc(100vh - 24rem)"
+      stripe
+      @row-click="handleRowClick"
+      @batch-action="handleBatchAction"
     >
-      <template #actions>
-        <el-button type="primary" @click="handleDiscover">
-          <el-icon><Search /></el-icon>
-          发现资产
+      <template #provider="{ row }">
+        <div class="provider-cell">
+          <ProviderIcon :provider="row.provider || ''" size="small" />
+          <span>{{ getProviderLabel(row.provider || '') }}</span>
+        </div>
+      </template>
+      <template #status="{ row }">
+        <AssetStatusBadge :status="row.status || ''" :labels="ASSET_STATUS_LABELS" />
+      </template>
+      <template #ops="{ row }">
+        <el-button size="small" type="primary" link @click.stop="handleView(row)">
+          查看
         </el-button>
-        <el-button type="primary" @click="handleSync">
-          <el-icon><Refresh /></el-icon>
-          同步资产
+        <el-button size="small" type="primary" link @click.stop="handleEdit(row)">
+          编辑
+        </el-button>
+        <el-button size="small" type="danger" link @click.stop="handleDelete(row)">
+          删除
         </el-button>
       </template>
-    </ManagerHeader>
-
-    <!-- 筛选器 -->
-    <AssetFilters :model-value="filters" @search="handleSearch" />
-
-    <!-- 资产表格 -->
-    <AssetTable
-      :assets="assets"
-      :loading="loading"
-      @view="handleView"
-      @edit="handleEdit"
-      @delete="handleDelete"
-    />
+    </DataTable>
 
     <!-- 固定分页 -->
-    <div v-if="pagination.total > 0" class="pagination-fixed">
-      <div class="pagination-content">
+    <template #footer>
+      <div v-if="pagination.total > 0" class="pagination-content">
         <div class="pagination-info">
           <div class="page-display">
-            <el-button 
-              size="small" 
+            <el-button
+              size="small"
               :disabled="pagination.page === 1"
-              @click="handleCurrentChange(1)"
               title="第一页"
+              @click="handleCurrentChange(1)"
             >
               首页
             </el-button>
             <span class="page-info">{{ pagination.page }}/{{ totalPages }}</span>
-            <el-button 
-              size="small" 
+            <el-button
+              size="small"
               :disabled="pagination.page === totalPages"
-              @click="handleCurrentChange(totalPages)"
               title="最后一页"
+              @click="handleCurrentChange(totalPages)"
             >
               末页
             </el-button>
@@ -64,7 +118,7 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </div>
+    </template>
 
     <!-- 发现资产对话框 -->
     <el-dialog v-model="discoverDialogVisible" title="发现资产" width="500px">
@@ -197,7 +251,7 @@
       </template>
     </el-dialog>
 
-    <!-- 资产详情抽屉 -->
+    <!-- 资产详情抽屉（行点击 / 查看按钮同路径） -->
     <DetailDrawer
       v-model:visible="detailDrawerVisible"
       v-model:active-tab-name="detailActiveTab"
@@ -287,110 +341,198 @@ import {
 } from '@/api'
 import type * as asset from '@/api/types/asset'
 import type { Asset } from '@/api/types/asset'
+import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import DataTable from '@/components/DataTable/index.vue'
+import type {
+  DataTableBatchAction,
+  DataTableColumn,
+  DataTableDensity,
+} from '@/components/DataTable/types'
 import DetailDrawer from '@/components/DetailDrawer/index.vue'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import FilterBar from '@/components/FilterBar/index.vue'
+import type { FilterField } from '@/components/FilterBar/types'
 import PageContainer from '@/components/PageContainer/index.vue'
-import { ASSET_STATUS, CLOUD_PROVIDERS } from '@/utils/constants'
+import ProviderIcon from '@/components/ProviderIcon.vue'
+import {
+  ASSET_STATUS,
+  ASSET_TYPES,
+  CLOUD_PROVIDERS,
+  getAssetTypeLabel,
+  getProviderLabel,
+} from '@/utils/constants'
+import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
+import { formatCost, formatTime } from '@/utils/formatters'
 import { Delete, Edit, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import AssetFilters from './components/AssetFilters.vue'
-import AssetTable from './components/AssetTable.vue'
 
 const router = useRouter()
 
-// 计算属性
-const totalPages = computed(() => Math.ceil(pagination.total / pagination.size))
+// ==================== 筛选（FilterBar 五字段，等价旧 AssetFilters） ====================
 
-// 状态
-const loading = ref(false)
-const discovering = ref(false)
-const updating = ref(false)
-const discoverDialogVisible = ref(false)
-const editDialogVisible = ref(false)
+const filterFields: FilterField[] = [
+  { key: 'provider', label: '云厂商', type: 'select', options: CLOUD_PROVIDERS, placeholder: '全部' },
+  { key: 'asset_type', label: '资产类型', type: 'select', options: ASSET_TYPES, placeholder: '全部' },
+  { key: 'region', label: '区域', type: 'input', placeholder: '输入区域', width: 150 },
+  { key: 'status', label: '状态', type: 'select', options: ASSET_STATUS, placeholder: '全部' },
+  { key: 'asset_name', label: '资产名称', type: 'input', placeholder: '搜索资产名称', width: 200 },
+]
 
-// 数据
-const assets = ref<Asset[]>([])
-const filters = reactive({
-  provider: '',
-  asset_type: '',
-  region: '',
-  status: '',
-  asset_name: '',
-})
+/** 筛选值对象（FilterBar v-model：字段变更以新对象整体替换） */
+const filters = ref<Record<string, unknown>>({})
+
+/** 筛选值取字符串（空值归一 undefined，等价旧页 `x || undefined` 传参） */
+const filterString = (key: string): string => String(filters.value[key] ?? '')
+
+// ==================== 列表（DataTable fetch 模式：三态由组件内置承载） ====================
+
+const tableRef = ref<{ refresh: () => Promise<void>; clearSelection: () => void } | null>(null)
+
+/** 表格密度（规格指定增强：default=默认行高 / compact=紧凑） */
+const density = ref<DataTableDensity>('default')
+
+/** 列配置：与旧 AssetTable 列结构逐列等价（宽度/对齐/格式化/固定操作列） */
+const columns: DataTableColumn<Asset>[] = [
+  { prop: 'asset_id', label: '资产ID', width: 180, showOverflowTooltip: true },
+  { prop: 'asset_name', label: '资产名称', minWidth: 150, showOverflowTooltip: true },
+  { label: '云厂商', width: 140, align: 'center', slot: 'provider' },
+  {
+    prop: 'asset_type',
+    label: '资产类型',
+    width: 120,
+    align: 'center',
+    formatter: (_row, _column, cellValue) => getAssetTypeLabel(String(cellValue)),
+  },
+  { prop: 'region', label: '区域', width: 120, align: 'center' },
+  { label: '状态', width: 100, align: 'center', slot: 'status' },
+  {
+    prop: 'cost',
+    label: '成本',
+    width: 100,
+    align: 'right',
+    formatter: (_row, _column, cellValue) => formatCost(Number(cellValue ?? 0)),
+  },
+  {
+    prop: 'discover_time',
+    label: '发现时间',
+    width: 160,
+    align: 'center',
+    formatter: (_row, _column, cellValue) => formatTime(cellValue as string | undefined, 'YYYY-MM-DD HH:mm'),
+  },
+  { label: '操作', width: 180, fixed: 'right', align: 'center', slot: 'ops' },
+]
+
 const pagination = reactive({
   page: 1,
   size: 20,
   total: 0,
 })
 
-// 发现表单
-const discoverForm = reactive({
-  provider: '',
-  region: '',
-})
+const totalPages = computed(() => Math.ceil(pagination.total / pagination.size))
 
-// 编辑表单
-const editForm = reactive({
-  id: 0,
-  asset_name: '',
-  status: '',
-  cost: 0,
-})
-
-// 获取资产列表
-const fetchAssets = async () => {
-  loading.value = true
-  try {
-    const params = {
-      provider: (filters.provider || undefined) as asset.CloudProvider | undefined,
-      asset_type: filters.asset_type || undefined,
-      region: filters.region || undefined,
-      status: filters.status || undefined,
-      name: filters.asset_name || undefined,
-      offset: (pagination.page - 1) * pagination.size,
-      limit: pagination.size,
-    }
-    const { data } = await listAssetsApi(params)
-    assets.value = data.items || data.assets || []
-    pagination.total = data.total || 0
-  } catch (error: any) {
-    ElMessage.error(error.message || '获取资产列表失败')
-  } finally {
-    loading.value = false
+/** 列表拉取（挂载即由 DataTable 调起；分页与筛选在调用时读取最新值） */
+const fetchAssets = async (): Promise<Asset[]> => {
+  const params = {
+    provider: (filterString('provider') || undefined) as asset.CloudProvider | undefined,
+    asset_type: filterString('asset_type') || undefined,
+    region: filterString('region') || undefined,
+    status: filterString('status') || undefined,
+    name: filterString('asset_name') || undefined,
+    offset: (pagination.page - 1) * pagination.size,
+    limit: pagination.size,
   }
+  const { data } = await listAssetsApi(params)
+  pagination.total = data.total || 0
+  return data.items || data.assets || []
 }
 
-// 搜索
-const handleSearch = () => {
+/** 筛选变更（FilterBar field-change 统一透传）：回第 1 页并重拉 */
+const handleFilterChange = () => {
   pagination.page = 1
-  fetchAssets()
+  void tableRef.value?.refresh()
 }
 
-// 分页大小变化
+/** 重置筛选：清空全部字段并重拉 */
+const resetFilters = () => {
+  filters.value = {}
+  pagination.page = 1
+  void tableRef.value?.refresh()
+}
+
+/** 分页大小变化（回第 1 页） */
 const handleSizeChange = (newSize: number) => {
   pagination.size = newSize
   pagination.page = 1
-  fetchAssets()
+  void tableRef.value?.refresh()
 }
 
-// 当前页变化
+/** 当前页变化 */
 const handleCurrentChange = (newPage: number) => {
   pagination.page = newPage
-  fetchAssets()
+  void tableRef.value?.refresh()
 }
 
-// 详情抽屉
+// ==================== 批量操作条（规格指定增强，动作由既有删除能力组成） ====================
+
+const batchActions: DataTableBatchAction[] = [{ key: 'delete', label: '批量删除', type: 'danger' }]
+
+const handleBatchAction = async (key: string, rows: Asset[]) => {
+  if (key !== 'delete' || rows.length === 0) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${rows.length} 个资产吗？删除后将无法恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+  } catch {
+    return
+  }
+  const results = await Promise.allSettled(rows.map((row) => deleteAssetApi(row.id)))
+  const failed = results.filter((result) => result.status === 'rejected').length
+  if (failed > 0) {
+    ElMessage.error(`${failed} 个资产删除失败`)
+  } else {
+    ElMessage.success('删除成功')
+  }
+  tableRef.value?.clearSelection()
+  void tableRef.value?.refresh()
+}
+
+// ==================== 详情抽屉（行点击 / 查看按钮同路径） ====================
+
 const detailDrawerVisible = ref(false)
 const detailAsset = ref<Asset | null>(null)
 const detailActiveTab = ref('basic')
+
+/** 行点击直达详情（规格指定增强） */
+const handleRowClick = (row: Asset) => {
+  handleView(row)
+}
 
 // 查看资产详情
 const handleView = (asset: Asset) => {
   detailAsset.value = asset
   detailDrawerVisible.value = true
 }
+
+// ==================== 编辑资产 ====================
+
+const updating = ref(false)
+const editDialogVisible = ref(false)
+
+const editForm = reactive({
+  id: 0,
+  asset_name: '',
+  status: '',
+  cost: 0,
+})
 
 // 编辑资产
 const handleEdit = (asset: Asset) => {
@@ -417,13 +559,15 @@ const submitEdit = async () => {
     })
     ElMessage.success('更新成功')
     editDialogVisible.value = false
-    fetchAssets()
+    void tableRef.value?.refresh()
   } catch (error: any) {
     ElMessage.error(error.message || '更新失败')
   } finally {
     updating.value = false
   }
 }
+
+// ==================== 删除资产 ====================
 
 // 删除资产
 const handleDelete = async (asset: Asset) => {
@@ -440,13 +584,23 @@ const handleDelete = async (asset: Asset) => {
 
     await deleteAssetApi(asset.id)
     ElMessage.success('删除成功')
-    fetchAssets()
+    void tableRef.value?.refresh()
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败')
     }
   }
 }
+
+// ==================== 发现资产 ====================
+
+const discovering = ref(false)
+const discoverDialogVisible = ref(false)
+
+const discoverForm = reactive({
+  provider: '',
+  region: '',
+})
 
 // 发现资产
 const handleDiscover = () => {
@@ -479,14 +633,16 @@ const submitDiscover = async () => {
   }
 }
 
-// 同步资产对话框
+// ==================== 同步资产 ====================
+
 const syncDialogVisible = ref(false)
+const syncing = ref(false)
+
 const syncForm = reactive({
   provider: '',
   asset_types: [] as string[],
   regions: [] as string[],
 })
-const syncing = ref(false)
 
 // 同步资产
 const handleSync = () => {
@@ -520,98 +676,97 @@ const submitSync = async () => {
     syncing.value = false
   }
 }
-
-// 初始化
-onMounted(() => {
-  fetchAssets()
-})
 </script>
 
 <style scoped lang="scss">
-// 固定分页样式
-.pagination-fixed {
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-  
-  .pagination-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    
-    @media (max-width: 768px) {
-      flex-direction: column;
-      gap: 12px;
-      padding: 12px 16px;
-    }
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+
+  .page-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
   }
-  
+
+  .page-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  &__label { font-size: 12px; color: var(--text-tertiary); }
+}
+
+.provider-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+// 规格增强：行点击直达详情的指针暗示
+.assets-page :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.pagination-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   .pagination-info {
     display: flex;
     align-items: center;
     gap: 16px;
-    
-    @media (max-width: 768px) {
-      gap: 12px;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
+
     .page-display {
       display: flex;
       align-items: center;
       gap: 8px;
-      
+
       .page-info {
-        font-size: 16px;
+        min-width: 60px;
+        padding: 4px 12px;
+        font-size: 14px;
         font-weight: 600;
+        text-align: center;
         color: var(--text-primary);
         background: var(--bg-hover);
-        padding: 6px 12px;
         border-radius: 6px;
-        min-width: 60px;
-        text-align: center;
-        
-        @media (max-width: 768px) {
-          font-size: 14px;
-          padding: 4px 8px;
-          min-width: 50px;
-        }
       }
     }
-    
-    .total-info {
-      font-size: 14px;
-      color: var(--text-secondary);
-      
-      @media (max-width: 768px) {
-        font-size: 12px;
-      }
-    }
+
+    .total-info { font-size: 14px; color: var(--text-secondary); }
   }
-  
-  :deep(.el-pagination) {
-    .el-pagination__total {
-      display: none;
-    }
-  }
+
+  :deep(.el-pagination__total) { display: none; }
 }
 
 .config-content {
-  background: var(--bg-elevated);
+  max-height: 500px;
   padding: 16px;
-  border-radius: 8px;
+  overflow-x: auto;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.6;
   color: var(--text-secondary);
-  overflow-x: auto;
-  max-height: 500px;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
+  border-radius: 8px;
 }
 </style>
