@@ -369,6 +369,53 @@ function safeStorage(): Storage | null {
     }
 }
 
+// ==================== 无引用过期证书隐藏（双口径提示 + 切换态状态机） ====================
+
+/**
+ * 隐藏判定语义（proposal）：仅「已过期且 referenceStatus=no_refs_scanned（已成功
+ * 扫描且明确零引用）」可隐藏；has_refs（风险信号）与 blind_spot/未知一律保守显示。
+ * 过滤与豁免（daysLeft=expired 恒全部过期）由后端强制，前端只消费
+ * visibleTotal/hiddenCount 双口径——禁止前端推算任何计数。
+ */
+
+/** 展开态提示（canonical 文案之二）：服务端 include 路径 hiddenCount=0，文案由切换态驱动 */
+export const HIDDEN_EXPANDED_BANNER_TEXT = '再次点击隐藏无引用过期证书'
+
+/** 默认态提示（canonical 文案之一）：N 为服务端 hiddenCount（当前过滤上下文内） */
+export function hiddenBannerText(hiddenCount: number): string {
+    return `已隐藏 ${hiddenCount} 张无引用过期证书 · 查看全部`
+}
+
+export interface HiddenViewState {
+    /** 当前生效视图：true=显示全部（含无引用过期行） */
+    showAll: boolean
+    /** 提示条可见（非静默吞行：提示不随表格主体消失，空态下仍保留） */
+    showBanner: boolean
+    /** 透传给 GET /certs 的 includeExpiredNoRefs（切换态展开时 true） */
+    includeExpiredNoRefs: boolean
+}
+
+/**
+ * 切换态 × 筛选态状态机：
+ * - 切换态仅作用默认视图；daysLeft=expired 时挂起（显示全部、不显示隐藏提示，
+ *   与看板「已过期」卡口径一致；清除筛选后 expanded 原样保留 → 切换态恢复）；
+ * - 展开态恒显示「再次点击隐藏」提示（服务端 include 路径 hiddenCount=0，
+ *   文案无法由计数驱动）；未展开时 hiddenCount=0 不显示提示（无「已隐藏 0 张」噪音）。
+ */
+export function resolveHiddenViewState(args: {
+    expanded: boolean
+    daysLeft: string | null | undefined
+    hiddenCount: number
+}): HiddenViewState {
+    const suspended = args.daysLeft === 'expired'
+    const showAll = suspended || args.expanded
+    return {
+        showAll,
+        showBanner: !suspended && (args.expanded || args.hiddenCount > 0),
+        includeExpiredNoRefs: args.expanded,
+    }
+}
+
 // ==================== 页面四态 ====================
 
 export type PageState = 'loading' | 'empty' | 'error' | 'populated'

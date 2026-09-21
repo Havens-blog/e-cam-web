@@ -38,6 +38,15 @@
         <el-option label=">30 天" value="gt30" />
         <el-option label="已过期" value="expired" />
       </el-select>
+      <!-- 无引用过期证书隐藏提示（非静默吞行；daysLeft=expired 挂起由状态机判定） -->
+      <button
+        v-if="hiddenView.showBanner"
+        type="button"
+        class="hidden-toggle"
+        @click="emit('toggle-hidden')"
+      >
+        {{ hiddenExpanded ? HIDDEN_EXPANDED_BANNER_TEXT : hiddenBannerText(hiddenCount ?? 0) }}
+      </button>
     </div>
 
     <el-table
@@ -156,13 +165,25 @@
  * 保护期（锁徽章）、引用数、操作（详情/发起更换[完整托管]/⋯ 补传私钥[仅指纹]/删除）。
  * 查询状态由父级持有（服务端过滤：listCertsApi search/hostingStatus/daysLeft），
  * 本组件负责输入防抖与变更上抛（AC2）。
+ * 另承载无引用过期证书隐藏的行内提示切换（ledger-hide-expired-orphans 任务 2）：
+ * hiddenCount/hiddenExpanded 由父级下发（服务端双口径），点击上抛 toggle-hidden。
  */
 import type { CertListItem, DaysLeftTier, HostingStatus } from '@/api/cert'
 import { CopyDocument, MoreFilled, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { computed, ref } from 'vue'
-import { copyText, daysLeftBadge, foldSans, hostingStatusMeta, protectDaysLeft, truncateFingerprint } from '../format'
+import {
+    HIDDEN_EXPANDED_BANNER_TEXT,
+    copyText,
+    daysLeftBadge,
+    foldSans,
+    hiddenBannerText,
+    hostingStatusMeta,
+    protectDaysLeft,
+    resolveHiddenViewState,
+    truncateFingerprint,
+} from '../format'
 
 const props = defineProps<{
     rows: CertListItem[]
@@ -173,6 +194,10 @@ const props = defineProps<{
     disabled?: boolean
     /** 新导入证书行高亮（导入成功后置顶提示） */
     highlightId?: string | null
+    /** 被默认隐藏的「已过期且 no_refs_scanned」行数（服务端双口径） */
+    hiddenCount?: number
+    /** 切换态是否展开（查看全部；daysLeft=expired 时挂起） */
+    hiddenExpanded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -183,7 +208,17 @@ const emit = defineEmits<{
     (e: 'initiate-change', row: CertListItem): void
     (e: 'supply-key', row: CertListItem): void
     (e: 'delete', row: CertListItem): void
+    (e: 'toggle-hidden'): void
 }>()
+
+/** 切换态 × 筛选态状态机（纯逻辑见 format.resolveHiddenViewState，vitest 锁定） */
+const hiddenView = computed(() =>
+    resolveHiddenViewState({
+        expanded: props.hiddenExpanded ?? false,
+        daysLeft: daysFilter.value,
+        hiddenCount: props.hiddenCount ?? 0,
+    }),
+)
 
 const searchText = ref('')
 const hostingFilter = ref<HostingStatus | ''>('')
@@ -419,6 +454,20 @@ function onRowClick(row: CertListItem) {
 }
 
 .row-link {
+  border: none;
+  background: transparent;
+  color: var(--cert-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    color: var(--cert-accent-hover);
+  }
+}
+
+.hidden-toggle {
   border: none;
   background: transparent;
   color: var(--cert-accent);

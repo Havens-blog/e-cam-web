@@ -9,6 +9,7 @@ import { ElButton } from 'element-plus'
 import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getCertStatsApi, listCertsApi } from '@/api/cert'
+import type { CertListItem } from '@/api/cert'
 import LedgerIndex from './index.vue'
 
 vi.mock('@/api/cert', async (importOriginal) => {
@@ -20,10 +21,12 @@ vi.mock('@/api/cert', async (importOriginal) => {
     }
 })
 
+// useRoute query 可配置（看板跳转 /certs?daysLeft=expired 用例）
+const routeQuery: Record<string, unknown> = {}
 vi.mock('vue-router', () => ({
     useRouter: () => ({ push: vi.fn() }),
     // 页面 setup 现调用 useRoute()（cert 侧新增），mock 缺失会令全部挂载类用例失败
-    useRoute: () => ({ query: {}, params: {} }),
+    useRoute: () => ({ query: routeQuery, params: {} }),
 }))
 
 const listApi = vi.mocked(listCertsApi)
@@ -101,6 +104,7 @@ afterEach(() => {
     openSpy.mockClear()
     listApi.mockReset()
     statsApi.mockReset()
+    for (const k of Object.keys(routeQuery)) delete routeQuery[k]
 })
 
 describe('台账页「从云端导入」双入口（AC1）', () => {
@@ -143,5 +147,144 @@ describe('云端导入完成刷新挂接（任务 7 AC3）', () => {
         await flushPromises()
         expect(listApi.mock.calls.length).toBe(listCalls + 1)
         expect(statsApi.mock.calls.length).toBe(statsCalls + 1)
+    })
+})
+
+// ==================== 台账默认隐藏无引用过期证书（ledger-hide-expired-orphans 任务 2） ====================
+
+function certRow(id: string, commonName: string): CertListItem {
+    return {
+        id,
+        fingerprint: `fp-${id}`,
+        commonName,
+        sans: [commonName],
+        issuer: 'Test Issuer',
+        notAfter: '2026-01-01T00:00:00Z',
+        daysLeft: -5,
+        hostingStatus: 'fingerprint_only',
+        protectUntil: null,
+        refCount: 0,
+    }
+}
+
+/** 挂载台账页（隐藏切换用例）：首响应携带指定 total/hiddenCount。
+ * ElTable 桩化：本组断言聚焦工具栏提示条/请求参数（表格行渲染不在范围） */
+async function mountLedgerWith(list: {
+    items: CertListItem[]
+    total: number
+    hiddenCount: number
+}) {
+    listApi.mockResolvedValueOnce({ ...list, page: 1, pageSize: 20 } as never)
+    statsApi.mockResolvedValue(emptyStats() as never)
+    const wrapper = mount(LedgerIndex, {
+        global: {
+            components: {
+                ElButton,
+                ElDialog: ElDialogStub,
+            },
+            stubs: {
+                ElTable: true,
+                DiscoveryImportModal: DiscoveryModalStub,
+                ImportCertModal: NullStub,
+                BatchImportModal: NullStub,
+                UploadKeyModal: NullStub,
+            },
+        },
+    })
+    await flushPromises()
+    return wrapper
+}
+
+describe('台账默认隐藏 + 行内提示切换（任务 2 AC1/AC2/AC3）', () => {
+    it('默认视图消费服务端 hiddenCount：工具栏提示 canonical 文案，请求不含 includeExpiredNoRefs', async () => {
+        const wrapper = await mountLedgerWith({
+            items: [certRow('a', 'a.example.com')],
+            total: 1,
+            hiddenCount: 2,
+        })
+
+        const banner = wrapper.find('.hidden-toggle')
+        expect(banner.exists()).toBe(true)
+        expect(banner.text()).toBe('已隐藏 2 张无引用过期证书 · 查看全部')
+        // AC1：默认视图 = 服务端过滤（includeExpiredNoRefs 缺省 false）
+        const firstCall = listApi.mock.calls[0]?.[0] as Record<string, unknown> | undefined
+        expect(firstCall && 'includeExpiredNoRefs' in firstCall).toBe(false)
+    })
+
+    it('点击「查看全部」→ includeExpiredNoRefs:true + 重置第 1 页；文案变展开态；再点恢复隐藏', async () => {
+        const wrapper = await mountLedgerWith({
+            items: [certRow('a', 'a.example.com')],
+            total: 1,
+            hiddenCount: 2,
+        })
+
+        // 展开后服务端 include=true 路径返回 hiddenCount=0，但提示仍显示展开态文案（可再次点击隐藏）
+        listApi.mockResolvedValue({
+            items: [certRow('a', 'a.example.com'), certRow('b', 'b.example.com'), certRow('c', 'c.example.com')],
+            total: 3,
+            hiddenCount: 0,
+            page: 1,
+            pageSize: 20,
+        } as never)
+        let banner = wrapper.find('.hidden-toggle')
+        await banner.trigger('click')
+        await flushPromises()
+
+        let lastCall = listApi.mock.calls[listApi.mock.calls.length - 1]?.[0] as Record<string, unknown>
+        expect(lastCall).toMatchObject({ page: 1, includeExpiredNoRefs: true })
+        banner = wrapper.find('.hidden-toggle')
+        expect(banner.exists()).toBe(true)
+        expect(banner.text()).toBe('再次点击隐藏无引用过期证书')
+
+        // 再点恢复隐藏：includeExpiredNoRefs 移除 + 文案复原（下一响应 hiddenCount=2）
+        listApi.mockResolvedValue({
+            items: [certRow('a', 'a.example.com')],
+            total: 1,
+            hiddenCount: 2,
+            page: 1,
+            pageSize: 20,
+        } as never)
+        await banner.trigger('click')
+        await flushPromises()
+
+        lastCall = listApi.mock.calls[listApi.mock.calls.length - 1]?.[0] as Record<string, unknown>
+        expect(lastCall).toMatchObject({ page: 1 })
+        expect('includeExpiredNoRefs' in lastCall).toBe(false)
+        banner = wrapper.find('.hidden-toggle')
+        expect(banner.text()).toBe('已隐藏 2 张无引用过期证书 · 查看全部')
+    })
+
+    it('AC4 daysLeft=expired 跳转：切换态挂起（不显示隐藏提示）', async () => {
+        routeQuery.daysLeft = 'expired'
+        // 后端豁免路径：恒返回全部过期 + hiddenCount=0
+        const wrapper = await mountLedgerWith({
+            items: [certRow('a', 'a.example.com'), certRow('b', 'b.example.com')],
+            total: 2,
+            hiddenCount: 0,
+        })
+
+        expect(wrapper.find('.hidden-toggle').exists()).toBe(false)
+    })
+
+    it('AC5 空态视图保留「已隐藏 N 张…」提示条与「查看全部」入口（提示不随表格主体消失）', async () => {
+        const wrapper = await mountLedgerWith({ items: [], total: 0, hiddenCount: 1 })
+
+        expect(wrapper.find('.empty-state').exists()).toBe(true)
+        const banner = wrapper.find('.empty-hidden-toggle')
+        expect(banner.exists()).toBe(true)
+        expect(banner.text()).toBe('已隐藏 1 张无引用过期证书 · 查看全部')
+
+        // 查看全部入口可用：展开请求带 includeExpiredNoRefs:true
+        listApi.mockResolvedValue({
+            items: [certRow('a', 'a.example.com')],
+            total: 1,
+            hiddenCount: 0,
+            page: 1,
+            pageSize: 20,
+        } as never)
+        await banner.trigger('click')
+        await flushPromises()
+        const lastCall = listApi.mock.calls[listApi.mock.calls.length - 1]?.[0] as Record<string, unknown>
+        expect(lastCall).toMatchObject({ page: 1, includeExpiredNoRefs: true })
     })
 })

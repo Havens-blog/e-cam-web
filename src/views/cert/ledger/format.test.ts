@@ -10,12 +10,14 @@ import {
     extractPemDomains,
     foldSans,
     formatPercent,
+    hiddenBannerText,
     hostingStatusMeta,
     importErrorItems,
     isBatchTerminal,
     loadLastBatchId,
     pairBaseName,
     protectDaysLeft,
+    resolveHiddenViewState,
     resolvePageState,
     saveLastBatchId,
     sniffPemKind,
@@ -293,6 +295,53 @@ describe('会话恢复持久化（中断重入展示上次会话，AC4）', () =
         } as unknown as Storage
         expect(loadLastBatchId(broken)).toBeNull()
         expect(() => saveLastBatchId('x', broken)).not.toThrow()
+    })
+})
+
+// ==================== 无引用过期证书隐藏（ledger-hide-expired-orphans 任务 2） ====================
+
+describe('hiddenBannerText（默认态隐藏提示 canonical 文案，Hard Rule）', () => {
+    it('文案全文为「已隐藏 N 张无引用过期证书 · 查看全部」', () => {
+        expect(hiddenBannerText(1)).toBe('已隐藏 1 张无引用过期证书 · 查看全部')
+        expect(hiddenBannerText(3)).toBe('已隐藏 3 张无引用过期证书 · 查看全部')
+    })
+})
+
+describe('resolveHiddenViewState（切换态 × 筛选态状态机）', () => {
+    it('默认视图：显示提示条，不透传 includeExpiredNoRefs（服务端默认隐藏）', () => {
+        expect(resolveHiddenViewState({ expanded: false, daysLeft: '', hiddenCount: 2 })).toEqual({
+            showAll: false,
+            showBanner: true,
+            includeExpiredNoRefs: false,
+        })
+    })
+    it('展开态：显示全部 + 透传 includeExpiredNoRefs；服务端 include=true 路径 hiddenCount=0 仍显示「再次点击隐藏」', () => {
+        const v = resolveHiddenViewState({ expanded: true, daysLeft: '', hiddenCount: 0 })
+        expect(v).toEqual({
+            showAll: true,
+            showBanner: true,
+            includeExpiredNoRefs: true,
+        })
+    })
+    it('hiddenCount=0 且未展开：不显示提示（不出现「已隐藏 0 张」噪音）', () => {
+        expect(resolveHiddenViewState({ expanded: false, daysLeft: '', hiddenCount: 0 }).showBanner).toBe(false)
+    })
+    it('daysLeft=expired：切换态挂起（显示全部、不显示隐藏提示；豁免由后端强制，前端仅显示层挂起）', () => {
+        expect(resolveHiddenViewState({ expanded: false, daysLeft: 'expired', hiddenCount: 5 })).toEqual({
+            showAll: true,
+            showBanner: false,
+            includeExpiredNoRefs: false,
+        })
+        expect(resolveHiddenViewState({ expanded: true, daysLeft: 'expired', hiddenCount: 0 }).showBanner).toBe(false)
+    })
+    it('清除筛选后恢复切换态（expanded 保留，非 expired 上下文重新生效）', () => {
+        expect(resolveHiddenViewState({ expanded: true, daysLeft: '', hiddenCount: 0 }).showBanner).toBe(true)
+        expect(resolveHiddenViewState({ expanded: true, daysLeft: '', hiddenCount: 0 }).showAll).toBe(true)
+    })
+    it('其它分档（le7 等）不挂起：隐藏逻辑与 daysLeft 分档正交', () => {
+        const v = resolveHiddenViewState({ expanded: false, daysLeft: 'le7', hiddenCount: 1 })
+        expect(v.showBanner).toBe(true)
+        expect(v.showAll).toBe(false)
     })
 })
 

@@ -187,12 +187,21 @@ export interface ListCertsParams {
     hostingStatus?: HostingStatus
     daysLeft?: DaysLeftTier
     search?: string
+    /**
+     * true=查看全部（含「已过期且 referenceStatus=no_refs_scanned」行）；缺省 false=默认隐藏
+     * （has_refs/blind_spot/未知引用保守显示）。daysLeft=expired 时后端强制豁免，
+     * 本参数不改变该筛选语义（恒全部过期）。
+     */
+    includeExpiredNoRefs?: boolean
 }
 
 /** 台账列表响应（data 载荷，分页信息随载荷返回） */
 export interface ListCertsResponse {
     items: CertListItem[]
+    /** 可见总数 visibleTotal（默认视图排除被隐藏行后的当前过滤上下文总数） */
     total: number
+    /** 被默认隐藏的「已过期且 no_refs_scanned」行数（同一过滤上下文统计，前端不推算） */
+    hiddenCount: number
     page: number
     pageSize: number
 }

@@ -21,13 +21,29 @@
         <div v-else class="loading-placeholder" aria-label="加载中" />
       </template>
 
-      <!-- Empty：空态引导（从云端导入存量证书优先 + 批量上传兜底） -->
+      <!-- Empty：空态引导（从云端导入存量证书优先 + 批量上传兜底）。
+           隐藏导致的空结果（total=0 且 hiddenCount>0）：提示条与「查看全部」入口不随
+           表格主体消失（AC：不得静默吞行），并替换空台账引导文案避免误导。 -->
       <div v-else-if="pageState === 'empty'" class="state-card">
         <div class="empty-state">
+          <button
+            v-if="hiddenCount > 0"
+            type="button"
+            class="empty-hidden-toggle"
+            @click="onToggleHidden"
+          >
+            {{ hiddenBannerText(hiddenCount) }}
+          </button>
           <div class="state-icon" aria-hidden="true">🔐</div>
-          <div class="state-title">暂无证书</div>
-          <div class="state-desc">尚未导入任何证书，可从云端发现并导入存量证书，或批量上传 PEM 文件完成首次登记。</div>
-          <div class="state-cta-group">
+          <div class="state-title">{{ hiddenCount > 0 ? '暂无可显示证书' : '暂无证书' }}</div>
+          <div class="state-desc">
+            {{
+              hiddenCount > 0
+                  ? '当前条件下全部证书均被默认隐藏（无引用的过期证书），可点击上方「查看全部」显示全部。'
+                  : '尚未导入任何证书，可从云端发现并导入存量证书，或批量上传 PEM 文件完成首次登记。'
+            }}
+          </div>
+          <div v-if="hiddenCount === 0" class="state-cta-group">
             <el-button type="primary" class="state-cta" @click="discoveryModal?.open()">从云端导入存量证书</el-button>
             <el-button class="state-cta" @click="batchModal?.open()">批量上传 PEM 文件</el-button>
           </div>
@@ -55,6 +71,8 @@
           :page-size="pageSize"
           :disabled="listLoading"
           :highlight-id="highlightId"
+          :hidden-count="hiddenCount"
+          :hidden-expanded="hiddenExpanded"
           @query-change="onQueryChange"
           @page-change="onPageChange"
           @row-click="goDetail"
@@ -62,6 +80,7 @@
           @initiate-change="goChangeWizard"
           @supply-key="openSupplyKey"
           @delete="onDelete"
+          @toggle-hidden="onToggleHidden"
         />
       </template>
     </div>
@@ -151,13 +170,23 @@ import DiscoveryImportModal from './components/DiscoveryImportModal.vue'
 import ImportCertModal from './components/ImportCertModal.vue'
 import StatsCards from './components/StatsCards.vue'
 import UploadKeyModal from './components/UploadKeyModal.vue'
-import { canDeleteRow, deleteBlockedSummary, resolvePageState, type DeleteBlockedMeta } from './format'
+import {
+    canDeleteRow,
+    deleteBlockedSummary,
+    hiddenBannerText,
+    resolvePageState,
+    type DeleteBlockedMeta,
+} from './format'
 
 const router = useRouter()
 const route = useRoute()
 
 const rows = ref<CertListItem[]>([])
 const total = ref(0)
+const hiddenCount = ref(0)
+/** 切换态：false=默认隐藏无引用过期证书（服务端过滤），true=查看全部。
+ * daysLeft=expired 时挂起（后端豁免强制恒全部过期），清除筛选后本态原样恢复。 */
+const hiddenExpanded = ref(false)
 const stats = ref<CertStats | null>(null)
 const statsError = ref(false)
 const page = ref(1)
@@ -224,10 +253,13 @@ async function fetchList() {
             ...(search.value ? { search: search.value } : {}),
             ...(hostingStatus.value ? { hostingStatus: hostingStatus.value } : {}),
             ...(daysLeft.value ? { daysLeft: daysLeft.value } : {}),
+            // 切换态展开 → 查看全部（daysLeft=expired 时后端强制豁免，参数语义不变）
+            ...(hiddenExpanded.value ? { includeExpiredNoRefs: true } : {}),
         })
         if (seq !== fetchListSeq) return // 过期响应（期间有更新的查询）丢弃
         rows.value = res.items
         total.value = res.total
+        hiddenCount.value = res.hiddenCount ?? 0
     } catch (err) {
         if (seq !== fetchListSeq) return
         loadError.value = true
@@ -273,6 +305,17 @@ function onQueryChange(q: { search?: string; hostingStatus?: HostingStatus | '';
 
 function onPageChange(p: number) {
     page.value = p
+    void fetchList()
+}
+
+/**
+ * 「查看全部 / 再次点击隐藏」切换：翻转切换态并重取。
+ * 切换导致 total 变化（服务端 visibleTotal 双口径），重置到第 1 页。
+ */
+function onToggleHidden() {
+    if (listLoading.value) return
+    hiddenExpanded.value = !hiddenExpanded.value
+    page.value = 1
     void fetchList()
 }
 
@@ -525,6 +568,22 @@ onUnmounted(() => {
 
 .state-cta {
   margin-top: 8px;
+}
+
+// 空态隐藏提示条（total=0 且 hiddenCount>0）：提示不随表格主体消失
+.empty-hidden-toggle {
+  border: none;
+  background: transparent;
+  color: var(--cert-accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+
+  &:hover {
+    color: var(--cert-accent-hover);
+  }
 }
 
 .state-cta-group {
