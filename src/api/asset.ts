@@ -485,6 +485,110 @@ export function getDiskAssetApi(assetId: string, params?: { tenant_id?: string; 
     })
 }
 
+// ===== Disk 指标(读 ecam_disk_metric 指标表;Disk 界面使用率/IOPS/吞吐唯一来源,资产表快照不展示) =====
+
+/** Disk 单日指标点:缺失日 usage_percent/iops/throughput 为 null(不填充假值,以 data_status=missing 标注) */
+export interface DiskMetricPoint {
+    /** 日期 YYYY-MM-DD(Asia/Shanghai) */
+    date: string
+    /** 使用率(百分比 0~100,口径见 usage_scope);缺失日 null */
+    usage_percent: number | null
+    /** 使用率口径:instance_level(挂载实例级)/ busy_share(IO 繁忙占比)/ cloud_disk_level(云盘级,预留);空=厂商未提供 */
+    usage_scope: string
+    /** IOPS(次/秒,当日均值);缺失日 null */
+    iops: number | null
+    /** 吞吐(MB/s,当日均值);缺失日 null */
+    throughput: number | null
+    /** ok | zero_exception | missing */
+    data_status: string
+    /** 落库 qc_status 原样透出(空=正常;zero_exception=使用率口径缺失 0 异常行;busy_share 合法闲盘 0 已映射 ok) */
+    qc_status?: string
+}
+
+/** 「最新一天」/「近 N 天均值」摘要;无可用行时各字段为 null */
+export interface DiskMetricSummary {
+    date?: string
+    /** 使用率(百分比 0~100) */
+    usage_percent: number | null
+    /** IOPS(次/秒) */
+    iops: number | null
+    /** 吞吐(MB/s) */
+    throughput: number | null
+}
+
+/** GET /assets/disk/metrics 响应体(days[] 按日期升序) */
+export interface DiskMetricsView {
+    disk_id: string
+    days: DiskMetricPoint[]
+    latest: DiskMetricSummary | null
+    average: DiskMetricSummary | null
+}
+
+/** 查询 Disk 单盘近 N 天使用率/IOPS/吞吐趋势参数 */
+export interface GetDiskMetricsParams {
+    /** 云盘 ID */
+    disk_id: string
+    /** 云账号 ID(必填,服务端校验租户归属,越权 404) */
+    account_id: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+}
+
+/** 获取云盘近 N 天使用率/IOPS/吞吐趋势(读指标表,采集任务落库) */
+export function getDiskMetricsApi(params: GetDiskMetricsParams) {
+    return instance.get<DiskMetricsView>({
+        url: `${API_SERVICE.CAM}/assets/disk/metrics`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** Disk Top 单项:按 disk_id 去重后的代表行(最新一天)+ 近 N 天均值;无容量字段(指标表不落容量) */
+export interface DiskTopItem {
+    disk_id: string
+    disk_name: string
+    provider: string
+    /** 使用率口径(同 DiskMetricPoint.usage_scope,随代表行携带) */
+    usage_scope: string
+    /** 跨账号同盘(共享盘)并存时为去重后的账号列表 */
+    account_id: number[]
+    /** ok | zero_exception */
+    data_status: string
+    qc_status?: string
+    latest: DiskMetricSummary
+    average: DiskMetricSummary
+}
+
+/** GET /assets/disk/top 响应体 */
+export interface DiskTopView {
+    total: number
+    page: number
+    page_size: number
+    items: DiskTopItem[]
+}
+
+/** 查询 Disk 使用率/IOPS/吞吐 Top 参数(account_id 缺省 = 全部租户账号) */
+export interface GetDiskTopParams {
+    account_id?: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+    /** 排序键:usage_percent | iops | throughput(近 N 天均值口径) */
+    sort?: 'usage_percent' | 'iops' | 'throughput'
+    /** 返回条数(缺省 10,最大 50) */
+    top?: number
+    page?: number
+    page_size?: number
+}
+
+/** 获取 Disk 使用率/IOPS/吞吐 Top(disk_id 去重聚合,共享盘不跨账号求和/平均) */
+export function getDiskTopApi(params?: GetDiskTopParams) {
+    return instance.get<DiskTopView>({
+        url: `${API_SERVICE.CAM}/assets/disk/top`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== Snapshot 快照 API ====================
 
 /** 快照列表查询参数 */
