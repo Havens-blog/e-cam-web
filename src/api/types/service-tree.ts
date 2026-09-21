@@ -179,6 +179,33 @@ export interface ListResponse<T> {
     total: number
 }
 
+// ==================== 规则试运行（dry-run，只读预览不落库） ====================
+
+export interface DryRunRuleParams {
+    conditions: RuleCondition[]
+    node_id?: number
+    env_id?: number
+}
+
+export interface DryRunMatchItem {
+    resource_id: number
+    asset_id: string
+    asset_name: string
+    provider: string
+    region: string
+    bind_status: 'unbound' | 'manual' | 'rule'
+    bound_node_id?: number
+    bound_node_name?: string
+    bound_env_id?: number
+    bound_rule_id?: number
+}
+
+export interface DryRunResult {
+    items: DryRunMatchItem[]
+    total: number
+    capped: boolean
+}
+
 // ==================== 节点资产查询 ====================
 
 export interface ListNodeAssetsParams {

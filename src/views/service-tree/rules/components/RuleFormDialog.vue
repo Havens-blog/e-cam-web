@@ -66,7 +66,7 @@
       <el-form-item label="匹配条件" required>
         <div class="conditions-section">
           <div class="conditions-header">
-            <span class="hint">满足所有条件时触发绑定</span>
+            <span class="hint">满足所有条件时触发绑定，支持下拉选择或直接输入自定义 tag.xxx / attributes.xxx 字段</span>
             <el-button type="primary" text size="small" @click="addCondition">
               <el-icon><Plus /></el-icon>
               添加条件
@@ -74,17 +74,27 @@
           </div>
           <div class="conditions-list">
             <div v-for="(condition, index) in form.conditions" :key="index" class="condition-item">
-              <el-select v-model="condition.field" placeholder="字段" style="width: 160px">
+              <el-select
+                v-model="condition.field"
+                placeholder="选择或输入字段"
+                style="width: 220px"
+                allow-create
+                filterable
+                default-first-option
+              >
                 <el-option-group label="基础字段">
-                  <el-option label="资源名称" value="name" />
-                  <el-option label="资产ID" value="asset_id" />
-                  <el-option label="模型UID" value="model_uid" />
-                  <el-option label="地域" value="region" />
+                  <el-option label="资源名称 (name)" value="name" />
+                  <el-option label="资产ID (asset_id)" value="asset_id" />
+                  <el-option label="模型UID (model_uid)" value="model_uid" />
+                  <el-option label="地域 (region)" value="region" />
                 </el-option-group>
-                <el-option-group label="标签">
-                  <el-option label="tag.env" value="tag.env" />
-                  <el-option label="tag.service" value="tag.service" />
-                  <el-option label="tag.team" value="tag.team" />
+                <el-option-group label="常用标签（可输入任意 tag.xxx）">
+                  <el-option label="环境 (tag.env)" value="tag.env" />
+                  <el-option label="服务 (tag.service)" value="tag.service" />
+                  <el-option label="团队 (tag.team)" value="tag.team" />
+                </el-option-group>
+                <el-option-group label="属性（可输入任意 attributes.xxx）">
+                  <el-option label="资源组ID (attributes.project_id)" value="attributes.project_id" />
                 </el-option-group>
               </el-select>
               <el-select v-model="condition.operator" placeholder="操作符" style="width: 120px">
@@ -122,20 +132,78 @@
 
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
+      <el-button :loading="dryRunning" @click="handleDryRun">试运行</el-button>
       <el-button type="primary" :loading="submitting" @click="handleSubmit">
         保存
       </el-button>
     </template>
   </el-dialog>
+
+  <!-- 试运行预览（只读，不落库） -->
+  <el-dialog v-model="dryRunVisible" title="试运行预览" width="720px" append-to-body>
+    <template v-if="dryRunResult">
+      <el-alert
+        v-if="dryRunResult.total === 0"
+        type="warning"
+        :closable="false"
+        show-icon
+        title="试运行未命中任何资产"
+        description="当前条件没有匹配到任何资产，请检查字段名、操作符与值是否过严，确认后再保存。"
+      />
+      <div v-else class="dryrun-summary">
+        共命中 <b>{{ dryRunResult.total }}</b> 台资产
+        <span v-if="dryRunResult.capped" class="dryrun-capped">
+          （命中较多，仅展示前 {{ dryRunResult.items.length }} 条，建议收紧条件）
+        </span>
+      </div>
+      <el-table
+        v-if="dryRunResult.items.length > 0"
+        :data="dryRunResult.items"
+        max-height="420"
+        size="small"
+      >
+        <el-table-column label="资产" min-width="200">
+          <template #default="{ row }">
+            <div class="dryrun-asset-name">{{ row.asset_name }}</div>
+            <div class="dryrun-asset-id">{{ row.asset_id }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="云平台" width="110">
+          <template #default="{ row }">
+            {{ getProviderLabel(row.provider) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="region" label="地域" width="150" show-overflow-tooltip />
+        <el-table-column label="当前绑定状态" min-width="160">
+          <template #default="{ row }">
+            <el-tag :type="bindStatusTagType(row.bind_status)" size="small">
+              {{ bindStatusLabel(row.bind_status) }}
+            </el-tag>
+            <span v-if="row.bound_node_name" class="dryrun-bound-node">{{ row.bound_node_name }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
+    <template #footer>
+      <el-button type="primary" @click="dryRunVisible = false">知道了</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { createRuleApi, getTreeApi, listEnvironmentsApi, updateRuleApi } from '@/api/service-tree'
-import type { BindingRule, Environment, RuleCondition, ServiceTreeNode } from '@/api/types/service-tree'
+import { createRuleApi, dryRunRulesApi, getTreeApi, listEnvironmentsApi, updateRuleApi } from '@/api/service-tree'
+import type {
+  BindingRule,
+  DryRunResult,
+  Environment,
+  RuleCondition,
+  ServiceTreeNode
+} from '@/api/types/service-tree'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
+import { getProviderLabel } from '@/utils/constants'
 
 const props = defineProps<{
   visible: boolean
@@ -221,26 +289,67 @@ const removeCondition = (index: number) => {
   form.conditions.splice(index, 1)
 }
 
+// 试运行（dry-run）状态
+const dryRunning = ref(false)
+const dryRunVisible = ref(false)
+const dryRunResult = ref<DryRunResult | null>(null)
+
+// 绑定状态展示元数据
+const BIND_STATUS_META: Record<string, { label: string; type: 'info' | 'warning' | 'success' }> = {
+  unbound: { label: '未绑定', type: 'info' },
+  manual: { label: '手动绑定', type: 'warning' },
+  rule: { label: '规则绑定', type: 'success' }
+}
+const bindStatusLabel = (status: string) => BIND_STATUS_META[status]?.label ?? status
+const bindStatusTagType = (status: string) => BIND_STATUS_META[status]?.type ?? 'info'
+
+// 校验条件完整性（试运行与保存共用）
+const validateConditions = (): boolean => {
+  if (form.conditions.length === 0) {
+    ElMessage.warning('请至少添加一个匹配条件')
+    return false
+  }
+  for (const condition of form.conditions) {
+    if (!condition.field || !condition.operator) {
+      ElMessage.warning('请完善匹配条件')
+      return false
+    }
+    if (condition.operator !== 'exists' && !condition.value) {
+      ElMessage.warning('请填写条件值')
+      return false
+    }
+  }
+  return true
+}
+
+// 试运行：按当前条件预览命中资产（只读不落库）
+const handleDryRun = async () => {
+  if (!validateConditions()) {
+    return
+  }
+  dryRunning.value = true
+  try {
+    const res = await dryRunRulesApi({
+      conditions: form.conditions,
+      node_id: form.nodeId,
+      env_id: form.envId
+    })
+    dryRunResult.value = res.data ?? { items: [], total: 0, capped: false }
+    dryRunVisible.value = true
+  } catch (error: any) {
+    ElMessage.error(error?.message || '试运行失败')
+  } finally {
+    dryRunning.value = false
+  }
+}
+
 // 提交
 const handleSubmit = async () => {
   try {
     await formRef.value?.validate()
 
-    if (form.conditions.length === 0) {
-      ElMessage.warning('请至少添加一个匹配条件')
+    if (!validateConditions()) {
       return
-    }
-
-    // 验证条件完整性
-    for (const condition of form.conditions) {
-      if (!condition.field || !condition.operator) {
-        ElMessage.warning('请完善匹配条件')
-        return
-      }
-      if (condition.operator !== 'exists' && !condition.value) {
-        ElMessage.warning('请填写条件值')
-        return
-      }
     }
 
     submitting.value = true
@@ -362,5 +471,31 @@ onMounted(() => {
       font-size: 13px;
     }
   }
+}
+
+.dryrun-summary {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+
+  .dryrun-capped {
+    margin-left: 8px;
+    color: var(--el-color-warning, #e6a23c);
+  }
+}
+
+.dryrun-asset-name {
+  font-size: 13px;
+}
+
+.dryrun-asset-id {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.dryrun-bound-node {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 </style>

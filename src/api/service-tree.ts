@@ -10,6 +10,8 @@ import type {
     BindingRuleCreateParams,
     BindingRuleListParams,
     BindingRuleUpdateParams,
+    DryRunResult,
+    DryRunRuleParams,
     Environment,
     EnvironmentCreateParams,
     EnvironmentListParams,
@@ -146,6 +148,11 @@ export const deleteRuleApi = (id: number) => {
 /** 执行规则匹配 */
 export const executeRulesApi = () => {
     return instance.post({ url: `${BASE_URL}/rules/execute` } as RequestConfig)
+}
+
+/** 规则试运行（dry-run，只读预览命中资产，不落库） */
+export const dryRunRulesApi = (data: DryRunRuleParams) => {
+    return instance.post<DryRunResult>({ url: `${BASE_URL}/rules/dry-run`, data } as RequestConfig)
 }
 
 
