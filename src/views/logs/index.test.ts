@@ -554,6 +554,7 @@ describe('LogsIndex(WAF Tab 流量诊断入口,任务 3)', () => {
             buckets: [],
             top_ips: [],
             top_uas: [],
+            top_uris: [],
             status_codes: [],
             actions: [],
             result: {

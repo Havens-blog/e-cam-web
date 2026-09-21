@@ -43,6 +43,7 @@ function diagResp(overrides: Partial<LogDiagnoseResponse> = {}): LogDiagnoseResp
         buckets: [],
         top_ips: [],
         top_uas: [],
+        top_uris: [],
         status_codes: [],
         actions: [],
         prev: { total: 1000, top_ip_count: 100 },
