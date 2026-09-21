@@ -243,6 +243,25 @@ export interface NodeAssetListResponse {
     total: number
 }
 
+// ==================== 节点子树资产聚合（GET /nodes/:id/asset-summary） ====================
+
+export interface AssetSuspicion {
+    asset_id: string       // 云厂商资产ID
+    asset_name: string     // 资产名称
+    bound_env_id: number   // 绑定环境ID
+    bound_env_code: string // 绑定环境代码
+    reason: string         // 疑异原因（多信号以 ";" 连接）
+}
+
+export interface AssetSummary {
+    total: number
+    by_environment: Record<string, number> // key: 环境代码 (dev/test/staging/prod)
+    by_provider: Record<string, number>    // key: 云平台
+    by_type: Record<string, number>        // key: 资产类型
+    by_bind_type: Record<string, number>   // key: 绑定来源 (manual/rule)
+    suspicious: AssetSuspicion[]           // 环境疑异清单（只提示不改绑）
+}
+
 export interface AssetStatsVO {
     total: number
     by_asset_type: Record<string, number>

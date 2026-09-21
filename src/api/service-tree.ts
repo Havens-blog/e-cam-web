@@ -6,6 +6,7 @@ import type { RequestConfig } from './request/types'
 import type {
     AssetNodeVO,
     AssetStatsVO,
+    AssetSummary,
     BindingRule,
     BindingRuleCreateParams,
     BindingRuleListParams,
@@ -161,6 +162,11 @@ export const dryRunRulesApi = (data: DryRunRuleParams) => {
 /** 查询节点下的云资产列表 */
 export const listNodeAssetsApi = (nodeId: number, params?: ListNodeAssetsParams) => {
     return instance.get<NodeAssetListResponse>({ url: `${BASE_URL}/nodes/${nodeId}/assets`, params } as RequestConfig)
+}
+
+/** 获取节点子树资产聚合统计（子树含自身；含环境疑异清单，只提示不改绑） */
+export const getNodeAssetSummaryApi = (nodeId: number) => {
+    return instance.get<AssetSummary>({ url: `${BASE_URL}/nodes/${nodeId}/asset-summary` } as RequestConfig)
 }
 
 /** 查询节点资产统计 */

@@ -52,9 +52,18 @@
                     <Document v-else />
                   </el-icon>
                   <span class="node-label">{{ node.label }}</span>
-                  <span v-if="data.resource_count" class="node-count">
-                    {{ data.resource_count }}
-                  </span>
+                  <!-- 子树资产数徽标（任务6 asset-summary）：非 0 高亮，0 灰显 -->
+                  <el-tag
+                    v-if="badgeOf(data.id) !== null"
+                    class="node-badge"
+                    :class="{ 'node-badge--zero': badgeOf(data.id) === 0 }"
+                    size="small"
+                    :type="badgeOf(data.id)! > 0 ? 'primary' : 'info'"
+                    effect="light"
+                    round
+                  >
+                    {{ badgeOf(data.id) }}
+                  </el-tag>
                 </div>
               </template>
             </el-tree>
@@ -92,6 +101,10 @@
                   <span class="meta-label">UID:</span>
                   <span class="meta-value">{{ selectedNode.uid }}</span>
                 </span>
+                <span v-if="selectedSummary" class="meta-item">
+                  <span class="meta-label">子树资产:</span>
+                  <span class="meta-value">{{ selectedSummary.total }}</span>
+                </span>
                 <span v-if="selectedNode.owner" class="meta-item">
                   <span class="meta-label">负责人:</span>
                   <span class="meta-value">{{ selectedNode.owner }}</span>
@@ -113,6 +126,16 @@
 
             <!-- Tab 切换：绑定资源 / 关联资产 -->
             <div class="bindings-section">
+              <!-- 环境疑异醒目提示（只提示不改绑） -->
+              <el-alert
+                v-if="suspiciousList.length"
+                class="suspicious-alert"
+                type="warning"
+                show-icon
+                :closable="false"
+              >
+                检测到 {{ suspiciousList.length }} 个环境疑异资产，已在列表中标红提示（不做自动改绑）
+              </el-alert>
               <el-tabs v-model="activeTab" @tab-change="handleTabChange">
                 <el-tab-pane label="绑定资源" name="bindings">
                   <div class="section-header">
@@ -155,6 +178,7 @@
                     size="small"
                     max-height="300"
                     highlight-current-row
+                    :row-class-name="bindingRowClass"
                     @row-click="handleBindingRowClick"
                     style="cursor: pointer"
                   >
@@ -166,7 +190,13 @@
                         </span>
                       </template>
                     </el-table-column>
-                    <el-table-column prop="resource_name" label="资源名称" min-width="120" show-overflow-tooltip />
+                    <el-table-column label="资源名称" min-width="120" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <el-tooltip :content="suspicionOf(row)?.reason || ''" :disabled="!suspicionOf(row)" placement="top">
+                          <span :class="{ 'suspicious-name': !!suspicionOf(row) }">{{ row.resource_name }}</span>
+                        </el-tooltip>
+                      </template>
+                    </el-table-column>
                     <el-table-column label="类型" width="90">
                       <template #default="{ row }">
                         <template v-if="row.resource_type === 'asset'">
@@ -224,14 +254,14 @@
                 </el-tab-pane>
 
                 <el-tab-pane label="关联资产" name="assets">
-                  <!-- 统计卡片 -->
-                  <div v-if="assetStats" class="asset-stats-row">
+                  <!-- 统计卡片（任务6 asset-summary：与树徽标同源口径） -->
+                  <div v-if="selectedSummary" class="asset-stats-row">
                     <div class="stat-card total">
-                      <span class="stat-num">{{ assetStats.total }}</span>
+                      <span class="stat-num">{{ selectedSummary.total }}</span>
                       <span class="stat-label">总资产</span>
                     </div>
                     <div
-                      v-for="(count, type) in assetStats.by_asset_type"
+                      v-for="(count, type) in selectedSummary.by_type"
                       :key="type"
                       class="stat-card"
                     >
@@ -300,10 +330,17 @@
                     size="small"
                     max-height="400"
                     highlight-current-row
+                    :row-class-name="assetRowClass"
                     @row-click="handleAssetRowClick"
                     style="cursor: pointer"
                   >
-                    <el-table-column prop="asset_name" label="资产名称" min-width="140" show-overflow-tooltip />
+                    <el-table-column label="资产名称" min-width="140" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <el-tooltip :content="suspicionOf(row)?.reason || ''" :disabled="!suspicionOf(row)" placement="top">
+                          <span :class="{ 'suspicious-name': !!suspicionOf(row) }">{{ row.asset_name }}</span>
+                        </el-tooltip>
+                      </template>
+                    </el-table-column>
                     <el-table-column prop="asset_id" label="资产ID" width="160" show-overflow-tooltip>
                       <template #default="{ row }">
                         <span style="font-family: monospace; font-size: 12px;">{{ row.asset_id }}</span>
@@ -317,6 +354,12 @@
                     <el-table-column label="云厂商" width="90">
                       <template #default="{ row }">
                         {{ getProviderLabel(row.provider) }}
+                      </template>
+                    </el-table-column>
+                    <!-- 聚合视图（根/中间节点含子树）：资产实际绑定的来源节点 -->
+                    <el-table-column label="来源节点" width="110" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        {{ nodeNameOf(row.node_id) }}
                       </template>
                     </el-table-column>
                     <el-table-column prop="region" label="地域" width="110" show-overflow-tooltip />
@@ -515,14 +558,14 @@ import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
     bindResourceApi,
     deleteNodeApi,
-    getNodeAssetStatsApi,
+    getNodeAssetSummaryApi,
     listEnvironmentsApi,
     listNodeAssetsApi,
     listNodeBindingsApi,
     listNodesApi,
     unbindResourceApi
 } from '@/api/service-tree'
-import type { AssetStatsVO, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
+import type { AssetSummary, AssetSuspicion, Environment, ListNodeAssetsParams, NodeAssetVO, ResourceBinding, ServiceTreeNode } from '@/api/types/service-tree'
 import {
     Delete,
     Document,
@@ -537,7 +580,7 @@ import {
 import { getProviderLabel } from '@/utils/constants'
 import type { ElTree } from 'element-plus'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import BindResourceDialog from './components/BindResourceDialog.vue'
 import MoveNodeDialog from './components/MoveNodeDialog.vue'
 import NodeFormDialog from './components/NodeFormDialog.vue'
@@ -629,16 +672,101 @@ const activeTab = ref('bindings')
 // 关联资产
 const nodeAssetList = ref<NodeAssetVO[]>([])
 const assetsLoading = ref(false)
-const assetStats = ref<AssetStatsVO | null>(null)
 const assetTotal = ref(0)
 const assetCurrentPage = ref(1)
 const assetFilters = reactive<ListNodeAssetsParams>({
   asset_type: undefined,
   env_id: undefined,
-  include_children: false,
+  // 聚合语义（提案 #8）：根/中间节点默认展示子树聚合资产，叶子节点含子树查询即直属
+  include_children: true,
   offset: 0,
   limit: 20
 })
+
+// ==================== 子树资产聚合（任务6 asset-summary） ====================
+
+// 全部节点徽标数据：nodeId -> summary（树节点徽标 + 详情同源）
+const nodeSummaryMap = ref<Map<number, AssetSummary>>(new Map())
+// 当前选中节点的 summary（详情资产数 / 统计卡 / 疑异清单）
+const selectedSummary = ref<AssetSummary | null>(null)
+// 选中节点子树疑异清单：asset_id -> suspicion
+const suspiciousMap = computed<Map<string, AssetSuspicion>>(() => {
+  const map = new Map<string, AssetSuspicion>()
+  for (const item of selectedSummary.value?.suspicious ?? []) {
+    map.set(item.asset_id, item)
+  }
+  return map
+})
+const suspiciousList = computed<AssetSuspicion[]>(() => selectedSummary.value?.suspicious ?? [])
+
+// 树节点徽标：未加载完成返回 null（不渲染），0 灰显
+const badgeOf = (id: number): number | null => nodeSummaryMap.value.get(id)?.total ?? null
+
+// 疑异匹配：按云资产 ID
+const suspicionOf = (row: { asset_id?: string }): AssetSuspicion | undefined =>
+  row.asset_id ? suspiciousMap.value.get(row.asset_id) : undefined
+
+const bindingRowClass = ({ row }: { row: ResourceBinding }): string =>
+  row.asset_id && suspiciousMap.value.has(row.asset_id) ? 'suspicious-row' : ''
+
+const assetRowClass = ({ row }: { row: NodeAssetVO }): string =>
+  suspiciousMap.value.has(row.asset_id) ? 'suspicious-row' : ''
+
+// 来源节点列：node_id -> 节点名（聚合视图下展示资产实际绑定节点）
+const allNodes = ref<ServiceTreeNode[]>([])
+const nodeNameOf = (id: number): string => {
+  const found = allNodes.value.find(n => n.id === id)
+  return found?.name ?? String(id)
+}
+
+const applySummary = (nodeId: number, summary: AssetSummary) => {
+  const next = new Map(nodeSummaryMap.value)
+  next.set(nodeId, summary)
+  nodeSummaryMap.value = next
+  if (selectedNode.value?.id === nodeId) {
+    selectedSummary.value = summary
+  }
+}
+
+// 拉取单节点 summary；单点失败容忍不阻塞其余
+const fetchNodeSummary = async (nodeId: number): Promise<AssetSummary | null> => {
+  try {
+    const res = await getNodeAssetSummaryApi(nodeId)
+    const summary = (res.data as AssetSummary) || null
+    if (summary) applySummary(nodeId, summary)
+    return summary
+  } catch (error) {
+    console.error(`加载节点 ${nodeId} 资产聚合失败:`, error)
+    return null
+  }
+}
+
+// 批量拉取徽标：任务6 为单节点接口，树通常几十~百级节点，前端 5 并发逐点拉取
+// （树 default-expand-all 展开事件懒加载不适用；聚合查询轻量，批量可控）
+const fetchSummariesBatch = async (ids: number[], concurrency = 5) => {
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < ids.length) {
+      const id = ids[cursor++]!
+      await fetchNodeSummary(id)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, () => worker()))
+}
+
+const collectNodeIds = (nodes: ServiceTreeNode[], acc: number[] = []): number[] => {
+  nodes.forEach(node => {
+    acc.push(node.id)
+    if (node.children?.length) collectNodeIds(node.children, acc)
+  })
+  return acc
+}
+
+const refreshAllBadges = () => fetchSummariesBatch(collectNodeIds(treeData.value))
+
+const refreshSelectedSummary = () => {
+  if (selectedNode.value) return fetchNodeSummary(selectedNode.value.id)
+}
 
 // 右键菜单
 const contextMenuVisible = ref(false)
@@ -718,7 +846,11 @@ const loadTree = async () => {
     
     // 构建树结构
     treeData.value = buildTree(nodes)
-    
+    allNodes.value = nodes
+
+    // 子树资产徽标：后台批量拉取，不阻塞树渲染
+    void refreshAllBadges()
+
     // 默认选中第一个根节点
     if (treeData.value.length > 0 && !selectedNode.value) {
       const firstNode = treeData.value[0]
@@ -726,6 +858,7 @@ const loadTree = async () => {
         selectedNode.value = firstNode
         buildNodePath(firstNode)
         loadBindings()
+        loadSelectedSummary()
         // 设置树组件的当前选中节点
         nextTick(() => {
           treeRef.value?.setCurrentKey(firstNode.id)
@@ -845,7 +978,7 @@ const loadBindings = async () => {
 const handleTabChange = (tab: string | number) => {
   if (tab === 'assets' && selectedNode.value) {
     loadNodeAssets()
-    loadAssetStats()
+    if (!selectedSummary.value) loadSelectedSummary()
   }
 }
 
@@ -874,20 +1007,8 @@ const loadNodeAssets = async () => {
   }
 }
 
-// 加载资产统计
-const loadAssetStats = async () => {
-  if (!selectedNode.value) return
-  try {
-    const res = await getNodeAssetStatsApi(selectedNode.value.id, {
-      include_children: assetFilters.include_children
-    })
-    assetStats.value = (res.data as any) || null
-  } catch (error) {
-    console.error('加载资产统计失败:', error)
-    assetStats.value = null
-    ElMessage.error('加载资产统计失败')
-  }
-}
+// 加载选中节点子树聚合（详情资产数/统计卡/疑异清单共用）
+const loadSelectedSummary = () => fetchNodeSummary(selectedNode.value!.id)
 
 // 资产分页
 const handleAssetPageChange = (page: number) => {
@@ -899,7 +1020,6 @@ const handleAssetPageChange = (page: number) => {
 const handleIncludeChildrenChange = () => {
   assetCurrentPage.value = 1
   loadNodeAssets()
-  loadAssetStats()
 }
 
 // 分配资产到节点（根节点未绑定资产）
@@ -922,7 +1042,7 @@ const handleUnbindAsset = async (row: NodeAssetVO) => {
     await unbindResourceApi(row.binding_id)
     ElMessage.success('解绑成功')
     loadNodeAssets()
-    loadAssetStats()
+    refreshSelectedSummary()
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '解绑失败')
@@ -952,7 +1072,7 @@ const handleAssignConfirm = async () => {
     assignTargetNodeId.value = undefined
     assignEnvId.value = undefined
     loadNodeAssets()
-    loadAssetStats()
+    refreshAllBadges()
   } catch (error: any) {
     ElMessage.error(error.message || '分配失败')
   } finally {
@@ -1023,10 +1143,11 @@ const handleNodeClick = (data: any) => {
   selectedNode.value = nodeData
   buildNodePath(nodeData)
   activeTab.value = 'bindings'
-  assetStats.value = null
+  selectedSummary.value = null
   nodeAssetList.value = []
   assetCurrentPage.value = 1
   loadBindings()
+  loadSelectedSummary()
   contextMenuVisible.value = false
 }
 
@@ -1155,6 +1276,7 @@ const handleUnbindConfirm = async () => {
     ElMessage.success('解绑成功')
     unbindDialogVisible.value = false
     loadBindings()
+    refreshSelectedSummary()
   } catch (error: any) {
     ElMessage.error(error.message || '解绑失败')
   } finally {
@@ -1176,6 +1298,7 @@ const handleMoveSuccess = () => {
 const handleBindSuccess = () => {
   bindDialogVisible.value = false
   loadBindings()
+  refreshSelectedSummary()
 }
 
 onMounted(() => {
@@ -1264,12 +1387,13 @@ onUnmounted(() => {
           color: var(--text-secondary);
         }
 
-        .node-count {
-          padding: 2px 6px;
-          background: var(--bg-hover);
-          border-radius: 10px;
-          font-size: 11px;
-          color: var(--text-tertiary);
+        // 子树资产数徽标：非 0 高亮，0 灰显
+        .node-badge {
+          flex-shrink: 0;
+
+          &.node-badge--zero {
+            opacity: 0.55;
+          }
         }
       }
 
@@ -1446,6 +1570,16 @@ onUnmounted(() => {
         color: var(--text-muted);
       }
 
+      .suspicious-alert {
+        margin-bottom: 12px;
+      }
+
+      // 环境疑异资产行标红（绑定/关联资产两表共用）
+      .suspicious-name {
+        color: var(--accent-red);
+        font-weight: 600;
+      }
+
       :deep(.el-table) {
         background: transparent;
 
@@ -1458,6 +1592,14 @@ onUnmounted(() => {
 
           &:hover > td.el-table__cell {
             background: var(--table-row-hover);
+          }
+
+          &.suspicious-row > td.el-table__cell {
+            background: rgba(239, 68, 68, 0.1);
+          }
+
+          &.suspicious-row:hover > td.el-table__cell {
+            background: rgba(239, 68, 68, 0.18);
           }
         }
 
