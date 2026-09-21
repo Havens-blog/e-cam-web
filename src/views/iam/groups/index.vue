@@ -41,7 +41,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-value">{{ totalPolicies }}</div>
-          <div class="stat-label">策略总数</div>
+          <div class="stat-label">策略总数（本页）</div>
         </div>
       </div>
       <div class="stat-card">
@@ -50,7 +50,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-value">{{ totalMembers }}</div>
-          <div class="stat-label">成员总数</div>
+          <div class="stat-label">成员总数（本页）</div>
         </div>
       </div>
       <div class="stat-card">
@@ -59,7 +59,7 @@
         </div>
         <div class="stat-body">
           <div class="stat-value">{{ platformCount }}</div>
-          <div class="stat-label">云平台</div>
+          <div class="stat-label">云平台（本页）</div>
         </div>
       </div>
     </div>
