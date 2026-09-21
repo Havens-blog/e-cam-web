@@ -720,6 +720,18 @@ const routes: RouteRecordRaw[] = [
                     icon: 'Document',
                 },
             },
+            // ==================== 内部 UI Kit 组件示例（ui-unify-phase2-components 任务 8）====================
+            // 迁移样板 + 双主题验收靶场：不进侧栏菜单，直接输 URL 访问。
+            {
+                path: '/dev/ui-kit',
+                name: 'DevUiKit',
+                component: () => import('@/views/dev/ui-kit/index.vue'),
+                meta: {
+                    title: 'UI Kit 组件示例',
+                    icon: 'Grid',
+                    hideInMenu: true,
+                },
+            },
         ],
     },
     {
