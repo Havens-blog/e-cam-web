@@ -81,14 +81,22 @@
             <template #default="{ row }">
               <el-switch
                 :model-value="row.enabled"
+                :loading="statusLoadingId === row.id"
                 :before-change="() => beforeStatusChange(row)"
                 @change="(val) => handleStatusChange(row, val as boolean)"
               />
             </template>
           </el-table-column>
-          <el-table-column prop="match_count" label="匹配数" width="80" align="center">
+          <el-table-column label="匹配数" width="90" align="center">
             <template #default="{ row }">
-              {{ row.match_count ?? '-' }}
+              <span v-if="row.last_executed_at">{{ row.last_match_count ?? 0 }}</span>
+              <span v-else class="text-muted">未执行</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="最近执行时间" width="160">
+            <template #default="{ row }">
+              <span v-if="row.last_executed_at">{{ formatDateTime(new Date(row.last_executed_at)) }}</span>
+              <span v-else class="text-muted">未执行</span>
             </template>
           </el-table-column>
           <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip>
@@ -152,8 +160,15 @@ import type { BindingRule, Environment } from '@/api/types/service-tree'
 import { Plus, RefreshLeft, Search, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import { formatDateTime } from '@/utils/format'
 import ExecuteConfirmDialog from './components/ExecuteConfirmDialog.vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
+
+// 任务 1 后端 RuleVO 透出的执行统计字段（类型定义暂未同步，本地扩展）
+interface BindingRuleWithStats extends BindingRule {
+  last_executed_at?: number
+  last_match_count?: number
+}
 
 // 筛选条件
 const filters = reactive({
@@ -169,10 +184,12 @@ const pagination = reactive({
 })
 
 // 数据
-const ruleList = ref<BindingRule[]>([])
+const ruleList = ref<BindingRuleWithStats[]>([])
 const environmentList = ref<Environment[]>([])
 const loading = ref(false)
 const executing = ref(false)
+// 行内启用切换进行中的规则 ID
+const statusLoadingId = ref<number | null>(null)
 
 // 弹窗
 const formDialogVisible = ref(false)
@@ -202,7 +219,7 @@ const loadRules = async () => {
       page_size: pagination.pageSize
     }
     const res = await listRulesApi(params)
-    const rules = res.data?.list || []
+    const rules = (res.data?.list || []) as BindingRuleWithStats[]
     
     // 根据 env_id 补充环境信息
     const envMap = new Map(environmentList.value.map(e => [e.id, e]))
@@ -292,12 +309,15 @@ const beforeStatusChange = (rule: BindingRule) => {
 
 // 状态切换
 const handleStatusChange = async (rule: BindingRule, enabled: boolean) => {
+  statusLoadingId.value = rule.id
   try {
     await updateRuleApi(rule.id, { enabled })
     ElMessage.success(enabled ? '已启用' : '已禁用')
     loadRules()
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
+  } finally {
+    statusLoadingId.value = null
   }
 }
 
