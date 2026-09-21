@@ -67,6 +67,7 @@ declare module 'vue' {
     EnvironmentTag: typeof import('./components/EnvironmentTag.vue')['default']
     ErrorDisplay: typeof import('./components/ErrorDisplay.vue')['default']
     ErrorMonitor: typeof import('./components/ErrorMonitor.vue')['default']
+    FilterBar: typeof import('./components/FilterBar/index.vue')['default']
     IconFont: typeof import('./components/IconFont/index.vue')['default']
     ManagerHeader: typeof import('./components/ManagerHeader/index.vue')['default']
     PageContainer: typeof import('./components/PageContainer/index.vue')['default']
@@ -76,6 +77,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StatCard: typeof import('./components/StatCard.vue')['default']
+    StateBlock: typeof import('./components/StateBlock/index.vue')['default']
     StatusBadge: typeof import('./components/StatusBadge.vue')['default']
     TenantSelector: typeof import('./components/TenantSelector.vue')['default']
   }
