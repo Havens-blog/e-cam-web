@@ -6,6 +6,8 @@ import instance from './request/service';
 import type {
     LogAggregateRequest,
     LogAggregateResponse,
+    LogCacheAnalyzeRequest,
+    LogCacheAnalyzeResponse,
     LogDiagnoseRequest,
     LogDiagnoseResponse,
     LogSearchRequest,
@@ -82,4 +84,19 @@ export async function diagnoseLogsApi(data: LogDiagnoseRequest): Promise<LogDiag
         data,
     })
     return unwrap<LogDiagnoseResponse>(res)
+}
+
+/**
+ * CDN 缓存分析(手动触发:当前窗 5 维度组 + 前一等长窗口 1 帧聚合,规则引擎
+ * 判定双命中率/域名排行/未命中 URI/状态码分布/优化项;仅 cdn 类型,SLB/WAF
+ * 返回明确错误)。窗口 > 6h 默认拦截(confirm=false),人工确认后以 confirm=true
+ * 放行;前窗不可用/判据降级不报错,由响应内 prev_error / result.notes /
+ * dimension_notes 标注,调用方据此降级展示。
+ */
+export async function cacheAnalyzeApi(data: LogCacheAnalyzeRequest): Promise<LogCacheAnalyzeResponse> {
+    const res = await instance.post<LogCacheAnalyzeResponse>({
+        url: `${BASE}/cache-analyze`,
+        data,
+    })
+    return unwrap<LogCacheAnalyzeResponse>(res)
 }

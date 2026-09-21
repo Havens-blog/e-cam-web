@@ -316,3 +316,179 @@ export interface LogDiagnoseResponse {
     cached: boolean
     cache_stale: boolean
 }
+
+// ---- CDN 缓存分析(POST /cam/logs/cache-analyze;对应 e-cam-service service.CacheAnalyzeResponse + cdncache.CacheAnalyzeResult) ----
+
+/** CDN 缓存分析请求(字段与诊断请求对齐 + confirm;维度集由编排固定 —— 当前窗 5 维度组 + 前窗 1 帧,无 dimension/metric) */
+export interface LogCacheAnalyzeRequest {
+    log_type: LogType
+    start_time: number
+    end_time: number
+    /** 可选,原生检索式透传 */
+    query?: string
+    /** 可选,限定云 */
+    clouds?: string[]
+    /** 可选,限定云账号(平台内 ID) */
+    account_ids?: number[]
+    /** 可选,限定资源(域名) */
+    resources?: string[]
+    /** 可选,结构化字段筛选(AND 叠加) */
+    filters?: FieldFilter[]
+    /** 预估扫描量超限(窗口 > 6h)默认拦截后的人工确认放行 */
+    confirm?: boolean
+}
+
+/** 缓存分析上下文:由视图按当前查询组装(诊断/缓存分析卡同构,仅 CDN Tab 开放) */
+export type LogCacheAnalyzeContext = Omit<LogCacheAnalyzeRequest, 'log_type'>
+
+/** 单档命中率(全请求/可缓存;命中 = hit+partial,未知计入分母不计入两侧) */
+export interface CacheHitRateTier {
+    /** 0-1 */
+    rate: number
+    /** 命中请求/字节(hit+partial) */
+    numerator: number
+    /** 总请求/字节 */
+    denominator: number
+    /** 分母 > 0 才有效(false = 前端显示占位) */
+    available: boolean
+}
+
+/** 双口径命中率对(全请求/可缓存两档) */
+export interface CacheHitRatePair {
+    all: CacheHitRateTier
+    cacheable: CacheHitRateTier
+}
+
+/** 域名命中率条目(未命中 Top N 域名,请求数降序 Top 8;已覆盖源近似口径) */
+export interface CacheDomainHitStat {
+    host: string
+    /** 该域名全请求数 */
+    requests: number
+    /** 全请求口径 (hit+partial)/requests(partial/未知计入命中) */
+    hit_rate: number
+    /** 可缓存近似口径(仅剔除 cache_hit=error) */
+    cacheable_hit_rate: number
+    /** 该域名未命中(miss+error)占全局未命中 */
+    miss_traffic_ratio: number
+    /** good / fair / poor / unknown(域名级阈值) */
+    grade: string
+}
+
+/** 未命中 URI TOP 条目(查询串归一后;TopN 截断时占比为下界) */
+export interface CacheURIMissTop {
+    /** 归一路径(无查询串) */
+    uri: string
+    /** 归属域名(可空:聚合组键为纯路径形态时取不到,前端标注归属未知) */
+    host: string
+    /** 归并后未命中请求数 */
+    miss_count: number
+    /** 占全部未命中请求 */
+    miss_share: number
+    /** 归并的查询串变体数(≥2 = 同资源不同参数被拆散后归并) */
+    variants: number
+    /** 贡献最大变体的排序归一查询串(证据展示) */
+    sample_query?: string
+}
+
+/** 状态码分布(4xx/5xx 占总响应占比;状态×cache_hit 二维交叉为后续增强) */
+export interface CacheStatusOverview {
+    /** 状态码分布合计 */
+    total: number
+    client_error_count: number
+    server_error_count: number
+    /** 4xx/总响应 */
+    client_error_ratio: number
+    /** 5xx/总响应 */
+    server_error_ratio: number
+}
+
+/** 请求-字节 gap 双向归因(大文件回源带宽 / 小文件回源请求) */
+export interface CacheGapAnalysis {
+    /** 请求命中率(全请求) − 字节命中率(全请求);字节不可用时 0 */
+    byte_gap_ratio: number
+    large_file_gap: boolean
+    small_file_reverse: boolean
+}
+
+/** 结构化优化项(非优档按未命中流量占比降序 Top 5;优档允许 0 条) */
+export interface CacheOptimizationItem {
+    /** 域名(空 = 全局) */
+    domain?: string
+    /** URI 前缀/归一路径(空 = 不限) */
+    uri_prefix?: string
+    /** add_cache_rule / tune_ttl / ignore_query_string / origin_verify */
+    action: string
+    /** 未命中流量占比(口径随项类型) */
+    miss_traffic_ratio: number
+    /** high / medium / low */
+    confidence: string
+    /** 低可信度(启发式判定,前端默认折叠) */
+    low_confidence: boolean
+    /** 判据证据(含具体数值;忽略查询串必附 miss 集中证据) */
+    evidence: string
+}
+
+/** 前一等长窗口对比趋势 */
+export interface CachePrevTrend {
+    /** 前窗数据可用(false = 降级为当前窗绝对量判定) */
+    available: boolean
+    /** 前窗命中率(全请求口径,0-1) */
+    prev_request_hit_rate: number
+    /** 当前 − 前窗(0-1;正 = 上升) */
+    delta: number
+    /** up / flat / down */
+    direction: string
+    /** 下降 ≥ 阈值 → 提示关注 */
+    alert: boolean
+}
+
+/** 规则引擎判定结论(双命中率/健康档位/排行/URI TOP/状态码/gap/优化项/趋势/口径标注) */
+export interface CacheAnalyzeResult {
+    /** good / fair / poor / unknown(可缓存口径档位) */
+    grade: string
+    request_hit_rate: CacheHitRatePair
+    byte_hit_rate: CacheHitRatePair
+    domain_ranking: CacheDomainHitStat[]
+    miss_uri_top: CacheURIMissTop[]
+    status: CacheStatusOverview
+    gap: CacheGapAnalysis
+    recommendations: CacheOptimizationItem[]
+    prev_trend: CachePrevTrend
+    /** 口径/降级标注(partial 上偏、可缓存近似等) */
+    notes: string[]
+}
+
+/** 前一等长窗口 cache_hit 分布(趋势对比输入;total=0 = 前窗确实无数据) */
+export interface CacheAnalyzePrevWindow {
+    total: number
+    cache_hit_dist?: TopNItem[]
+}
+
+/** CDN 缓存分析响应(引擎结论 + 口径输入明细 + per-source 状态) */
+export interface LogCacheAnalyzeResponse {
+    log_type: string
+    /** 当前窗口时长(秒) */
+    window_sec: number
+    /** 当前窗总请求数(全源精确求和) */
+    total: number
+    /** 全请求字节总量(cache_hit×sum_bytes 求和;已覆盖源口径) */
+    total_bytes: number
+    /** 规则引擎判定结论 */
+    result: CacheAnalyzeResult
+    /** 前窗对比;缺省 = 前窗不可用(见 prev_error),total=0 = 前窗确实无数据 */
+    prev?: CacheAnalyzePrevWindow
+    /** 前窗不可用原因(空 = 成功/无数据) */
+    prev_error?: string
+    /** 前窗 per-source 状态(趋势"基于 X/Y 源"取此字段) */
+    prev_sources?: AggregateSourceOutcome[]
+    /** 当前窗 per-source 状态(跨维度合并:同源任一维度失败即标注) */
+    sources: AggregateSourceOutcome[]
+    /** 维度缺失/覆盖范围说明(缺失源在此标注,不白屏) */
+    dimension_notes?: string
+    /** 本次分析扫过的窗口帧数(当前窗 + 前窗,成本标注) */
+    aggregate_frames: number
+    /** AI 解读占位(后置:本接口不引入 LLM,恒空串;前端不引入模型调用) */
+    summary: string
+    cached: boolean
+    cache_stale: boolean
+}

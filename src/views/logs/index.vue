@@ -263,6 +263,13 @@
       @drilldown="onDiagDrilldown"
     />
 
+    <!-- CDN 缓存分析卡(手动触发;独立于统计/明细区块,不影响既有行为;仅 CDN Tab 显示) -->
+    <CacheAnalyzeCard
+      v-if="activeType === 'cdn'"
+      :context="cacheAnalyzeContext"
+      @drilldown="onDiagDrilldown"
+    />
+
     <!-- 结果区:统计视图为主,明细默认折叠 -->
     <div v-if="searching || searchError || !resp || allEntries.length === 0" class="table-card">
       <template v-if="searching">
@@ -489,6 +496,7 @@ import { ElMessage } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
+import CacheAnalyzeCard from './components/CacheAnalyzeCard.vue'
 import LogStats from './components/LogStats.vue'
 import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
 import { csvSerialize, downloadCsv, entryRows } from './csv'
@@ -918,6 +926,9 @@ const diagnoseContext = computed<LogDiagnoseContext | null>(() => {
         filters: buildFilters(),
     }
 })
+
+/** 缓存分析上下文与诊断卡同构(当前查询字段,无 dimension/metric;仅 CDN Tab 使用) */
+const cacheAnalyzeContext = diagnoseContext
 
 const currentMeta = computed(() => typeMetas.value.find((t) => t.type === activeType.value))
 const currentFields = computed(() => currentMeta.value?.fields ?? [])
