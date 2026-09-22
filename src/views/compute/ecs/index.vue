@@ -40,8 +40,7 @@
           <el-icon><Plus /></el-icon>
           新建
         </el-button>
-        <!-- F-C2/F-C3：批量开机/关机/重启与「更多状态/批量操作」菜单均未实现（选中后点击零反馈，含危险项批量删除），
-             按主题 B 决策统一禁用 + tooltip；实现时批量删除必须补二次确认 -->
+        <!-- F-C2/F-C3：批量开机/关机/重启均未实现（点击零反馈），按主题 B 决策统一禁用 + tooltip -->
         <el-tooltip content="功能开发中" placement="top">
           <el-button size="small" disabled>开机</el-button>
         </el-tooltip>
@@ -50,32 +49,6 @@
         </el-tooltip>
         <el-tooltip content="功能开发中" placement="top">
           <el-button size="small" disabled>重启</el-button>
-        </el-tooltip>
-        <el-tooltip content="功能开发中" placement="top">
-          <el-dropdown trigger="click" disabled>
-            <el-button size="small" disabled>
-              更多状态 <el-icon><ArrowDown /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item disabled title="功能开发中">挂起</el-dropdown-item>
-                <el-dropdown-item disabled title="功能开发中">恢复</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </el-tooltip>
-        <el-tooltip content="功能开发中" placement="top">
-          <el-dropdown trigger="click" disabled>
-            <el-button size="small" disabled>
-              批量操作 <el-icon><ArrowDown /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item disabled title="功能开发中">批量删除</el-dropdown-item>
-                <el-dropdown-item disabled title="功能开发中">批量编辑</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
         </el-tooltip>
         <el-popover
           v-model:visible="tagFilterVisible"
@@ -154,7 +127,7 @@
         </el-popover>
       </div>
       <div class="action-right">
-        <span class="page-info">本页{{ instances.length }}条 / 选中{{ selectedIds.length }}条 / 共{{ pagination.total }}条</span>
+        <span class="page-info">本页{{ instances.length }}条 / 共{{ pagination.total }}条</span>
         <el-button size="small" circle @click="handleRefresh" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
@@ -263,9 +236,6 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th class="col-checkbox">
-                <el-checkbox v-model="selectAll" @change="handleSelectAll" />
-              </th>
               <th class="col-name">名称</th>
               <th v-for="col in visibleColumns" :key="col.key" :style="{ width: col.width + 'px' }">
                 {{ col.label }}
@@ -280,18 +250,11 @@
       <div class="table-body" v-loading="loading">
         <table class="data-table">
           <tbody>
-            <tr 
-              v-for="item in instances" 
+            <tr
+              v-for="item in instances"
               :key="item.id"
-              :class="{ selected: selectedIds.includes(item.id) }"
               @click="handleRowClick(item)"
             >
-              <td class="col-checkbox" @click.stop>
-                <el-checkbox 
-                  :model-value="selectedIds.includes(item.id)" 
-                  @change="handleSelect(item.id, $event)" 
-                />
-              </td>
               <td class="col-name">
                 <div class="name-cell">
                   <span class="instance-name" @click.stop="handleViewDetail(item)">
@@ -426,10 +389,6 @@
 
     <!-- 分页 -->
     <div class="pagination-bar">
-      <div class="pagination-left">
-        <el-checkbox v-model="selectAll" @change="handleSelectAll">全选</el-checkbox>
-        <span class="select-info">已选 {{ selectedIds.length }} 项</span>
-      </div>
       <div class="pagination-right">
         <el-pagination
           :current-page="pagination.page"
@@ -471,7 +430,7 @@
     <AssetExportDialog
       v-model:visible="exportDialogVisible"
       :instances="instances"
-      :selected-ids="selectedIds"
+      :selected-ids="[]"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
       :config="exportConfig"
@@ -526,8 +485,6 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
 const currentInstance = ref<Asset | null>(null)
-const selectedIds = ref<number[]>([])
-const selectAll = ref(false)
 
 // 导出和列设置对话框
 const exportDialogVisible = ref(false)
@@ -1056,33 +1013,8 @@ const formatTags = (tags: Record<string, string> | undefined): string => {
   return `${entries.slice(0, 2).map(([k, v]) => `${k}:${v}`).join(', ')} +${entries.length - 2}`
 }
 
-// 选择相关
-const handleSelectAll = (val: boolean | string | number) => {
-  if (val) {
-    selectedIds.value = instances.value.map(i => i.id)
-  } else {
-    selectedIds.value = []
-  }
-}
-
-const handleSelect = (id: number, checked: boolean | string | number) => {
-  if (checked) {
-    selectedIds.value.push(id)
-  } else {
-    selectedIds.value = selectedIds.value.filter(i => i !== id)
-  }
-  selectAll.value = selectedIds.value.length === instances.value.length
-}
-
-const handleRowClick = (item: Asset) => {
-  const idx = selectedIds.value.indexOf(item.id)
-  if (idx > -1) {
-    selectedIds.value.splice(idx, 1)
-  } else {
-    selectedIds.value.push(item.id)
-  }
-  selectAll.value = selectedIds.value.length === instances.value.length
-}
+// 行点击开详情（与 RDS/Redis 页一致）
+const handleRowClick = (item: Asset) => { handleViewDetail(item) }
 
 // 获取模型列表（暂时保留空实现）
 const fetchModels = async () => {
@@ -1111,8 +1043,6 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 // 获取实例列表
 const fetchInstances = async () => {
   loading.value = true
-  selectedIds.value = []
-  selectAll.value = false
   try {
     const res = await listECSAssetsApi(buildListParams(pagination.page, pagination.size))
     const responseData = (res as any).data || res
@@ -1835,14 +1765,9 @@ watch(
     &:hover {
       background: var(--bg-hover);
     }
-
-    &.selected {
-      background: rgba(113, 112, 255, 0.08);
-    }
   }
 }
 
-.col-checkbox { width: 40px; }
 .col-name { width: 220px; max-width: 220px; }
 .col-actions { width: 110px; }
 
@@ -1993,17 +1918,6 @@ watch(
   background: var(--bg-elevated);
   border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
-}
-
-.pagination-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .select-info {
-    font-size: 13px;
-    color: var(--text-tertiary);
-  }
 }
 
 .pagination-right {
