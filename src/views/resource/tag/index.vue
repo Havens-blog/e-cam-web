@@ -65,7 +65,7 @@
 
     <!-- Tag List Tab -->
     <div v-show="activeTab === 'tagList'">
-      <TagFilters v-model="filters" @search="handleSearch" />
+      <TagFilters :model-value="filters" @update:model-value="(v) => Object.assign(filters, v)" @search="handleSearch" />
 
       <!-- Batch Action Bar -->
       <div v-if="selectedTags.length > 0" class="batch-bar">
@@ -185,7 +185,7 @@ import type { ComplianceResult, ResourceRef, TagPolicy, TagResource, TagStats, T
 import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import TagBatchDialog from './components/TagBatchDialog.vue'
 import TagBindDialog from './components/TagBindDialog.vue'
 import type { TagFilterValues } from './components/TagFilters.vue'
