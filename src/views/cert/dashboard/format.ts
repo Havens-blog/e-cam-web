@@ -15,7 +15,7 @@
  * - 只读角色页面无变更类操作入口（组件层约束，本模块差异摘要为纯文本复制）。
  */
 
-import type { DashboardItem, DaysLeftTier, HostingStatus, ProbeStatus } from '@/api/cert'
+import type { CertProbeResult, DashboardItem, DaysLeftTier, HostingStatus, ProbeStatus, ReferenceStatus } from '@/api/cert'
 import { cloudLabel } from '../detail/format'
 import { hostingStatusMeta } from '../ledger/format'
 
@@ -159,10 +159,15 @@ export const DASHBOARD_LEVEL_CARDS: LevelCardDef[] = [
 
 // ==================== 云筛选选项 ====================
 
-/** 云筛选选项：全部行 referencedClouds 去重 + 字典序（原始标识，展示经 cloudLabel） */
+/**
+ * 云筛选选项：当前可见行 referencedClouds 去重 + 字典序（原始标识，展示经 cloudLabel）。
+ * 可见行 = 非 hidden 行（服务端隐藏谓词命中；includeHidden=true 豁免态下被隐藏孤儿
+ * 所属云不得入选项，否则选中即空态——proposal Key Risk 行 key/云选项失效项）。
+ */
 export function cloudFilterOptions(items: readonly DashboardItem[]): string[] {
     const set = new Set<string>()
     for (const it of items) {
+        if (it.hidden) continue
         for (const c of it.referencedClouds) set.add(c)
     }
     return [...set].sort()
@@ -188,12 +193,12 @@ export function relativeTimeDash(iso: string | null | undefined, now: Date = new
 
 // ==================== 复制差异摘要（抽屉，只读可用的两个入口之一） ====================
 
-/** 差异摘要四要素纯文本（ui-design Interactions：域名/探测时间/线上指纹/差异说明） */
+/** 差异摘要四要素纯文本（证书粒度：证书/探测时间/线上指纹/差异说明） */
 export function diffSummaryText(item: DashboardItem, now: Date = new Date()): string {
     const probedAt = item.lastProbeAt ? relativeTimeDash(item.lastProbeAt, now) : '尚未探测'
     const onlineFp = item.onlineFingerprint || '—'
     return [
-        `域名: ${item.domain}`,
+        `证书: ${item.commonName}`,
         `探测时间: ${probedAt}`,
         `线上指纹: ${onlineFp}`,
         `差异说明: ${probeReason(item.probeStatus)}`,
@@ -208,7 +213,7 @@ function levelLabel(tier: DaysLeftTier): string {
 
 /**
  * 筛选变化通告文案（状态卡 aria-live polite）：拼装已生效维度与当前计数；
- * 空过滤输出「已取消筛选」。
+ * 空过滤输出「已取消筛选」。total 基准为可见行数（不含被隐藏孤儿，NFR a11y）。
  */
 export function filterAnnouncement(filter: DashboardFilter, shown: number, total: number): string {
     const parts: string[] = []
@@ -219,4 +224,138 @@ export function filterAnnouncement(filter: DashboardFilter, shown: number, total
     if (filter.special === 'exempt') return `已按探测豁免过滤，显示 ${shown}/${total} 条`
     if (parts.length === 0) return `已取消筛选，显示全部 ${total} 条`
     return `已按 ${parts.join('、')} 过滤，显示 ${shown}/${total} 条`
+}
+
+// ==================== 孤儿隐藏：开关状态机 + localStorage 持久化 ====================
+
+/**
+ * 隐藏判定语义（proposal，与台账同构）：仅「已过期且 referenceStatus=no_refs_scanned」
+ * 由服务端隐藏；has_refs/blind_spot 恒可见。Hard Rule：前端不重写三态判定，
+ * 只消费服务端 visible 行 + hiddenCount + 行级 hidden 标记。
+ */
+
+/** localStorage 键（带 cert. 命名空间，eval 残留 #12）：看板「查看全部」开关态（按用户持久化，对账刷新不丢） */
+export const DASHBOARD_HIDDEN_EXPANDED_KEY = 'cert.dashboard.hiddenExpanded'
+
+/** 读取看板开关持久化态；storage 不可用或无记录 → false（默认隐藏孤儿） */
+export function loadHiddenExpanded(storage: Storage | null | undefined): boolean {
+    try {
+        return storage?.getItem(DASHBOARD_HIDDEN_EXPANDED_KEY) === '1'
+    } catch {
+        return false
+    }
+}
+
+/** 持久化看板开关态；storage 不可用静默忽略（隐私模式放弃持久化不影响当次会话） */
+export function saveHiddenExpanded(expanded: boolean, storage: Storage | null | undefined): void {
+    try {
+        if (expanded) storage?.setItem(DASHBOARD_HIDDEN_EXPANDED_KEY, '1')
+        else storage?.removeItem(DASHBOARD_HIDDEN_EXPANDED_KEY)
+    } catch {
+        /* 放弃持久化 */
+    }
+}
+
+/**
+ * 总规则（豁免仅由风险维度搜索触发）：到期分级卡（filter.level，卡与工具栏下拉
+ * 同一状态源）或 diff/exempt 探测卡激活即豁免孤儿隐藏；云/托管等属性维度不豁免。
+ */
+export function isRiskFilterActive(filter: DashboardFilter): boolean {
+    return filter.level !== '' || filter.special !== ''
+}
+
+export interface DashboardHiddenViewState {
+    /** 当前生效视图：true=显示全部（含被隐藏孤儿；includeHidden=true 重拉） */
+    showAll: boolean
+    /** 横幅可见（非静默吞行：空态下仍保留「查看全部」入口） */
+    showBanner: boolean
+    /** 风险维度卡激活时开关强制开启并禁用（清除筛选恢复原开关态） */
+    switchDisabled: boolean
+}
+
+/**
+ * 开关态 × 豁免态状态机：
+ * - 豁免激活（风险维度卡）→ 强制 showAll 且开关禁用（expanded 原值不动，清除后自动恢复）；
+ * - 展开态恒显示横幅；未展开时仅 hiddenCount>0 显示「已隐藏 N 张」（无 0 噪音）。
+ */
+export function resolveDashboardHiddenViewState(args: {
+    expanded: boolean
+    exemptActive: boolean
+    hiddenCount: number
+}): DashboardHiddenViewState {
+    const showAll = args.exemptActive || args.expanded
+    return {
+        showAll,
+        showBanner: args.exemptActive || args.expanded || args.hiddenCount > 0,
+        switchDisabled: args.exemptActive,
+    }
+}
+
+// ==================== 探测徽标最差优先序（行聚合 / 抽屉 SAN 排序共用） ====================
+
+/**
+ * 最差优先序（proposal 锚定）：diff > change_linked_diff > unreachable >
+ * wildcard_skipped > exempt > 一致；未探测（空串）排序尾。并列同态不细分（同秩）。
+ */
+export function probeSeverityRank(status: ProbeStatus | ''): number {
+    switch (status) {
+        case 'diff':
+            return 0
+        case 'change_linked_diff':
+            return 1
+        case 'unreachable':
+            return 2
+        case 'wildcard_skipped':
+            return 3
+        case 'exempt':
+            return 4
+        case 'consistent':
+            return 5
+        default:
+            return 6
+    }
+}
+
+/** 抽屉 SAN 探测条目（san + 该 SAN 最近探测结果；未探测 probe=null） */
+export interface SanProbeEntry {
+    san: string
+    probe: CertProbeResult | null
+}
+
+/**
+ * 证书 SAN 列表 → 最差优先探测条目（stable：并列同秩保持原 SAN 序，
+ * 证书 SAN 顺序即解析序，不因排序抖动）。探测数据源 = probes.LatestPerDomain
+ * （GET /certs/probes，探测按域名、证书按张的 1:N 附着在抽屉侧展开）。
+ */
+export function buildSanProbeEntries(
+    sans: readonly string[],
+    probeByDomain: ReadonlyMap<string, CertProbeResult>,
+): SanProbeEntry[] {
+    const entries: SanProbeEntry[] = sans.map((san) => ({ san, probe: probeByDomain.get(san) ?? null }))
+    return entries
+        .map((e, i) => ({ e, i }))
+        .sort((a, b) => {
+            const d = probeSeverityRank(a.e.probe?.status as ProbeStatus | '') - probeSeverityRank(b.e.probe?.status as ProbeStatus | '')
+            return d !== 0 ? d : a.i - b.i
+        })
+        .map((x) => x.e)
+}
+
+/** SAN 折叠阈值（NFR 锚定 20）：超阈默认折叠为最差优先前 20，其余可展开 */
+export const SAN_FOLD_LIMIT = 20
+
+// ==================== 引用三态文案（行/抽屉展示） ====================
+
+/** 引用三态展示文案（台账同口径：「未发现引用」≠「无引用」） */
+export function referenceStatusLabel(status: ReferenceStatus): string {
+    switch (status) {
+        case 'has_refs':
+            return '有引用'
+        case 'no_refs_scanned':
+            return '未发现引用'
+        case 'blind_spot':
+            return '扫描盲区'
+        default:
+            return status
+    }
 }

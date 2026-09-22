@@ -9,7 +9,8 @@
         @click="emit('navigate-level', card.tier)"
       >
         <div class="stat-label">{{ card.label }}</div>
-        <div class="stat-value">{{ summary?.countsByLevel[idx] ?? '—' }}</div>
+        <!-- 任务 1 载荷：countsByLevel 升级为 {total,visible,hidden} 双口径（卡值取 total；页内筛选/可见 N·隐藏 M 为任务 3 范围） -->
+        <div class="stat-value">{{ summary?.countsByLevel[idx]?.total ?? '—' }}</div>
         <div class="stat-sub">点击跳转台账按档过滤</div>
       </button>
     </div>

@@ -343,9 +343,18 @@ export interface TriggerScanResult {
 
 // ==================== 到期看板类型 ====================
 
-/** 看板总览（countsByLevel 依次为 >30/≤30/≤14/≤7/已过期 五档） */
+/** 看板单档双口径计数（total=visible+hidden，与 items 同一快照计算） */
+export interface DashboardLevelCount {
+    total: number
+    visible: number
+    hidden: number
+}
+
+/** 看板汇总（countsByLevel 依次为 >30/≤30/≤14/≤7/已过期 五档） */
 export interface DashboardSummary {
-    countsByLevel: number[]
+    countsByLevel: DashboardLevelCount[]
+    /** 全局被隐藏孤儿数（「已过期且 no_refs_scanned」，同一快照；前端不推算） */
+    hiddenCount: number
     diffAlertCount: number
     exemptCount: number
     wildcardSkippedCount: number
@@ -354,22 +363,42 @@ export interface DashboardSummary {
     fingerprintOnlyRate: number
 }
 
-/** 看板行（probeStatus 空串=尚未探测；referencedClouds K8s 记 "k8s"） */
+/**
+ * 看板证书行（证书粒度，每证一行；Hard Rule：行 key=certId）。
+ * probeStatus 为行内聚合徽标（最差优先序，空串=未探测）；referenceStatus 为
+ * 服务端三态判定单点结果（前端不重写判定，只消费）；hidden 为服务端隐藏谓词
+ * 命中标记（includeHidden=true 时下发；前端不派生三态）。
+ */
 export interface DashboardItem {
-    domain: string
+    /** 证书 ID（行 key + 抽屉「查看证书详情」跳转 /certs/:id） */
+    certId: string
+    /** 台账指纹（线上指纹比对基准） */
+    fingerprint: string
+    /** 证书 CN */
+    commonName: string
+    /** 全部 SAN（徽标 tooltip / 抽屉多 SAN 视图数据源） */
+    sans: string[]
+    /** 签发者 */
+    issuer: string
+    /** 剩余天数（已过期为负） */
     daysLeft: number
+    /** gt30|le30|le14|le7|expired（互斥桶，同台账筛选分档） */
     level: DaysLeftTier
     hostingType: HostingStatus
-    probeStatus: ProbeStatus | ''
+    /** has_refs|no_refs_scanned|blind_spot（服务端三态判定单点结果） */
+    referenceStatus: ReferenceStatus
+    /** 所属云去重集合（K8s 记 "k8s"） */
     referencedClouds: string[]
-    /** 归属证书 ID（抽屉「查看证书详情」跳转 /certs/:id；任务 6.4 增量） */
-    certId: string
-    /** 归属证书台账指纹（线上指纹比对基准） */
-    fingerprint: string
-    /** 最近探测时点；未探测为 null */
+    /** 行内聚合徽标；空串=未探测 */
+    probeStatus: ProbeStatus | ''
+    /** SAN 内最近探测时点；未探测为 null */
     lastProbeAt: string | null
-    /** 线上生效证书指纹；不可达/跳过等无值场景为空串 */
+    /** 最差探测态 SAN 线上指纹；无值空串 */
     onlineFingerprint: string
+    /** 三态判定所用扫描快照时点；无快照 null */
+    lastScanAt: string | null
+    /** 服务端隐藏谓词命中（includeHidden=true 时下发） */
+    hidden: boolean
 }
 
 /** 看板响应（GET /certs/dashboard，全角色含只读） */
@@ -917,10 +946,10 @@ export function getDiscoveryImportApi(sessionId: string) {
 
 // ==================== 到期看板 ====================
 
-/** 到期看板（全角色含只读查看者） */
-export function getCertDashboardApi() {
+/** 到期看板（全角色含只读查看者）；includeHidden=true 返回全部证书行含被隐藏孤儿 */
+export function getCertDashboardApi(params?: { includeHidden?: boolean }) {
     return unwrapCertEnvelope<CertDashboardResponse>(
-        certAxios.get<CertEnvelope<CertDashboardResponse>>('/certs/dashboard')
+        certAxios.get<CertEnvelope<CertDashboardResponse>>('/certs/dashboard', { params })
     )
 }
 

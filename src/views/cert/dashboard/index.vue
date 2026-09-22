@@ -52,13 +52,15 @@
         <DashboardTable
           class="table-block"
           :rows="shownItems"
-          :cloud-options="cloudOptions"
+          :items="items"
           :filter="filter"
           :disabled="false"
+          :hidden-count="data?.summary.hiddenCount ?? 0"
           :last-inspection-at="data?.lastInspectionAt ?? null"
           :wildcard-skipped-count="data?.summary.wildcardSkippedCount ?? 0"
           @filter-change="onFilterChange"
           @row-click="openDrawer"
+          @show-all-change="onShowAllChange"
         />
       </template>
     </div>
@@ -91,9 +93,9 @@ import OverviewCards from './components/OverviewCards.vue'
 import ProbeDetailDrawer from './components/ProbeDetailDrawer.vue'
 import {
     EMPTY_DASHBOARD_FILTER,
-    cloudFilterOptions,
     filterAnnouncement,
     filterDashboardItems,
+    loadHiddenExpanded,
     type DashboardFilter,
 } from './format'
 import { resolvePageState } from '../ledger/format'
@@ -108,6 +110,21 @@ const drawerVisible = ref(false)
 const drawerItem = ref<DashboardItem | null>(null)
 const router = useRouter()
 
+/**
+ * 豁免接线（任务 2）：生效 includeHidden = 开关持久化态初始；开关切换/风险维度卡
+ * 豁免（子组件状态机经 show-all-change 上抛，含强制开启与清除恢复）变化时重拉全量。
+ * 隐藏判定始终在服务端执行，前端不派生三态。
+ */
+function safeLocalStorage(): Storage | null {
+    try {
+        return window.localStorage
+    } catch {
+        return null
+    }
+}
+
+const includeHidden = ref(loadHiddenExpanded(safeLocalStorage()))
+
 /** 骨架延迟（全局模式：800ms 内返回则直接渲染） */
 const SKELETON_DELAY_MS = 800
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null
@@ -115,8 +132,6 @@ let skeletonTimer: ReturnType<typeof setTimeout> | null = null
 const items = computed(() => data.value?.items ?? [])
 
 const shownItems = computed(() => filterDashboardItems(items.value, filter.value))
-
-const cloudOptions = computed(() => cloudFilterOptions(items.value))
 
 const pageState = computed(() =>
     resolvePageState({
@@ -145,7 +160,7 @@ async function refresh() {
     loadError.value = false
     beginSkeletonTimer()
     try {
-        data.value = await getCertDashboardApi()
+        data.value = await getCertDashboardApi({ includeHidden: includeHidden.value || undefined })
     } catch {
         loadError.value = true
         // 已有数据的刷新失败不塌陷页面（resolvePageState 维持 populated）
@@ -153,6 +168,13 @@ async function refresh() {
         loading.value = false
         endSkeletonTimer()
     }
+}
+
+/** 开关/豁免强制（子组件状态机）变化：生效视图变化才以 includeHidden 重拉 */
+function onShowAllChange(showAll: boolean) {
+    if (showAll === includeHidden.value) return
+    includeHidden.value = showAll
+    void refresh()
 }
 
 /**
