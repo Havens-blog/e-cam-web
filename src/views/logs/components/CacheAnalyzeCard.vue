@@ -153,6 +153,7 @@
                 <span>命中率(全请求)</span>
                 <span>可缓存口径</span>
                 <span>未命中占比</span>
+                <span>字节命中</span>
                 <span>档位</span>
               </div>
               <button
@@ -169,6 +170,7 @@
                 <span class="domain-rate">{{ formatRate(d.hit_rate) }}</span>
                 <span class="domain-rate">{{ formatRate(d.cacheable_hit_rate) }}</span>
                 <span class="domain-miss">{{ formatRate(d.miss_traffic_ratio) }}</span>
+                <span class="domain-rate">{{ d.byte_hit_available ? formatRate(d.byte_hit_rate) : '—' }}</span>
                 <el-tag class="domain-grade" size="small" :type="cacheGradeTagType(d.grade)">
                   {{ cacheGradeLabel(d.grade) }}
                 </el-tag>

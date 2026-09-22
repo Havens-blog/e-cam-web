@@ -370,6 +370,10 @@ export interface CacheDomainHitStat {
     cacheable_hit_rate: number
     /** 该域名未命中(miss+error)占全局未命中 */
     miss_traffic_ratio: number
+    /** 域名级字节命中率(命中字节 = 总 − 未命中;总字节 ≤0 时 0) */
+    byte_hit_rate: number
+    /** 字节帧完整(总字节>0),byte_hit_rate 有效 */
+    byte_hit_available: boolean
     /** good / fair / poor / unknown(域名级阈值) */
     grade: string
 }
