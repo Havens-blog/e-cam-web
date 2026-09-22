@@ -53,8 +53,8 @@ function cacheResp(overrides: Partial<LogCacheAnalyzeResponse> = {}): LogCacheAn
                 cacheable: { rate: 0.75, numerator: 3.6 * 1024 ** 3, denominator: 4.8 * 1024 ** 3, available: true },
             },
             domain_ranking: [
-                { host: 'a.com', requests: 50000, hit_rate: 0.8, cacheable_hit_rate: 0.75, miss_traffic_ratio: 0.4, grade: 'fair' },
-                { host: 'b.com', requests: 30000, hit_rate: 0.5, cacheable_hit_rate: 0.45, miss_traffic_ratio: 0.5, grade: 'poor' },
+                { host: 'a.com', requests: 50000, hit_rate: 0.8, cacheable_hit_rate: 0.75, miss_traffic_ratio: 0.4, byte_hit_rate: 0.85, byte_hit_available: true, grade: 'fair' },
+                { host: 'b.com', requests: 30000, hit_rate: 0.5, cacheable_hit_rate: 0.45, miss_traffic_ratio: 0.5, byte_hit_rate: 0.42, byte_hit_available: true, grade: 'poor' },
             ],
             miss_uri_top: [
                 { uri: '/api/list', host: 'a.com', miss_count: 12000, miss_share: 0.35, variants: 3, sample_query: 'page=1&size=20' },
