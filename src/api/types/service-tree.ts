@@ -206,6 +206,33 @@ export interface DryRunResult {
     capped: boolean
 }
 
+// ==================== 规则改绑（预览+确认落库，manual 永锁） ====================
+
+export interface RebindCandidate {
+    resource_id: number
+    asset_id: string
+    asset_name: string
+    provider: string
+    region: string
+    from_node_id: number
+    from_node_name?: string
+    from_env_id: number
+    from_rule_id: number
+    to_node_id: number
+    to_node_name?: string
+    to_env_id: number
+    to_rule_id: number
+}
+
+export interface RebindPlan {
+    items: RebindCandidate[]
+    total: number
+}
+
+export interface RebindApplyParams {
+    resource_ids: number[]
+}
+
 // ==================== 节点资产查询 ====================
 
 export interface ListNodeAssetsParams {

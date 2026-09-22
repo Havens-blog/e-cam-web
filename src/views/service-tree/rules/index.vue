@@ -8,6 +8,10 @@
           <p class="page-subtitle">配置自动绑定规则，根据条件自动将资源绑定到服务树节点</p>
         </div>
         <div class="header-right">
+          <el-button @click="rebindDialogVisible = true">
+            <el-icon><Switch /></el-icon>
+            规则改绑
+          </el-button>
           <el-button @click="handleExecuteRules" :loading="executing">
             <el-icon><VideoPlay /></el-icon>
             执行规则匹配
@@ -144,6 +148,9 @@
         :loading="executing"
         @confirm="confirmExecuteRules"
       />
+
+      <!-- 规则改绑预览/确认弹窗 -->
+      <RebindDialog v-model="rebindDialogVisible" @success="handleRebindSuccess" />
     </div>
   </PageContainer>
 </template>
@@ -157,11 +164,12 @@ import {
     updateRuleApi
 } from '@/api/service-tree'
 import type { BindingRule, Environment } from '@/api/types/service-tree'
-import { Plus, RefreshLeft, Search, VideoPlay } from '@element-plus/icons-vue'
+import { Plus, RefreshLeft, Search, Switch, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { formatDateTime } from '@/utils/format'
 import ExecuteConfirmDialog from './components/ExecuteConfirmDialog.vue'
+import RebindDialog from './components/RebindDialog.vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 
 // 任务 1 后端 RuleVO 透出的执行统计字段（类型定义暂未同步，本地扩展）
@@ -194,6 +202,7 @@ const statusLoadingId = ref<number | null>(null)
 // 弹窗
 const formDialogVisible = ref(false)
 const executeDialogVisible = ref(false)
+const rebindDialogVisible = ref(false)
 const currentRule = ref<BindingRule | undefined>()
 const isEdit = ref(false)
 
@@ -342,6 +351,11 @@ const handleDelete = async (rule: BindingRule) => {
 // 表单成功
 const handleFormSuccess = () => {
   formDialogVisible.value = false
+  loadRules()
+}
+
+// 改绑成功后刷新规则列表（匹配数/执行统计可能变化）
+const handleRebindSuccess = () => {
   loadRules()
 }
 

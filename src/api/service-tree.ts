@@ -21,6 +21,8 @@ import type {
     ListResponse,
     NodeAssetListResponse,
     NodeAssetStatsParams,
+    RebindApplyParams,
+    RebindPlan,
     ResourceBinding,
     ResourceBindingBatchParams,
     ResourceBindingCreateParams,
@@ -154,6 +156,16 @@ export const executeRulesApi = () => {
 /** 规则试运行（dry-run，只读预览命中资产，不落库） */
 export const dryRunRulesApi = (data: DryRunRuleParams) => {
     return instance.post<DryRunResult>({ url: `${BASE_URL}/rules/dry-run`, data } as RequestConfig)
+}
+
+/** 规则改绑预览（只读，重算 rule 绑定资产，找更高优先级规则的改绑候选） */
+export const previewRebindApi = () => {
+    return instance.post<RebindPlan>({ url: `${BASE_URL}/rules/rebind/preview` } as RequestConfig)
+}
+
+/** 确认规则改绑（按资源 ID 落库，manual 永锁），返回实际改绑条数 */
+export const applyRebindApi = (data: RebindApplyParams) => {
+    return instance.post<number>({ url: `${BASE_URL}/rules/rebind/apply`, data } as RequestConfig)
 }
 
 
