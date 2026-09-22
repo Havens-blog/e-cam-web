@@ -917,6 +917,10 @@ onMounted(() => {
     text-overflow: ellipsis;
   }
 
+  // 首/末列对齐页面 20px 横向节奏
+  th:first-child, td:first-child { padding-left: 20px; }
+  th:last-child, td:last-child { padding-right: 20px; }
+
   th {
     background: var(--bg-surface);
     color: var(--text-secondary);
