@@ -45,8 +45,9 @@
       <template v-else>
         <OverviewCards
           :summary="data?.summary ?? null"
+          :selected-level="filter.level"
           :selected-special="filter.special"
-          @navigate-level="onLevelCard"
+          @select-level="onLevelCard"
           @select-special="onSpecialCard"
         />
         <DashboardTable
@@ -79,15 +80,18 @@
  * error 重试 / populated）；数据 GET /certs/dashboard（summary+items+lastInspectionAt）；
  * 5 级总览卡 + 差异/豁免次级卡与工具栏三维筛选（状态分级/云多选/托管类型）全部
  * 客户端过滤，filter 为唯一状态源（卡片与下拉联动，选中卡 Accent 高亮再点取消）；
- * 筛选变化经 aria-live polite 通告（AC6）。行点击 → 探测详情抽屉。
+ * 分级卡/特殊卡激活即按总规则豁免孤儿隐藏（风险维度经任务 2 状态机强制
+ * includeHidden 重拉，属性维度不豁免）；筛选状态同步 URL query 保留深链
+ * （弥合移除跳台账跳转）。筛选变化经 aria-live polite 通告（AC6）。
+ * 行点击 → 探测详情抽屉。
  *
  * Hard Rule：本页无任何变更类操作入口（扫描/发起更换/配置），差异告警由巡检
  * 自动触达，只读者无需人工上报。
  */
-import type { CertDashboardResponse, DashboardItem, DaysLeftTier } from '@/api/cert'
-import { getCertDashboardApi } from '@/api/cert'
+import type { CertDashboardResponse, CertProbeResult, DashboardItem, DaysLeftTier } from '@/api/cert'
+import { getCertDashboardApi, getCertProbesApi } from '@/api/cert'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import DashboardTable from './components/DashboardTable.vue'
 import OverviewCards from './components/OverviewCards.vue'
 import ProbeDetailDrawer from './components/ProbeDetailDrawer.vue'
@@ -95,6 +99,8 @@ import {
     EMPTY_DASHBOARD_FILTER,
     filterAnnouncement,
     filterDashboardItems,
+    filterFromQuery,
+    filterToQuery,
     loadHiddenExpanded,
     type DashboardFilter,
 } from './format'
@@ -109,6 +115,7 @@ const announcement = ref('')
 const drawerVisible = ref(false)
 const drawerItem = ref<DashboardItem | null>(null)
 const router = useRouter()
+const route = useRoute()
 
 /**
  * 豁免接线（任务 2）：生效 includeHidden = 开关持久化态初始；开关切换/风险维度卡
@@ -131,7 +138,25 @@ let skeletonTimer: ReturnType<typeof setTimeout> | null = null
 
 const items = computed(() => data.value?.items ?? [])
 
-const shownItems = computed(() => filterDashboardItems(items.value, filter.value))
+/**
+ * 逐 SAN 探测明细（特殊卡谓词数据源，GET /certs/probes LatestPerDomain 按 SAN 映射）：
+ * 明细在位时 diff/exempt 特殊卡按「存在任一 SAN 为该状态」筛出证书行（exempt 等
+ * 低优先态被行聚合徽标更差态掩盖仍可筛中）；加载失败降级行徽标相等，不塌陷。
+ */
+const probeByDomain = ref<ReadonlyMap<string, CertProbeResult>>(new Map())
+
+async function loadProbes() {
+    try {
+        const probes = await getCertProbesApi()
+        const map = new Map<string, CertProbeResult>()
+        for (const p of probes) map.set(p.domain, p)
+        probeByDomain.value = map
+    } catch {
+        probeByDomain.value = new Map()
+    }
+}
+
+const shownItems = computed(() => filterDashboardItems(items.value, filter.value, probeByDomain.value))
 
 const pageState = computed(() =>
     resolvePageState({
@@ -178,15 +203,15 @@ function onShowAllChange(showAll: boolean) {
 }
 
 /**
- * 状态分级卡：跳转台账按该档服务端过滤（证书粒度计数 → 台账 daysLeft 过滤可见
- * 具体证书——看板表格为域名粒度，过期/临期证书被同名新证掩盖无法页内表达）。
- * 工具栏下拉仍按域名行页内过滤，互不影响。
+ * 状态分级卡：页内筛选（选中高亮、再点取消）——filter 单一状态源，与工具栏下拉
+ * 同一状态；激活即风险维度豁免（任务 2 状态机强制 includeHidden 重拉，主表行数
+ * == 该档 countsByLevel 总计数），清除恢复原开关态。
  */
 function onLevelCard(tier: DaysLeftTier) {
-    void router.push({ path: '/certs', query: { daysLeft: tier } })
+    filter.value = { ...filter.value, level: filter.value.level === tier ? '' : tier }
 }
 
-/** 差异告警卡 / 豁免卡：点击选中 / 再点取消 */
+/** 差异告警卡 / 豁免卡：点击选中 / 再点取消（同为风险维度豁免触发器） */
 function onSpecialCard(kind: 'diff' | 'exempt') {
     filter.value = { ...filter.value, special: filter.value.special === kind ? '' : kind }
 }
@@ -209,8 +234,38 @@ watch(
     { deep: true },
 )
 
+// ===== 筛选状态 ⇄ URL query（深链保留，弥合移除跳台账跳转） =====
+
+const QUERY_KEYS = ['level', 'clouds', 'hosting', 'special'] as const
+
+/** 深链恢复：mount 时由 URL query 初始化筛选（在首拉前，通知与豁免状态机口径一致） */
+function restoreFilterFromQuery() {
+    filter.value = { ...EMPTY_DASHBOARD_FILTER, ...filterFromQuery(route.query) }
+}
+
+// 筛选变化 → URL query 同步（replace 不产生历史噪音；与当前 query 一致时跳过）
+watch(
+    filter,
+    (f) => {
+        const next = filterToQuery(f)
+        const current: Record<string, string> = {}
+        for (const key of QUERY_KEYS) {
+            const v = route.query[key]
+            if (typeof v === 'string' && v !== '') current[key] = v
+        }
+        if (JSON.stringify(current) === JSON.stringify(next)) return
+        const query = { ...route.query }
+        for (const key of QUERY_KEYS) delete query[key]
+        Object.assign(query, next)
+        void router.replace({ query })
+    },
+    { deep: true },
+)
+
 onMounted(() => {
+    restoreFilterFromQuery()
     void refresh()
+    void loadProbes()
 })
 
 onUnmounted(() => {

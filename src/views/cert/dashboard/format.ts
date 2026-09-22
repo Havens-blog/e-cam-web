@@ -15,7 +15,15 @@
  * - 只读角色页面无变更类操作入口（组件层约束，本模块差异摘要为纯文本复制）。
  */
 
-import type { CertProbeResult, DashboardItem, DaysLeftTier, HostingStatus, ProbeStatus, ReferenceStatus } from '@/api/cert'
+import type {
+    CertProbeResult,
+    DashboardItem,
+    DashboardLevelCount,
+    DaysLeftTier,
+    HostingStatus,
+    ProbeStatus,
+    ReferenceStatus,
+} from '@/api/cert'
 import { cloudLabel } from '../detail/format'
 import { hostingStatusMeta } from '../ledger/format'
 
@@ -122,18 +130,37 @@ export const EMPTY_DASHBOARD_FILTER: DashboardFilter = { level: '', clouds: [], 
 
 /**
  * 看板行过滤（全部客户端执行，ui-design Data Binding「客户端状态」）：
- * level 互斥桶精确匹配；clouds 命中其一；hosting 精确；special 仅常规 diff
- * （Hard Rule：不可达/豁免/通配符/变更关联均不计差异告警）与 exempt。
+ * level 互斥桶精确匹配；clouds 命中其一；hosting 精确；special 为逐 SAN 谓词
+ * （proposal：行集合 = 存在任一 SAN 为该状态的证书行，非行徽标相等）。
+ *
+ * @param probeByDomain 逐 SAN 探测明细（GET /certs/probes LatestPerDomain，按 SAN 映射）。
+ *   明细在位时特殊卡逐 SAN 判定（exempt 等低优先态被行聚合徽标的更差态掩盖仍可筛中）；
+ *   未传/空表降级行聚合徽标相等（既有口径不回退——diff 为最差态二者等价，
+ *   exempt 仅在明细缺失窗口内少筛、不误筛）。
  */
-export function filterDashboardItems(items: readonly DashboardItem[], filter: DashboardFilter): DashboardItem[] {
+export function filterDashboardItems(
+    items: readonly DashboardItem[],
+    filter: DashboardFilter,
+    probeByDomain?: ReadonlyMap<string, CertProbeResult>,
+): DashboardItem[] {
     return items.filter((it) => {
         if (filter.level && it.level !== filter.level) return false
         if (filter.clouds.length > 0 && !it.referencedClouds.some((c) => filter.clouds.includes(c))) return false
         if (filter.hosting && it.hostingType !== filter.hosting) return false
-        if (filter.special === 'diff' && it.probeStatus !== 'diff') return false
-        if (filter.special === 'exempt' && it.probeStatus !== 'exempt') return false
+        if (filter.special === 'diff' && !matchesSpecial(it, 'diff', probeByDomain)) return false
+        if (filter.special === 'exempt' && !matchesSpecial(it, 'exempt', probeByDomain)) return false
         return true
     })
+}
+
+/** 特殊卡逐 SAN 谓词：明细在位按 SAN 级状态命中（SAN 无探测记录 = 未探测，不命中） */
+function matchesSpecial(
+    it: DashboardItem,
+    status: 'diff' | 'exempt',
+    probeByDomain?: ReadonlyMap<string, CertProbeResult>,
+): boolean {
+    if (!probeByDomain || probeByDomain.size === 0) return it.probeStatus === status
+    return it.sans.some((san) => probeByDomain.get(san)?.status === status)
 }
 
 /** 豁免列 ✓ 判定（probeStatus=exempt；不可达/未探测不属豁免） */
@@ -156,6 +183,62 @@ export const DASHBOARD_LEVEL_CARDS: LevelCardDef[] = [
     { tier: 'le7', label: '≤7 天' },
     { tier: 'expired', label: '已过期' },
 ]
+
+// ==================== 分级卡副文案 + URL query 深链同步（任务 3） ====================
+
+/**
+ * 分级卡副文案（proposal：未激活显示「可见 N · 隐藏 M」，隐藏分量来自
+ * countsByLevel per-level hidden）；激活提示筛选态与总计数（豁免生效后
+ * 行数 == total 的口径锚点）。summary 为 null（刷新中）→ 空串。
+ */
+export function levelCardSubtitle(active: boolean, count: DashboardLevelCount | null | undefined): string {
+    if (!count) return ''
+    if (active) return `已按该档筛选，共 ${count.total} 张`
+    return `可见 ${count.visible} · 隐藏 ${count.hidden}`
+}
+
+const QUERY_LEVELS: readonly string[] = DASHBOARD_LEVEL_CARDS.map((c) => c.tier)
+const QUERY_SPECIALS: readonly string[] = ['diff', 'exempt']
+const QUERY_HOSTINGS: readonly string[] = ['complete', 'fingerprint_only']
+
+/**
+ * 筛选状态 → URL query（深链保留，弥合移除跳台账跳转）；
+ * 空维度不出键（不产生噪音参数）。
+ */
+export function filterToQuery(filter: DashboardFilter): Record<string, string> {
+    const q: Record<string, string> = {}
+    if (filter.level) q.level = filter.level
+    if (filter.special) q.special = filter.special
+    if (filter.hosting) q.hosting = filter.hosting
+    if (filter.clouds.length > 0) q.clouds = filter.clouds.join(',')
+    return q
+}
+
+/**
+ * URL query → 筛选状态（深链恢复；非法值/空值丢弃，输出仅含合法维度）。
+ * 入参为 route.query 的结构子集（不引 vue-router 依赖，node 单测可导入）。
+ */
+export function filterFromQuery(query: Readonly<Record<string, unknown>>): Partial<DashboardFilter> {
+    const firstString = (v: unknown): string => {
+        if (typeof v === 'string') return v
+        if (Array.isArray(v) && typeof v[0] === 'string') return v[0]
+        return ''
+    }
+    const out: Partial<DashboardFilter> = {}
+    const level = firstString(query['level'])
+    if (QUERY_LEVELS.includes(level)) out.level = level as DaysLeftTier
+    const special = firstString(query['special'])
+    if (QUERY_SPECIALS.includes(special)) out.special = special as DashboardSpecialFilter
+    const hosting = firstString(query['hosting'])
+    if (QUERY_HOSTINGS.includes(hosting)) out.hosting = hosting as HostingStatus
+    const cloudsRaw = firstString(query['clouds'])
+    const clouds = cloudsRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    if (clouds.length > 0) out.clouds = clouds
+    return out
+}
 
 // ==================== 云筛选选项 ====================
 

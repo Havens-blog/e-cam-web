@@ -10,8 +10,11 @@ import {
     diffSummaryText,
     filterAnnouncement,
     filterDashboardItems,
+    filterFromQuery,
+    filterToQuery,
     isExemptRow,
     isRiskFilterActive,
+    levelCardSubtitle,
     loadHiddenExpanded,
     probeBadge,
     probeReason,
@@ -414,5 +417,90 @@ describe('referenceStatusLabel（引用三态展示文案）', () => {
         expect(referenceStatusLabel('has_refs')).toBe('有引用')
         expect(referenceStatusLabel('no_refs_scanned')).toBe('未发现引用')
         expect(referenceStatusLabel('blind_spot')).toBe('扫描盲区')
+    })
+})
+
+// ==================== 任务 3：特殊卡逐 SAN 谓词 + 分级卡副文案 + URL query 深链 ====================
+
+describe('filterDashboardItems 特殊卡逐 SAN 谓词（任务 3，proposal：行集合 = 存在任一 SAN 为该状态）', () => {
+    const probeMap = new Map<string, CertProbeResult>([
+        ['d.example.com', { domain: 'd.example.com', status: 'diff', probeAt: '2026-08-19T03:00:00Z' }],
+        ['e.example.com', { domain: 'e.example.com', status: 'exempt', probeAt: '2026-08-19T03:00:00Z' }],
+    ])
+
+    it('一个 diff 域名挂 2 张证 → 卡 1 行 2（域名级计数 ⇄ 证书行集合映射闭合）', () => {
+        const c1 = item({ certId: 'm1', commonName: 'm1.example.com', sans: ['m1.example.com', 'd.example.com'], probeStatus: 'diff' })
+        const c2 = item({ certId: 'm2', commonName: 'm2.example.com', sans: ['d.example.com'], probeStatus: 'diff' })
+        const out = filterDashboardItems([c1, c2], { ...EMPTY_DASHBOARD_FILTER, special: 'diff' }, probeMap)
+        expect(out.map((i) => i.certId).sort()).toEqual(['m1', 'm2'])
+    })
+
+    it('exempt SAN 被更差态（diff）聚合掩盖仍可筛中（逐 SAN 谓词，非行徽标相等）', () => {
+        const masked = item({
+            certId: 'mx',
+            commonName: 'mx.example.com',
+            sans: ['d.example.com', 'e.example.com'],
+            probeStatus: 'diff', // 行聚合徽标取最差优先，exempt 被掩盖
+        })
+        const out = filterDashboardItems([masked], { ...EMPTY_DASHBOARD_FILTER, special: 'exempt' }, probeMap)
+        expect(out.map((i) => i.certId)).toEqual(['mx'])
+        expect(out[0]!.probeStatus).toBe('diff') // 徽标为更差态，但 exempt SAN 谓词命中
+    })
+
+    it('无探测明细（未传 map）降级行徽标相等（既有口径不回退）', () => {
+        const exemptRow = item({ certId: 'x', probeStatus: 'exempt' })
+        const diffRow = item({ certId: 'y', probeStatus: 'diff' })
+        expect(filterDashboardItems([exemptRow, diffRow], { ...EMPTY_DASHBOARD_FILTER, special: 'exempt' })).toEqual([exemptRow])
+    })
+
+    it('SAN 无探测记录 = 未探测，不命中谓词', () => {
+        const c = item({ certId: 'np', commonName: 'np.example.com', sans: ['none.example.com'], probeStatus: '' })
+        expect(filterDashboardItems([c], { ...EMPTY_DASHBOARD_FILTER, special: 'diff' }, probeMap)).toEqual([])
+    })
+
+    it('分级筛选在豁免视图（含 hidden 行）下行数 == countsByLevel 总计数（纯关系断言）', () => {
+        const rows: DashboardItem[] = [
+            item({ certId: 'e1', commonName: 'e1.example.com', daysLeft: -3, level: 'expired' }),
+            item({ certId: 'e2', commonName: 'e2.example.com', daysLeft: -9, level: 'expired', referenceStatus: 'no_refs_scanned', hidden: true }),
+            item({ certId: 'v', commonName: 'v.example.com', level: 'gt30' }),
+        ]
+        const countsByLevel = [{ total: 1, visible: 1, hidden: 0 }, { total: 2, visible: 1, hidden: 1 }]
+        const out = filterDashboardItems(rows, { ...EMPTY_DASHBOARD_FILTER, level: 'expired' })
+        expect(out.length).toBe(countsByLevel[1]!.total)
+    })
+})
+
+describe('levelCardSubtitle（分级卡双口径副文案，任务 3）', () => {
+    const count = { total: 10, visible: 8, hidden: 2 }
+
+    it('未激活：「可见 N · 隐藏 M」', () => {
+        expect(levelCardSubtitle(false, count)).toBe('可见 8 · 隐藏 2')
+    })
+
+    it('激活：提示筛选态 + 总计数（豁免后行数 == total 口径锚点）', () => {
+        const s = levelCardSubtitle(true, count)
+        expect(s).toContain('10')
+    })
+
+    it('计数缺失（summary 为 null 刷新中）→ 空串', () => {
+        expect(levelCardSubtitle(false, undefined)).toBe('')
+        expect(levelCardSubtitle(true, null)).toBe('')
+    })
+})
+
+describe('filterToQuery / filterFromQuery（筛选状态 URL query 深链，任务 3）', () => {
+    it('空过滤 → 空 query（不产生噪音参数）', () => {
+        expect(filterToQuery(EMPTY_DASHBOARD_FILTER)).toEqual({})
+    })
+
+    it('四维度序列化：clouds 逗号连接', () => {
+        const q = filterToQuery({ level: 'expired', clouds: ['aliyun', 'tencent'], hosting: 'complete', special: 'diff' })
+        expect(q).toEqual({ level: 'expired', clouds: 'aliyun,tencent', hosting: 'complete', special: 'diff' })
+    })
+
+    it('反序列化 + round-trip；非法值与空 clouds 丢弃', () => {
+        const f = { level: 'le7' as const, clouds: ['k8s'], hosting: 'fingerprint_only' as const, special: '' as const }
+        expect(filterFromQuery(filterToQuery(f))).toEqual({ level: 'le7', clouds: ['k8s'], hosting: 'fingerprint_only' })
+        expect(filterFromQuery({ level: 'bogus', special: 'nope', hosting: 'x', clouds: ',,,' })).toEqual({})
     })
 })

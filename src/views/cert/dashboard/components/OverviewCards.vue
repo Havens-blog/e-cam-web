@@ -6,12 +6,14 @@
         :key="card.tier"
         type="button"
         class="stat-card hoverable"
-        @click="emit('navigate-level', card.tier)"
+        :class="{ selected: selectedLevel === card.tier }"
+        :aria-pressed="selectedLevel === card.tier"
+        @click="emit('select-level', card.tier)"
       >
         <div class="stat-label">{{ card.label }}</div>
-        <!-- 任务 1 载荷：countsByLevel 升级为 {total,visible,hidden} 双口径（卡值取 total；页内筛选/可见 N·隐藏 M 为任务 3 范围） -->
         <div class="stat-value">{{ summary?.countsByLevel[idx]?.total ?? '—' }}</div>
-        <div class="stat-sub">点击跳转台账按档过滤</div>
+        <!-- 任务 3：未激活双口径「可见 N · 隐藏 M」；激活提示筛选态与总计数 -->
+        <div class="stat-sub">{{ levelCardSubtitle(selectedLevel === card.tier, summary?.countsByLevel[idx]) }}</div>
       </button>
     </div>
     <div class="special-grid">
@@ -24,7 +26,7 @@
       >
         <div class="stat-label">差异告警数（线上≠台账）</div>
         <div class="stat-value tone-error">{{ summary?.diffAlertCount ?? '—' }}</div>
-        <div class="stat-sub">仅常规差异计数；不可达 / 豁免 / 通配符不计</div>
+        <div class="stat-sub">域名计数；仅常规差异，不可达 / 豁免 / 通配符不计</div>
       </button>
       <button
         type="button"
@@ -35,7 +37,7 @@
       >
         <div class="stat-label">探测豁免数</div>
         <div class="stat-value">{{ summary?.exemptCount ?? '—' }}</div>
-        <div class="stat-sub">人工排除，不参与告警</div>
+        <div class="stat-sub">域名计数；人工排除，不参与告警</div>
       </button>
     </div>
   </div>
@@ -43,22 +45,27 @@
 
 <script setup lang="ts">
 /**
- * 到期看板总览卡（AC1）：5 级互斥分桶卡（countsByLevel 数组序）+ 次行差异告警数 /
- * 探测豁免数卡。**分级卡跳转台账按档过滤**（证书粒度计数 → 台账 daysLeft 服务端
- * 过滤，能看到具体证书）——因看板表格是域名粒度（同域多证取 notAfter 最新者独占
- * 行），过期/临期证书常被同名新证掩盖，卡内过滤会空；差异告警/豁免卡仍页内过滤
- * （域名行可表达）。summary 为 null（刷新中）时计数显示「—」，卡片保持可点。
+ * 到期看板总览卡：5 级互斥分桶卡（countsByLevel 数组序）+ 次行差异告警数 /
+ * 探测豁免数卡。**分级卡点击 = 页内筛选**（dashboard-cert-granularity 任务 3：
+ * 选中高亮、再点取消、aria-pressed 两态；激活即按总规则豁免孤儿隐藏——经
+ * filter 单一状态源上抛父级，主表行数 == 该档 countsByLevel 总计数；未激活
+ * 副文案「可见 N · 隐藏 M」双口径）。特殊卡计数保持**域名级**（副标题标注
+ * 「域名计数」，卡值小于筛出行数——一个 diff 域名挂 2 张证 → 卡 1 行 2——
+ * 为预期，逐 SAN 谓词筛出证书行）。summary 为 null（刷新中）时计数显示「—」，
+ * 卡片保持可点。
  */
 import type { DashboardSummary, DaysLeftTier } from '@/api/cert'
-import { DASHBOARD_LEVEL_CARDS } from '../format'
+import { DASHBOARD_LEVEL_CARDS, levelCardSubtitle } from '../format'
 
 defineProps<{
     summary: DashboardSummary | null
+    /** 状态分级页内筛选选中档（filter.level 单一状态源，与工具栏下拉联动） */
+    selectedLevel: DaysLeftTier | ''
     selectedSpecial: '' | 'diff' | 'exempt'
 }>()
 
 const emit = defineEmits<{
-    (e: 'navigate-level', tier: DaysLeftTier): void
+    (e: 'select-level', tier: DaysLeftTier): void
     (e: 'select-special', kind: 'diff' | 'exempt'): void
 }>()
 </script>
