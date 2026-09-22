@@ -60,10 +60,10 @@
         background: var(--accent-blue);
         border-color: var(--accent-blue);
         color: white;
-        box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+        box-shadow: 0 0 16px rgba(113, 112, 255, 0.25);
         &:hover {
-          background: #2563eb;
-          box-shadow: 0 0 24px rgba(59, 130, 246, 0.35);
+          background: #5e6ad2;
+          box-shadow: 0 0 24px rgba(113, 112, 255, 0.35);
         }
       }
     }
@@ -137,10 +137,10 @@
     }
 
     &.active {
-      background: rgba(59, 130, 246, 0.12);
+      background: rgba(113, 112, 255, 0.12);
       .group-name { color: var(--accent-blue); font-weight: 600; }
       .group-icon { background: var(--accent-blue); color: white; }
-      .group-count { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+      .group-count { background: rgba(113, 112, 255, 0.2); color: var(--accent-blue); }
     }
 
     .group-icon {
@@ -270,7 +270,7 @@
         &:focus {
           border-color: var(--accent-blue);
           background: var(--glass-bg-hover);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          box-shadow: 0 0 0 3px rgba(113, 112, 255, 0.1);
         }
       }
     }
@@ -305,7 +305,7 @@
     inset: -1px;
     border-radius: 15px;
     padding: 1px;
-    background: linear-gradient(135deg, transparent 40%, rgba(59, 130, 246, 0.3) 100%);
+    background: linear-gradient(135deg, transparent 40%, rgba(113, 112, 255, 0.3) 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -344,7 +344,7 @@
       justify-content: center;
       transition: all 200ms ease;
 
-      &.blue { background: rgba(59, 130, 246, 0.12); color: var(--accent-blue); }
+      &.blue { background: rgba(113, 112, 255, 0.12); color: var(--accent-blue); }
       &.green { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
       &.purple { background: rgba(139, 92, 246, 0.12); color: var(--accent-purple); }
       &.orange { background: rgba(245, 158, 11, 0.12); color: var(--accent-yellow); }
@@ -435,7 +435,7 @@
       border-radius: 6px;
       line-height: 1.4;
 
-      &.blue { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+      &.blue { background: rgba(113, 112, 255, 0.1); color: var(--accent-blue); }
       &.green { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
       &.purple { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); }
       &.orange { background: rgba(245, 158, 11, 0.1); color: var(--accent-yellow); }

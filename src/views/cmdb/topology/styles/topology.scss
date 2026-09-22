@@ -147,7 +147,7 @@
     align-items: center;
     justify-content: center;
 
-    &.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+    &.blue { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
     &.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
     &.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
     &.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
@@ -208,7 +208,7 @@
 
 .instance-node.is-center {
   border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(113, 112, 255, 0.08);
 
   .node-name {
     color: var(--accent-blue);
@@ -252,7 +252,7 @@
     .edge-type {
       font-size: 12px;
       color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(113, 112, 255, 0.1);
       padding: 2px 8px;
       border-radius: 4px;
     }
