@@ -199,12 +199,7 @@
                     </el-table-column>
                     <el-table-column label="类型" width="90">
                       <template #default="{ row }">
-                        <template v-if="row.resource_type === 'asset'">
-                          {{ assetTypeMap[row.asset_type] || row.asset_type }}
-                        </template>
-                        <template v-else>
-                          {{ row.model_name || '实例' }}
-                        </template>
+                        {{ assetTypeMap[row.asset_type] || row.asset_type || '实例' }}
                       </template>
                     </el-table-column>
                     <el-table-column label="云平台" width="90">
@@ -554,14 +549,12 @@
 </template>
 
 <script setup lang="ts">
-import { listAssetsApi, listCmdbInstancesApi } from '@/api'
 import {
     bindResourceApi,
     deleteNodeApi,
     getNodeAssetSummaryApi,
     listEnvironmentsApi,
     listNodeAssetsApi,
-    listNodeBindingsApi,
     listNodesApi,
     unbindResourceApi
 } from '@/api/service-tree'
@@ -886,85 +879,40 @@ const loadEnvironments = async () => {
   }
 }
 
-// 加载绑定资源
+// 加载绑定资源：复用后端已 enrich 的 /nodes/:id/assets（include_children=false = 直属绑定）。
+// 原先走 /nodes/:id/bindings + 前端自行拉实例/资产详情拼接，因按偏移量取前 500 条
+// 实例去匹配任意散布的 resource_id 而大量命中不上，且 provider/region/IP 对实例型
+// 绑定根本没映射，导致列表字段全空（见 loadNodeAssets 关联资产 tab 的同一数据源）。
 const loadBindings = async () => {
   if (!selectedNode.value) return
   bindingsLoading.value = true
   try {
-    const res = await listNodeBindingsApi(selectedNode.value.id, {
-      env_id: bindingFilters.envId,
-      resource_type: bindingFilters.resourceType
+    const res = await listNodeAssetsApi(selectedNode.value.id, {
+      env_id: bindingFilters.envId || undefined,
+      include_children: false,
+      offset: 0,
+      limit: 500
     })
-    const bindings = res.data?.list || []
-    
-    // 补充环境信息
+    const items = (res.data as any)?.items || []
     const envMap = new Map(environmentList.value.map(e => [e.id, e]))
-    
-    // 收集需要查询的资源ID
-    const assetIds = bindings.filter(b => b.resource_type === 'asset').map(b => b.resource_id)
-    const instanceIds = bindings.filter(b => b.resource_type === 'instance').map(b => b.resource_id)
-    
-    // 查询资产详情
-    let assetMap = new Map<number, any>()
-    if (assetIds.length > 0) {
-      try {
-        const assetRes = await listAssetsApi({ offset: 0, limit: 500 })
-        const assetData = assetRes.data as any
-        const assets = assetData?.assets || assetData?.list || []
-        assetMap = new Map(assets.map((a: any) => [a.id, a]))
-      } catch (e) {
-        console.error('加载资产详情失败:', e)
-        ElMessage.error('加载资产详情失败')
+    bindingList.value = items.map((inst: NodeAssetVO) => {
+      const env = envMap.get(inst.env_id)
+      const attrs = inst.attributes || {}
+      return {
+        ...inst,
+        id: inst.binding_id, // 解绑按绑定记录 ID
+        resource_type: 'instance',
+        resource_id: inst.id, // CMDB 实例 ID
+        env_name: env?.name,
+        env_color: env?.color,
+        resource_name: inst.asset_name,
+        resource_status: inst.status,
+        private_ip: attrs.private_ip || attrs.primary_private_ip,
+        public_ip: attrs.public_ip,
+        inst_id: (attrs.inst_id || attrs.uid || String(inst.id)) as string,
+        model_uid: (attrs.model_uid || attrs.model_id || '') as string,
+        model_name: assetTypeMap[inst.asset_type] || inst.asset_type
       }
-    }
-    
-    // 查询CMDB实例详情
-    let instanceMap = new Map<number, any>()
-    if (instanceIds.length > 0) {
-      try {
-        const instRes = await listCmdbInstancesApi({ offset: 0, limit: 500 })
-        const instData = instRes.data as any
-        const instances = instData?.list || instData?.instances || []
-        instanceMap = new Map(instances.map((i: any) => [i.id, i]))
-      } catch (e) {
-        console.error('加载实例详情失败:', e)
-        ElMessage.error('加载实例详情失败')
-      }
-    }
-    
-    // 补充绑定数据的详细信息
-    bindingList.value = bindings.map(binding => {
-      const env = envMap.get(binding.env_id)
-      const enriched = {
-        ...binding,
-        env_name: binding.env_name || env?.name,
-        env_color: binding.env_color || env?.color
-      }
-      
-      if (binding.resource_type === 'asset') {
-        const asset = assetMap.get(binding.resource_id)
-        if (asset) {
-          enriched.resource_name = enriched.resource_name || asset.asset_name || asset.name
-          enriched.asset_id = enriched.asset_id || asset.asset_id
-          enriched.asset_type = enriched.asset_type || asset.asset_type
-          enriched.provider = enriched.provider || asset.provider
-          enriched.region = enriched.region || asset.region
-          enriched.private_ip = enriched.private_ip || asset.private_ip
-          enriched.public_ip = enriched.public_ip || asset.public_ip
-          enriched.resource_status = enriched.resource_status || asset.status
-        }
-      } else if (binding.resource_type === 'instance') {
-        const inst = instanceMap.get(binding.resource_id)
-        if (inst) {
-          enriched.resource_name = enriched.resource_name || inst.name || inst.inst_name
-          enriched.inst_id = enriched.inst_id || inst.inst_id || inst.uid
-          enriched.model_uid = enriched.model_uid || inst.model_uid
-          enriched.model_name = enriched.model_name || inst.model_name
-          enriched.resource_status = enriched.resource_status || inst.status
-        }
-      }
-      
-      return enriched
     })
   } catch (error) {
     console.error('加载绑定资源失败:', error)
