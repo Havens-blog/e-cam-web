@@ -603,6 +603,7 @@ const assetTypeMap: Record<string, string> = {
   slb: '负载均衡',
   lb: '负载均衡',
   eip: '弹性IP',
+  eni: '弹性网卡',
   disk: '云硬盘',
   snapshot: '快照',
   vpc: 'VPC',
