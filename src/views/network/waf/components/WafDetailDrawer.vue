@@ -234,7 +234,10 @@
           <template v-else-if="activeTab === 'rules'">
             <div v-if="ruleList.length > 0" class="rules-section">
               <div class="section-summary">
-                <span class="summary-text">共 <strong>{{ ruleList.length }}</strong> 条防护规则</span>
+                <span class="summary-text">
+                  共 <strong>{{ attr.rule_count || ruleList.length }}</strong> 条防护规则
+                  <template v-if="ruleList.length < (attr.rule_count || 0)">（预览前 {{ ruleList.length }} 条）</template>
+                </span>
               </div>
               <el-table :data="ruleList" style="width: 100%" border max-height="420">
                 <el-table-column type="index" label="#" width="50" align="center" />
