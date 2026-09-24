@@ -6,7 +6,7 @@
         <div class="column-group">
           <div class="group-title">固定列</div>
           <div class="column-list fixed">
-            <div class="column-item disabled"><el-checkbox :model-value="true" disabled /><span class="column-label">域名</span><span class="column-tag">必选</span></div>
+            <div class="column-item disabled"><el-checkbox :model-value="true" disabled /><span class="column-label">加速域名</span><span class="column-tag">必选</span></div>
             <div class="column-item disabled"><el-checkbox :model-value="true" disabled /><span class="column-label">操作</span><span class="column-tag">必选</span></div>
           </div>
         </div>
@@ -45,16 +45,17 @@ const props = defineProps<{ visible: boolean; columns: ColumnConfig[] }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean]; 'update:columns': [columns: ColumnConfig[]] }>()
 
 const localColumns = ref<ColumnConfig[]>([])
+/** 默认列与 index.vue defaultColumnSettings 对齐（可见列按 AC 领域口径） */
 const defaultColumns: ColumnConfig[] = [
-  { key: 'status', label: '状态', width: 100, visible: true },
+  { key: 'cname', label: 'CNAME', width: 220, visible: true },
+  { key: 'status', label: '状态', width: 90, visible: true },
   { key: 'business_type', label: '业务类型', width: 100, visible: true },
   { key: 'https_enabled', label: 'HTTPS', width: 80, visible: true },
-  { key: 'service_area', label: '加速区域', width: 100, visible: true },
+  { key: 'cert_name', label: '证书名称', width: 140, visible: true },
+  { key: 'service_area', label: '服务区域', width: 100, visible: true },
   { key: 'platform', label: '平台', width: 60, visible: true },
-  { key: 'creation_time', label: '创建时间', width: 140, visible: true },
-  { key: 'cname', label: 'CNAME', width: 220, visible: false },
   { key: 'http2_enabled', label: 'HTTP/2', width: 80, visible: false },
-  { key: 'cert_name', label: '证书名称', width: 140, visible: false },
+  { key: 'creation_time', label: '创建时间', width: 150, visible: false },
 ]
 
 const visibleCount = computed(() => localColumns.value.filter(c => c.visible).length)
