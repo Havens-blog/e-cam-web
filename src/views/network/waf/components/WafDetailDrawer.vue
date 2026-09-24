@@ -232,9 +232,36 @@
 
           <!-- 防护规则 Tab -->
           <template v-else-if="activeTab === 'rules'">
-            <div class="empty-tab">
+            <div v-if="ruleList.length > 0" class="rules-section">
+              <div class="section-summary">
+                <span class="summary-text">共 <strong>{{ ruleList.length }}</strong> 条防护规则</span>
+              </div>
+              <el-table :data="ruleList" style="width: 100%" border max-height="420">
+                <el-table-column type="index" label="#" width="50" align="center" />
+                <el-table-column label="规则名称" min-width="260" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <span class="mono">{{ row.name || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="等级" width="90" align="center">
+                  <template #default="{ row }">{{ row.level || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="类型" width="120" align="center">
+                  <template #default="{ row }">{{ row.rule_type || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="状态" width="90" align="center">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="row.status === 'disabled' ? 'info' : 'success'" effect="plain">
+                      {{ row.status === 'disabled' ? '已禁用' : '已启用' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
-              <p>防护规则详情功能开发中...</p>
+              <p>暂无防护规则信息</p>
+              <p class="empty-hint">同步数据后将在此展示防护规则列表</p>
             </div>
           </template>
 
@@ -293,6 +320,13 @@ const sourceIPs = computed<string[]>(() => {
   if (!ips) return []
   if (Array.isArray(ips)) return ips.filter((ip: any) => ip != null && ip !== '')
   return []
+})
+
+/** 防护规则列表 */
+const ruleList = computed<any[]>(() => {
+  const rules = attr.value.rules
+  if (!Array.isArray(rules)) return []
+  return rules
 })
 
 /** 标签列表 */
@@ -406,9 +440,10 @@ const formatTime = (time: string | number | undefined) => {
   display: flex; align-items: center; gap: 6px;
 }
 
-// 防护域名 & 源站信息
+// 防护域名 & 源站信息 & 防护规则
 .domains-section,
-.origins-section {
+.origins-section,
+.rules-section {
   .section-summary {
     padding: 12px 16px;
     margin-bottom: 16px;
