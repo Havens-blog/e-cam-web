@@ -207,14 +207,15 @@ import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
-/** 状态值 → 展示文案/色调(共享 AssetStatusBadge 映射) */
+/** 状态值 → 展示文案/色调(共享 AssetStatusBadge 映射)。Attached(华为云绑定态,实测 39 条)归已绑定族,
+ *  与列表页 EIP_STATUS_LABELS 保持一致(键值勿改) */
 const statusLabels: Record<string, string> = {
-  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定',
+  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
   Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
   Bindable: '可绑定',
 }
 const statusTones: Record<string, string> = {
-  InUse: 'active', inuse: 'active', '已绑定': 'active',
+  InUse: 'active', inuse: 'active', '已绑定': 'active', Attached: 'active',
   Available: 'inactive', available: 'inactive', '未绑定': 'inactive',
   Bindable: 'pending',
 }
