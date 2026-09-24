@@ -45,19 +45,20 @@ const props = defineProps<{ visible: boolean; columns: ColumnConfig[] }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean]; 'update:columns': [columns: ColumnConfig[]] }>()
 
 const localColumns = ref<ColumnConfig[]>([])
+// 与 index.vue 的 defaultColumnSettings 保持一致（恢复默认口径同源）
 const defaultColumns: ColumnConfig[] = [
-  { key: 'status', label: '状态', width: 80, visible: true },
-  { key: 'cidr_block', label: 'IPv4网段', width: 130, visible: true },
-  { key: 'vswitch_count', label: 'IP数', width: 70, visible: true },
-  { key: 'platform', label: '平台', width: 60, visible: true },
-  { key: 'account_name', label: '云账号', width: 100, visible: true },
-  { key: 'region', label: '区域', width: 130, visible: true },
+  { key: 'cidr_block', label: 'IPv4网段', width: 150, visible: true },
+  { key: 'status', label: '状态', width: 90, visible: true },
+  { key: 'vswitch_count', label: '子网数', width: 80, visible: true },
+  { key: 'shared_machines', label: '共享服务器', width: 100, visible: true },
   { key: 'is_default', label: '默认VPC', width: 80, visible: true },
-  { key: 'ipv6_cidr_block', label: 'IPv6网段', width: 130, visible: false },
-  { key: 'enable_internet_access', label: '允许外网访问', width: 100, visible: false },
-  { key: 'shared_machines', label: '共享机器', width: 100, visible: false },
-  { key: 'network_domain', label: '网段域', width: 100, visible: false },
-  { key: 'create_time', label: '创建时间', width: 140, visible: false },
+  { key: 'network_domain', label: '网段域', width: 100, visible: true },
+  { key: 'platform', label: '平台', width: 60, visible: true },
+  { key: 'region', label: '地域', width: 140, visible: true },
+  { key: 'ipv6_cidr_block', label: 'IPv6网段', width: 150, visible: false },
+  { key: 'enable_internet_access', label: '允许外网访问', width: 110, visible: false },
+  { key: 'account_name', label: '云账号', width: 120, visible: false },
+  { key: 'create_time', label: '创建时间', width: 160, visible: false },
 ]
 
 const visibleCount = computed(() => localColumns.value.filter(c => c.visible).length)
