@@ -325,12 +325,14 @@ const getEditionTagType = (edition: string | undefined): any => {
 
 const getProtectionModeLabel = (mode: string | undefined) => {
   const map: Record<string, string> = { block: '拦截', observe: '观察', off: '关闭' }
-  return map[mode || ''] || mode || '拦截'
+  if (!mode) return '-'
+  return map[mode] || mode
 }
 
 const getProtectionModeType = (mode: string | undefined): any => {
   const map: Record<string, string> = { block: 'danger', observe: 'warning', off: 'info' }
-  return map[mode || ''] || 'danger'
+  if (!mode) return 'info'
+  return map[mode] || 'info'
 }
 
 const isExpiringSoon = (expiredTime: string | undefined) => {
