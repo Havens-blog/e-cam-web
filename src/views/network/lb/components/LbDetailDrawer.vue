@@ -316,16 +316,18 @@ import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射)。
+ *  实测值域含 ACTIVE 大写变体(14 条，2026-09-24 全量探查)，与列表页 LB_STATUS_LABELS 键值同源补齐 */
 const statusLabels: Record<string, string> = {
   active: '运行中',
   Active: '运行中',
+  ACTIVE: '运行中',
   running: '运行中',
   Running: '运行中',
+  inactive: '已停止',
+  INACTIVE: '已停止',
   available: '可用',
   Available: '可用',
-  inactive: '已停止',
-  Inactive: '已停止',
   stopped: '已停止',
   Stopped: '已停止',
   creating: '创建中',
@@ -437,6 +439,8 @@ const getChargeTypeLabel = (type: string | undefined) => {
   const map: Record<string, string> = {
     PayByBandwidth: '按带宽', PayByTraffic: '按流量',
     bandwidth: '按带宽', traffic: '按流量',
+    // 实测值域补齐（2026-09-24 全量 320 条探查）：PayOnDemand(96)/PrePay(19)/POSTPAID_BY_HOUR(3)，其余 202 条为空
+    PayOnDemand: '按量付费', POSTPAID_BY_HOUR: '按量付费', PrePay: '包年包月',
   }
   return map[type || ''] || type || '-'
 }
