@@ -197,7 +197,12 @@
     <!-- 攻击日志 Tab -->
     <template v-else-if="activeTab === 'logs'">
       <div class="empty-tab-content">
-        <el-empty description="攻击日志功能开发中..." />
+        <el-empty description="WAF 攻击/拦截日志已接入多云日志查询">
+          <el-button type="primary" @click="openAttackLogs">
+            <el-icon><DataAnalysis /></el-icon>
+            打开攻击日志
+          </el-button>
+        </el-empty>
       </div>
     </template>
 
@@ -234,7 +239,7 @@ import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
 import { fetchAllRows } from '@/utils/exportAll'
-import { Download, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
+import { DataAnalysis, Download, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -391,6 +396,8 @@ const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) 
   }, { onProgress })
 const handleReset = () => { Object.assign(filters, { provider: '', name: '', edition: '', status: '' }); handleSearch() }
 const handleRowClick = (row: Asset) => { detailInstance.value = row; detailVisible.value = true }
+/** 攻击日志跳转到多云日志查询(WAF 域),复用 logquery 联邦查询 */
+const openAttackLogs = () => { router.push('/logs?t=waf') }
 const handleSync = () => { syncForm.provider = ''; syncDialogVisible.value = true }
 const submitSync = async () => {
   if (!syncForm.provider) { ElMessage.warning('请选择云厂商'); return }
