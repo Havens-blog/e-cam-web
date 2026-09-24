@@ -24,6 +24,10 @@
                 <div class="instance-name">{{ instance.asset_name || instance.asset_id }}</div>
               </div>
             </div>
+            <el-button type="primary" link class="header-action" @click="openAttackLogs">
+              <el-icon><DataAnalysis /></el-icon>
+              攻击日志
+            </el-button>
           </div>
           <div class="drawer-tabs">
             <el-tabs v-model="activeTab">
@@ -289,9 +293,10 @@
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
-import { Close, Connection, Document, Lock, Position, PriceTag } from '@element-plus/icons-vue'
+import { Close, Connection, DataAnalysis, Document, Lock, Position, PriceTag } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
@@ -308,6 +313,15 @@ const activeTab = ref('detail')
 watch(() => props.instance, () => { activeTab.value = 'detail' })
 
 const attr = computed(() => props.instance?.attributes || {} as Record<string, any>)
+
+const router = useRouter()
+
+/** 攻击日志跳转:优先按首个防护域名(protected_hosts[0])限定资源,回退实例名 */
+const openAttackLogs = () => {
+  const hosts = attr.value.protected_hosts
+  const r = (Array.isArray(hosts) && hosts.length > 0) ? hosts[0] : (props.instance?.asset_name || '')
+  router.push(r ? `/logs?t=waf&r=${encodeURIComponent(r)}` : '/logs?t=waf')
+}
 
 /** 防护域名列表 */
 const protectedHosts = computed<string[]>(() => {
@@ -379,6 +393,7 @@ const formatTime = (time: string | number | undefined) => {
 
 .drawer-header {
   display: flex; align-items: center; padding: 12px 20px; position: relative;
+  .header-action { margin-left: auto; }
 }
 
 .close-corner {
