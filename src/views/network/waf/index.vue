@@ -232,6 +232,7 @@ import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
 import { fetchAllRows } from '@/utils/exportAll'
 import { Download, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -241,14 +242,8 @@ import WafDetailDrawer from './components/WafDetailDrawer.vue'
 import StatCard from '@/components/StatCard.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-    active: '运行中', Active: '运行中', running: '运行中',
-    inactive: '已停用', expired: '已过期', stopped: '已停用',
-    creating: '创建中', configuring: '配置中',
-    expiring: '即将到期',
-    error: '异常',
-  }
+/** 状态文案走全局单源 ASSET_STATUS_LABELS(含 suspended/paused/bypass 等 WAF 域原生状态) */
+const statusLabels: Record<string, string> = ASSET_STATUS_LABELS
 
 const statusTones: Record<string, string> = {'expiring': 'pending', 'Expiring': 'pending'}
 

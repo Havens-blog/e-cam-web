@@ -62,6 +62,10 @@ export const ASSET_STATUS_LABELS: Record<string, string> = {
     offline: '已停用', Offline: '已停用', disabled: '已停用',
     closed: '已停止', Closed: '已停止', shutdown: '已停止',
     terminated: '已销毁', deleted: '已删除', DELETED: '已删除',
+    // WAF 域(各厂商原生状态:阿里/腾讯/火山 suspended、腾讯 EO paused/deleted、华为 bypass)
+    suspended: '已暂停', Suspended: '已暂停',
+    paused: '已暂停', Paused: '已暂停',
+    bypass: '已旁路', Bypass: '已旁路',
     // 过渡态
     pending: '创建中', Pending: '创建中', PENDING: '创建中',
     creating: '创建中', Creating: '创建中', progressing: '创建中',

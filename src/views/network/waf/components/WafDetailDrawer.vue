@@ -264,15 +264,10 @@ import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-    active: '运行中', Active: '运行中', running: '运行中',
-    inactive: '已停用', expired: '已过期', stopped: '已停用',
-    creating: '创建中', configuring: '配置中',
-    expiring: '即将到期',
-    error: '异常',
-  }
+/** 状态文案走全局单源 ASSET_STATUS_LABELS(含 suspended/paused/bypass 等 WAF 域原生状态) */
+const statusLabels: Record<string, string> = ASSET_STATUS_LABELS
 const statusTones: Record<string, string> = {'expiring': 'pending', 'Expiring': 'pending'}
 
 
