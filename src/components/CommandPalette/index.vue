@@ -2,7 +2,7 @@
   <Teleport to="body">
     <Transition name="command-palette">
       <div v-if="isOpen" class="command-palette__overlay" @mousedown.self="close">
-        <div class="command-palette__backdrop" />
+        <div class="command-palette__backdrop" @mousedown="close" />
         <div class="command-palette" role="dialog" aria-modal="true" aria-label="全局命令面板">
           <input
             ref="inputRef"

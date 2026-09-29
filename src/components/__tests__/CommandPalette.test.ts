@@ -124,6 +124,14 @@ describe('CommandPalette 唤起与关闭', () => {
         await wrapper.find('.command-palette__overlay').trigger('mousedown')
         expect(wrapper.emitted('update:visible')).toEqual([[false]])
     })
+
+    it('点击遮罩 backdrop（空白区域）关闭面板', async () => {
+        const { wrapper } = await mountPalette({ visible: true })
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('.command-palette__overlay').exists()).toBe(true)
+        await wrapper.find('.command-palette__backdrop').trigger('mousedown')
+        expect(wrapper.emitted('update:visible')).toEqual([[false]])
+    })
 })
 
 describe('CommandPalette 焦点管理', () => {
