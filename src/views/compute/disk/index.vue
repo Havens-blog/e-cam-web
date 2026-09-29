@@ -292,6 +292,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   deriveDiskCardState,
   DISK_COLLECT_TASK_TYPE,
@@ -437,6 +438,7 @@ interface SearchCondition {
 const searchFilterVisible = ref(false)
 const currentSearchField = ref('')
 const searchKeyword = ref('')
+const route = useRoute()
 const searchConditions = ref<SearchCondition[]>([])
 
 // 搜索字段配置（从本页实际数据派生：仅覆盖 ListAssetsParams/ListDiskParams 支持的筛选维度）
@@ -675,6 +677,9 @@ const initColumnSettings = () => {
 
 onMounted(() => {
   initColumnSettings()
+  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.keyword = s
   fetchInstances()
   fetchOpsCard()
 })

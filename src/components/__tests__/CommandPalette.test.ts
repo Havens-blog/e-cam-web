@@ -28,7 +28,8 @@ function createTestRouter(): Router {
         routes: [
             { path: '/', component: { template: '<div />' }, children: [
                 { path: 'dashboard', component: { template: '<div />' } },
-                { path: 'assets/:id', component: { template: '<div />' } }
+                { path: 'compute/ecs', component: { template: '<div />' } },
+                { path: 'cmdb/instances', component: { template: '<div />' } }
             ] }
         ]
     })
@@ -256,7 +257,7 @@ describe('CommandPalette 资产快捷搜索（searchAssetsApi 契约）', () => 
         wrapper.unmount()
     })
 
-    it('资产结果 Enter 直达资产详情 /assets/:id 并记录最近访问', async () => {
+    it('资产结果 Enter 跳转到对应产品页并预填搜索、记录最近访问', async () => {
         vi.useFakeTimers()
         vi.mocked(searchAssetsApi).mockResolvedValue({
             data: { items: [makeSearchItem()], total: 1, keyword: 'web' }
@@ -278,10 +279,37 @@ describe('CommandPalette 资产快捷搜索（searchAssetsApi 契约）', () => 
         }
         await input.trigger('keydown', { key: 'Enter' })
         await flushPromises()
-        expect(router.currentRoute.value.path).toBe('/assets/42')
+        // ecs → /compute/ecs，带 ?search=asset_id 预填（不再跳 /assets/:id 那个 404 详情）
+        expect(router.currentRoute.value.path).toBe('/compute/ecs')
+        expect(router.currentRoute.value.query.search).toBe('i-abc123')
 
         const recent = useRecentVisitsStore()
-        expect(recent.entries.some((e) => e.path === '/assets/42')).toBe(true)
+        expect(recent.entries.some((e) => e.path === '/compute/ecs')).toBe(true)
+        wrapper.unmount()
+    })
+
+    it('未知资产类型回落资源实例列表（不 404）', async () => {
+        vi.useFakeTimers()
+        vi.mocked(searchAssetsApi).mockResolvedValue({
+            data: { items: [makeSearchItem({ asset_type: 'unknown_custom' })], total: 1, keyword: 'web' }
+        } as never)
+        const { wrapper, router } = await mountPalette({ visible: true })
+        await wrapper.vm.$nextTick()
+        await wrapper.find('input.command-palette__input').setValue('web')
+        vi.advanceTimersByTime(300)
+        await flushPromises()
+        await wrapper.vm.$nextTick()
+
+        const input = wrapper.find('input.command-palette__input')
+        let guard = 0
+        while (!wrapper.find('.command-palette__item.is-active').text().includes('web-1') && guard < 20) {
+            await input.trigger('keydown', { key: 'ArrowDown' })
+            await wrapper.vm.$nextTick()
+            guard++
+        }
+        await input.trigger('keydown', { key: 'Enter' })
+        await flushPromises()
+        expect(router.currentRoute.value.path).toBe('/cmdb/instances')
         wrapper.unmount()
     })
 

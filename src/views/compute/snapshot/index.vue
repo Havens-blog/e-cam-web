@@ -239,6 +239,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SnapshotDetailDrawer from './components/SnapshotDetailDrawer.vue'
 
@@ -355,6 +356,7 @@ interface SearchCondition {
 const searchFilterVisible = ref(false)
 const currentSearchField = ref('')
 const searchKeyword = ref('')
+const route = useRoute()
 const searchConditions = ref<SearchCondition[]>([])
 
 // 搜索字段配置（仅覆盖实测有效的后端筛选维度，均经 :8888 实探验证：name 同时匹配 asset_id、
@@ -548,6 +550,9 @@ const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-C
 onMounted(() => {
   const saved = localStorage.getItem('snapshot-column-settings')
   if (saved) { try { columnSettings.value = JSON.parse(saved) } catch {} }
+  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.keyword = s
   fetchData()
 })
 </script>

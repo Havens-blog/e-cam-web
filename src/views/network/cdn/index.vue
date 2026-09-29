@@ -295,7 +295,7 @@ import { ArrowLeft, ArrowRight, Box, CircleCheck, Download, Plus, Refresh, Searc
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
@@ -345,6 +345,7 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -721,6 +722,9 @@ const getProviderName = (provider?: string): string => (provider ? getProviderLa
 
 onMounted(() => {
   loadColumnSettings()
+  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.name = s
   fetchData()
 })
 </script>

@@ -15,6 +15,7 @@ import {
   FullScreen,
   Grid,
   Moon,
+  Search,
   Setting,
   Sunny
 } from '@element-plus/icons-vue'
@@ -37,6 +38,9 @@ const avatarText = computed(() => displayName.value.charAt(0).toUpperCase())
 
 // 退出登录进行中，用于防抖与反馈
 const loggingOut = ref(false)
+
+// ⌘K 命令面板受控开关：header 里的「搜索」入口用它打开面板（目标键 Ctrl+K/⌘K 仍可直接唤起）
+const commandPaletteVisible = ref(false)
 
 /**
  * 用户下拉菜单命令分发。
@@ -639,6 +643,17 @@ const toggleFullscreen = () => {
             <span>平台导航</span>
             <el-icon :size="12" class="trigger-arrow"><ArrowDown /></el-icon>
           </div>
+
+          <!-- 全局搜索入口（打开 ⌘K 命令面板，恢复原 header 搜索框的可见入口） -->
+          <div
+            class="navbar-search"
+            title="全局搜索 (Ctrl+K)"
+            @click="commandPaletteVisible = true"
+          >
+            <el-icon :size="14"><Search /></el-icon>
+            <span>搜索</span>
+            <kbd class="navbar-search__kbd">Ctrl K</kbd>
+          </div>
         </div>
 
         <div class="navbar-right">
@@ -701,7 +716,7 @@ const toggleFullscreen = () => {
       <PlatformNav v-model:visible="showPlatformNav" />
 
       <!-- ⌘K 全局命令面板（替代原 header 简易搜索，Phase 2 任务 7；⌘K/Esc 自管） -->
-      <CommandPalette />
+      <CommandPalette v-model:visible="commandPaletteVisible" />
 
       <!-- 页面内容 -->
       <main class="main-content">
@@ -1223,6 +1238,39 @@ $navbar-height: 56px;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.navbar-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
+  }
+
+  .navbar-search__kbd {
+    padding: 1px 5px;
+    border: 1px solid var(--border-base);
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-tertiary);
+    font-family: inherit;
+  }
 }
 
 .platform-nav-trigger {

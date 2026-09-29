@@ -30,14 +30,14 @@ vi.mock('@/api/asset', () => ({
     searchAssetsApi: vi.fn()
 }))
 
-/** 测试用最小路由表：dashboard（默认落点）+ assets/:id（资产详情回归路径） */
+/** 测试用最小路由表：dashboard（默认落点）+ compute/ecs（资产搜索跳转回落到产品页） */
 function createTestRouter(): Router {
     return createRouter({
         history: createMemoryHistory(),
         routes: [
             { path: '/', component: { template: '<div />' }, children: [
                 { path: 'dashboard', component: { template: '<div />' } },
-                { path: 'assets/:id', component: { template: '<div />' } }
+                { path: 'compute/ecs', component: { template: '<div />' } }
             ] }
         ]
     })
@@ -203,7 +203,7 @@ describe('MainLayout × CommandPalette 集成', () => {
         expect(hits, `MainLayout.vue 仍残留旧搜索标识: ${[...new Set(hits)].join(', ')}`).toEqual([])
     })
 
-    it('palette 资产搜索直达 /assets/:id 详情（AC3 回归路径）', async () => {
+    it('palette 资产搜索跳转对应产品页并预填搜索（AC3 回归路径）', async () => {
         vi.useFakeTimers()
         vi.mocked(searchAssetsApi).mockResolvedValue({
             data: { items: [makeSearchItem()], total: 1, keyword: 'web' }
@@ -230,6 +230,8 @@ describe('MainLayout × CommandPalette 集成', () => {
         }
         await input.trigger('keydown', { key: 'Enter' })
         await flushPromises()
-        expect(router.currentRoute.value.path).toBe('/assets/42')
+        // ecs → /compute/ecs，带 ?search=asset_id 预填（搜索数据源是 ecam_instance，不得跳 /assets/:id 那个跨集合 404）
+        expect(router.currentRoute.value.path).toBe('/compute/ecs')
+        expect(router.currentRoute.value.query.search).toBe('i-abc123')
     })
 })

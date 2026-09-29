@@ -331,7 +331,7 @@ import { ArrowLeft, ArrowRight, Box, DataAnalysis, Download, Plus, Refresh, Sear
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
 
@@ -430,6 +430,7 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -799,6 +800,9 @@ const getProviderName = (provider?: string): string => (provider ? getProviderLa
 
 onMounted(() => {
   loadColumnSettings()
+  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
+  const s = route.query.search
+  if (typeof s === 'string' && s) filters.name = s
   fetchData()
 })
 </script>

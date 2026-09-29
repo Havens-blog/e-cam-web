@@ -194,6 +194,45 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
   eip: 'EIP'
 }
 
+/**
+ * 资产类型 → 产品列表路由。
+ *
+ * 搜索接口 `/cam/assets/search` 的数据源是 `ecam_instance`（CMDB 实例），返回的
+ * `id` 是实例主键；而 `GET /cam/assets/:id`（资产详情）查的是另一个集合
+ * `ecam_cloud_asset`，两者 id 不同源——直接跳 `/assets/:id` 必然 404。
+ * 正确行为与旧 header 搜索一致：跳到该资产类型对应的产品列表页，带
+ * `?search=<asset_id>` 预填关键词。类型值域对齐后端 `ExtractAssetType`
+ * （model_uid.go 注册表的 short/suffix 输出，lb 家族含 slb/alb/nlb/elb/clb，
+ * vswitch 含 subnet）。
+ */
+const ASSET_TYPE_ROUTES: Record<string, string> = {
+  ecs: '/compute/ecs',
+  disk: '/compute/disk',
+  snapshot: '/compute/snapshot',
+  security_group: '/compute/security-group',
+  image: '/compute/image',
+  rds: '/databases/rds',
+  redis: '/databases/redis',
+  mongodb: '/databases/mongodb',
+  kafka: '/middleware/kafka',
+  elasticsearch: '/middleware/elasticsearch',
+  vpc: '/network/vpc',
+  vswitch: '/network/vswitch',
+  subnet: '/network/vswitch',
+  eip: '/network/eip',
+  eni: '/network/eni',
+  lb: '/network/lb',
+  slb: '/network/lb',
+  alb: '/network/lb',
+  nlb: '/network/lb',
+  elb: '/network/lb',
+  clb: '/network/lb',
+  cdn: '/network/cdn',
+  waf: '/network/waf',
+  nas: '/storage/nas',
+  oss: '/storage/oss'
+}
+
 /** 资产搜索结果（防抖请求回填；清空输入即时清空） */
 const assetResults = ref<SearchResultItem[]>([])
 /** 资产搜索进行中（结果区尾部轻提示） */
@@ -206,19 +245,25 @@ onBeforeUnmount(() => {
   if (searchTimer !== null) clearTimeout(searchTimer)
 })
 
-/** 资产结果条目（服务端已过滤，本地 filterable=false 直通；直达 /assets/:id 详情） */
+/** 资产结果条目（服务端已过滤，本地 filterable=false 直通；跳转到对应产品页带 ?search= 预填，与旧 header 搜索一致） */
 const assetItems = computed<PaletteItem[]>(() =>
-  assetResults.value.map((item) => ({
-    id: `asset:${item.id}`,
-    group: 'assets',
-    title: item.asset_name,
-    subtitle: `${ASSET_TYPE_LABELS[item.asset_type] ?? item.asset_type} · ${item.asset_id} · ${item.provider}`,
-    path: `/assets/${item.id}`,
-    filterable: false,
-    run: () => {
-      void router.push(`/assets/${item.id}`)
+  assetResults.value.map((item) => {
+    const route = ASSET_TYPE_ROUTES[item.asset_type]
+    return {
+      id: `asset:${item.id}`,
+      group: 'assets',
+      title: item.asset_name,
+      subtitle: `${ASSET_TYPE_LABELS[item.asset_type] ?? item.asset_type} · ${item.asset_id} · ${item.provider}`,
+      path: route,
+      filterable: false,
+      run: () => {
+        // 命中产品页：带 ?search= 预填关键词；未知类型回落资源实例列表（同一 ecam_instance 数据源，绝不跳 /assets/:id 以免 404）
+        void router.push(route
+          ? { path: route, query: { search: item.asset_id } }
+          : { path: '/cmdb/instances' })
+      }
     }
-  }))
+  })
 )
 
 // ==================== 状态机装配 ====================
