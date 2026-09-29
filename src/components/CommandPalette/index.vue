@@ -194,6 +194,9 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
   eip: 'EIP'
 }
 
+/** 全局搜索覆盖的资产类型：实例级主资源（排除 disk/snapshot/security_group/image 等附属/派生资源） */
+const GLOBAL_SEARCH_ASSET_TYPES = 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,nas,oss'
+
 /**
  * 资产类型 → 产品列表路由。
  *
@@ -321,7 +324,7 @@ watch(
       assetLoading.value = true
       try {
         // 契约与 MainLayout 旧搜索一致：{keyword, limit:10} → res.data.items
-        const res = await searchAssetsApi({ keyword, limit: ASSET_SEARCH_LIMIT })
+        const res = await searchAssetsApi({ keyword, limit: ASSET_SEARCH_LIMIT, types: GLOBAL_SEARCH_ASSET_TYPES })
         if (seq !== searchSeq) return
         assetResults.value = res.data?.items ?? []
       } catch {
