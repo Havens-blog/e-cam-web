@@ -802,7 +802,10 @@ onMounted(() => {
   loadColumnSettings()
   // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
   const s = route.query.search
-  if (typeof s === 'string' && s) filters.name = s
+  if (typeof s === 'string' && s) {
+    filters.name = s
+    searchKeyword.value = s
+  }
   fetchData()
 })
 </script>
