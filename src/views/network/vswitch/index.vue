@@ -761,6 +761,13 @@ onMounted(() => {
   const queryVpcId = route.query.vpc_id
   if (typeof queryVpcId === 'string' && queryVpcId) {
     searchConditions.value.push({ field: 'vpc_id', value: queryVpcId, displayValue: queryVpcId })
+  }
+  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填资源ID条件
+  const s = route.query.search
+  if (typeof s === 'string' && s) {
+    searchConditions.value.push({ field: 'asset_id', value: s, displayValue: s })
+  }
+  if (searchConditions.value.length > 0) {
     applySearchConditions()
   } else {
     fetchData()
