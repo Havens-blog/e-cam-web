@@ -137,117 +137,6 @@
                 检测到 {{ suspiciousList.length }} 个环境疑异资产，已在列表中标红提示（不做自动改绑）
               </el-alert>
               <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-                <el-tab-pane label="绑定资源" name="bindings">
-                  <div class="section-header">
-                    <div class="section-actions">
-                      <el-select
-                        v-model="bindingFilters.envId"
-                        placeholder="全部环境"
-                        clearable
-                        size="small"
-                        style="width: 120px"
-                        @change="loadBindings"
-                      >
-                        <el-option
-                          v-for="env in environmentList"
-                          :key="env.id"
-                          :label="env.name"
-                          :value="env.id"
-                        />
-                      </el-select>
-                      <el-select
-                        v-model="bindingFilters.resourceType"
-                        placeholder="全部类型"
-                        clearable
-                        size="small"
-                        style="width: 120px"
-                        @change="loadBindings"
-                      >
-                        <el-option label="实例" value="instance" />
-                        <el-option label="资产" value="asset" />
-                      </el-select>
-                      <el-button type="primary" size="small" @click="handleBindResource">
-                        <el-icon><Link /></el-icon>
-                        绑定资源
-                      </el-button>
-                    </div>
-                  </div>
-                  <el-table
-                    v-loading="bindingsLoading"
-                    :data="bindingList"
-                    size="small"
-                    max-height="300"
-                    highlight-current-row
-                    :row-class-name="bindingRowClass"
-                    @row-click="handleBindingRowClick"
-                    style="cursor: pointer"
-                  >
-                    <el-table-column label="环境" width="90">
-                      <template #default="{ row }">
-                        <span class="env-tag">
-                          <span class="env-dot" :style="{ background: row.env_color }"></span>
-                          {{ row.env_name }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="资源名称" min-width="120" show-overflow-tooltip>
-                      <template #default="{ row }">
-                        <el-tooltip :content="suspicionOf(row)?.reason || ''" :disabled="!suspicionOf(row)" placement="top">
-                          <span :class="{ 'suspicious-name': !!suspicionOf(row) }">{{ row.resource_name }}</span>
-                        </el-tooltip>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="类型" width="90">
-                      <template #default="{ row }">
-                        {{ assetTypeMap[row.asset_type] || row.asset_type || '实例' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="云平台" width="90">
-                      <template #default="{ row }">
-                        <span v-if="row.provider" class="provider-tag">
-                          {{ getProviderLabel(row.provider) }}
-                        </span>
-                        <span v-else class="text-muted">-</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="IP地址" width="130">
-                      <template #default="{ row }">
-                        <div v-if="row.private_ip || row.public_ip" class="ip-cell">
-                          <span v-if="row.private_ip" class="ip-item">{{ row.private_ip }}</span>
-                          <span v-if="row.public_ip" class="ip-item public">{{ row.public_ip }}</span>
-                        </div>
-                        <span v-else class="text-muted">-</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="地域" width="100" show-overflow-tooltip>
-                      <template #default="{ row }">
-                        {{ row.region || '-' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="状态" width="80">
-                      <template #default="{ row }">
-                        <el-tag :type="getStatusType(row.resource_status)" size="small">
-                          {{ getStatusText(row.resource_status) }}
-                        </el-tag>
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="bind_type" label="绑定" width="60">
-                      <template #default="{ row }">
-                        <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
-                          {{ row.bind_type === 'manual' ? '手动' : '规则' }}
-                        </el-tag>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="操作" width="60" fixed="right">
-                      <template #default="{ row }">
-                        <el-button link type="danger" size="small" @click.stop="handleUnbind(row)">
-                          解绑
-                        </el-button>
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                </el-tab-pane>
-
                 <el-tab-pane label="关联资产" name="assets">
                   <!-- 统计卡片（任务6 asset-summary：与树徽标同源口径） -->
                   <div v-if="selectedSummary" class="asset-stats-row">
@@ -404,6 +293,117 @@
                       @current-change="handleAssetPageChange"
                     />
                   </div>
+                </el-tab-pane>
+
+                <el-tab-pane label="绑定资源" name="bindings">
+                  <div class="section-header">
+                    <div class="section-actions">
+                      <el-select
+                        v-model="bindingFilters.envId"
+                        placeholder="全部环境"
+                        clearable
+                        size="small"
+                        style="width: 120px"
+                        @change="loadBindings"
+                      >
+                        <el-option
+                          v-for="env in environmentList"
+                          :key="env.id"
+                          :label="env.name"
+                          :value="env.id"
+                        />
+                      </el-select>
+                      <el-select
+                        v-model="bindingFilters.resourceType"
+                        placeholder="全部类型"
+                        clearable
+                        size="small"
+                        style="width: 120px"
+                        @change="loadBindings"
+                      >
+                        <el-option label="实例" value="instance" />
+                        <el-option label="资产" value="asset" />
+                      </el-select>
+                      <el-button type="primary" size="small" @click="handleBindResource">
+                        <el-icon><Link /></el-icon>
+                        绑定资源
+                      </el-button>
+                    </div>
+                  </div>
+                  <el-table
+                    v-loading="bindingsLoading"
+                    :data="bindingList"
+                    size="small"
+                    max-height="300"
+                    highlight-current-row
+                    :row-class-name="bindingRowClass"
+                    @row-click="handleBindingRowClick"
+                    style="cursor: pointer"
+                  >
+                    <el-table-column label="环境" width="90">
+                      <template #default="{ row }">
+                        <span class="env-tag">
+                          <span class="env-dot" :style="{ background: row.env_color }"></span>
+                          {{ row.env_name }}
+                        </span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="资源名称" min-width="120" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <el-tooltip :content="suspicionOf(row)?.reason || ''" :disabled="!suspicionOf(row)" placement="top">
+                          <span :class="{ 'suspicious-name': !!suspicionOf(row) }">{{ row.resource_name }}</span>
+                        </el-tooltip>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="90">
+                      <template #default="{ row }">
+                        {{ assetTypeMap[row.asset_type] || row.asset_type || '实例' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="云平台" width="90">
+                      <template #default="{ row }">
+                        <span v-if="row.provider" class="provider-tag">
+                          {{ getProviderLabel(row.provider) }}
+                        </span>
+                        <span v-else class="text-muted">-</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="IP地址" width="130">
+                      <template #default="{ row }">
+                        <div v-if="row.private_ip || row.public_ip" class="ip-cell">
+                          <span v-if="row.private_ip" class="ip-item">{{ row.private_ip }}</span>
+                          <span v-if="row.public_ip" class="ip-item public">{{ row.public_ip }}</span>
+                        </div>
+                        <span v-else class="text-muted">-</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="地域" width="100" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        {{ row.region || '-' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="80">
+                      <template #default="{ row }">
+                        <el-tag :type="getStatusType(row.resource_status)" size="small">
+                          {{ getStatusText(row.resource_status) }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="bind_type" label="绑定" width="60">
+                      <template #default="{ row }">
+                        <el-tag :type="row.bind_type === 'manual' ? 'info' : 'success'" size="small">
+                          {{ row.bind_type === 'manual' ? '手动' : '规则' }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="60" fixed="right">
+                      <template #default="{ row }">
+                        <el-button link type="danger" size="small" @click.stop="handleUnbind(row)">
+                          解绑
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
                 </el-tab-pane>
               </el-tabs>
             </div>
@@ -661,7 +661,7 @@ const bindingFilters = reactive({
 })
 
 // Tab 切换
-const activeTab = ref('bindings')
+const activeTab = ref('assets')
 
 // 关联资产
 const nodeAssetList = ref<NodeAssetVO[]>([])
@@ -851,7 +851,9 @@ const loadTree = async () => {
       if (firstNode) {
         selectedNode.value = firstNode
         buildNodePath(firstNode)
-        loadBindings()
+        bindingList.value = []
+        nodeAssetList.value = []
+        loadNodeAssets()
         loadSelectedSummary()
         // 设置树组件的当前选中节点
         nextTick(() => {
@@ -925,9 +927,12 @@ const loadBindings = async () => {
 
 // Tab 切换
 const handleTabChange = (tab: string | number) => {
-  if (tab === 'assets' && selectedNode.value) {
+  if (!selectedNode.value) return
+  if (tab === 'assets') {
     loadNodeAssets()
     if (!selectedSummary.value) loadSelectedSummary()
+  } else if (tab === 'bindings') {
+    loadBindings()
   }
 }
 
@@ -1091,11 +1096,12 @@ const handleNodeClick = (data: any) => {
   const nodeData = data as ServiceTreeNode
   selectedNode.value = nodeData
   buildNodePath(nodeData)
-  activeTab.value = 'bindings'
+  activeTab.value = 'assets'
   selectedSummary.value = null
+  bindingList.value = []
   nodeAssetList.value = []
   assetCurrentPage.value = 1
-  loadBindings()
+  loadNodeAssets()
   loadSelectedSummary()
   contextMenuVisible.value = false
 }
