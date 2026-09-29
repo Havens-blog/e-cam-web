@@ -720,7 +720,7 @@ const toggleFullscreen = () => {
 
       <!-- 页面内容 -->
       <main class="main-content">
-        <router-view />
+        <router-view :key="route.fullPath" />
       </main>
     </div>
   </div>
