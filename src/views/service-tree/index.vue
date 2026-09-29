@@ -138,9 +138,13 @@
               </el-alert>
               <el-tabs v-model="activeTab" @tab-change="handleTabChange">
                 <el-tab-pane label="关联资产" name="assets">
-                  <!-- 统计卡片（任务6 asset-summary：与树徽标同源口径） -->
+                  <!-- 统计卡片（任务6 asset-summary：与树徽标同源口径）；点类型卡按类型过滤资产列表 -->
                   <div v-if="selectedSummary" class="asset-stats-row">
-                    <div class="stat-card total">
+                    <div
+                      class="stat-card total"
+                      :class="{ 'stat-card--active': !assetFilters.asset_type }"
+                      @click="handleStatCardClick(undefined)"
+                    >
                       <span class="stat-num">{{ selectedSummary.total }}</span>
                       <span class="stat-label">总资产</span>
                     </div>
@@ -148,6 +152,8 @@
                       v-for="(count, type) in selectedSummary.by_type"
                       :key="type"
                       class="stat-card"
+                      :class="{ 'stat-card--active': assetFilters.asset_type === type }"
+                      @click="handleStatCardClick(type as string)"
                     >
                       <span class="stat-num">{{ count }}</span>
                       <span class="stat-label">{{ assetTypeMap[type as string] || type }}</span>
@@ -976,6 +982,13 @@ const handleIncludeChildrenChange = () => {
   loadNodeAssets()
 }
 
+// 点统计卡：按类型过滤资产列表（undefined = 总资产 = 清空类型过滤）
+const handleStatCardClick = (type?: string) => {
+  assetFilters.asset_type = type
+  assetCurrentPage.value = 1
+  loadNodeAssets()
+}
+
 // 分配资产到节点（根节点未绑定资产）
 const assignAsset = ref<NodeAssetVO | null>(null)
 const assignDialogVisible = ref(false)
@@ -1594,6 +1607,18 @@ onUnmounted(() => {
           flex-direction: column;
           align-items: center;
           min-width: 70px;
+          cursor: pointer;
+          transition: background 0.15s;
+          border: 1px solid transparent;
+
+          &:hover {
+            background: rgba(113, 112, 255, 0.08);
+          }
+
+          &.stat-card--active {
+            border-color: var(--accent-blue);
+            background: rgba(113, 112, 255, 0.16);
+          }
 
           &.total {
             background: rgba(113, 112, 255, 0.12);
