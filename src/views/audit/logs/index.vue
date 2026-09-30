@@ -1,35 +1,31 @@
 <template>
   <div class="audit-page">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-icon total"><el-icon :size="20"><Document /></el-icon></div>
-        <div class="stat-info">
-          <span class="stat-num">{{ total }}</span>
-          <span class="stat-label">总记录</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon success"><el-icon :size="20"><CircleCheck /></el-icon></div>
-        <div class="stat-info">
-          <span class="stat-num success">{{ successCount }}</span>
-          <span class="stat-label">成功</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon fail"><el-icon :size="20"><CircleClose /></el-icon></div>
-        <div class="stat-info">
-          <span class="stat-num fail">{{ failCount }}</span>
-          <span class="stat-label">失败</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon slow"><el-icon :size="20"><Timer /></el-icon></div>
-        <div class="stat-info">
-          <span class="stat-num slow">{{ slowCount }}</span>
-          <span class="stat-label">慢请求</span>
+    <!-- 页面头部：标题 + 内联状态标（主机页紧凑标准，无大统计卡） -->
+    <div class="page-top">
+      <div class="page-title-row">
+        <h1 class="page-title">操作审计</h1>
+        <div class="stats-badges">
+          <div class="stat-badge">
+            <span class="stat-label">总记录</span>
+            <span class="stat-num">{{ total }}</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-label">成功</span>
+            <span class="stat-num green">{{ successCount }}</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-label">失败</span>
+            <span class="stat-num red">{{ failCount }}</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-label">慢请求</span>
+            <span class="stat-num orange">{{ slowCount }}</span>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 筛选栏 -->
     <div class="filter-bar">
       <div class="filter-left">
         <el-input v-model="filters.api_path" placeholder="搜索 API 路径" clearable size="default" style="width: 220px" @keyup.enter="handleFilterChange" />
@@ -53,8 +49,10 @@
         <el-tooltip content="刷新"><el-button :icon="Refresh" circle @click="handleRefresh" /></el-tooltip>
       </div>
     </div>
+
+    <!-- 表格 -->
     <div class="table-card">
-      <el-table :data="logList" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-secondary, #fafafa)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
+      <el-table :data="logList" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable>
           <template #default="{ row }"><span class="cell-time">{{ formatTs(row.ctime) }}</span></template>
         </el-table-column>
@@ -97,9 +95,12 @@
         </el-table-column>
       </el-table>
     </div>
+
+    <!-- 分页 -->
     <div class="pagination-bar">
       <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @current-change="fetchLogs" @size-change="fetchLogs" />
     </div>
+
     <!-- 详情抽屉 -->
     <el-drawer v-model="drawerVisible" title="审计日志详情" size="520px" :close-on-click-modal="true">
       <div v-if="currentLog" class="detail-content">
@@ -126,7 +127,7 @@
 import type { AuditLog, AuditLogParams } from '@/api/audit'
 import { exportAuditLogsApi, listAuditLogsApi } from '@/api/audit'
 import { useDictionary } from '@/composables/useDictionary'
-import { CircleCheck, CircleClose, Document, Download, Refresh, Timer } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
@@ -285,89 +286,160 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.audit-page { height: 100%; display: flex; flex-direction: column; gap: 16px; }
-.stats-row { display: flex; gap: 16px; }
-.stat-card {
-  flex: 1; display: flex; align-items: center; gap: 12px; padding: 16px 20px;
-  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 12px;
+.audit-page {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  margin: -24px; // 抵消外层 padding
+  height: calc(100% + 48px);
 }
-.stat-icon {
-  width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
-  &.total { background: rgba(113,112,255,0.1); color: #7170ff; }
-  &.success { background: rgba(16,185,129,0.1); color: #10b981; }
-  &.fail { background: rgba(239,68,68,0.1); color: #ef4444; }
-  &.slow { background: rgba(245,158,11,0.1); color: #f59e0b; }
+
+// 页面顶部
+.page-top {
+  padding: 16px 20px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
 }
-.stat-info { display: flex; flex-direction: column; }
-.stat-num {
-  font-size: 20px; font-weight: 700; color: var(--text-primary, var(--text-primary));
-  &.success { color: #10b981; }
-  &.fail { color: #ef4444; }
-  &.slow { color: #f59e0b; }
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
-.stat-label { font-size: 12px; color: var(--text-secondary, var(--text-tertiary)); }
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.stats-badges {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  min-width: 60px;
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .stat-num {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+
+    &.green { color: var(--accent-green); }
+    &.orange { color: var(--accent-yellow); }
+    &.red { color: var(--accent-red); }
+  }
+}
+
+// 筛选栏
 .filter-bar {
-  display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
-  background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 10px; flex-wrap: wrap; gap: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.filter-left, .filter-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.filter-left,
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// 表格区
 .table-card {
-  flex: 1; background: var(--glass-bg, #fff); border: 1px solid var(--glass-border, var(--glass-border)); border-radius: 10px; overflow: hidden;
-  :deep(.row-error) { background-color: rgba(239,68,68,0.04) !important; }
+  flex: 1;
+  background: var(--bg-surface);
+  overflow: hidden;
+
+  :deep(.row-error) { background-color: rgba(239, 68, 68, 0.04) !important; }
 }
-.cell-time { font-size: 13px; color: var(--text-secondary, var(--text-secondary)); font-variant-numeric: tabular-nums; }
+
+.cell-time { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .cell-operator { display: flex; align-items: center; gap: 6px; }
 .operator-avatar {
-  width: 24px; height: 24px; border-radius: 50%; background: var(--el-color-primary-light-7, #c6e2ff);
-  color: var(--el-color-primary, var(--el-color-primary)); display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(113, 112, 255, 0.12); color: var(--accent-blue);
+  display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600; flex-shrink: 0;
 }
 .cell-request { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .api-path {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--text-secondary, var(--text-secondary));
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .method-badge {
   display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
-  font-family: 'SF Mono', 'Fira Code', monospace; flex-shrink: 0;
-  &.get { background: rgba(16,185,129,0.15); color: #10b981; }
-  &.post { background: rgba(113,112,255,0.15); color: #7170ff; }
-  &.put { background: rgba(245,158,11,0.15); color: #f59e0b; }
-  &.delete { background: rgba(239,68,68,0.15); color: #ef4444; }
-  &.patch { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+  font-family: var(--font-mono); flex-shrink: 0;
+  &.get { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+  &.post { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
+  &.put { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+  &.delete { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+  &.patch { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
 }
 .status-dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px;
-  &.ok { background: #10b981; }
-  &.error { background: #ef4444; }
+  &.ok { background: var(--accent-green); }
+  &.error { background: var(--accent-red); }
 }
 .status-code {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; font-weight: 600;
-  &.ok { color: #10b981; }
-  &.error { color: #ef4444; }
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  &.ok { color: var(--accent-green); }
+  &.error { color: var(--accent-red); }
 }
 .duration {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
-  &.slow { color: #ef4444; font-weight: 600; }
-  &.warn { color: #f59e0b; }
+  font-family: var(--font-mono); font-size: 12px;
+  &.slow { color: var(--accent-red); font-weight: 600; }
+  &.warn { color: var(--accent-yellow); }
 }
-.result-icon { font-size: 18px; &.success { color: #10b981; } &.fail { color: #ef4444; } }
-.pagination-bar { display: flex; justify-content: flex-end; padding: 8px 0; }
+.result-icon { font-size: 18px; &.success { color: var(--accent-green); } &.fail { color: var(--accent-red); } }
+
+// 分页
+.pagination-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+}
+
+// 详情抽屉
 .detail-content { display: flex; flex-direction: column; gap: 16px; }
 .detail-row {
   display: flex; gap: 12px;
-  .detail-label { width: 80px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary, var(--text-tertiary)); text-align: right; line-height: 22px; }
+  .detail-label { width: 80px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary); text-align: right; line-height: 22px; }
   .detail-value {
-    font-size: 13px; color: var(--text-primary, var(--text-primary)); word-break: break-all;
-    &.ua { font-size: 12px; color: var(--text-secondary, var(--text-tertiary)); }
+    font-size: 13px; color: var(--text-primary); word-break: break-all;
+    &.ua { font-size: 12px; color: var(--text-secondary); }
   }
   code {
-    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
-    background: var(--bg-secondary, var(--glass-bg)); padding: 2px 6px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 12px;
+    background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;
   }
 }
 .detail-json {
-  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: var(--bg-secondary, var(--glass-bg));
+  font-family: var(--font-mono); font-size: 12px; background: var(--bg-elevated);
   padding: 12px; border-radius: 6px; overflow-x: auto; max-height: 300px; margin: 0; white-space: pre-wrap; word-break: break-all;
 }
 </style>
