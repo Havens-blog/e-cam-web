@@ -411,13 +411,13 @@ const formatDateTime = (time: string | undefined) => {
 
 .group-card {
   padding: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   transition: all 200ms ease;
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
   }
 
   .group-header {

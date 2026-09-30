@@ -343,7 +343,7 @@ onMounted(() => {
         :deep(.el-textarea__inner) {
           font-family: 'Courier New', monospace;
           font-size: 12px;
-          background: var(--glass-bg);
+          background: var(--bg-surface);
         }
       }
     }

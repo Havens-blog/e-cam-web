@@ -468,13 +468,13 @@ onMounted(fetchUsers)
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
       color: var(--text-primary);
       transition: all 200ms ease;
 
       &:hover {
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-color: var(--border-strong);
       }
 
@@ -509,9 +509,8 @@ onMounted(fetchUsers)
 }
 
 .stat-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 18px 20px;
   display: flex;
@@ -520,7 +519,7 @@ onMounted(fetchUsers)
   transition: all 200ms ease;
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     transform: translateY(-2px);
   }
@@ -569,9 +568,8 @@ onMounted(fetchUsers)
 
 // 搜索区域
 .filter-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 16px;
@@ -654,9 +652,8 @@ onMounted(fetchUsers)
 
 // 用户列表
 .users-list {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -695,7 +692,7 @@ onMounted(fetchUsers)
   }
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
   }
 
   @media (max-width: 1200px) {
@@ -874,9 +871,8 @@ onMounted(fetchUsers)
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
 
   @media (max-width: 640px) {

@@ -242,7 +242,7 @@ const handleClose = () => {
 .progress-section {
   margin-top: 20px;
   padding: 16px;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border-radius: 4px;
 
   .progress-text {

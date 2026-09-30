@@ -628,13 +628,13 @@ onMounted(async () => {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
       color: var(--text-primary);
       transition: all 200ms ease;
 
       &:hover {
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-color: var(--border-strong);
       }
 
@@ -664,9 +664,8 @@ onMounted(async () => {
 }
 
 .stat-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 18px 20px;
   display: flex;
@@ -675,7 +674,7 @@ onMounted(async () => {
   transition: all 200ms ease;
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     transform: translateY(-2px);
   }
@@ -714,9 +713,8 @@ onMounted(async () => {
 
 // 筛选区域
 .filter-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 16px;
@@ -829,9 +827,8 @@ onMounted(async () => {
 
 // 用户组列表
 .groups-list {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -863,7 +860,7 @@ onMounted(async () => {
   transition: all 200ms ease;
 
   &:last-child { border-bottom: none; }
-  &:hover { background: var(--glass-bg-hover); }
+  &:hover { background: var(--bg-hover); }
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr auto;
@@ -1030,9 +1027,8 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
 
   @media (max-width: 640px) {

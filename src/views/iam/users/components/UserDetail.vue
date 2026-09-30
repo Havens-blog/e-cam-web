@@ -263,7 +263,7 @@ onMounted(() => {
   .action-buttons {
     margin-top: 24px;
     padding-top: 24px;
-    border-top: 1px solid var(--glass-border);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     gap: 12px;
   }

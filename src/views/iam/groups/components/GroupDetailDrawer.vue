@@ -436,12 +436,12 @@ watch(activeTab, (tab) => {
 
 .policy-card {
   padding: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   transition: all 200ms ease;
 
-  &:hover { background: var(--glass-bg-hover); }
+  &:hover { background: var(--bg-hover); }
 
   .policy-header {
     display: flex;
@@ -517,12 +517,12 @@ watch(activeTab, (tab) => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   transition: all 200ms ease;
 
-  &:hover { background: var(--glass-bg-hover); }
+  &:hover { background: var(--bg-hover); }
 
   .member-avatar {
     width: 36px;
