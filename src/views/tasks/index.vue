@@ -1,10 +1,16 @@
 <template>
-  <PageContainer>
-    <ManagerHeader
-      title="任务管理"
-      subtitle="查看和管理异步任务"
-      @refresh="fetchTasks"
-    />
+  <div class="tasks-page">
+    <!-- 页面头部：标题 + 刷新（主机页紧凑标准，去 PageContainer/ManagerHeader 旧壳） -->
+    <div class="page-top">
+      <div class="page-title-row">
+        <h1 class="page-title">任务管理</h1>
+        <div class="page-actions">
+          <el-button size="small" circle @click="fetchTasks" title="刷新">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </div>
+      </div>
+    </div>
 
     <div class="tasks-content">
       <!-- 筛选器 -->
@@ -67,14 +73,13 @@
         />
       </div>
     </div>
-  </PageContainer>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { cancelTaskApi, deleteTaskApi, listTasksApi } from '@/api'
 import type { Task } from '@/api/types/task'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
-import PageContainer from '@/components/PageContainer/index.vue'
+import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -174,7 +179,7 @@ const handleDelete = async (task: Task) => {
     fetchTasks()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error(error.message || '删除任务失败')
     }
   } finally {
     actionTaskId.value = ''
@@ -218,14 +223,51 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+.tasks-page {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  margin: -24px; // 抵消外层 padding
+  height: calc(100% + 48px);
+}
+
+// 页面顶部
+.page-top {
+  padding: 16px 20px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.page-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .tasks-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 20px;
+
   .filters-container {
-    margin-bottom: 20px;
-    padding: 16px 20px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 
     .filters-form {
@@ -245,11 +287,10 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     padding: 16px;
-    margin-top: 20px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
+    margin-top: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 }

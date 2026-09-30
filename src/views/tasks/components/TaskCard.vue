@@ -145,10 +145,9 @@ const duration = computed(() => {
 .task-card {
   margin-bottom: 16px;
   transition: all 200ms ease;
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 12px !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 8px !important;
 
   &.is-running {
     border-color: rgba(245, 158, 11, 0.5) !important;
@@ -156,7 +155,7 @@ const duration = computed(() => {
   }
 
   &:hover {
-    background: var(--glass-bg-hover) !important;
+    background: var(--bg-hover) !important;
     border-color: var(--border-strong) !important;
   }
 
@@ -194,7 +193,7 @@ const duration = computed(() => {
       color: var(--text-tertiary);
 
       .task-id {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-mono);
       }
     }
   }
