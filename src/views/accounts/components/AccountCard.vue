@@ -167,7 +167,7 @@ const getEnvironmentType = (environment: string) => {
     .iam-stats {
       margin-top: 16px;
       padding-top: 12px;
-      border-top: 1px solid var(--glass-border);
+      border-top: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       gap: 16px;
@@ -197,7 +197,7 @@ const getEnvironmentType = (environment: string) => {
   .card-footer {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--glass-border);
+    border-top: 1px solid var(--border-subtle);
     
     .create-time {
       font-size: 12px;

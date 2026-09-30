@@ -1085,8 +1085,8 @@ onMounted(() => {
 .page-header {
   margin-bottom: 22px;
   padding: 22px 26px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
@@ -1163,9 +1163,8 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 18px 20px;
   display: flex;
@@ -1174,7 +1173,7 @@ onMounted(() => {
   transition: all 200ms ease;
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     transform: translateY(-1px);
   }
@@ -1228,9 +1227,8 @@ onMounted(() => {
 
 // 筛选区域
 .filter-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 12px 20px;
   margin-bottom: 16px;
@@ -1398,7 +1396,7 @@ onMounted(() => {
     padding: 0;
 
     &:last-child { border-right: none; }
-    &:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
+    &:hover { color: var(--text-primary); background: var(--bg-hover); }
     &.active { color: var(--accent-blue); background: rgba(113, 112, 255, 0.1); }
   }
 }
@@ -1412,8 +1410,8 @@ onMounted(() => {
 }
 
 .account-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -1635,9 +1633,8 @@ onMounted(() => {
 
 // 账号列表
 .accounts-list {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -1676,7 +1673,7 @@ onMounted(() => {
   transition: all 200ms ease;
 
   &:last-child { border-bottom: none; }
-  &:hover { background: var(--glass-bg-hover); }
+  &:hover { background: var(--bg-hover); }
 
   @media (max-width: 1200px) {
     flex-wrap: wrap;
@@ -1889,8 +1886,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
 
   @media (max-width: 640px) {
@@ -2134,7 +2131,7 @@ onMounted(() => {
     }
 
     .cancel-btn {
-      background: var(--bg-surface, var(--glass-bg));
+      background: var(--bg-surface);
       border-color: var(--border-base);
       color: var(--text-secondary);
 

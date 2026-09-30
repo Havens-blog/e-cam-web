@@ -421,8 +421,8 @@ const formatDateTime = (time: string | undefined) => {
     justify-content: center;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     cursor: pointer;
     transition: all 200ms ease;
@@ -430,7 +430,7 @@ const formatDateTime = (time: string | undefined) => {
     font-size: 14px;
 
     &:hover {
-      background: var(--glass-bg-hover);
+      background: var(--bg-hover);
       border-color: var(--border-strong);
       color: var(--text-primary);
     }
@@ -527,8 +527,8 @@ const formatDateTime = (time: string | undefined) => {
   justify-content: space-between;
   align-items: center;
   padding: 14px 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
 
   .config-info {
