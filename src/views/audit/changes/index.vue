@@ -26,7 +26,7 @@
         <h4>按变更字段</h4>
         <div v-for="(count, field) in topFields" :key="field" class="summary-item">
           <span class="summary-label">{{ field }}</span>
-          <el-progress :percentage="Math.round(count / summary.total * 100)" :stroke-width="6" :show-text="false" color="#f59e0b" />
+          <el-progress :percentage="Math.round(count / summary.total * 100)" :stroke-width="6" :show-text="false" color="var(--accent-yellow)" />
           <span class="summary-count">{{ count }}</span>
         </div>
       </div>
@@ -34,7 +34,7 @@
         <h4>按云厂商</h4>
         <div v-for="(count, provider) in summary.by_provider" :key="provider" class="summary-item">
           <span class="summary-label">{{ providerLabel(provider as string) }}</span>
-          <el-progress :percentage="Math.round(count / summary.total * 100)" :stroke-width="6" :show-text="false" color="#10b981" />
+          <el-progress :percentage="Math.round(count / summary.total * 100)" :stroke-width="6" :show-text="false" color="var(--accent-green)" />
           <span class="summary-count">{{ count }}</span>
         </div>
       </div>
@@ -85,7 +85,7 @@
         </el-table-column>
         <el-table-column label="" width="40" align="center">
           <template #default>
-            <el-icon style="color: var(--el-color-primary)"><Right /></el-icon>
+            <el-icon style="color: var(--accent-blue)"><Right /></el-icon>
           </template>
         </el-table-column>
         <el-table-column prop="new_value" label="新值" min-width="160">
@@ -107,11 +107,11 @@
 
     <!-- 无资产ID时的提示 -->
     <div class="empty-hint" v-if="!assetId && summaryLoadError">
-      <el-icon :size="48" color="var(--el-color-danger, var(--el-color-danger))"><WarningFilled /></el-icon>
+      <el-icon :size="48" color="var(--accent-red)"><WarningFilled /></el-icon>
       <p>变更统计汇总加载失败，可点击右上角刷新重试</p>
     </div>
     <div class="empty-hint" v-else-if="!assetId && !summary">
-      <el-icon :size="48" color="var(--text-muted, #c0c4cc)"><Document /></el-icon>
+      <el-icon :size="48" color="var(--text-muted)"><Document /></el-icon>
       <p>输入资产ID查看详细变更记录，或查看下方统计汇总</p>
     </div>
 
@@ -241,59 +241,62 @@ onMounted(() => fetchSummary())
 
 <style lang="scss" scoped>
 .vm-page {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  background: var(--bg-base);
+  margin: -24px; // 抵消外层 padding
+  height: calc(100% + 48px);
 }
 .page-top {
-  background: var(--glass-bg, #fff);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, var(--glass-border));
-  border-radius: 12px;
-  padding: 16px 20px;
+  padding: 16px 20px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .page-title-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
 }
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, var(--text-primary));
+  color: var(--text-primary);
   margin: 0;
 }
 .stats-badges {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  margin-left: auto;
 }
 .stat-badge {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
   padding: 4px 12px;
-  background: var(--bg-secondary, var(--glass-bg));
-  border-radius: 20px;
-  font-size: 13px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  min-width: 60px;
 }
-.stat-label { color: var(--text-secondary, var(--text-tertiary)); }
-.stat-num { font-weight: 600; color: var(--text-primary, var(--text-primary)); }
+.stat-label { font-size: 11px; color: var(--text-tertiary); }
+.stat-num { font-size: 16px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  padding: 12px 20px;
 }
 .summary-card {
-  background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, var(--glass-border));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 16px;
   h4 {
     margin: 0 0 12px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary, var(--text-primary));
+    color: var(--text-primary);
   }
 }
 .summary-item {
@@ -305,7 +308,7 @@ onMounted(() => fetchSummary())
     width: 80px;
     flex-shrink: 0;
     font-size: 12px;
-    color: var(--text-secondary, var(--text-tertiary));
+    color: var(--text-secondary);
     text-align: right;
   }
   .el-progress { flex: 1; }
@@ -314,18 +317,17 @@ onMounted(() => fetchSummary())
     text-align: right;
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-primary, var(--text-primary));
+    color: var(--text-primary);
   }
 }
+
 .action-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--glass-bg, #fff);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, var(--glass-border));
-  border-radius: 8px;
+  padding: 12px 20px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .action-left, .action-right {
   display: flex;
@@ -334,15 +336,16 @@ onMounted(() => fetchSummary())
 }
 .table-wrapper {
   flex: 1;
-  background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, var(--glass-border));
+  margin: 12px 20px 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
 }
 .pagination-bar {
   display: flex;
   justify-content: flex-end;
-  padding: 8px 0;
+  padding: 12px 20px;
 }
 .change-value {
   display: inline-block;
@@ -351,17 +354,17 @@ onMounted(() => fetchSummary())
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   padding: 2px 6px;
   border-radius: 4px;
   &.old {
     background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    color: var(--accent-red);
   }
   &.new {
     background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+    color: var(--accent-green);
   }
 }
 .empty-hint {
@@ -372,7 +375,7 @@ onMounted(() => fetchSummary())
   justify-content: center;
   gap: 12px;
   p {
-    color: var(--text-tertiary, #c0c4cc);
+    color: var(--text-tertiary);
     font-size: 14px;
     margin: 0;
   }
