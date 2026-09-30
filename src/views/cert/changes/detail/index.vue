@@ -371,7 +371,7 @@ onMounted(() => {
 }
 
 .card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 24px;
@@ -417,7 +417,7 @@ onMounted(() => {
 }
 
 .state-card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 24px;

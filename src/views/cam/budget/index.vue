@@ -363,10 +363,8 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .budget-table-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;

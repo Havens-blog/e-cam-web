@@ -108,7 +108,7 @@ const emit = defineEmits<{
   align-items: flex-start;
   gap: 4px;
   text-align: left;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 20px 24px;

@@ -114,7 +114,7 @@ function formatDateTime(iso: string): string {
 
 <style lang="scss" scoped>
 .change-table-card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   overflow: hidden;

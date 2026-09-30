@@ -454,8 +454,8 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   display: flex;
   gap: 0;
   margin-bottom: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 4px;
 }
@@ -531,9 +531,8 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
 
 /* Table */
 .table-wrap {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -554,8 +553,8 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-top: none;
   border-radius: 0 0 12px 12px;
   margin-top: -1px;

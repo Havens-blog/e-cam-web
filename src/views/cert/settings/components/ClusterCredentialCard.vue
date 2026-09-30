@@ -366,7 +366,7 @@ onMounted(load)
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 16px 24px;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
 }
 
 .card-head {

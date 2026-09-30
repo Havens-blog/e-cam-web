@@ -113,7 +113,6 @@ onUnmounted(() => {
 <style scoped>
 .canvas-wrapper { position: relative; width: 100%; height: 100%; background: var(--bg-base); overflow: hidden; }
 .chart-container { width: 100%; height: 100%; }
-.stats-bar { position: absolute; top: 14px; left: 14px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 8px 14px; font-size: 12px; color: var(--text-secondary); z-index: 10; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
 .stats-bar strong { color: var(--text-primary); font-size: 16px; }
 .broken-count { color: var(--accent-red); }
 .broken-count strong { color: var(--accent-red); }

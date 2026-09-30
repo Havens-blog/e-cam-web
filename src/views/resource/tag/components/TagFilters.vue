@@ -93,9 +93,8 @@ const handleReset = () => {
 <style scoped lang="scss">
 .tag-filters {
   padding: 14px 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   margin-bottom: 16px;
   display: flex;

@@ -49,7 +49,7 @@
       <el-table-column type="selection" width="40" />
       <el-table-column prop="asset_id" label="资源ID" min-width="130">
         <template #default="{ row }">
-          <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: var(--text-secondary)">{{ row?.asset_id }}</span>
+          <span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary)">{{ row?.asset_id }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="asset_name" label="资源名称" min-width="130">

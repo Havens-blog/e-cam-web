@@ -162,7 +162,7 @@ onUnmounted(stopPolling)
 
 <style lang="scss" scoped>
 .resume-view {
-  background: color-mix(in srgb, #0070f3 6%, var(--glass-bg, #111111));
+  background: color-mix(in srgb, #0070f3 6%, var(--bg-surface));
   border: 1px solid color-mix(in srgb, #0070f3 35%, transparent);
   border-radius: 12px;
   padding: 24px;

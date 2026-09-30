@@ -40,7 +40,7 @@
           <el-table :data="safeComplianceResources.slice(0, 5).filter(r => r != null)" size="small" style="width: 100%">
             <el-table-column prop="asset_id" label="资源ID" min-width="120">
               <template #default="{ row }">
-                <span style="font-family: monospace; font-size: 12px">{{ row?.asset_id }}</span>
+                <span style="font-family: var(--font-mono); font-size: 12px">{{ row?.asset_id }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="resource_type" label="类型" width="80">

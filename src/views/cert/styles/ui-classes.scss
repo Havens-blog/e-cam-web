@@ -28,13 +28,13 @@
 
   &:hover,
   &:focus {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     color: var(--text-primary);
   }
 
   &:active {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     color: var(--text-primary);
   }
@@ -54,13 +54,13 @@
 
   &:hover,
   &:focus {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: transparent;
     color: var(--text-primary);
   }
 
   &:active {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: transparent;
     color: var(--text-primary);
   }

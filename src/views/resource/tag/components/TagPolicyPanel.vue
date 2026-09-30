@@ -110,7 +110,7 @@
         <el-table-column type="selection" width="40" />
         <el-table-column prop="asset_id" label="资源ID" min-width="130">
           <template #default="{ row }">
-            <span style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: var(--text-secondary)">{{ row?.asset_id }}</span>
+            <span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary)">{{ row?.asset_id }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="asset_name" label="资源名称" min-width="120" />
@@ -568,8 +568,8 @@ defineExpose({ loadPolicies, loadCompliance, complianceData })
 
 <style scoped lang="scss">
 .policy-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 16px 20px;
   margin-bottom: 12px;

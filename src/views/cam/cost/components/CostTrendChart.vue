@@ -127,10 +127,8 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .trend-chart-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 20px;
   height: 100%;

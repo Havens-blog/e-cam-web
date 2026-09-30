@@ -230,7 +230,7 @@ onUnmounted(stopPolling)
 }
 
 .card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   overflow: hidden;

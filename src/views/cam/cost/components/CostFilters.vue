@@ -273,9 +273,8 @@ onMounted(() => {
 <style scoped lang="scss">
 .cost-filters {
   padding: 12px 16px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   margin-bottom: 16px;
   display: flex;

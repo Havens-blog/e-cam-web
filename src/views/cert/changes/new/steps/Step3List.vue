@@ -107,7 +107,7 @@ const partition = computed(() => partitionListItems(props.changeList?.items ?? [
 }
 
 .card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 24px;
@@ -121,7 +121,7 @@ const partition = computed(() => partitionListItems(props.changeList?.items ?? [
 .blocked-card {
   padding: 0;
   overflow: hidden;
-  background: color-mix(in srgb, #f5a623 6%, var(--glass-bg, #111111));
+  background: color-mix(in srgb, #f5a623 6%, var(--bg-surface));
   border-color: color-mix(in srgb, #f5a623 25%, transparent);
 }
 

@@ -267,10 +267,8 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .collect-trigger {
   padding: 16px 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   margin-bottom: 16px;
 

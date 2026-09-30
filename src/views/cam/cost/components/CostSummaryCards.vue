@@ -68,16 +68,14 @@ const changeColor = computed(() => {
   gap: 16px;
   align-items: center;
   padding: 20px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   box-shadow: var(--shadow-base);
   transition: all 200ms ease;
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);

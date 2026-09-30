@@ -111,7 +111,7 @@
       </template>
       <el-table :data="previewResourceList" v-loading="previewLoading" style="width: 100%">
         <el-table-column prop="asset_id" label="资源ID" min-width="140" show-overflow-tooltip>
-          <template #default="{ row }"><span style="font-family: monospace; font-size: 13px">{{ row?.asset_id }}</span></template>
+          <template #default="{ row }"><span style="font-family: var(--font-mono); font-size: 13px">{{ row?.asset_id }}</span></template>
         </el-table-column>
         <el-table-column prop="asset_name" label="资源名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="resource_type" label="类型" width="100">
@@ -277,7 +277,7 @@ defineExpose({ loadRules })
 </script>
 
 <style scoped lang="scss">
-.rule-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); } }
+.rule-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); } }
 .rule-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .rule-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .rule-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }

@@ -305,7 +305,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .settings-card {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 12px;
   padding: 24px;
