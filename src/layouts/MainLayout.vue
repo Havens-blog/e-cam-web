@@ -650,7 +650,7 @@ const toggleFullscreen = () => {
             title="全局搜索 (Ctrl+K)"
             @click="commandPaletteVisible = true"
           >
-            <el-icon :size="14"><Search /></el-icon>
+            <el-icon :size="16"><Search /></el-icon>
             <span>搜索</span>
             <kbd class="navbar-search__kbd">Ctrl K</kbd>
           </div>
@@ -1243,14 +1243,15 @@ $navbar-height: 56px;
 .navbar-search {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
+  gap: 8px;
+  width: 240px;
+  height: 34px;
+  padding: 0 12px;
   background: var(--bg-surface);
   border: 1px solid var(--border-base);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-tertiary);
-  font-size: 12.5px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 150ms ease;
   user-select: none;
@@ -1263,7 +1264,8 @@ $navbar-height: 56px;
   }
 
   .navbar-search__kbd {
-    padding: 1px 5px;
+    margin-left: auto;
+    padding: 2px 6px;
     border: 1px solid var(--border-base);
     border-radius: 4px;
     font-size: 11px;
