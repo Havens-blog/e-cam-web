@@ -145,6 +145,7 @@ export interface BindingRule {
     enabled: boolean
     description?: string
     match_count?: number
+    binding_count?: number // 当前该规则绑定的资源总数
     create_time?: number
     update_time?: number
     // 关联信息

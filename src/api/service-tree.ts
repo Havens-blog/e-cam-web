@@ -148,6 +148,11 @@ export const deleteRuleApi = (id: number) => {
     return instance.delete({ url: `${BASE_URL}/rules/${id}` } as RequestConfig)
 }
 
+/** 解绑规则名下所有绑定（保留规则），返回解绑条数 */
+export const unbindRuleApi = (id: number) => {
+    return instance.post<number>({ url: `${BASE_URL}/rules/${id}/unbind` } as RequestConfig)
+}
+
 /** 执行规则匹配 */
 export const executeRulesApi = () => {
     return instance.post({ url: `${BASE_URL}/rules/execute` } as RequestConfig)
