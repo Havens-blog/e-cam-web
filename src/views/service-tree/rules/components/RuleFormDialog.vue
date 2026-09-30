@@ -97,8 +97,6 @@
                 <el-option-group label="属性（可输入任意 attributes.xxx）">
                   <el-option label="资源组名称 (attributes.resource_group_name)" value="attributes.resource_group_name" />
                   <el-option label="项目名称 (attributes.project_name)" value="attributes.project_name" />
-                  <el-option label="项目ID (attributes.project_id)" value="attributes.project_id" />
-                  <el-option label="资源组ID (attributes.resource_group_id)" value="attributes.resource_group_id" />
                 </el-option-group>
               </el-select>
               <el-select v-model="condition.operator" placeholder="操作符" style="width: 120px">

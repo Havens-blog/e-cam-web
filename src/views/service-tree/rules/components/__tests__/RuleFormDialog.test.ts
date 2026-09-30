@@ -262,11 +262,11 @@ describe('RuleFormDialog 条件编辑器字段选项', () => {
         expect(bodyText).toContain('地域 (region)')
         // 常用 tag 建议 + 自由 tag key 提示
         expect(bodyText).toContain('tag.service')
-        // 资源组/项目名称（可读）+ ID 预设项
+        // 资源组/项目名称（可读，已去掉 ID 预设项）
         expect(bodyText).toContain('资源组名称 (attributes.resource_group_name)')
         expect(bodyText).toContain('项目名称 (attributes.project_name)')
-        expect(bodyText).toContain('资源组ID (attributes.resource_group_id)')
-        expect(bodyText).toContain('项目ID (attributes.project_id)')
+        expect(bodyText).not.toContain('资源组ID (attributes.resource_group_id)')
+        expect(bodyText).not.toContain('项目ID (attributes.project_id)')
         // allow-create 自由输入已启用
         expect(fieldSelect!.find('.el-select__wrapper').classes().join(' ')).toBeTruthy()
         expect((wrapper.vm as any).form.conditions[0].field).toBe('tag.env')
