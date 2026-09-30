@@ -46,13 +46,13 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
       color: var(--text-primary);
       transition: all 200ms ease;
 
       &:hover {
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-color: var(--border-strong);
       }
 
@@ -82,9 +82,8 @@
 .group-panel {
   width: 240px;
   flex-shrink: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 14px;
   display: flex;
@@ -256,8 +255,8 @@
         height: 36px;
         padding: 0 12px 0 36px;
         border-radius: 10px;
-        border: 1px solid var(--glass-border);
-        background: var(--glass-bg);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-surface);
         color: var(--text-primary);
         font-size: 13px;
         outline: none;
@@ -269,7 +268,7 @@
 
         &:focus {
           border-color: var(--accent-blue);
-          background: var(--glass-bg-hover);
+          background: var(--bg-hover);
           box-shadow: 0 0 0 3px rgba(113, 112, 255, 0.1);
         }
       }
@@ -289,8 +288,8 @@
 // ==================== 模型卡片 ====================
 .model-card {
   position: relative;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 20px;
   cursor: pointer;
@@ -316,7 +315,7 @@
   }
 
   &:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-hover);
     border-color: var(--border-strong);
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -464,8 +463,8 @@
     width: 80px;
     height: 80px;
     border-radius: 20px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: center;

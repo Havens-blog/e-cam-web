@@ -590,8 +590,8 @@ const isImageUrl = (v: string) => {
 .attr-groups { display: flex; flex-direction: column; gap: 16px; }
 
 .attr-group {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
 

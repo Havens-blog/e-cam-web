@@ -669,9 +669,8 @@ onMounted(() => {
 
 .filters {
   padding: 12px 16px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   margin-bottom: 16px;
   display: flex;
@@ -697,9 +696,8 @@ onMounted(() => {
 
 .table-container {
   flex: 1;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
 
@@ -736,7 +734,7 @@ onMounted(() => {
 }
 
 .asset-id {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--el-text-color-secondary);
 }

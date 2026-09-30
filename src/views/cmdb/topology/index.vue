@@ -1251,8 +1251,8 @@ onUnmounted(() => {
 
     .header-right {
       :deep(.el-radio-button__inner) {
-        background: var(--glass-bg);
-        border-color: var(--glass-border);
+        background: var(--bg-surface);
+        border-color: var(--border-subtle);
         color: var(--text-secondary);
       }
       :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
@@ -1268,9 +1268,8 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 10px 16px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     margin-bottom: 12px;
     flex-shrink: 0;
@@ -1307,7 +1306,7 @@ onUnmounted(() => {
         transition: opacity 0.2s, background 0.2s;
 
         &:hover {
-          background: var(--glass-border);
+          background: var(--border-subtle);
         }
       }
 
@@ -1351,9 +1350,8 @@ onUnmounted(() => {
   .topology-canvas-wrapper {
     flex: 1;
     min-height: 0;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     position: relative;
     overflow: hidden;
@@ -1525,7 +1523,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  background: var(--glass-bg, #f5f5f5);
+  background: var(--bg-surface);
   border-radius: 8px;
 
   .relation-node {
