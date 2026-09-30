@@ -281,7 +281,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { labelOfLenient } from '@/utils/fieldLabels'
+import { ENI_STATUS_LABELS, ENI_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
@@ -289,33 +289,6 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EniDetailDrawer from './components/EniDetailDrawer.vue'
-
-/** 状态值 → 展示文案。键值与 EniDetailDrawer 的 statusLabels 保持一致(键值勿改)；
- *  2026-09-24 全量 5814 条实测值域仅 in_use(4799)/available(1014)/deleting(1) 三值，
- *  其余键为历史映射保留（防御其他厂商接入后出现新变体裸显英文） */
-const ENI_STATUS_LABELS: Record<string, string> = {
-  in_use: '使用中', InUse: '使用中', inuse: '使用中',
-  available: '可用', Available: '可用',
-  attaching: '绑定中', Attaching: '绑定中',
-  detaching: '解绑中', Detaching: '解绑中',
-  creating: '创建中', Creating: '创建中',
-  deleting: '删除中', Deleting: '删除中',
-  error: '异常', Error: '异常',
-  ACTIVE: '使用中', DOWN: '可用',
-  BINDBOUND: '使用中', BINDUNBOUND: '可用',
-  PENDING: '创建中',
-}
-
-/** 网卡类型 → 展示文案。2026-09-24 全量实测值域 11 个（厂商分区：huawei=Secondary、
- *  aliyun=Primary/Secondary/Bond/Trunk/Member、volcano=primary/secondary/branch/nlb/vpclink/transit_router），
- *  原页仅二元判断（Primary→主网卡，其余一律辅助网卡）会误标 Bond/Trunk/Member 等，补齐映射；
- *  未知值由 labelOfLenient 原样透出 */
-const ENI_TYPE_LABELS: Record<string, string> = {
-  Primary: '主网卡', primary: '主网卡',
-  Secondary: '辅助网卡', secondary: '辅助网卡',
-  Bond: 'Bond网卡', Trunk: 'Trunk网卡', Member: '成员网卡',
-  branch: '分支网卡', nlb: 'NLB网卡', vpclink: 'VPC Link', transit_router: '中转路由',
-}
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域 in_use/available/deleting 全覆盖；其余变体为历史映射族防御 */

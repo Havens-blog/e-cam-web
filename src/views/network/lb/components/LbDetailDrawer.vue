@@ -311,36 +311,14 @@
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
+import { LB_STATUS_LABELS } from '@/utils/fieldLabels'
 import { Close, Headset, Monitor, PriceTag, SetUp } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射)。
- *  实测值域含 ACTIVE 大写变体(14 条，2026-09-24 全量探查)，与列表页 LB_STATUS_LABELS 键值同源补齐 */
-const statusLabels: Record<string, string> = {
-  active: '运行中',
-  Active: '运行中',
-  ACTIVE: '运行中',
-  running: '运行中',
-  Running: '运行中',
-  inactive: '已停止',
-  INACTIVE: '已停止',
-  available: '可用',
-  Available: '可用',
-  stopped: '已停止',
-  Stopped: '已停止',
-  creating: '创建中',
-  Creating: '创建中',
-  configuring: '配置中',
-  Configuring: '配置中',
-  pending: '等待中',
-  Pending: '等待中',
-  locked: '已锁定',
-  Locked: '已锁定',
-  error: '异常',
-  Error: '异常',
-}
+/** 状态文案走 fieldLabels 单源 LB_STATUS_LABELS(与列表页同源，canonical 键族含 Inactive 等) */
+const statusLabels = LB_STATUS_LABELS
 
 interface ListenerItem {
   listenerid?: string

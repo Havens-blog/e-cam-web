@@ -307,17 +307,10 @@ import { useRouter } from 'vue-router'
 import SecurityGroupDetailDrawer from '../../security-group/components/SecurityGroupDetailDrawer.vue'
 import VSwitchDetailDrawer from '../../vswitch/components/VSwitchDetailDrawer.vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { VPC_STATUS_LABELS } from '@/utils/fieldLabels'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-    Available: '正常',
-    available: '正常',
-    '正常': '正常',
-    Pending: '创建中',
-    pending: '创建中',
-    error: '异常',
-    Error: '异常',
-  }
+/** 状态文案走 fieldLabels 单源 VPC_STATUS_LABELS(与列表页同源，canonical 键族含 OK/ok/创建中 等) */
+const statusLabels = VPC_STATUS_LABELS
 
 const props = defineProps<{
   visible: boolean
@@ -348,7 +341,7 @@ async function loadSecurityGroups() {
       provider: props.instance.provider,
       limit: 100
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
+     
     const data = (res as unknown as { data: { items: Asset[] } }).data || res
     securityGroups.value = (data as { items?: Asset[] }).items || []
   } catch (error: any) {
@@ -369,7 +362,7 @@ async function loadSubnets() {
       provider: props.instance.provider,
       limit: 100
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API 响应结构需要解包
+     
     const data = (res as unknown as { data: { items: Asset[] } }).data || res
     subnets.value = (data as { items?: Asset[] }).items || []
   } catch (error: any) {

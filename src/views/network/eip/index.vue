@@ -292,7 +292,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { CHARGE_TYPE_LABELS, EIP_INSTANCE_TYPE_LABELS, EIP_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -300,15 +300,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
 
-/** 状态值 → 展示文案。Attached(华为云绑定态) 实测 39 条，与 InUse 同为已绑定族（2026-09-24 全量探查）；
- *  键值与 EipDetailDrawer 的 statusLabels 保持一致(键值勿改) */
-const EIP_STATUS_LABELS: Record<string, string> = {
-  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
-  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
-  Bindable: '可绑定',
-}
-
-/** 状态族判定（状态点色调 + 全局统计共用口径） */
+/** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 EIP_STATUS_LABELS */
 const isBoundStatus = (status?: string) => ['InUse', 'inuse', 'Attached', 'attached', '已绑定'].includes(status || '')
 const isUnboundStatus = (status?: string) => ['Available', 'available', 'Bindable', 'bindable', '未绑定', '可绑定'].includes(status || '')
 
@@ -710,21 +702,8 @@ const getRegionLabel = (provider: string, region: string) => {
   return regionItem?.label || region || '-'
 }
 
-/** 实例类型文案：实测值域含 Nat/AlbInstance/ClbInstance/EVPN（原页缺 mapped 项，补齐） */
-const getInstanceTypeLabel = (type: string | undefined) => {
-  const map: Record<string, string> = {
-    EcsInstance: 'ECS实例',
-    SlbInstance: '负载均衡',
-    ClbInstance: '负载均衡',
-    AlbInstance: '负载均衡',
-    NatGateway: 'NAT网关',
-    Nat: 'NAT网关',
-    HaVip: '高可用VIP',
-    NetworkInterface: '弹性网卡',
-    EVPN: 'EVPN网关',
-  }
-  return map[type || ''] || type || '-'
-}
+/** 实例类型文案：实测值域含 Nat/AlbInstance/ClbInstance/EVPN，词表走 fieldLabels 单源（未知值原样透出、空值 '-'） */
+const getInstanceTypeLabel = (type: string | undefined) => labelOfLenient(EIP_INSTANCE_TYPE_LABELS, type)
 
 // 计费方式:统一走 fieldLabels 单源(含 Prepaid/PrePaid/prepaid 三种大小写),
 // 空值显示 -,不再把空值误报成「按量付费」

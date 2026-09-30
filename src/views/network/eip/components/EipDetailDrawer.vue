@@ -86,7 +86,7 @@
                   <div class="info-row">
                     <span class="info-label">状态</span>
                     <span class="info-value">
-                      <AssetStatusBadge :status="instance.status" :labels="statusLabels" :tones="statusTones" />
+                      <AssetStatusBadge :status="instance.status" :labels="EIP_STATUS_LABELS" :tones="statusTones" />
                     </span>
                   </div>
                   <div class="info-row">
@@ -202,18 +202,12 @@
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { CHARGE_TYPE_LABELS, EIP_INSTANCE_TYPE_LABELS, EIP_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 
-/** 状态值 → 展示文案/色调(共享 AssetStatusBadge 映射)。Attached(华为云绑定态,实测 39 条)归已绑定族,
- *  与列表页 EIP_STATUS_LABELS 保持一致(键值勿改) */
-const statusLabels: Record<string, string> = {
-  InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
-  Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
-  Bindable: '可绑定',
-}
+/** 状态文案走 fieldLabels 单源 EIP_STATUS_LABELS(与列表页同源)；色调映射保留在抽屉 */
 const statusTones: Record<string, string> = {
   InUse: 'active', inuse: 'active', '已绑定': 'active', Attached: 'active',
   Available: 'inactive', available: 'inactive', '未绑定': 'inactive',
@@ -248,16 +242,7 @@ const getRegionLabel = computed(() => {
 
 const getChargeTypeText = (chargeType: string | undefined): string => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 
-const getInstanceTypeLabel = (type: string | undefined) => {
-  const map: Record<string, string> = {
-    EcsInstance: 'ECS实例',
-    SlbInstance: '负载均衡',
-    NatGateway: 'NAT网关',
-    HaVip: '高可用VIP',
-    NetworkInterface: '弹性网卡',
-  }
-  return map[type || ''] || type || '-'
-}
+const getInstanceTypeLabel = (type: string | undefined) => labelOfLenient(EIP_INSTANCE_TYPE_LABELS, type)
 
 const tagList = computed(() => {
   if (!props.instance?.attributes?.tags) return []

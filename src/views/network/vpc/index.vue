@@ -284,7 +284,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { labelOfLenient } from '@/utils/fieldLabels'
+import { VPC_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -292,15 +292,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 
-/** 状态值 → 展示文案。OK(华为/火山系成功态) 实测 22 条，原映射缺此键会裸显英文（2026-09-24 全量 96 条探查）；
- *  键族与 VpcDetailDrawer 的 statusLabels 同源（键值勿改） */
-const VPC_STATUS_LABELS: Record<string, string> = {
-  Available: '正常', available: '正常', OK: '正常', ok: '正常', '正常': '正常',
-  Pending: '创建中', pending: '创建中', '创建中': '创建中',
-  error: '异常', Error: '异常',
-}
-
-/** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/OK 全为成功族 */
+/** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/OK 全为成功族；状态文案走 fieldLabels 单源 VPC_STATUS_LABELS */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'OK', 'ok', '正常'].includes(status || '')
 const isPendingStatus = (status?: string) => ['Pending', 'pending', '创建中'].includes(status || '')
 

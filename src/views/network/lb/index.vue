@@ -293,7 +293,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { labelOfLenient } from '@/utils/fieldLabels'
+import { LB_STATUS_LABELS, LB_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -301,23 +301,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import LbDetailDrawer from './components/LbDetailDrawer.vue'
 
-/** 状态值 → 展示文案。实测值域仅 4 个大小写变体：Active(144)/active(156)/ACTIVE(14)/inactive(6)
- *  （2026-09-24 全量 320 条探查，后端 status 过滤精确区分大小写），无异常态；
- *  其余键为原页防御性映射原样保留。键值与 LbDetailDrawer 的 statusLabels 保持一致(键值勿改) */
-const LB_STATUS_LABELS: Record<string, string> = {
-  Active: '运行中', active: '运行中', ACTIVE: '运行中',
-  running: '运行中', Running: '运行中',
-  inactive: '已停止', Inactive: '已停止', INACTIVE: '已停止',
-  stopped: '已停止', Stopped: '已停止',
-  available: '可用', Available: '可用',
-  creating: '创建中', Creating: '创建中',
-  configuring: '配置中', Configuring: '配置中',
-  pending: '等待中', Pending: '等待中',
-  locked: '已锁定', Locked: '已锁定',
-  error: '异常', Error: '异常',
-}
-
-/** 状态族判定（状态点色调 + 全局统计共用口径） */
+/** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 LB_STATUS_LABELS */
 const isRunningStatus = (status?: string) => ['Active', 'active', 'ACTIVE', 'running', 'Running'].includes(status || '')
 const isStoppedStatus = (status?: string) => ['inactive', 'Inactive', 'INACTIVE', 'stopped', 'Stopped'].includes(status || '')
 
@@ -331,11 +315,7 @@ const getStatusClass = (status?: string) => {
 /** 状态 → 展示文案（列表口径与导出同源） */
 const getStatusText = (status?: string) => labelOfLenient(LB_STATUS_LABELS, status, status || '-')
 
-/** 负载均衡类型 → 展示文案。实测值域 clb(155)/alb(127)/nlb(21)/slb(17)，clb 为众数，
- *  原页映射缺 clb 会裸显小写英文（2026-09-24 全量探查） */
-const LB_TYPE_LABELS: Record<string, string> = { slb: 'SLB', alb: 'ALB', nlb: 'NLB', clb: 'CLB' }
-
-/** 负载均衡类型 → 展示文案（未知值原样透出，空值 '-'） */
+/** 负载均衡类型 → 展示文案（词表走 fieldLabels 单源；未知值原样透出，空值 '-'） */
 const getLBTypeLabel = (type: string | undefined | null): string => labelOfLenient(LB_TYPE_LABELS, type)
 
 /** 网络类型 → 展示文案（大小写不敏感归一；实测 internet(69)/Internet(32)/intranet(182)/Intranet(37) 四变体，

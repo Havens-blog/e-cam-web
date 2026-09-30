@@ -54,7 +54,7 @@
                 <div class="info-list">
                   <div class="info-row"><span class="info-label">网卡ID</span><span class="info-value mono">{{ instance.asset_id }}</span></div>
                   <div class="info-row"><span class="info-label">名称</span><span class="info-value">{{ instance.asset_name || '-' }}</span></div>
-                  <div class="info-row"><span class="info-label">状态</span><span class="info-value"><AssetStatusBadge :status="instance.status" :labels="statusLabels" :tones="statusTones" /></span></div>
+                  <div class="info-row"><span class="info-label">状态</span><span class="info-value"><AssetStatusBadge :status="instance.status" :labels="ENI_STATUS_LABELS" :tones="statusTones" /></span></div>
                   <div class="info-row">
                     <span class="info-label">类型</span>
                     <span class="info-value">
@@ -173,20 +173,9 @@ import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { ENI_STATUS_LABELS } from '@/utils/fieldLabels'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-    in_use: '使用中', InUse: '使用中', inuse: '使用中',
-    available: '可用', Available: '可用',
-    attaching: '绑定中', Attaching: '绑定中',
-    detaching: '解绑中', Detaching: '解绑中',
-    creating: '创建中', Creating: '创建中',
-    deleting: '删除中', Deleting: '删除中',
-    error: '异常', Error: '异常',
-    ACTIVE: '使用中', DOWN: '可用',
-    BINDBOUND: '使用中', BINDUNBOUND: '可用',
-    PENDING: '创建中',
-  }
+/** 状态文案走 fieldLabels 单源 ENI_STATUS_LABELS(与列表页同源)；色调映射保留在抽屉 */
 const statusTones: Record<string, string> = {'deleting': 'pending', 'Deleting': 'pending'}
 
 

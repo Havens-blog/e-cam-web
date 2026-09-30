@@ -1,5 +1,5 @@
 /**
- * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域
+ * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc)
  *
  * 背景：字段文案一致性审计（docs/features/ecam-web-ui-audit/reports/field-consistency.md §2 域4/域3）
  * 发现计费类型 `charge_type` 在 eip/ecs/cmdb/rds/redis/mongodb/nas/template/provision
@@ -86,6 +86,106 @@ export const ASSET_STATUS_LABELS: Record<string, string> = {
     expired: '已过期', expiring: '即将到期',
     UnAvailable: '不可用', unavailable: '不可用',
     unknown: '未知',
+}
+
+// ==================== 网络域产品状态/枚举（eip/eni/lb/vpc） ====================
+
+/**
+ * EIP 状态 → 展示文案。
+ *
+ * 产品语义保留：EIP 不与通用运行态同词——InUse/Attached(华为绑定态,实测 39 条)→已绑定、
+ * Available→未绑定、Bindable→可绑定。中文键(已绑定/未绑定)为回显态原样收口。
+ */
+export const EIP_STATUS_LABELS: Record<string, string> = {
+    InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
+    Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+    Bindable: '可绑定',
+}
+
+/**
+ * EIP 实例类型 → 展示文案。
+ *
+ * 取列表页(index.vue)词表为 canonical（含 ClbInstance/AlbInstance/Nat/EVPN 等
+ * 实测补齐键），详情抽屉对齐同一份。
+ */
+export const EIP_INSTANCE_TYPE_LABELS: Record<string, string> = {
+    EcsInstance: 'ECS实例',
+    SlbInstance: '负载均衡',
+    ClbInstance: '负载均衡',
+    AlbInstance: '负载均衡',
+    NatGateway: 'NAT网关',
+    Nat: 'NAT网关',
+    HaVip: '高可用VIP',
+    NetworkInterface: '弹性网卡',
+    EVPN: 'EVPN网关',
+}
+
+/**
+ * ENI 状态 → 展示文案。
+ *
+ * 2026-09-24 全量 5814 条实测值域仅 in_use(4799)/available(1014)/deleting(1) 三值，
+ * 其余键为历史映射保留（防御其他厂商接入后出现新变体裸显英文）。
+ */
+export const ENI_STATUS_LABELS: Record<string, string> = {
+    in_use: '使用中', InUse: '使用中', inuse: '使用中',
+    available: '可用', Available: '可用',
+    attaching: '绑定中', Attaching: '绑定中',
+    detaching: '解绑中', Detaching: '解绑中',
+    creating: '创建中', Creating: '创建中',
+    deleting: '删除中', Deleting: '删除中',
+    error: '异常', Error: '异常',
+    ACTIVE: '使用中', DOWN: '可用',
+    BINDBOUND: '使用中', BINDUNBOUND: '可用',
+    PENDING: '创建中',
+}
+
+/**
+ * ENI 网卡类型 → 展示文案。
+ *
+ * 2026-09-24 全量实测值域 11 个（厂商分区：huawei=Secondary、
+ * aliyun=Primary/Secondary/Bond/Trunk/Member、volcano=primary/secondary/branch/nlb/vpclink/transit_router），
+ * 未知值由 labelOfLenient 原样透出。
+ */
+export const ENI_TYPE_LABELS: Record<string, string> = {
+    Primary: '主网卡', primary: '主网卡',
+    Secondary: '辅助网卡', secondary: '辅助网卡',
+    Bond: 'Bond网卡', Trunk: 'Trunk网卡', Member: '成员网卡',
+    branch: '分支网卡', nlb: 'NLB网卡', vpclink: 'VPC Link', transit_router: '中转路由',
+}
+
+/**
+ * LB 状态 → 展示文案。
+ *
+ * 实测值域仅 4 个大小写变体：Active(144)/active(156)/ACTIVE(14)/inactive(6)
+ * （2026-09-24 全量 320 条探查，后端 status 过滤精确区分大小写），无异常态；
+ * 其余键为原页防御性映射原样保留。
+ */
+export const LB_STATUS_LABELS: Record<string, string> = {
+    Active: '运行中', active: '运行中', ACTIVE: '运行中',
+    running: '运行中', Running: '运行中',
+    inactive: '已停止', Inactive: '已停止', INACTIVE: '已停止',
+    stopped: '已停止', Stopped: '已停止',
+    available: '可用', Available: '可用',
+    creating: '创建中', Creating: '创建中',
+    configuring: '配置中', Configuring: '配置中',
+    pending: '等待中', Pending: '等待中',
+    locked: '已锁定', Locked: '已锁定',
+    error: '异常', Error: '异常',
+}
+
+/** LB 类型 → 展示文案。实测值域 clb(155)/alb(127)/nlb(21)/slb(17)。 */
+export const LB_TYPE_LABELS: Record<string, string> = { slb: 'SLB', alb: 'ALB', nlb: 'NLB', clb: 'CLB' }
+
+/**
+ * VPC 状态 → 展示文案。
+ *
+ * OK(华为/火山系成功态) 实测 22 条，缺此键会裸显英文（2026-09-24 全量 96 条探查）。
+ * 中文键(正常/创建中)为回显态原样收口。
+ */
+export const VPC_STATUS_LABELS: Record<string, string> = {
+    Available: '正常', available: '正常', OK: '正常', ok: '正常', '正常': '正常',
+    Pending: '创建中', pending: '创建中', '创建中': '创建中',
+    error: '异常', Error: '异常',
 }
 
 // ==================== 查表助手 ====================
