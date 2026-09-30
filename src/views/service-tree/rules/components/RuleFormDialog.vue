@@ -81,6 +81,7 @@
                 allow-create
                 filterable
                 default-first-option
+                @change="() => onFieldSelected(condition)"
               >
                 <el-option-group label="基础字段">
                   <el-option label="资源名称 (name)" value="name" />
@@ -94,7 +95,10 @@
                   <el-option label="团队 (tag.team)" value="tag.team" />
                 </el-option-group>
                 <el-option-group label="属性（可输入任意 attributes.xxx）">
-                  <el-option label="资源组ID (attributes.project_id)" value="attributes.project_id" />
+                  <el-option label="资源组名称 (attributes.resource_group_name)" value="attributes.resource_group_name" />
+                  <el-option label="项目名称 (attributes.project_name)" value="attributes.project_name" />
+                  <el-option label="项目ID (attributes.project_id)" value="attributes.project_id" />
+                  <el-option label="资源组ID (attributes.resource_group_id)" value="attributes.resource_group_id" />
                 </el-option-group>
               </el-select>
               <el-select v-model="condition.operator" placeholder="操作符" style="width: 120px">
@@ -105,12 +109,24 @@
                 <el-option label="在列表中" value="in" />
                 <el-option label="字段存在" value="exists" />
               </el-select>
-              <el-input
+              <el-select
                 v-model="condition.value"
-                placeholder="值"
+                placeholder="选择或输入值"
                 style="flex: 1"
+                filterable
+                allow-create
+                default-first-option
                 :disabled="condition.operator === 'exists'"
-              />
+                :loading="!!loadingFieldValues[condition.field]"
+                @focus="() => loadFieldValues(condition.field)"
+              >
+                <el-option
+                  v-for="v in fieldOptions(condition.field)"
+                  :key="v"
+                  :label="v"
+                  :value="v"
+                />
+              </el-select>
               <el-button
                 type="danger"
                 text
@@ -191,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { createRuleApi, dryRunRulesApi, getTreeApi, listEnvironmentsApi, updateRuleApi } from '@/api/service-tree'
+import { createRuleApi, dryRunRulesApi, fieldValuesApi, getTreeApi, listEnvironmentsApi, updateRuleApi } from '@/api/service-tree'
 import type {
   BindingRule,
   DryRunResult,
@@ -287,6 +303,31 @@ const addCondition = () => {
 // 删除条件
 const removeCondition = (index: number) => {
   form.conditions.splice(index, 1)
+}
+
+// 条件字段去重枚举（条件值下拉用）：按字段懒加载缓存
+const fieldValuesMap = reactive<Record<string, string[]>>({})
+const loadingFieldValues = reactive<Record<string, boolean>>({})
+
+const fieldOptions = (field: string): string[] => fieldValuesMap[field] || []
+
+// 字段变更：清空已选值并预加载该字段的枚举值（下拉打开前就绪）
+const onFieldSelected = (condition: RuleCondition) => {
+  condition.value = ''
+  loadFieldValues(condition.field)
+}
+
+const loadFieldValues = async (field: string) => {
+  if (!field || fieldValuesMap[field] !== undefined || loadingFieldValues[field]) return
+  loadingFieldValues[field] = true
+  try {
+    const res = await fieldValuesApi(field)
+    fieldValuesMap[field] = res.data ?? []
+  } catch {
+    fieldValuesMap[field] = [] // 失败置空，仍可手输
+  } finally {
+    loadingFieldValues[field] = false
+  }
 }
 
 // 试运行（dry-run）状态

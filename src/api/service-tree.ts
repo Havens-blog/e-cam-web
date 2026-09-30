@@ -163,6 +163,11 @@ export const dryRunRulesApi = (data: DryRunRuleParams) => {
     return instance.post<DryRunResult>({ url: `${BASE_URL}/rules/dry-run`, data } as RequestConfig)
 }
 
+/** 获取规则条件字段的去重枚举值（条件值下拉） */
+export const fieldValuesApi = (field: string) => {
+    return instance.get<string[]>({ url: `${BASE_URL}/rules/field-values`, params: { field } } as RequestConfig)
+}
+
 /** 规则改绑预览（只读，重算 rule 绑定资产，找更高优先级规则的改绑候选） */
 export const previewRebindApi = () => {
     return instance.post<RebindPlan>({ url: `${BASE_URL}/rules/rebind/preview` } as RequestConfig)
