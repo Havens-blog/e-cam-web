@@ -248,7 +248,21 @@ onBeforeUnmount(() => {
   if (searchTimer !== null) clearTimeout(searchTimer)
 })
 
-/** 资产结果条目（服务端已过滤，本地 filterable=false 直通；跳转到对应产品页带 ?search= 预填，与旧 header 搜索一致） */
+/** 资产结果相关性评分（越小越靠前）：精确 ID > 精确名 > ID 前缀 > 名前缀 > ID 包含 > 名包含 > 其余（IP 等其它字段命中） */
+function assetRelevance(item: SearchResultItem, keyword: string): number {
+  const q = keyword.toLowerCase()
+  const id = (item.asset_id ?? '').toLowerCase()
+  const name = (item.asset_name ?? '').toLowerCase()
+  if (id === q) return 0
+  if (name === q) return 1
+  if (id.startsWith(q)) return 2
+  if (name.startsWith(q)) return 3
+  if (id.includes(q)) return 4
+  if (name.includes(q)) return 5
+  return 6
+}
+
+/** 资产结果条目（结果在搜索时已按相关性排序，filterable=false 直通；跳转带 ?search= 预填） */
 const assetItems = computed<PaletteItem[]>(() =>
   assetResults.value.map((item) => {
     const route = ASSET_TYPE_ROUTES[item.asset_type]
@@ -323,10 +337,13 @@ watch(
     searchTimer = window.setTimeout(async () => {
       assetLoading.value = true
       try {
-        // 契约与 MainLayout 旧搜索一致：{keyword, limit:10} → res.data.items
+        // 契约与 MainLayout 旧搜索一致：{keyword, limit} → res.data.items
         const res = await searchAssetsApi({ keyword, limit: ASSET_SEARCH_LIMIT, types: GLOBAL_SEARCH_ASSET_TYPES })
         if (seq !== searchSeq) return
-        assetResults.value = res.data?.items ?? []
+        // 后端按 utime 倒序返回，短关键词下目标实例可能被其它同名结果挤出前 N；
+        // 本地按相关性重排，让精确/前缀命中优先置顶。
+        const items = res.data?.items ?? []
+        assetResults.value = [...items].sort((a, b) => assetRelevance(a, keyword) - assetRelevance(b, keyword))
       } catch {
         // 搜索失败静默降级为无结果，不打断面板键盘流
         if (seq !== searchSeq) return

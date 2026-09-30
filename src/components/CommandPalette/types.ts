@@ -74,8 +74,8 @@ export interface PalettePageEntry {
 /** 资产搜索防抖等待（与 MainLayout 旧搜索的 300ms 契约一致） */
 export const ASSET_SEARCH_DEBOUNCE_MS = 300
 
-/** 资产搜索返回条数上限（与 MainLayout 旧搜索契约一致） */
-export const ASSET_SEARCH_LIMIT = 10
+/** 资产搜索返回条数上限（放大以配合本地相关性排序，避免短关键词下目标实例被最近更新排序挤出前 N） */
+export const ASSET_SEARCH_LIMIT = 50
 
 /** 最近访问最大保留条数（超出按"频次/时间"排序淘汰末位） */
 export const MAX_RECENT_VISITS = 8
