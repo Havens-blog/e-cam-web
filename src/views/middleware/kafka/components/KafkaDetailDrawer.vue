@@ -66,6 +66,7 @@
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
+import { KAFKA_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -75,7 +76,7 @@ defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (['running', 'serving'].includes(s)) return 'running'; if (['stopped', 'shutdown'].includes(s)) return 'stopped'; return 'pending' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', serving: '运行中', stopped: '已停止' }; return map[status.toLowerCase()] || status }
+const getStatusText = (status?: string) => labelOfLenient(KAFKA_STATUS_LABELS, status, status || '-')
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }

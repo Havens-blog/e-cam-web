@@ -350,6 +350,49 @@ export const MONGODB_STATUS_LABELS: Record<string, string> = {
     deleting: '删除中', Deleting: '删除中',
 }
 
+// ==================== 中间件+存储域产品状态（es/kafka/nas） ====================
+
+/**
+ * Elasticsearch 状态 → 展示文案（列表页 canonical）。
+ *
+ * active→运行中 为 ES 域原生运行态（与 running 同义），不并入全局
+ * ASSET_STATUS_LABELS，本表为唯一 ES 口径。键含大小写变体：列表页/抽屉
+ * getStatusText 走 toLowerCase 查表，labelOfLenient 直查，变体键保证两口径等价。
+ */
+export const ES_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    active: '运行中', Active: '运行中', ACTIVE: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    creating: '创建中', Creating: '创建中',
+}
+
+/**
+ * Kafka 状态 → 展示文案（列表页 canonical）。
+ *
+ * serving→运行中 为 Kafka 域原生运行态（阿里云 Serving），shutdown→已停止
+ * 与域内 getStatusClass 停止态口径一致。键含大小写变体，理由同上。
+ */
+export const KAFKA_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    serving: '运行中', Serving: '运行中', SERVING: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    shutdown: '已停止', Shutdown: '已停止',
+    creating: '创建中', Creating: '创建中',
+}
+
+/**
+ * NAS 状态 → 展示文案（列表页 canonical）。
+ *
+ * pending/creating→创建中 为 NAS 域创建期两态；大写 Running/Stopped 为历史
+ * 回显值（2026-09 实测 95 条全小写 running），保留防御键防裸显英文。
+ */
+export const NAS_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    pending: '创建中', Pending: '创建中', PENDING: '创建中',
+    creating: '创建中', Creating: '创建中',
+}
+
 // ==================== 查表助手 ====================
 
 /**

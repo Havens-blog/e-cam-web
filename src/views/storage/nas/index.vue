@@ -291,6 +291,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import IconFont from '@/components/IconFont/index.vue'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -308,15 +309,12 @@ import {
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
 
-/** 状态文案映射：真实值域为小写 running/stopped(实测 95 条全为 running，大写 Running 精确匹配恒 0)，兼容历史大写值 */
-const STATUS_TEXT: Record<string, string> = { running: '运行中', stopped: '已停止', pending: '创建中', creating: '创建中' }
-
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 等价搬运（零漂移）；metric-map 额外 prop 以闭包捕获 fsMetricMap 等价替代（不新增共享组件 prop）；
- * 状态文案改用 STATUS_TEXT 单源（含小写真实值域，导出与列展示同口径） */
+ * 状态文案改用 fieldLabels 单源 NAS_STATUS_LABELS（含小写真实值域，导出与列展示同口径） */
 const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
-  if (key === 'status') { const s = attr.status || ''; return STATUS_TEXT[s.toLowerCase()] || s }
+  if (key === 'status') { const s = (attr.status || '').toLowerCase(); return s ? labelOfLenient(NAS_STATUS_LABELS, s) : '' }
   if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'capacity' || key === 'used_capacity') {
     // S-Hard：容量数值一律来自指标表(fs_id 去重代表行);无指标数据导出空串,不回退资产表坏值
@@ -670,10 +668,8 @@ const getStatusClass = (status?: string) => {
   if (s.includes('error')) return 'error'
   return ''
 }
-const getStatusText = (status?: string) => {
-  if (!status) return '-'
-  return STATUS_TEXT[status.toLowerCase()] || status
-}
+/** 状态文案走 fieldLabels 单源（NAS pending/creating→创建中，大写 Running/Stopped 防御键） */
+const getStatusText = (status?: string) => labelOfLenient(NAS_STATUS_LABELS, status, status || '-')
 const getFileSystemTypeText = (type?: string) => {
   if (!type) return '-'
   const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }

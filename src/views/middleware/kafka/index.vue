@@ -258,6 +258,7 @@ import type { Asset } from '@/api/types/asset'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { KAFKA_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -542,11 +543,8 @@ const getStatusClass = (status?: string) => {
   return 'pending'
 }
 
-const getStatusText = (status?: string) => {
-  if (!status) return '-'
-  const map: Record<string, string> = { running: '运行中', serving: '运行中', stopped: '已停止', creating: '创建中' }
-  return map[status.toLowerCase()] || status
-}
+/** 状态文案走 fieldLabels 单源（Kafka serving 与 running 同义→运行中） */
+const getStatusText = (status?: string) => labelOfLenient(KAFKA_STATUS_LABELS, status, status || '-')
 
 const getPlatformIcon = (provider?: string) => {
   if (!provider) return 'Alibaba_Cloud'
