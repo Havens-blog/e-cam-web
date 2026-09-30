@@ -60,7 +60,7 @@
                   <div class="info-row">
                     <span class="info-label">状态</span>
                     <span class="info-value">
-                      <AssetStatusBadge :status="instance.status" :labels="statusLabels" />
+                      <AssetStatusBadge :status="instance.status" :labels="IMAGE_STATUS_LABELS" />
                     </span>
                   </div>
                   <div class="info-row">
@@ -177,20 +177,9 @@ import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, Coin, Picture, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { IMAGE_STATUS_LABELS, IMAGE_TYPE_LABELS } from '@/utils/fieldLabels'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-  Available: '可用',
-  available: '可用',
-  Creating: '创建中',
-  creating: '创建中',
-  Waiting: '等待中',
-  waiting: '等待中',
-  UnAvailable: '不可用',
-  unavailable: '不可用',
-}
-
-
+// 状态值 → 展示文案:共享 AssetStatusBadge 的 labels 映射,与列表页共用 utils/fieldLabels 单源
 const props = defineProps<{
   visible: boolean
   instance: Asset | null
@@ -206,13 +195,7 @@ const handleRefresh = () => {}
 const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
 const getImageTypeLabel = (alias: string | undefined): string => {
-  const map: Record<string, string> = {
-    system: '公共镜像',
-    self: '自定义镜像',
-    others: '共享镜像',
-    marketplace: '市场镜像',
-  }
-  return map[alias || ''] || alias || '-'
+  return IMAGE_TYPE_LABELS[alias || ''] || alias || '-'
 }
 
 const getRegionLabel = computed(() => {

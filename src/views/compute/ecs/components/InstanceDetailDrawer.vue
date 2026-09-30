@@ -531,7 +531,7 @@ import { getECSRelationsApi, type ECSRelationsResp } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
+import { CHARGE_TYPE_LABELS, DISK_STATUS_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.vue';
 import SecurityGroupDetailDrawer from '@/views/compute/security-group/components/SecurityGroupDetailDrawer.vue';
 import SnapshotDetailDrawer from '@/views/compute/snapshot/components/SnapshotDetailDrawer.vue';
@@ -672,14 +672,7 @@ const getStatusClass = (status: string | undefined) => {
 
 const getStatusText = (status: string | undefined) => {
   if (!status) return '-'
-  const s = status.toUpperCase()
-  const map: Record<string, string> = {
-    RUNNING: '运行中',
-    STOPPED: '已关机',
-    DELETED: '已删除',
-    PENDING: '创建中',
-  }
-  return map[s] || status
+  return ECS_STATUS_LABELS[status.toUpperCase()] || status
 }
 
 const getPlatformIconType = (provider: string | undefined): string => {
@@ -757,15 +750,7 @@ const getDiskStatusClass = (status: string | undefined): string => {
 
 const getDiskStatusText = (status: string | undefined): string => {
   if (!status) return '-'
-  const map: Record<string, string> = {
-    in_use: '使用中',
-    'in-use': '使用中',
-    attached: '使用中',
-    available: '可用',
-    creating: '创建中',
-    detaching: '卸载中',
-  }
-  return map[status.toLowerCase()] || status
+  return DISK_STATUS_LABELS[status.toLowerCase()] || status
 }
 
 // 快照状态

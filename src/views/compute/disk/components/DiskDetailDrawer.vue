@@ -102,6 +102,7 @@ import { getDiskMetricsApi, type DiskMetricsView, type DiskMetricPoint } from '@
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
+import { DISK_CATEGORY_LABELS, DISK_STATUS_LABELS } from '@/utils/fieldLabels';
 import { formatIOPS, formatThroughputMBps, formatUsagePercent, hasZeroException, isBusyShareScope, usageScopeLabel } from '@/views/compute/disk/diskMetrics';
 import { Box, Close, DataLine, Document, WarningFilled } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
@@ -113,8 +114,8 @@ defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s.includes('use')) return 'running'; if (s.includes('available')) return 'stopped'; return 'pending' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { in_use: '使用中', available: '可用', creating: '创建中' }; return map[status.toLowerCase()] || status }
-const getDiskCategory = (category?: string) => { if (!category) return '-'; const map: Record<string, string> = { cloud_efficiency: '高效云盘', cloud_ssd: 'SSD云盘', cloud_essd: 'ESSD云盘', cloud: '普通云盘' }; return map[category] || category }
+const getStatusText = (status?: string) => { if (!status) return '-'; return DISK_STATUS_LABELS[status.toLowerCase()] || status }
+const getDiskCategory = (category?: string) => { if (!category) return '-'; return DISK_CATEGORY_LABELS[category] || category }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'

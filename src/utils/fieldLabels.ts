@@ -249,6 +249,62 @@ export const DNS_LINE_LABELS: Record<string, string> = { default: '默认', tele
 /** DNS 解析记录接入源 → 展示文案（RecordTable 关联资源列）。 */
 export const DNS_RECORD_SOURCE_LABELS: Record<string, string> = { cdn: 'CDN', waf: 'WAF', slb: 'SLB', ecs: 'ECS', eip: 'EIP' }
 
+// ==================== 计算域产品状态/枚举（ecs/image/disk） ====================
+
+/**
+ * ECS 状态 → 展示文案（列表页 canonical）。
+ *
+ * ECS 域专属措辞：stopped→已关机（不与全局 ASSET_STATUS_LABELS 的 stopped→已停止
+ * 同词），列表页/详情抽屉/导出/统计卡筛选用同一份。键含大小写变体：
+ * getStatusText 走 toUpperCase 查大写键，统计卡筛选/导出走原始键直查。
+ */
+export const ECS_STATUS_LABELS: Record<string, string> = {
+    RUNNING: '运行中', Running: '运行中', running: '运行中',
+    STOPPED: '已关机', Stopped: '已关机', stopped: '已关机',
+    DELETED: '已删除', Deleted: '已删除', deleted: '已删除',
+    PENDING: '创建中', Pending: '创建中', pending: '创建中',
+}
+
+/**
+ * 镜像状态 → 展示文案（列表页 canonical）。
+ *
+ * 实测值域仅 Available(141)/available(506)/active(16)/NORMAL(6) 四个大小写变体，
+ * 全部为成功族（2026-09-24 全量 669 条探查）；原页词表缺 active/NORMAL 键会裸显
+ * 英文，按镜像域近义态防御性扩展。未知值由调用方回退全局 ASSET_STATUS_LABELS
+ * 后透出原始值。
+ */
+export const IMAGE_STATUS_LABELS: Record<string, string> = {
+    available: '可用', Available: '可用', active: '可用', Active: '可用', ACTIVE: '可用', NORMAL: '可用',
+    creating: '创建中', Creating: '创建中', importing: '导入中', Importing: '导入中',
+    waiting: '等待中', Waiting: '等待中',
+    unavailable: '不可用', UnAvailable: '不可用', failed: '失败', Failed: '失败',
+}
+
+/** 镜像类型 → 展示文案（沿用原页口径：system 公共 / self 自定义 / others 共享 / marketplace 市场）。 */
+export const IMAGE_TYPE_LABELS: Record<string, string> = {
+    system: '公共', self: '自定义', others: '共享', marketplace: '市场',
+}
+
+/** 镜像操作系统类型 → 展示文案（platform/os_name 均缺失时的兜底）。 */
+export const OS_TYPE_LABELS: Record<string, string> = { linux: 'Linux', windows: 'Windows' }
+
+/**
+ * 云盘状态 → 展示文案（列表页 canonical）。
+ *
+ * 值域随厂商大小写/连字符不一（In_use/in-use/attached/available），查表方须先
+ * toLowerCase 归一。attached→已挂载 为盘域专属措辞；原 ecs 主机抽屉盘状态把
+ * attached 写成「使用中」已按列表页口径对齐。
+ */
+export const DISK_STATUS_LABELS: Record<string, string> = {
+    in_use: '使用中', 'in-use': '使用中', attached: '已挂载',
+    available: '可用', creating: '创建中', attaching: '挂载中', detaching: '卸载中',
+}
+
+/** 云盘类型（category）→ 展示文案（阿里云盘家族：高效/SSD/ESSD/普通）。 */
+export const DISK_CATEGORY_LABELS: Record<string, string> = {
+    cloud_efficiency: '高效云盘', cloud_ssd: 'SSD云盘', cloud_essd: 'ESSD云盘', cloud: '普通云盘',
+}
+
 // ==================== 查表助手 ====================
 
 /**

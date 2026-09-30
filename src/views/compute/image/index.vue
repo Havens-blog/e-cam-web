@@ -283,7 +283,7 @@ import type { Asset, CloudProvider } from '@/api/types/asset'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
-import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
+import { ASSET_STATUS_LABELS, IMAGE_STATUS_LABELS, IMAGE_TYPE_LABELS, OS_TYPE_LABELS } from '@/utils/fieldLabels'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting, Upload } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -310,13 +310,7 @@ const getStatusClass = (status?: string) => {
   return 'error'
 }
 
-/** 状态 → 展示文案（列表口径与导出同源；实测值域全成功族，未知值回退全局单源 lenient 透出） */
-const IMAGE_STATUS_LABELS: Record<string, string> = {
-  available: '可用', Available: '可用', active: '可用', Active: '可用', ACTIVE: '可用', NORMAL: '可用',
-  creating: '创建中', Creating: '创建中', importing: '导入中', Importing: '导入中',
-  waiting: '等待中', Waiting: '等待中',
-  unavailable: '不可用', UnAvailable: '不可用', failed: '失败', Failed: '失败',
-}
+/** 状态 → 展示文案（列表口径与导出同源；词表见 utils/fieldLabels IMAGE_STATUS_LABELS，未知值回退全局单源 lenient 透出） */
 const getStatusText = (status?: string) => {
   if (!status) return '-'
   return IMAGE_STATUS_LABELS[status] || ASSET_STATUS_LABELS[status] || status
@@ -324,9 +318,6 @@ const getStatusText = (status?: string) => {
 
 /** 镜像类型映射（沿用原页口径：system 公共 / self 自定义 / others 共享 / marketplace 市场）。
  *  实测当前数据 669 条全部为 self（自定义），公共/共享/市场为真实数据 0 态 */
-const IMAGE_TYPE_LABELS: Record<string, string> = {
-  system: '公共', self: '自定义', others: '共享', marketplace: '市场',
-}
 const getImageTypeLabel = (alias: string | undefined): string => {
   if (!alias) return '-'
   return IMAGE_TYPE_LABELS[alias] || alias
@@ -341,7 +332,6 @@ const getImageTagType = (alias: string): 'success' | 'warning' | 'danger' | 'inf
 
 /** 操作系统列文案：实测 AWS 系镜像 os_name 为「Created for policy: …」采集描述（360/669 条），
  *  platform 才是干净的系统族（Linux/UNIX、Windows Server…），故 platform 优先、os_name 兜底 */
-const OS_TYPE_LABELS: Record<string, string> = { linux: 'Linux', windows: 'Windows' }
 const getOsText = (attr: any): string => {
   if (!attr) return '-'
   return attr.platform || attr.os_name || OS_TYPE_LABELS[attr.os_type] || '-'

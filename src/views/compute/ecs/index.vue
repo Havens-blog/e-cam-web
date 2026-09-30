@@ -452,7 +452,7 @@ import type { Asset } from '@/api/types/asset'
 import IconFont from '@/components/IconFont/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { CHARGE_TYPE_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import {
   ArrowDown,
   ArrowLeft,
@@ -893,9 +893,8 @@ const handleStatBadgeClick = (status: string) => {
     if (idx > -1) searchConditions.value.splice(idx, 1)
   } else {
     activeStatFilter.value = status
-    const displayMap: Record<string, string> = { running: '运行中', stopped: '已关机' }
     const existingIdx = searchConditions.value.findIndex(c => c.field === 'status')
-    const cond = { field: 'status', value: status, displayValue: displayMap[status] || status }
+    const cond = { field: 'status', value: status, displayValue: ECS_STATUS_LABELS[status] || status }
     if (existingIdx > -1) {
       searchConditions.value[existingIdx] = cond
     } else {
@@ -920,14 +919,7 @@ const getStatusClass = (status: string | undefined) => {
 
 const getStatusText = (status: string | undefined) => {
   if (!status) return '-'
-  const s = status.toUpperCase()
-  const map: Record<string, string> = {
-    RUNNING: '运行中',
-    STOPPED: '已关机',
-    DELETED: '已删除',
-    PENDING: '创建中',
-  }
-  return map[s] || status
+  return ECS_STATUS_LABELS[status.toUpperCase()] || status
 }
 
 const getOsIcon = (osType: string | undefined): string => {
@@ -1105,8 +1097,7 @@ const exportConfig: ExportFieldConfig<Asset> = {
     }
     const attr = instance.attributes || {}
     if (key === 'status') {
-      const map: Record<string, string> = { RUNNING: '运行中', STOPPED: '已关机', Running: '运行中', Stopped: '已关机' }
-      return map[attr.status] || attr.status || ''
+      return ECS_STATUS_LABELS[attr.status] || attr.status || ''
     }
     if (key === 'charge_type') return labelOfLenient(CHARGE_TYPE_LABELS, attr.charge_type, '')
     if (key === 'provider') return getProviderLabel(attr.provider || '')

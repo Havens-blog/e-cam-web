@@ -289,6 +289,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import IconFont from '@/components/IconFont/index.vue'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import { getProviderLabel } from '@/utils/constants'
+import { DISK_CATEGORY_LABELS, DISK_STATUS_LABELS } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -646,8 +647,8 @@ const handleColumnSettingsChange = (cols: any[]) => { columnSettings.value = col
 
 // 状态值域随厂商大小写/连字符不一（In_use/in-use/attached/available），映射保留本页自有值域并覆盖实测值
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s.includes('use') || s === 'attached') return 'running'; if (s.includes('available')) return 'stopped'; if (s.includes('error')) return 'error'; return 'pending' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { in_use: '使用中', 'in-use': '使用中', attached: '已挂载', available: '可用', creating: '创建中', attaching: '挂载中', detaching: '卸载中' }; return map[status.toLowerCase()] || status }
-const getDiskCategory = (category?: string) => { if (!category) return '-'; const map: Record<string, string> = { cloud_efficiency: '高效云盘', cloud_ssd: 'SSD云盘', cloud_essd: 'ESSD云盘', cloud: '普通云盘' }; return map[category] || category }
+const getStatusText = (status?: string) => { if (!status) return '-'; return DISK_STATUS_LABELS[status.toLowerCase()] || status }
+const getDiskCategory = (category?: string) => { if (!category) return '-'; return DISK_CATEGORY_LABELS[category] || category }
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 
 /** 云厂商展示名统一走 utils/constants 单源 */
