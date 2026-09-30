@@ -175,9 +175,8 @@ onMounted(() => fetchData())
   gap: 12px;
 }
 .page-top {
-  background: var(--glass-bg, #fff);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, var(--glass-border));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -202,7 +201,7 @@ onMounted(() => fetchData())
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
-  background: var(--bg-secondary, var(--glass-bg));
+  background: var(--bg-surface);
   border-radius: 20px;
   font-size: 13px;
 }
@@ -213,9 +212,8 @@ onMounted(() => fetchData())
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--glass-bg, #fff);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, var(--glass-border));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
 }
 .action-left, .action-right {
@@ -225,8 +223,8 @@ onMounted(() => fetchData())
 }
 .table-wrapper {
   flex: 1;
-  background: var(--glass-bg, #fff);
-  border: 1px solid var(--glass-border, var(--glass-border));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
 }

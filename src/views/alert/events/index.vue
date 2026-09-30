@@ -253,7 +253,7 @@ onUnmounted(() => {
   gap: 6px;
   padding: 4px 12px;
   font-size: 13px;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border-radius: 20px;
 
   .stat-label { color: var(--text-secondary); }
@@ -294,7 +294,7 @@ onUnmounted(() => {
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-all;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   border-radius: 8px;
 }
 </style>
