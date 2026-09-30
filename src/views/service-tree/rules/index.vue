@@ -87,7 +87,7 @@
                 :model-value="row.enabled"
                 :loading="statusLoadingId === row.id"
                 :before-change="() => beforeStatusChange(row)"
-                @change="(val) => handleStatusChange(row, val as boolean)"
+                @change="(val) => { if (val) handleStatusChange(row) }"
               />
             </template>
           </el-table-column>
@@ -108,10 +108,13 @@
               {{ row.description || '-' }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column label="操作" width="170" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" size="small" @click="handleEdit(row)">
                 编辑
+              </el-button>
+              <el-button link type="warning" size="small" @click="handleUnbind(row)">
+                解绑
               </el-button>
               <el-button link type="danger" size="small" @click="handleDelete(row)">
                 删除
@@ -151,6 +154,16 @@
 
       <!-- 规则改绑预览/确认弹窗 -->
       <RebindDialog v-model="rebindDialogVisible" @success="handleRebindSuccess" />
+
+      <!-- 删除/禁用规则确认弹窗 -->
+      <RuleConfirmDialog
+        :model-value="confirmVisible"
+        :mode="confirmMode"
+        :rule="confirmRule"
+        :loading="confirmLoading"
+        @update:model-value="handleConfirmClose"
+        @confirm="handleConfirm"
+      />
     </div>
   </PageContainer>
 </template>
@@ -161,15 +174,17 @@ import {
     executeRulesApi,
     listEnvironmentsApi,
     listRulesApi,
+    unbindRuleApi,
     updateRuleApi
 } from '@/api/service-tree'
 import type { BindingRule, Environment } from '@/api/types/service-tree'
 import { Plus, RefreshLeft, Search, Switch, VideoPlay } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { formatDateTime } from '@/utils/format'
 import ExecuteConfirmDialog from './components/ExecuteConfirmDialog.vue'
 import RebindDialog from './components/RebindDialog.vue'
+import RuleConfirmDialog from './components/RuleConfirmDialog.vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 
 // 任务 1 后端 RuleVO 透出的执行统计字段（类型定义暂未同步，本地扩展）
@@ -203,6 +218,10 @@ const statusLoadingId = ref<number | null>(null)
 const formDialogVisible = ref(false)
 const executeDialogVisible = ref(false)
 const rebindDialogVisible = ref(false)
+const confirmVisible = ref(false)
+const confirmMode = ref<'delete' | 'disable' | 'unbind'>('delete')
+const confirmRule = ref<BindingRule | null>(null)
+const confirmLoading = ref(false)
 const currentRule = ref<BindingRule | undefined>()
 const isEdit = ref(false)
 
@@ -306,22 +325,24 @@ const handleEdit = (rule: BindingRule) => {
   formDialogVisible.value = true
 }
 
-// 状态切换前守卫：禁用规则会停止自动绑定，需二次确认；启用直接放行
+// 状态切换前守卫：禁用规则会停止自动绑定，需二次确认（走统一确认弹窗）；启用直接放行
+let disableResolveFn: ((ok: boolean) => void) | null = null
 const beforeStatusChange = (rule: BindingRule) => {
   if (!rule.enabled) return true
-  return ElMessageBox.confirm(
-    `确定要禁用规则 "${rule.name}" 吗？禁用后该规则将停止自动绑定。`,
-    '禁用确认',
-    { type: 'warning' }
-  ).then(() => true).catch(() => false)
+  return new Promise<boolean>((resolve) => {
+    disableResolveFn = resolve
+    confirmMode.value = 'disable'
+    confirmRule.value = rule
+    confirmVisible.value = true
+  })
 }
 
-// 状态切换
-const handleStatusChange = async (rule: BindingRule, enabled: boolean) => {
+// 启用：直接调（禁用走确认弹窗，见 beforeStatusChange → handleConfirm）
+const handleStatusChange = async (rule: BindingRule) => {
   statusLoadingId.value = rule.id
   try {
-    await updateRuleApi(rule.id, { enabled })
-    ElMessage.success(enabled ? '已启用' : '已禁用')
+    await updateRuleApi(rule.id, { enabled: true })
+    ElMessage.success('已启用')
     loadRules()
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
@@ -330,21 +351,54 @@ const handleStatusChange = async (rule: BindingRule, enabled: boolean) => {
   }
 }
 
-// 删除
-const handleDelete = async (rule: BindingRule) => {
+// 删除：打开确认弹窗
+const handleDelete = (rule: BindingRule) => {
+  confirmMode.value = 'delete'
+  confirmRule.value = rule
+  confirmVisible.value = true
+}
+
+// 解绑：打开确认弹窗（清绑定、保留规则）
+const handleUnbind = (rule: BindingRule) => {
+  confirmMode.value = 'unbind'
+  confirmRule.value = rule
+  confirmVisible.value = true
+}
+
+// 确认弹窗：删除 → 调删除接口；禁用 → 调禁用接口并放行开关翻转
+const handleConfirm = async () => {
+  const rule = confirmRule.value
+  if (!rule) return
+  confirmLoading.value = true
   try {
-    await ElMessageBox.confirm(
-      `确定要删除规则 "${rule.name}" 吗？`,
-      '删除确认',
-      { type: 'warning' }
-    )
-    await deleteRuleApi(rule.id)
-    ElMessage.success('删除成功')
+    if (confirmMode.value === 'delete') {
+      await deleteRuleApi(rule.id)
+      ElMessage.success('删除成功')
+    } else if (confirmMode.value === 'disable') {
+      await updateRuleApi(rule.id, { enabled: false })
+      ElMessage.success('已禁用')
+    } else {
+      const res = await unbindRuleApi(rule.id)
+      ElMessage.success(`已解绑 ${res.data ?? 0} 个资源`)
+    }
+    disableResolveFn?.(true)
     loadRules()
   } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
-    }
+    ElMessage.error(error.message || '操作失败')
+    disableResolveFn?.(false)
+  } finally {
+    confirmLoading.value = false
+    disableResolveFn = null
+    confirmVisible.value = false
+  }
+}
+
+// 弹窗关闭（取消）：禁用开关回退
+const handleConfirmClose = (visible: boolean) => {
+  confirmVisible.value = visible
+  if (!visible) {
+    disableResolveFn?.(false)
+    disableResolveFn = null
   }
 }
 
