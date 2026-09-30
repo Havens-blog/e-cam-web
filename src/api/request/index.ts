@@ -10,6 +10,17 @@ import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
 let isRedirectingToLogin = false
 
 /**
+ * 登录目标唯一取值处（RC#2，platform-console 任务 2.13）：
+ * 401/会话过期与登出后的登录页从 ecmdb-web /login 切到控制台 /console/login。
+ * 目标由 build 期 env 注入（VITE_LOGIN_TARGET），默认控制台登录页相对路径；
+ * redirectToLogin、stores/user logout、ErrorDisplay「重新登录」均经本函数取值，
+ * 不得再散落硬编码登录地址。
+ */
+export function resolveLoginTarget(): string {
+    return import.meta.env.VITE_LOGIN_TARGET || '/console/login'
+}
+
+/**
  * 统一跳转登录页（防重复）
  */
 export function redirectToLogin() {
@@ -21,9 +32,8 @@ export function redirectToLogin() {
     // 拉取用户信息失败）全都只是本应用的局部判断；若在此删除 cookie，会把其他
     // 服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
     ElMessage.warning('登录状态已失效，请重新登录')
-    const ecmdbLoginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
     const currentUrl = window.location.href
-    window.location.href = `${ecmdbLoginUrl}?redirect=${encodeURIComponent(currentUrl)}`
+    window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 
 class HttpRequest {
@@ -131,9 +141,9 @@ class HttpRequest {
                     message: error.message,
                 }, 'API')
 
-                // 401 未认证：session 过期或未登录，跳转到 ecmdb 登录页
+                // 401 未认证：session 过期或未登录，跳转到控制台登录页（/console/login）
                 if (error.response?.status === 401) {
-                    logWarn('Session expired, redirecting to ecmdb login', {}, 'AUTH')
+                    logWarn('Session expired, redirecting to console login', {}, 'AUTH')
                     redirectToLogin()
                     return Promise.reject(error)
                 }

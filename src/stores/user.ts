@@ -1,3 +1,4 @@
+import { resolveLoginTarget } from '@/api/request/index'
 import { removeEcmdbToken } from '@/utils/cookie'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -88,8 +89,9 @@ export const useUserStore = defineStore(
             }
             resetState()
             removeEcmdbToken()
-            const loginUrl = import.meta.env.VITE_ECMDB_LOGIN_URL || '/login'
-            window.location.href = loginUrl
+            // RC#2：登出后回控制台登录页（/console/login），不再指向 ecmdb-web /login；
+            // 目标经 resolveLoginTarget 统一取值（VITE_LOGIN_TARGET，默认 /console/login）。
+            window.location.href = resolveLoginTarget()
         }
 
         const initUserState = async () => {

@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveLoginTarget } from '@/api/request/index';
 import type { ErrorInfo } from '@/utils/error-handler';
 import { computed, ref } from 'vue';
 
@@ -72,7 +73,9 @@ const getAlertType = () => {
 }
 
 const handleRelogin = () => {
-  window.location.href = '/login'
+  // RC#2：登录目标统一取值（VITE_LOGIN_TARGET，默认 /console/login），
+  // 不再散落 '/login' 硬编码（指向已切换为控制台登录页）。
+  window.location.href = resolveLoginTarget()
 }
 </script>
 

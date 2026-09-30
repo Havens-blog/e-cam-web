@@ -52,10 +52,12 @@ const commandPaletteVisible = ref(false)
  */
 async function handleUserCommand(command: string | number | object) {
   // 个人设置：e-cam-web 无个人页，跳转 ecmdb-web 的「个人中心」(/profile/index)。
-  // 基址复用 VITE_ECMDB_LOGIN_URL（经 nginx :8888 的 ecmdb-web 根），新标签页打开
-  // 以保留当前 e-cam-web 上下文。
+  // 基址读 VITE_ECMDB_WEB_BASE（ecmdb-web 站点根，过渡期值不变、不受旧登录入口
+  // 301 波及），新标签页打开以保留当前 e-cam-web 上下文。注意不得改读登录目标
+  // 变量——否则会拼出 /console/login/profile/index 死链（RC#2 拆分旧变量双语义
+  // 即为此耦合）。
   if (command === 'profile') {
-    const base = (import.meta.env.VITE_ECMDB_LOGIN_URL || window.location.origin).replace(/\/$/, '')
+    const base = (import.meta.env.VITE_ECMDB_WEB_BASE || window.location.origin).replace(/\/$/, '')
     window.open(`${base}/profile/index`, '_blank')
     return
   }
