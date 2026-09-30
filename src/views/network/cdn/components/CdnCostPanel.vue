@@ -243,7 +243,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px dashed var(--glass-border);
+    border: 1px dashed var(--border-subtle);
     border-radius: 10px;
     padding: 12px 0;
   }
@@ -269,7 +269,7 @@ onUnmounted(() => {
     border-radius: 8px;
 
     &:hover {
-      background: var(--glass-bg-hover);
+      background: var(--bg-hover);
     }
 
     & + .domain-item {
@@ -287,7 +287,7 @@ onUnmounted(() => {
       font-size: 12px;
       font-weight: 600;
       color: var(--text-tertiary);
-      background: var(--glass-border);
+      background: var(--border-subtle);
 
       &.rank-1 { color: #fbbf24; background: rgba(217, 119, 6, 0.16); }
       &.rank-2 { color: #d4d4d8; background: rgba(255, 255, 255, 0.08); }

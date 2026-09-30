@@ -693,7 +693,7 @@ const formatTime = (time: string | number | undefined) => {
 
 .drawer-tabs {
   flex-shrink: 0;
-  padding: 0 24px; border-bottom: 1px solid var(--glass-border);
+  padding: 0 24px; border-bottom: 1px solid var(--border-subtle);
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
     .el-tabs__nav-wrap::after { display: none; }
@@ -708,7 +708,7 @@ const formatTime = (time: string | number | undefined) => {
 .detail-column {
   .column-title {
     font-size: 14px; font-weight: 600; color: var(--text-primary);
-    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
   }
 }
 
@@ -810,7 +810,7 @@ const formatTime = (time: string | number | undefined) => {
       color: var(--text-primary);
       padding-bottom: 8px;
       margin-bottom: 4px;
-      border-bottom: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--border-subtle);
 
       .group-count {
         font-size: 11px;
@@ -852,7 +852,7 @@ const formatTime = (time: string | number | undefined) => {
 .origins-section {
   .origins-summary {
     display: flex; gap: 32px; padding: 16px; margin-bottom: 16px;
-    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+    background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px;
 
     .summary-item {
       display: flex; flex-direction: column; gap: 4px;

@@ -475,7 +475,7 @@ const getTabName = (tab: string) => {
 }
 
 .drawer-header-area {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   flex-shrink: 0;
 }
 
@@ -484,7 +484,7 @@ const getTabName = (tab: string) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   position: relative;
 }
 
@@ -530,7 +530,7 @@ const getTabName = (tab: string) => {
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: var(--glass-bg);
+    background: var(--bg-surface);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -564,8 +564,8 @@ const getTabName = (tab: string) => {
 
 .drawer-tabs {
   padding: 0 20px;
-  background: var(--glass-bg);
-  border-bottom: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
 
   :deep(.el-tabs) {
     .el-tabs__header {
@@ -603,7 +603,7 @@ const getTabName = (tab: string) => {
   padding: 24px 28px;
   flex: 1;
   overflow: auto;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
 }
 
 .detail-columns {
@@ -619,7 +619,7 @@ const getTabName = (tab: string) => {
     color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 
@@ -671,7 +671,7 @@ const getTabName = (tab: string) => {
 
       .tag-item {
         padding: 2px 8px;
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-radius: 4px;
         font-size: 12px;
         color: var(--text-secondary);

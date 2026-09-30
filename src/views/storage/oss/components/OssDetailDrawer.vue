@@ -348,7 +348,7 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 
   .metrics-latest {
     display: flex; gap: 32px; padding: 12px 16px; margin-bottom: 16px;
-    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+    background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px;
 
     .summary-item {
       display: flex; flex-direction: column; gap: 4px;

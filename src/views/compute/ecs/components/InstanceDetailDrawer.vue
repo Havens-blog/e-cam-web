@@ -827,7 +827,7 @@ const closeNestedDrawer = () => {
 }
 
 .drawer-header-area {
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   flex-shrink: 0;
 }
 
@@ -836,7 +836,7 @@ const closeNestedDrawer = () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
   position: relative;
 }
 
@@ -882,7 +882,7 @@ const closeNestedDrawer = () => {
   .instance-icon {
     width: 40px;
     height: 40px;
-    background: var(--glass-bg);
+    background: var(--bg-surface);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -916,8 +916,8 @@ const closeNestedDrawer = () => {
 
 .drawer-tabs {
   padding: 0 20px;
-  background: var(--glass-bg);
-  border-bottom: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
 
   :deep(.el-tabs) {
     .el-tabs__header {
@@ -955,7 +955,7 @@ const closeNestedDrawer = () => {
   padding: 24px 28px;
   flex: 1;
   overflow: auto;
-  background: var(--glass-bg);
+  background: var(--bg-surface);
 }
 
 .detail-columns {
@@ -971,7 +971,7 @@ const closeNestedDrawer = () => {
     color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 
@@ -1044,7 +1044,7 @@ const closeNestedDrawer = () => {
 
       .tag-item {
         padding: 2px 8px;
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-radius: 4px;
         font-size: 12px;
         color: var(--text-secondary);
@@ -1094,8 +1094,8 @@ const closeNestedDrawer = () => {
 }
 
 .resource-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s;
@@ -1110,8 +1110,8 @@ const closeNestedDrawer = () => {
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: linear-gradient(135deg, var(--glass-bg) 0%, #fff 100%);
-    border-bottom: 1px solid var(--glass-border);
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .card-icon {

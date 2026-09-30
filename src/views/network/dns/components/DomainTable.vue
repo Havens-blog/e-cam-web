@@ -227,9 +227,8 @@ defineExpose({ refresh: fetchData })
 
 <style scoped lang="scss">
 .domain-table-wrapper {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px;
 }
@@ -329,7 +328,7 @@ defineExpose({ refresh: fetchData })
   justify-content: space-between;
   margin-top: 16px;
   padding-top: 12px;
-  border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+  border-top: 1px solid var(--border-subtle);
 
   .pagination-info {
     font-size: 13px;

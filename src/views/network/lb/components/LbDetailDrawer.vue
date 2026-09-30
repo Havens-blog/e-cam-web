@@ -449,7 +449,7 @@ const formatTime = (time: string | number | undefined) => {
 <style scoped lang="scss">
 .drawer-wrapper { height: 100%; display: flex; flex-direction: column; }
 
-.drawer-header-area { background: var(--glass-bg); flex-shrink: 0; }
+.drawer-header-area { background: var(--bg-surface); flex-shrink: 0; }
 
 .drawer-header {
   display: flex; align-items: center; padding: 12px 20px; position: relative;
@@ -464,7 +464,7 @@ const formatTime = (time: string | number | undefined) => {
 
 .header-left {
   display: flex; align-items: center; gap: 12px; margin-left: 36px;
-  .instance-icon { width: 40px; height: 40px; background: var(--glass-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--el-color-primary); }
+  .instance-icon { width: 40px; height: 40px; background: var(--bg-surface); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--el-color-primary); }
   .instance-info {
     .instance-type { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
     .instance-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
@@ -472,7 +472,7 @@ const formatTime = (time: string | number | undefined) => {
 }
 
 .drawer-tabs {
-  padding: 0 20px; border-bottom: 1px solid var(--glass-border);
+  padding: 0 20px; border-bottom: 1px solid var(--border-subtle);
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
     .el-tabs__nav-wrap::after { display: none; }
@@ -490,14 +490,14 @@ const formatTime = (time: string | number | undefined) => {
   }
 }
 
-.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--glass-bg); }
+.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--bg-surface); }
 
 .detail-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 
 .detail-column {
   .column-title {
     font-size: 14px; font-weight: 600; color: var(--text-primary);
-    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
   }
 }
 
@@ -538,7 +538,7 @@ const formatTime = (time: string | number | undefined) => {
   .section-summary {
     padding: 12px 16px;
     margin-bottom: 16px;
-    background: var(--glass-bg);
+    background: var(--bg-surface);
     border-radius: 8px;
 
     .summary-text {

@@ -162,7 +162,7 @@ import { getNasMetricsApi, type NASFsMetricsView, type NASMetricPoint } from '@/
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
+import { CHARGE_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { formatNumber } from '@/utils/formatters';
 import { formatCapacityGB, formatUtilization, hasZeroException } from '@/views/storage/nas/nasMetrics';
 import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFilled } from '@element-plus/icons-vue';
@@ -187,7 +187,7 @@ const tagList = computed(() => {
 })
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); return s === 'running' ? 'running' : s === 'stopped' ? 'stopped' : '' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', stopped: '已停止', pending: '创建中', Running: '运行中', Stopped: '已停止' }; return map[status] || status }
+const getStatusText = (status?: string) => labelOfLenient(NAS_STATUS_LABELS, status, status || '-')
 const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }; return map[type] || type }
 
 // ===== 监控 tab:容量/已用/使用率趋势(按需查询,读 ecam_nas_metric 指标表) =====
@@ -410,7 +410,7 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 
   .metrics-latest {
     display: flex; gap: 32px; padding: 12px 16px; margin-bottom: 16px;
-    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+    background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px;
 
     .summary-item {
       display: flex; flex-direction: column; gap: 4px;
@@ -428,7 +428,7 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 .mount-list {
   display: flex; flex-direction: column; gap: 12px;
   .mount-card {
-    border: 1px solid var(--glass-border); border-radius: 6px; padding: 12px 16px; background: #fafafa;
+    border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 16px; background: var(--bg-surface);
     .info-list { display: flex; flex-direction: column; gap: 6px; }
     .info-row { display: flex; align-items: center; font-size: 13px; }
     .info-label { color: var(--text-tertiary); width: 80px; flex-shrink: 0; }
@@ -439,8 +439,8 @@ const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { r
 
 .tags-table {
   width: 100%; border-collapse: collapse; font-size: 13px;
-  th { text-align: left; padding: 8px 12px; background: var(--glass-bg); color: var(--text-tertiary); font-weight: 500; border-bottom: 1px solid var(--glass-border); }
-  td { padding: 8px 12px; border-bottom: 1px solid var(--glass-border); color: var(--text-primary); }
-  tr:hover td { background: var(--glass-bg); }
+  th { text-align: left; padding: 8px 12px; background: var(--bg-surface); color: var(--text-tertiary); font-weight: 500; border-bottom: 1px solid var(--border-subtle); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+  tr:hover td { background: var(--bg-surface); }
 }
 </style>

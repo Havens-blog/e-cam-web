@@ -788,9 +788,8 @@ onMounted(() => {
   align-items: center;
   gap: 32px;
   padding: 14px 18px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
 
   &.warn {

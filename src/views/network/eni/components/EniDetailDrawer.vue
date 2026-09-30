@@ -243,7 +243,7 @@ const formatTime = (time: string | number | undefined) => {
 
 <style scoped lang="scss">
 .drawer-wrapper { height: 100%; display: flex; flex-direction: column; }
-.drawer-header-area { background: var(--glass-bg); flex-shrink: 0; }
+.drawer-header-area { background: var(--bg-surface); flex-shrink: 0; }
 .drawer-header { display: flex; align-items: center; padding: 12px 20px; position: relative; }
 .close-corner {
   position: absolute; top: 0; left: 0; width: 36px; height: 36px; cursor: pointer; z-index: 10;
@@ -253,17 +253,17 @@ const formatTime = (time: string | number | undefined) => {
 }
 .header-left {
   display: flex; align-items: center; gap: 12px; margin-left: 36px;
-  .instance-icon { width: 40px; height: 40px; background: var(--glass-bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--el-color-primary); }
+  .instance-icon { width: 40px; height: 40px; background: var(--bg-surface); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--el-color-primary); }
   .instance-info { .instance-type { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; } .instance-name { font-size: 15px; font-weight: 600; color: var(--text-primary); } }
 }
 .drawer-tabs {
-  padding: 0 20px; border-bottom: 1px solid var(--glass-border);
+  padding: 0 20px; border-bottom: 1px solid var(--border-subtle);
   :deep(.el-tabs) { .el-tabs__header { margin: 0; } .el-tabs__nav-wrap::after { display: none; } .el-tabs__item { height: 36px; line-height: 36px; font-size: 13px; } }
   .tab-badge { margin-left: 4px; font-size: 10px; background: rgba(64, 158, 255, 0.12); color: var(--el-color-primary); padding: 1px 6px; border-radius: 8px; font-weight: 600; }
 }
-.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--glass-bg); }
+.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--bg-surface); }
 .detail-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-.detail-column { .column-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--glass-border); } }
+.detail-column { .column-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle); } }
 .info-list { display: flex; flex-direction: column; }
 .info-row {
   display: flex; align-items: flex-start; padding: 8px 0; font-size: 13px;
@@ -274,7 +274,7 @@ const formatTime = (time: string | number | undefined) => {
 .provider-inline { display: flex; align-items: center; gap: 6px; }
 .ip-highlight { font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: var(--el-color-primary); background: rgba(64, 158, 255, 0.06); padding: 1px 6px; border-radius: 3px; }
 .tab-section {
-  .section-summary { padding: 12px 16px; margin-bottom: 16px; background: var(--glass-bg); border-radius: 8px;
+  .section-summary { padding: 12px 16px; margin-bottom: 16px; background: var(--bg-surface); border-radius: 8px;
     .summary-text { font-size: 13px; color: var(--text-secondary); strong { color: var(--el-color-primary); font-size: 15px; } }
   }
 }

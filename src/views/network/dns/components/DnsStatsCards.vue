@@ -234,8 +234,8 @@ defineExpose({ refresh: fetchStats })
 }
 
 .stat-card {
-  background: var(--glass-bg, #1a2236);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s;
@@ -287,8 +287,8 @@ defineExpose({ refresh: fetchStats })
 }
 
 .chart-card {
-  background: var(--glass-bg, #1a2236);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 20px;
 }

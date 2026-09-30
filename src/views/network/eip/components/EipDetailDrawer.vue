@@ -323,7 +323,7 @@ const getTabName = (tab: string) => {
 .drawer-tabs {
   flex-shrink: 0;
   padding: 0 24px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border-subtle);
 
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
@@ -356,7 +356,7 @@ const getTabName = (tab: string) => {
     color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 
@@ -401,7 +401,7 @@ const getTabName = (tab: string) => {
       gap: 4px;
       .tag-item {
         padding: 2px 8px;
-        background: var(--glass-bg-hover);
+        background: var(--bg-hover);
         border-radius: 4px;
         font-size: 12px;
         color: var(--text-secondary);

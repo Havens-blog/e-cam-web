@@ -364,10 +364,8 @@ onUnmounted(() => {
     display: flex;
     gap: 12px;
     padding: 16px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }

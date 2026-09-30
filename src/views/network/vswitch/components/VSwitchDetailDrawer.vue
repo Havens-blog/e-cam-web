@@ -202,10 +202,10 @@ const formatTime = (time: number | string | undefined) => {
 
 <style scoped lang="scss">
 .drawer-wrapper { height: 100%; display: flex; flex-direction: column; }
-.drawer-header-area { background: var(--glass-bg); flex-shrink: 0; }
+.drawer-header-area { background: var(--bg-surface); flex-shrink: 0; }
 .drawer-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px; background: var(--glass-bg); position: relative;
+  padding: 12px 20px; background: var(--bg-surface); position: relative;
 }
 .close-corner {
   position: absolute; top: 0; left: 0; width: 36px; height: 36px; cursor: pointer; z-index: 10;
@@ -220,7 +220,7 @@ const formatTime = (time: number | string | undefined) => {
 .header-left {
   display: flex; align-items: center; gap: 12px; margin-left: 36px;
   .instance-icon {
-    width: 40px; height: 40px; background: var(--glass-bg); border-radius: 8px;
+    width: 40px; height: 40px; background: var(--bg-surface); border-radius: 8px;
     display: flex; align-items: center; justify-content: center; color: var(--el-color-primary);
   }
   .instance-info {
@@ -232,7 +232,7 @@ const formatTime = (time: number | string | undefined) => {
   }
 }
 .drawer-tabs {
-  padding: 0 20px; background: var(--glass-bg); border-bottom: 1px solid var(--glass-border);
+  padding: 0 20px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
   :deep(.el-tabs) {
     .el-tabs__header { margin: 0; }
     .el-tabs__nav-wrap::after { display: none; }
@@ -242,12 +242,12 @@ const formatTime = (time: number | string | undefined) => {
     .el-tabs__active-bar { background-color: var(--el-color-primary); height: 2px; }
   }
 }
-.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--glass-bg); }
+.drawer-content { padding: 24px 28px; flex: 1; overflow: auto; background: var(--bg-surface); }
 .detail-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
 .detail-column {
   .column-title {
     font-size: 14px; font-weight: 600; color: var(--text-primary);
-    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
   }
 }
 .info-list { display: flex; flex-direction: column; }
