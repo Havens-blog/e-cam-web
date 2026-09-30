@@ -82,7 +82,7 @@
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels';
+import { CHARGE_TYPE_LABELS, REDIS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { ArrowDown, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
@@ -92,7 +92,8 @@ defineEmits<{ 'update:visible': [value: boolean] }>()
 const activeTab = ref('detail')
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (['running', 'normal'].includes(s)) return 'running'; if (['stopped', 'shutdown'].includes(s)) return 'stopped'; return 'pending' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { running: '运行中', normal: '运行中', stopped: '已停止' }; return map[status.toLowerCase()] || status }
+/** 状态文案统一走 fieldLabels 单源（Redis 列表页 canonical） */
+const getStatusText = (status?: string) => labelOfLenient(REDIS_STATUS_LABELS, status, status || '-')
 const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)

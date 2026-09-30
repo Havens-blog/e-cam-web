@@ -260,7 +260,7 @@ import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
-import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { CHARGE_TYPE_LABELS, RDS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -546,11 +546,8 @@ const getStatusClass = (status?: string) => {
   return 'pending'
 }
 
-const getStatusText = (status?: string) => {
-  if (!status) return '-'
-  const map: Record<string, string> = { running: '运行中', stopped: '已停止', shutdown: '已停止', creating: '创建中', deleting: '删除中' }
-  return map[status.toLowerCase()] || status
-}
+/** 状态文案统一走 fieldLabels 单源（RDS 列表页 canonical） */
+const getStatusText = (status?: string) => labelOfLenient(RDS_STATUS_LABELS, status, status || '-')
 
 const getPlatformIcon = (provider?: string) => {
   if (!provider) return 'Alibaba_Cloud'

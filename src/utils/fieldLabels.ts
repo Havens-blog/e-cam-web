@@ -1,5 +1,5 @@
 /**
- * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc/vswitch/waf/dns)
+ * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc/vswitch/waf/dns) + 计算域(ecs/image/disk) + 数据库域(rds/redis/mongodb)
  *
  * 背景：字段文案一致性审计（docs/features/ecam-web-ui-audit/reports/field-consistency.md §2 域4/域3）
  * 发现计费类型 `charge_type` 在 eip/ecs/cmdb/rds/redis/mongodb/nas/template/provision
@@ -303,6 +303,51 @@ export const DISK_STATUS_LABELS: Record<string, string> = {
 /** 云盘类型（category）→ 展示文案（阿里云盘家族：高效/SSD/ESSD/普通）。 */
 export const DISK_CATEGORY_LABELS: Record<string, string> = {
     cloud_efficiency: '高效云盘', cloud_ssd: 'SSD云盘', cloud_essd: 'ESSD云盘', cloud: '普通云盘',
+}
+
+// ==================== 数据库域产品状态（rds/redis/mongodb） ====================
+
+/**
+ * RDS 状态 → 展示文案（列表页 canonical）。
+ *
+ * 键集取 index 词表全量（running/stopped/shutdown/creating/deleting），详情抽屉
+ * 原缺 deleting 键，收敛后对齐同一份。查表方用 labelOfLenient：命中返回文案，
+ * 未知原始值原样透出。shutdown→已停止 为数据库域原生停止态，与 stopped 同词。
+ */
+export const RDS_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    shutdown: '已停止', Shutdown: '已停止',
+    creating: '创建中', Creating: '创建中',
+    deleting: '删除中', Deleting: '删除中',
+}
+
+/**
+ * Redis 状态 → 展示文案（列表页 canonical）。
+ *
+ * normal→运行中 为 Redis 域健康态（阿里云 Redis 正常态），不与全局
+ * ASSET_STATUS_LABELS 的 normal 冲突，本表为唯一 Redis 口径。
+ */
+export const REDIS_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    normal: '运行中', Normal: '运行中', NORMAL: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    shutdown: '已停止', Shutdown: '已停止',
+    creating: '创建中', Creating: '创建中',
+}
+
+/**
+ * MongoDB 状态 → 展示文案（列表页 canonical）。
+ *
+ * 键集与 RDS 同构（running/stopped/shutdown/creating/deleting）；收敛前抽屉只认
+ * running/stopped，creating/deleting/shutdown 裸显英文，收敛后对齐。
+ */
+export const MONGODB_STATUS_LABELS: Record<string, string> = {
+    running: '运行中', Running: '运行中', RUNNING: '运行中',
+    stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
+    shutdown: '已停止', Shutdown: '已停止',
+    creating: '创建中', Creating: '创建中',
+    deleting: '删除中', Deleting: '删除中',
 }
 
 // ==================== 查表助手 ====================
