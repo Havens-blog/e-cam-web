@@ -24,10 +24,7 @@
         </el-form-item>
         <el-form-item label="线路" prop="line">
           <el-select v-model="form.line" style="width: 100%">
-            <el-option label="默认" value="default" />
-            <el-option label="电信" value="telecom" />
-            <el-option label="联通" value="unicom" />
-            <el-option label="移动" value="mobile" />
+            <el-option v-for="(label, key) in DNS_LINE_LABELS" :key="key" :label="label" :value="key" />
           </el-select>
         </el-form-item>
       </div>
@@ -45,6 +42,7 @@
 <script setup lang="ts">
 import { createDnsRecordApi, updateDnsRecordApi } from '@/api/dns'
 import type { DnsRecord } from '@/api/types/dns'
+import { DNS_LINE_LABELS } from '@/utils/fieldLabels'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'

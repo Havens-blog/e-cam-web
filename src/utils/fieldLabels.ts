@@ -1,5 +1,5 @@
 /**
- * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc)
+ * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc/vswitch/waf/dns)
  *
  * 背景：字段文案一致性审计（docs/features/ecam-web-ui-audit/reports/field-consistency.md §2 域4/域3）
  * 发现计费类型 `charge_type` 在 eip/ecs/cmdb/rds/redis/mongodb/nas/template/provision
@@ -187,6 +187,67 @@ export const VPC_STATUS_LABELS: Record<string, string> = {
     Pending: '创建中', pending: '创建中', '创建中': '创建中',
     error: '异常', Error: '异常',
 }
+
+// ==================== 网络域产品状态/枚举（vswitch/waf/dns） ====================
+
+/**
+ * VSwitch 状态 → 展示文案。
+ *
+ * 实测值域仅 Available(613)/available(130)/ACTIVE(117) 三个大小写变体（2026-09-24
+ * 全量 860 条探查），全为成功族；Pending/creating/Deleting 保留防御键。
+ * 列表页与详情抽屉共用此单源（键以列表页 canonical 为准）。
+ */
+export const VSWITCH_STATUS_LABELS: Record<string, string> = {
+    Available: '可用', available: '可用', ACTIVE: '可用', active: '可用', '可用': '可用',
+    Pending: '创建中', pending: '创建中', creating: '创建中',
+    Deleting: '删除中', deleting: '删除中',
+}
+
+/**
+ * WAF 状态 → 展示文案（列表页 canonical：active→正常 / suspended→已暂停 / pending→待接入）。
+ *
+ * 实测值域仅 active(160)/suspended(252)/pending(13) 三值（2026-09-24 全量 425 条探查，
+ * 全小写）。收敛前 index 本地词表(active→正常)与抽屉 ASSET_STATUS_LABELS(active→运行中)
+ * 已漂移，本表为唯一 WAF 口径；WAF 域原生近义态(paused/bypass 等)仍由
+ * ASSET_STATUS_LABELS 承载，可作回退链使用。
+ */
+export const WAF_STATUS_LABELS: Record<string, string> = { active: '正常', suspended: '已暂停', pending: '待接入' }
+
+/**
+ * WAF 版本(edition) → 展示文案。
+ *
+ * 键集以列表页为准：实测值域 EdgeOne(13)/sparta-waf(100)/空(312)，basic/pro 等键为
+ * 历史兼容保留。收敛前 index(6 键)与抽屉(4 键)两份且键集不等，本表为唯一来源。
+ */
+export const WAF_EDITION_LABELS: Record<string, string> = {
+    'sparta-waf': 'Sparta WAF',
+    EdgeOne: 'EdgeOne',
+    basic: '基础版',
+    pro: '专业版',
+    business: '商业版',
+    enterprise: '企业版',
+}
+
+/** WAF 防护模式 → 展示文案。实测 block(99)/observe(11)/空(315)；仅展示，非有效后端筛参。 */
+export const WAF_PROTECTION_MODE_LABELS: Record<string, string> = { block: '拦截', observe: '观察', off: '关闭' }
+
+/**
+ * DNS 域名状态 → 展示文案。
+ *
+ * paused→暂停 为 DNS 域专属语义，不并入通用运行态（ASSET_STATUS_LABELS 的 paused→已暂停
+ * 不适用于域名）。
+ */
+export const DNS_DOMAIN_STATUS_LABELS: Record<string, string> = { normal: '正常', paused: '暂停', locked: '锁定' }
+
+/**
+ * DNS 解析线路（运营商）→ 展示文案。
+ *
+ * RecordTable 状态列查表与 RecordFormDialog 线路下拉选项共用此单源。
+ */
+export const DNS_LINE_LABELS: Record<string, string> = { default: '默认', telecom: '电信', unicom: '联通', mobile: '移动' }
+
+/** DNS 解析记录接入源 → 展示文案（RecordTable 关联资源列）。 */
+export const DNS_RECORD_SOURCE_LABELS: Record<string, string> = { cdn: 'CDN', waf: 'WAF', slb: 'SLB', ecs: 'ECS', eip: 'EIP' }
 
 // ==================== 查表助手 ====================
 

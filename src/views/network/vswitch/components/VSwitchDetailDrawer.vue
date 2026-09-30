@@ -151,13 +151,10 @@ import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { VSWITCH_STATUS_LABELS } from '@/utils/fieldLabels'
 
-/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射) */
-const statusLabels: Record<string, string> = {
-    Available: '可用', available: '可用', ACTIVE: '可用', active: '可用',
-    Pending: '创建中', pending: '创建中', creating: '创建中',
-    Deleting: '删除中', deleting: '删除中',
-  }
+/** 状态值 → 展示文案(共享 AssetStatusBadge 的 labels 映射,与列表页共用 fieldLabels 单源) */
+const statusLabels: Record<string, string> = VSWITCH_STATUS_LABELS
 const statusTones: Record<string, string> = {'deleting': 'pending', 'Deleting': 'pending'}
 
 

@@ -289,7 +289,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
-import { labelOfLenient } from '@/utils/fieldLabels'
+import { labelOfLenient, VSWITCH_STATUS_LABELS } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -297,14 +297,6 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
 import VpcDetailDrawer from '../vpc/components/VpcDetailDrawer.vue'
-
-/** 状态值 → 展示文案。实测值域仅 Available(613)/available(130)/ACTIVE(117) 三个大小写变体（2026-09-24 全量 860 条探查），
- *  全为成功族；Pending/creating/Deleting 保留防御键。键族与 VSwitchDetailDrawer 的 statusLabels 同源（键值勿改） */
-const VSWITCH_STATUS_LABELS: Record<string, string> = {
-  Available: '可用', available: '可用', ACTIVE: '可用', active: '可用', '可用': '可用',
-  Pending: '创建中', pending: '创建中', creating: '创建中',
-  Deleting: '删除中', deleting: '删除中',
-}
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/ACTIVE 全为成功族 */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'ACTIVE', 'active', '可用'].includes(status || '')

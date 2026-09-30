@@ -299,10 +299,11 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { getProviderLabel } from '@/utils/constants'
-import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
+import { ASSET_STATUS_LABELS, WAF_EDITION_LABELS, WAF_STATUS_LABELS } from '@/utils/fieldLabels'
 
-/** 状态文案走全局单源 ASSET_STATUS_LABELS(含 suspended/paused/bypass 等 WAF 域原生状态) */
-const statusLabels: Record<string, string> = ASSET_STATUS_LABELS
+/** 状态文案以 WAF 列表页词表为 canonical(active→正常/待接入),ASSET_STATUS_LABELS 作宽词表兜底
+ *  (含 paused/bypass/expiring 等 WAF 域原生状态),消除 index↔drawer 漂移 */
+const statusLabels: Record<string, string> = { ...ASSET_STATUS_LABELS, ...WAF_STATUS_LABELS }
 const statusTones: Record<string, string> = {'expiring': 'pending', 'Expiring': 'pending'}
 
 
@@ -353,9 +354,9 @@ const tagList = computed(() => {
   return Object.entries(tags).map(([key, value]) => ({ key, value: String(value) }))
 })
 
+/** 版本文案走 fieldLabels 单源 WAF_EDITION_LABELS(键集与列表页一致,含 sparta-waf/EdgeOne) */
 const getEditionLabel = (edition: string | undefined) => {
-  const map: Record<string, string> = { basic: '基础版', pro: '专业版', business: '商业版', enterprise: '企业版' }
-  return map[edition || ''] || edition || '-'
+  return WAF_EDITION_LABELS[edition || ''] || edition || '-'
 }
 
 const getEditionTagType = (edition: string | undefined): any => {

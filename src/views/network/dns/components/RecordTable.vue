@@ -128,6 +128,7 @@
 <script setup lang="ts">
 import { getDnsRecordsApi } from '@/api/dns'
 import type { DnsRecord } from '@/api/types/dns'
+import { DNS_LINE_LABELS, DNS_RECORD_SOURCE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -162,13 +163,11 @@ let searchTimer: number | null = null
 const allRecordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV', 'CAA']
 
 const lineLabel = (line: string | undefined) => {
-  const map: Record<string, string> = { default: '默认', telecom: '电信', unicom: '联通', mobile: '移动' }
-  return map[line || 'default'] || line || '默认'
+  return labelOfLenient(DNS_LINE_LABELS, line || 'default', '默认')
 }
 
 const linkedLabel = (type: string) => {
-  const map: Record<string, string> = { cdn: 'CDN', waf: 'WAF', slb: 'SLB', ecs: 'ECS', eip: 'EIP' }
-  return map[type] || type?.toUpperCase() || ''
+  return DNS_RECORD_SOURCE_LABELS[type] || type?.toUpperCase() || ''
 }
 
 const fetchData = async () => {

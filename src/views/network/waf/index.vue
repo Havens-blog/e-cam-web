@@ -325,7 +325,7 @@ import type { Asset, CloudProvider } from '@/api/types/asset'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
-import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
+import { ASSET_STATUS_LABELS, WAF_EDITION_LABELS, WAF_PROTECTION_MODE_LABELS, WAF_STATUS_LABELS } from '@/utils/fieldLabels'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ArrowLeft, ArrowRight, Box, DataAnalysis, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -351,33 +351,22 @@ const getStatusClass = (status?: string) => {
   return 'error'
 }
 
-/** 状态 → 展示文案（列表口径与导出同源；实测值域按 WAF 领域文案，未知值回退全局单源 lenient 透出） */
-const WAF_STATUS_LABELS: Record<string, string> = { active: '正常', suspended: '已暂停', pending: '待接入' }
+/** 状态 → 展示文案（列表口径与导出同源；WAF 词表走 fieldLabels 单源，未知值回退全局单源 lenient 透出） */
 const getStatusText = (status?: string) => {
   if (!status) return '-'
   return WAF_STATUS_LABELS[status] || ASSET_STATUS_LABELS[status] || status
 }
 
-/** 版本映射：实测值域 EdgeOne(13)/sparta-waf(100)/空(312)（原 basic/pro 等键与真实值不符，保留作历史兼容） */
-const editionMap: Record<string, string> = {
-  'sparta-waf': 'Sparta WAF',
-  'EdgeOne': 'EdgeOne',
-  basic: '基础版',
-  pro: '专业版',
-  business: '商业版',
-  enterprise: '企业版',
-}
-
+/** 版本映射走 fieldLabels 单源 WAF_EDITION_LABELS（实测值域 EdgeOne(13)/sparta-waf(100)/空(312)） */
 const getEditionLabel = (edition: string | undefined) => {
   if (!edition) return '-'
-  return editionMap[edition] || edition
+  return WAF_EDITION_LABELS[edition] || edition
 }
 
 /** 防护模式（实测 block 99/observe 11/空 315；protection_mode 非有效后端筛参，仅展示） */
 const getProtectionModeLabel = (mode: string | undefined) => {
-  const map: Record<string, string> = { block: '拦截', observe: '观察', off: '关闭' }
   if (!mode) return '-'
-  return map[mode] || mode
+  return WAF_PROTECTION_MODE_LABELS[mode] || mode
 }
 
 const getProtectionModeType = (mode: string | undefined): any => {

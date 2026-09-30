@@ -118,6 +118,7 @@ import { getDnsDomainsApi } from '@/api/dns'
 import type { DnsDomain } from '@/api/types/dns'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { DNS_DOMAIN_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { List, Refresh, Search, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -133,8 +134,7 @@ const provider = ref('')
 let searchTimer: number | null = null
 
 const statusLabel = (status: string | undefined) => {
-  const map: Record<string, string> = { normal: '正常', paused: '暂停', locked: '锁定' }
-  return map[status || 'normal'] || status || '正常'
+  return labelOfLenient(DNS_DOMAIN_STATUS_LABELS, status || 'normal', '正常')
 }
 
 const fetchData = async () => {
