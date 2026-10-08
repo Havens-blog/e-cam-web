@@ -291,3 +291,42 @@ export function batchRiskStatusApi(data: {
 export function getDiagnosisApi(id: string, params: { riskEntryId?: string } = {}): Promise<Diagnosis> {
     return unwrapOpsagent<Diagnosis>(opsagentAxios.get(`${BASE}/diagnosis/${id}`, { params }))
 }
+
+// ==================== 历史回溯（§7）====================
+
+export type SessionType = 'chat' | 'alert'
+export type SessionStatus = 'running' | 'done' | 'failed'
+
+/** 历史会话列表项（GET /opsagent/history） */
+export interface SessionSummary {
+    id: string
+    type: SessionType
+    query: string
+    serviceName: string
+    intentType?: string
+    status: SessionStatus
+    diagnosisId?: string
+    createdAt: string
+}
+
+/** 历史检索响应 data（§7：items/total/page/limit） */
+export interface HistoryData {
+    items: SessionSummary[]
+    total: number
+    page: number
+    limit: number
+}
+
+export interface HistoryParams {
+    serviceName?: string
+    startTime?: string
+    endTime?: string
+    sessionId?: string
+    page?: number
+    limit?: number
+}
+
+/** 历史会话检索（GET /opsagent/history；时间窗 ≤24h） */
+export function historyApi(params: HistoryParams = {}): Promise<HistoryData> {
+    return unwrapOpsagent<HistoryData>(opsagentAxios.get(`${BASE}/history`, { params }))
+}
