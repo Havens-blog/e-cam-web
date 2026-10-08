@@ -12,9 +12,12 @@
 import type {
     ChatData,
     ChatType,
-    CitationSourceType,
     TraceStep,
 } from '@/api/opsagent'
+
+// 证据 source_type → agent 角色着色（跨页共享，见 ../evidence）。
+export { SOURCE_TYPE_META, sourceTypeMeta } from '../evidence'
+export type { EvidenceSourceMeta } from '../evidence'
 
 // ==================== 响应 type 判别 ====================
 
@@ -62,33 +65,6 @@ export function degradeBadge(level: number): BadgeMeta | null {
             return { text: '降级模式', tone: 'danger' }
         default:
             return null
-    }
-}
-
-// ==================== 证据卡 source_type 着色 ====================
-
-export interface SourceTypeMeta {
-    label: string
-    /** agent 角色（tech-design 4 逻辑 Agent：Coordinator/LogAnalyst/Monitor/Inspector） */
-    agent: string
-    /** CSS 变量名，落在 .opsagent-page 的 --agent-* tokens（见 opsagent-theme.css） */
-    colorVar: string
-}
-
-/** 证据 source_type → agent 角色元数据（点色区分 agent 角色，AC#3） */
-export const SOURCE_TYPE_META: Record<CitationSourceType, SourceTypeMeta> = {
-    log: { label: '日志', agent: 'LogAnalyst', colorVar: 'var(--agent-log)' },
-    metric: { label: '指标', agent: 'Monitor', colorVar: 'var(--agent-monitor)' },
-    asset: { label: '资产', agent: 'Inspector', colorVar: 'var(--agent-inspector)' },
-    alert: { label: '告警', agent: 'Coordinator', colorVar: 'var(--agent-coord)' },
-}
-
-/** 未知 source_type 的兜底元数据（容错，不吞数据） */
-export function sourceTypeMeta(sourceType: string): SourceTypeMeta {
-    return SOURCE_TYPE_META[sourceType as CitationSourceType] ?? {
-        label: sourceType || '未知',
-        agent: 'Coordinator',
-        colorVar: 'var(--agent-coord)',
     }
 }
 

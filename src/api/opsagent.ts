@@ -284,3 +284,10 @@ export function batchRiskStatusApi(data: {
 }): Promise<BatchStatusResult> {
     return unwrapOpsagent<BatchStatusResult>(opsagentAxios.post(`${BASE}/risk-center/batch-status`, data))
 }
+
+// ==================== 诊断详情（§6）====================
+
+/** 诊断详情（GET /opsagent/diagnosis/:id；带 riskEntryId 触发待查看→已查看自动流转） */
+export function getDiagnosisApi(id: string, params: { riskEntryId?: string } = {}): Promise<Diagnosis> {
+    return unwrapOpsagent<Diagnosis>(opsagentAxios.get(`${BASE}/diagnosis/${id}`, { params }))
+}
