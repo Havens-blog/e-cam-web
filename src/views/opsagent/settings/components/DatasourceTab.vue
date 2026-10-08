@@ -17,15 +17,9 @@
 
 <script setup lang="ts">
 import type { Datasource } from '@/api/opsagent'
-import { dataSourceLabel, connectionStatusText } from '../logic'
+import { connectionStatusText, dataSourceLabel, formatTime } from '../logic'
 
 defineProps<{ datasources: Datasource[] }>()
-
-/** RFC3339 → 展示格式 */
-function formatTime(rfc3339: string): string {
-    if (!rfc3339) return '—'
-    return rfc3339.slice(0, 16).replace('T', ' ')
-}
 </script>
 
 <style scoped>

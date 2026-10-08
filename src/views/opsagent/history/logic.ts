@@ -43,8 +43,5 @@ export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
 
 // ==================== 时间展示 ====================
 
-/** RFC3339 → 「YYYY-MM-DD HH:mm」；空值回退占位 */
-export function formatTime(rfc3339: string): string {
-    if (!rfc3339) return '—'
-    return rfc3339.slice(0, 16).replace('T', ' ')
-}
+/** RFC3339 时间格式化（跨页共享，见 ../format） */
+export { formatTime } from '../format'
