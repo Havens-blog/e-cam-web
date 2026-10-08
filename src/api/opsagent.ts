@@ -330,3 +330,119 @@ export interface HistoryParams {
 export function historyApi(params: HistoryParams = {}): Promise<HistoryData> {
     return unwrapOpsagent<HistoryData>(opsagentAxios.get(`${BASE}/history`, { params }))
 }
+
+// ==================== 系统配置（§8）====================
+
+/** 数据源连接状态（只读探测结果） */
+export interface Datasource {
+    name: string
+    cloud?: string
+    ok: boolean
+    checkedAt: string
+}
+
+/** LLM 模型提供商（GET 返回 keyMasked，apiKey 只写不读） */
+export interface LLMProviderConfig {
+    name: string
+    default: boolean
+    model: string
+    keyMasked?: string
+}
+
+/** 通知渠道开关 */
+export interface NotifyChannel {
+    channel: string
+    enabled: boolean
+}
+
+/** 低危白名单条目（只读/低危/高危三档，高危不允许入白名单） */
+export interface RiskWhitelistEntry {
+    tool: string
+    riskLevel: RiskLevel
+}
+
+/** 引导话术模板（超能力意图 → 话术 + 正确渠道） */
+export interface GuidedTemplate {
+    template: string
+    channel: string
+}
+
+/** GET /settings 响应 data（六类 scope） */
+export interface SettingsData {
+    datasources: Datasource[]
+    llmProviders: LLMProviderConfig[]
+    notifyChannels: NotifyChannel[]
+    riskWhitelist: RiskWhitelistEntry[]
+    presetQueries: PresetQuery[]
+    guidedTemplates: Record<string, GuidedTemplate>
+}
+
+/** PUT /settings 的 llmProviders 条目（apiKey 只写） */
+export interface LLMProviderInput {
+    name: string
+    default: boolean
+    model: string
+    apiKey: string
+}
+
+/** PUT /settings 请求（按字段部分更新；datasources 只读忽略） */
+export interface SettingsUpdate {
+    llmProviders?: LLMProviderInput[]
+    notifyChannels?: NotifyChannel[]
+    riskWhitelist?: RiskWhitelistEntry[]
+    presetQueries?: PresetQuery[]
+    guidedTemplates?: Record<string, GuidedTemplate>
+}
+
+/** 系统配置读（GET /opsagent/settings） */
+export function getSettingsApi(): Promise<SettingsData> {
+    return unwrapOpsagent<SettingsData>(opsagentAxios.get(`${BASE}/settings`))
+}
+
+/** 系统配置写（PUT /opsagent/settings，管理员） */
+export function putSettingsApi(data: SettingsUpdate): Promise<unknown> {
+    return unwrapOpsagent<unknown>(opsagentAxios.put(`${BASE}/settings`, data))
+}
+
+// ==================== Agent 观测（§10）====================
+
+export interface AgentStat {
+    name: string
+    status: string
+    tasksTotal: number
+    tasksFailed: number
+    avgDurationMs: number
+}
+
+export interface QueueStat {
+    depth: number
+    capacity: number
+    inflight: number
+    concurrency: number
+    overflowTotal: number
+}
+
+export interface LLMBudgetStat {
+    windowStart: string
+    calls: number
+    budgetLimit: number
+    exceeded: boolean
+}
+
+export interface LoadPoint {
+    ts: number
+    depth: number
+    inflight: number
+}
+
+export interface ObservabilityData {
+    agents: AgentStat[]
+    queue: QueueStat
+    llmBudget: LLMBudgetStat
+    loadHistory: LoadPoint[]
+}
+
+/** Agent 观测（GET /opsagent/agents/observability） */
+export function getObservabilityApi(): Promise<ObservabilityData> {
+    return unwrapOpsagent<ObservabilityData>(opsagentAxios.get(`${BASE}/agents/observability`))
+}
