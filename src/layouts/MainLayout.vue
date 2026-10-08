@@ -5,6 +5,7 @@ import TenantSelector from '@/components/TenantSelector.vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { CERT_MENU_ITEMS } from '@/utils/cert-nav'
+import { OPSAGENT_MENU_ITEMS } from '@/utils/opsagent-nav'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import {
   ArrowDown,
@@ -286,6 +287,12 @@ const menuGroups = ref<MenuGroup[]>([
     // 台账/变更管理按 requireCertManage 过滤；详情/配置不经菜单。
     title: '证书管理',
     items: [...CERT_MENU_ITEMS]
+  },
+  {
+    // 运维 Agent 功能域（任务 5.1）：核心 / 数据视图 / 管理三组；
+    // 诊断详情经风险中心/对话进入、不进菜单，RCA 为 P2 预留不挂载。
+    title: '运维 Agent',
+    items: [...OPSAGENT_MENU_ITEMS]
   },
   {
     title: 'FinOps',

@@ -11,6 +11,9 @@ import '@fontsource-variable/inter'
 // 导入全局样式
 import './assets/styles/index.scss'
 
+// 导入运维 Agent cyan 深色设计系统（作用域 .opsagent-page，任务 5.1）
+import './assets/styles/opsagent-theme.css'
+
 // 导入 iconfont 图标库
 import '../public/iconfont/iconfont.css'; // 字体图标样式
 import '../public/iconfont/iconfont.js'; // SVG symbol 定义（彩色图标）
