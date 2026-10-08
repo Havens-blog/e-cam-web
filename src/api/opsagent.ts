@@ -194,3 +194,93 @@ export function correctApi(
 ): Promise<ChatData> {
     return unwrapOpsagent<ChatData>(opsagentAxios.post(`${BASE}/chat/${sessionId}/correct`, data))
 }
+
+// ==================== 风险中心（§3/§4/§5）====================
+
+/** 风险条目状态（待查看/已查看/已处理） */
+export type RiskEntryStatus = 'pending_view' | 'viewed' | 'done'
+
+/** 风险条目状态流转记录 */
+export interface StatusChange {
+    from: string
+    to: string
+    by: string
+    at: string
+}
+
+/** 通知发送结果（RiskEntry.notified） */
+export interface NotifyResult {
+    channel: string
+    ok: boolean
+    attempts: number
+    lastError?: string
+    sentAt?: string
+}
+
+/** 风险中心条目（risk_entries） */
+export interface RiskEntry {
+    id: string
+    tenant: string
+    fingerprint: string
+    diagnosisId: string
+    serviceName: string
+    severity: Severity
+    status: RiskEntryStatus
+    version: number
+    statusHistory: StatusChange[]
+    notified: NotifyResult
+    createdAt: string
+}
+
+/** 聚合统计（统计卡，与 items 筛选条件独立、按租户全量） */
+export interface RiskStats {
+    pendingView: number
+    todayNew: number
+    highRisk: number
+}
+
+/** 风险中心列表响应 data（§3） */
+export interface RiskListData {
+    items: RiskEntry[]
+    total: number
+    page: number
+    limit: number
+    stats: RiskStats
+}
+
+export interface RiskListParams {
+    startTime?: string
+    endTime?: string
+    serviceName?: string
+    status?: RiskEntryStatus
+    severity?: Severity
+    page?: number
+    limit?: number
+}
+
+/** 批量状态标记响应（§5） */
+export interface BatchStatusResult {
+    succeeded: { id: string; version: number }[]
+    failed: { id: string; reason: string; reasonCode: string; currentVersion?: number }[]
+}
+
+/** 风险中心列表（GET /opsagent/risk-center） */
+export function riskCenterApi(params: RiskListParams = {}): Promise<RiskListData> {
+    return unwrapOpsagent<RiskListData>(opsagentAxios.get(`${BASE}/risk-center`, { params }))
+}
+
+/** 单条标记状态（POST /opsagent/risk-center/:id/status，CAS 乐观锁） */
+export function updateRiskStatusApi(
+    id: string,
+    data: { status: RiskEntryStatus; expectedVersion?: number },
+): Promise<RiskEntry> {
+    return unwrapOpsagent<RiskEntry>(opsagentAxios.post(`${BASE}/risk-center/${id}/status`, data))
+}
+
+/** 批量标记状态（POST /opsagent/risk-center/batch-status，逐条 CAS） */
+export function batchRiskStatusApi(data: {
+    items: { id: string; expectedVersion: number }[]
+    status: RiskEntryStatus
+}): Promise<BatchStatusResult> {
+    return unwrapOpsagent<BatchStatusResult>(opsagentAxios.post(`${BASE}/risk-center/batch-status`, data))
+}
