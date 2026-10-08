@@ -441,6 +441,11 @@ watch(() => props.visible, (val) => {
       form.enabled = true
     }
     formRef.value?.clearValidate()
+    // 编辑历史规则时，已有条件的字段是预填的，不会走 onFieldSelected 的预加载；
+    // 这里主动预加载，避免值下拉首次展开时枚举还没拉回（失败/非枚举字段会缓存为空，仍可手输）。
+    form.conditions.forEach((c) => {
+      if (c.field) loadFieldValues(c.field)
+    })
   }
 })
 
