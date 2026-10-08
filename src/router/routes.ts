@@ -106,16 +106,6 @@ const routes: RouteRecordRaw[] = [
                 path: '/iam',
                 redirect: '/iam/users',
             },
-            // ==================== 平台用户（eiam 统一身份） ====================
-            {
-                path: '/platform/users',
-                name: 'PlatformUsers',
-                component: () => import('@/views/platform/users/index.vue'),
-                meta: {
-                    title: '平台用户',
-                    icon: 'ops-oneterm-authorization',
-                },
-            },
             {
                 path: '/iam/users',
                 name: 'IAMUsers',
