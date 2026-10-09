@@ -722,63 +722,6 @@ const routes: RouteRecordRaw[] = [
                     hideInMenu: true,
                 },
             },
-            // ==================== 运维 Agent（Phase 5，任务 5.1）====================
-            // cyan 深色设计系统作用域 .opsagent-page；诊断详情经风险中心/对话进入、不进菜单。
-            {
-                path: '/opsagent/chat',
-                name: 'OpsagentChat',
-                component: () => import('@/views/opsagent/chat/index.vue'),
-                meta: {
-                    title: '对话排障',
-                    icon: 'icon-xianxing-xiaoxi',
-                },
-            },
-            {
-                path: '/opsagent/risk-center',
-                name: 'OpsagentRiskCenter',
-                component: () => import('@/views/opsagent/risk-center/index.vue'),
-                meta: {
-                    title: '风险中心',
-                    icon: 'icon-xianxing-baojing',
-                },
-            },
-            {
-                path: '/opsagent/diagnosis/:id',
-                name: 'OpsagentDiagnosis',
-                component: () => import('@/views/opsagent/diagnosis/index.vue'),
-                meta: {
-                    title: '诊断详情',
-                    icon: 'icon-xianxing-yiwen',
-                    hideInMenu: true,
-                },
-            },
-            {
-                path: '/opsagent/history',
-                name: 'OpsagentHistory',
-                component: () => import('@/views/opsagent/history/index.vue'),
-                meta: {
-                    title: '历史回溯',
-                    icon: 'ops-history',
-                },
-            },
-            {
-                path: '/opsagent/settings',
-                name: 'OpsagentSettings',
-                component: () => import('@/views/opsagent/settings/index.vue'),
-                meta: {
-                    title: '系统配置',
-                    icon: 'ops-setting-system',
-                },
-            },
-            {
-                path: '/opsagent/agents',
-                name: 'OpsagentAgents',
-                component: () => import('@/views/opsagent/agents/index.vue'),
-                meta: {
-                    title: 'Agent 管理',
-                    icon: 'icon-xianxing-yingyong',
-                },
-            },
         ],
     },
     {

@@ -63,11 +63,6 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/cmdb/, '/api'),
         },
-        // 运维 Agent（D:/Haven/opsagent，独立编排层服务 :8081），须先于 /api 兜底匹配
-        '/api/v1/opsagent': {
-          target: 'http://localhost:8081',
-          changeOrigin: true,
-        },
         '/api': {
           target: env.VITE_BACKEND_URL || 'http://localhost:8001',
           changeOrigin: true,
