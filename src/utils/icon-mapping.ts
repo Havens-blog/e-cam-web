@@ -20,6 +20,16 @@ export const PROVIDER_ICONS: Record<string, string> = {
     bytecloud: 'Bytecloud', // 火山引擎 - 彩色
     volcengine: 'Bytecloud', // 火山引擎 - 彩色
     volcano: 'Bytecloud', // 火山引擎 - 彩色
+    volc: 'Bytecloud', // 火山引擎别名 - 彩色
+    bytedance: 'Bytecloud', // 火山引擎别名（字节跳动） - 彩色
+    alibaba: 'Alibaba_Cloud', // 阿里云别名 - 彩色
+    qcloud: 'Tencent_Cloud', // 腾讯云别名 - 彩色
+    amazon: 'AWS', // AWS 别名 - 彩色
+    microsoft: 'Azure', // Azure 别名 - 彩色
+    gcp: 'Google_Cloud_Platform', // 谷歌云别名 - 彩色
+    jd: 'JDCloud', // 京东云别名 - 彩色
+    vmware: 'caise-vmware', // VMware - 彩色
+    vsphere: 'caise-vmware', // vSphere - 彩色
     nutanix: 'Nutanix', // Nutanix - 彩色
     openstack: 'OpenStack', // OpenStack - 彩色
     zstack: 'ZStack', // ZStack - 彩色

@@ -242,6 +242,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SnapshotDetailDrawer from './components/SnapshotDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
+import { SNAPSHOT_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -249,8 +251,8 @@ interface ColumnConfig { key: string; label: string; width?: number; visible: bo
 const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return i[key] || ''
   if (key === 'create_time') return i.create_time ? new Date(i.create_time).toLocaleString('zh-CN') : ''
-  // status/provider/region 是 Asset 顶层字段，attributes 里恒空（compute-2 F-H4）
-  if (key === 'status') return i.status || i.attributes?.status || ''
+  // status/provider/region 是 Asset 顶层字段，attributes 里恒空（compute-2 F-H4）；状态导出同样走单源文案防裸显英文
+  if (key === 'status') return getStatusText(i.status || i.attributes?.status)
   if (key === 'provider') return i.provider || i.attributes?.provider || ''
   if (key === 'region') return i.region || i.attributes?.region || ''
   return i.attributes?.[key] || ''
@@ -528,13 +530,8 @@ const handleRowClick = (row: Asset) => { handleViewDetail(row) }
 const handleViewDetail = (row: Asset) => { currentInstance.value = row; detailVisible.value = true }
 const handleColumnSettingsChange = (cols: ColumnConfig[]) => { columnSettings.value = cols; localStorage.setItem('snapshot-column-settings', JSON.stringify(cols)) }
 
-/** 状态文案：成功族（accomplished/available/NORMAL/completed）归一为「正常」，保留原页 progressing/failed 映射 */
-const getStatusText = (status?: string) => {
-  if (!status) return '-'
-  if (isSnapshotSuccess(status)) return '正常'
-  const map: Record<string, string> = { progressing: '创建中', failed: '失败' }
-  return map[status.toLowerCase()] || status
-}
+/** 状态文案：成功族（accomplished/available/NORMAL/completed）归一为「正常」，词表走 fieldLabels 单源 SNAPSHOT_STATUS_LABELS */
+const getStatusText = (status?: string) => labelOfLenient(SNAPSHOT_STATUS_LABELS, (status || '').toLowerCase(), '-')
 /** 状态点色：绿=成功族 / 红=失败 / 黄=其余（创建中等） */
 const getStatusClass = (status?: string) => {
   if (isSnapshotSuccess(status)) return 'running'
@@ -542,7 +539,7 @@ const getStatusClass = (status?: string) => {
   if (s.includes('failed')) return 'error'
   return 'pending'
 }
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'

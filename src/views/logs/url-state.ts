@@ -54,7 +54,7 @@ export function encodeUrlState(s: LogQueryState): URLSearchParams {
 /** URLSearchParams → 状态(非法/缺失项回退默认;filters 只保留合法 op) */
 export function decodeUrlState(params: URLSearchParams): LogQueryState {
     const state: LogQueryState = {
-        t: params.get('t') === 'waf' || params.get('t') === 'slb' ? (params.get('t') as LogType) : 'cdn',
+        t: params.get('t') === 'waf' || params.get('t') === 'slb' || params.get('t') === 'access' ? (params.get('t') as LogType) : 'cdn',
         startMs: parseMs(params.get('st')),
         endMs: parseMs(params.get('et')),
         clouds: splitEncoded(params.get('c')),

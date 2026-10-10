@@ -240,6 +240,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SecurityGroupDetailDrawer from './components/SecurityGroupDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -515,7 +516,7 @@ const handleColumnSettingsChange = (cols: ColumnConfig[]) => { columnSettings.va
 const getSgTypeText = (type?: string) => (type === 'enterprise' ? '企业级' : '普通')
 /** 规则数 = 入方向 + 出方向规则合计 */
 const getSgRuleCount = (item: Asset) => (item.attributes?.ingress_rules?.length || 0) + (item.attributes?.egress_rules?.length || 0)
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'

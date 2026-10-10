@@ -304,17 +304,17 @@ import {
 } from './ossMetrics'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import OssDetailDrawer from './components/OssDetailDrawer.vue'
-
-/** 存储类型文案映射：真实值域含厂商大小写差异（实测 aliyun=Standard、tencent/aws=STANDARD），统一小写键归一展示 */
-const STORAGE_CLASS_TEXT: Record<string, string> = { standard: '标准存储', ia: '低频存储', archive: '归档存储', coldarchive: '冷归档存储' }
+import { getProviderIcon } from '@/utils/icon-mapping'
+import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化）；
  *  S-Hard：存储量/对象数一律来自指标表(bucket_name 去重代表行),无指标数据导出空串,不回退资产表快照 */
 const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
-  if (key === 'storage_class') { const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储' }; return map[attr.storage_class] || attr.storage_class || '' }
-  if (key === 'acl') { const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[attr.acl] || attr.acl || '' }
+  // 存储类型/ACL 文案走 fieldLabels 单源，小写键归一（aliyun=Standard、tencent/aws=STANDARD 同词），补齐原导出 map 缺失的 ColdArchive
+  if (key === 'storage_class') return labelOfLenient(OSS_STORAGE_CLASS_LABELS, (attr.storage_class || '').toLowerCase(), '')
+  if (key === 'acl') return labelOfLenient(OSS_ACL_LABELS, attr.acl, '')
   if (key === 'versioning') return attr.versioning ? '已开启' : '未开启'
   if (key === 'provider') return getProviderLabel(attr.provider || '')
   if (key === 'storage_size' || key === 'object_count') {
@@ -663,25 +663,10 @@ const handleRowClick = (item: Asset) => { handleViewDetail(item) }
 const handleViewDetail = (item: Asset) => { detailInstance.value = item; detailDrawerVisible.value = true }
 const handleColumnSettingsChange = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
-const getStorageClassText = (type?: string) => {
-  if (!type) return '-'
-  return STORAGE_CLASS_TEXT[type.toLowerCase()] || type
-}
-const getAclText = (acl?: string) => {
-  if (!acl) return '-'
-  const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }
-  return map[acl] || acl
-}
-const getPlatformIcon = (provider?: string) => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun')) return 'Alibaba_Cloud'
-  if (p.includes('tencent')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws')) return 'AWS'
-  if (p.includes('volcano')) return 'Bytecloud'
-  return 'Alibaba_Cloud'
-}
+/** 存储类型/ACL 文案走 fieldLabels 单源（与导出、详情抽屉同口径） */
+const getStorageClassText = (type?: string) => labelOfLenient(OSS_STORAGE_CLASS_LABELS, (type || '').toLowerCase(), '-')
+const getAclText = (acl?: string) => labelOfLenient(OSS_ACL_LABELS, acl, '-')
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')

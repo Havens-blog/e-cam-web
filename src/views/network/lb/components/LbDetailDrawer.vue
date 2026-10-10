@@ -311,7 +311,7 @@
 import type { Asset } from '@/api/types/asset'
 import ProviderIcon from '@/components/ProviderIcon.vue'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
-import { LB_STATUS_LABELS } from '@/utils/fieldLabels'
+import { LB_STATUS_LABELS, LB_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Close, Headset, Monitor, PriceTag, SetUp } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
@@ -402,13 +402,8 @@ const regionLabel = computed(() => {
   return regionItem?.label || props.instance.region || '-'
 })
 
-const getLBTypeLabel = (type: string | undefined) => {
-  const map: Record<string, string> = {
-    slb: 'SLB 传统负载均衡', alb: 'ALB 应用负载均衡', nlb: 'NLB 网络负载均衡',
-    clb: 'CLB 传统负载均衡', elb: 'ELB 弹性负载均衡',
-  }
-  return map[type || ''] || type || '负载均衡'
-}
+/** 实例类型文案走 fieldLabels 单源 LB_TYPE_LABELS（列表页 canonical，抽屉对齐；elb 键已补入共享词表） */
+const getLBTypeLabel = (type: string | undefined) => labelOfLenient(LB_TYPE_LABELS, type, '-')
 
 /** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
 const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')

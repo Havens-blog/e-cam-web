@@ -299,10 +299,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 EIP_STATUS_LABELS */
-const isBoundStatus = (status?: string) => ['InUse', 'inuse', 'Attached', 'attached', '已绑定'].includes(status || '')
-const isUnboundStatus = (status?: string) => ['Available', 'available', 'Bindable', 'bindable', '未绑定', '可绑定'].includes(status || '')
+// 绑定族涵盖后端归一后的 canonical(in_use)与历史原始值(InUse/Attached/BIND/BIND_ENI)
+const isBoundStatus = (status?: string) => ['InUse', 'inuse', 'in_use', 'BIND', 'BIND_ENI', 'Attached', 'attached', '已绑定'].includes(status || '')
+const isUnboundStatus = (status?: string) => ['Available', 'available', 'UNBIND', 'Bindable', 'bindable', '未绑定', '可绑定'].includes(status || '')
 
 /** 状态 → 状态点色调类（绑定=绿 / 未绑定=灰 / 可绑定=黄 / 其余=红） */
 const getStatusClass = (status?: string) => {
@@ -490,12 +492,17 @@ const searchFieldLabels: Record<string, string> = {
   region: '区域',
 }
 
-// 有固定选项的字段（status 选项值 = 后端实测值域；Attached 为华为云绑定态，归已绑定族）
+// 有固定选项的字段（status 选项值 = 后端实测值域；attached 为华为云绑定态，
+// BIND/UNBIND 为腾讯云原生值，in_use/available 为后端归一 canonical，均归对应族）
 const searchFieldOptions: Record<string, { label: string; value: string }[]> = {
   status: [
-    { label: '已绑定', value: 'InUse' },
-    { label: '未绑定', value: 'Available' },
+    { label: '已绑定(InUse)', value: 'InUse' },
+    { label: '已绑定(in_use)', value: 'in_use' },
+    { label: '已绑定(BIND)', value: 'BIND' },
     { label: '已绑定(Attached)', value: 'Attached' },
+    { label: '未绑定(Available)', value: 'Available' },
+    { label: '未绑定(available)', value: 'available' },
+    { label: '未绑定(UNBIND)', value: 'UNBIND' },
   ],
   provider: [
     { label: '阿里云', value: 'aliyun' },
@@ -710,7 +717,7 @@ const getInstanceTypeLabel = (type: string | undefined) => labelOfLenient(EIP_IN
 /** 计费方式 → 展示文案 */
 const getChargeTypeLabel = (value: string | undefined | null): string => labelOfLenient(CHARGE_TYPE_LABELS, value)
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 

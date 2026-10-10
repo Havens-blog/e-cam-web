@@ -291,7 +291,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import IconFont from '@/components/IconFont/index.vue'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import { getProviderLabel } from '@/utils/constants'
-import { NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -308,6 +308,7 @@ import {
 } from './nasMetrics'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 等价搬运（零漂移）；metric-map 额外 prop 以闭包捕获 fsMetricMap 等价替代（不新增共享组件 prop）；
  * 状态文案改用 fieldLabels 单源 NAS_STATUS_LABELS（含小写真实值域，导出与列展示同口径） */
@@ -670,27 +671,15 @@ const getStatusClass = (status?: string) => {
 }
 /** 状态文案走 fieldLabels 单源（NAS pending/creating→创建中，大写 Running/Stopped 防御键） */
 const getStatusText = (status?: string) => labelOfLenient(NAS_STATUS_LABELS, status, status || '-')
-const getFileSystemTypeText = (type?: string) => {
-  if (!type) return '-'
-  const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }
-  return map[type] || type
-}
+/** 文件系统类型文案走 fieldLabels 单源 NAS_FILE_SYSTEM_TYPE_LABELS（与详情抽屉同口径） */
+const getFileSystemTypeText = (type?: string) => labelOfLenient(NAS_FILE_SYSTEM_TYPE_LABELS, type, '-')
 const getMountTargetCount = (item: Asset) => {
   if (item.attributes?.mount_target_count !== undefined) return item.attributes.mount_target_count
   const targets = item.attributes?.mount_targets
   if (Array.isArray(targets)) return targets.length
   return 0
 }
-const getPlatformIcon = (provider?: string) => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun')) return 'Alibaba_Cloud'
-  if (p.includes('tencent')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws')) return 'AWS'
-  if (p.includes('volcano')) return 'Bytecloud'
-  return 'Alibaba_Cloud'
-}
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
@@ -833,9 +822,8 @@ onMounted(() => {
   align-items: center;
   gap: 32px;
   padding: 14px 18px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
 
   &.warn {

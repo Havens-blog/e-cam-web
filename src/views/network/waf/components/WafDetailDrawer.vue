@@ -299,7 +299,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { getProviderLabel } from '@/utils/constants'
-import { ASSET_STATUS_LABELS, WAF_EDITION_LABELS, WAF_STATUS_LABELS } from '@/utils/fieldLabels'
+import { ASSET_STATUS_LABELS, CHARGE_TYPE_LABELS, WAF_EDITION_LABELS, WAF_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 
 /** 状态文案以 WAF 列表页词表为 canonical(active→正常/待接入),ASSET_STATUS_LABELS 作宽词表兜底
  *  (含 paused/bypass/expiring 等 WAF 域原生状态),消除 index↔drawer 漂移 */
@@ -367,10 +367,8 @@ const getEditionTagType = (edition: string | undefined): any => {
 /** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 等变体归一） */
 const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')
 
-const getPayTypeLabel = (payType: string | undefined) => {
-  const map: Record<string, string> = { subscription: '包年包月', payasyougo: '按量付费', Subscription: '包年包月', PayAsYouGo: '按量付费' }
-  return map[payType || ''] || payType || '-'
-}
+/** 计费方式文案走 fieldLabels 单源 CHARGE_TYPE_LABELS（subscription/payasyougo 键族已并入共享表） */
+const getPayTypeLabel = (payType: string | undefined) => labelOfLenient(CHARGE_TYPE_LABELS, payType, '-')
 
 const isExpiringSoon = (expiredTime: string | undefined) => {
   if (!expiredTime) return false

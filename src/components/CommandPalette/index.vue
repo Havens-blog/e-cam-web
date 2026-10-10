@@ -195,7 +195,7 @@ const ASSET_TYPE_LABELS: Record<string, string> = {
 }
 
 /** 全局搜索覆盖的资产类型：实例级主资源（排除 disk/snapshot/security_group/image 等附属/派生资源） */
-const GLOBAL_SEARCH_ASSET_TYPES = 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,nas,oss'
+const GLOBAL_SEARCH_ASSET_TYPES = 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,ddos,nas,oss'
 
 /**
  * 资产类型 → 产品列表路由。
@@ -232,6 +232,7 @@ const ASSET_TYPE_ROUTES: Record<string, string> = {
   clb: '/network/lb',
   cdn: '/network/cdn',
   waf: '/network/waf',
+  ddos: '/network/ddos',
   nas: '/storage/nas',
   oss: '/storage/oss'
 }

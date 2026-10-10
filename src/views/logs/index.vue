@@ -71,6 +71,7 @@
               <span class="source-option">
                 <span>{{ s.name }}</span>
                 <span v-if="!s.enabled" class="source-disabled">未投递</span>
+                <span v-else-if="s.stale" class="source-stale">停采</span>
               </span>
             </el-option>
           </el-option-group>
@@ -1462,6 +1463,10 @@ function columnWidth(key: string): number {
 }
 .source-disabled {
     color: var(--el-color-warning);
+    font-size: 12px;
+}
+.source-stale {
+    color: var(--el-text-color-tertiary);
     font-size: 12px;
 }
 .delivery-alert {

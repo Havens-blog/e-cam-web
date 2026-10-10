@@ -354,43 +354,6 @@ export function deleteFieldGroupApi(id: number) {
     })
 }
 
-// ==================== CMDB 管理 API ====================
-
-export {
-    createBatchInstanceRelationApi,
-    createCmdbInstanceApi,
-    createCmdbInstanceBatchApi,
-    createCmdbModelApi,
-    createInstanceRelationApi,
-    createModelGroupApi,
-    createModelRelationApi,
-    deleteCmdbInstanceApi,
-    deleteCmdbModelApi,
-    deleteInstanceRelationApi,
-    deleteModelGroupApi,
-    deleteModelRelationApi,
-    getCmdbInstanceApi,
-    getCmdbModelApi,
-    getInstanceTopologyApi,
-    getModelGroupApi,
-    getModelRelationApi,
-    getModelTopologyApi,
-    getRelatedInstancesApi,
-    initBuiltinModelGroupsApi,
-    listCmdbInstancesApi,
-    listCmdbModelsApi,
-    listInstanceRelationsApi,
-    listModelGroupsApi,
-    listModelGroupsWithModelsApi,
-    listModelRelationsApi,
-    updateCmdbInstanceApi,
-    updateCmdbModelApi,
-    updateModelGroupApi,
-    updateModelRelationApi,
-    upsertCmdbInstanceApi,
-    upsertCmdbInstanceBatchApi
-} from './cmdb'
-
 // ==================== IAM 用户管理 API ====================
 
 export {

@@ -262,6 +262,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EsDetailDrawer from './components/EsDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 共享导出配置：字段沿用原 stub 字段清单（key 对齐 attributes 实际字段名），取值走通用映射 */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -541,16 +542,7 @@ const getStatusClass = (status?: string) => {
 /** 状态文案走 fieldLabels 单源（ES active 与 running 同义→运行中） */
 const getStatusText = (status?: string) => labelOfLenient(ES_STATUS_LABELS, status, status || '-')
 
-const getPlatformIcon = (provider?: string) => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
-  if (p.includes('tencent')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws')) return 'AWS'
-  if (p.includes('volcano')) return 'Bytecloud'
-  return 'Alibaba_Cloud'
-}
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')

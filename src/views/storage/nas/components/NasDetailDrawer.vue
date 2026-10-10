@@ -162,12 +162,13 @@ import { getNasMetricsApi, type NASFsMetricsView, type NASMetricPoint } from '@/
 import type { Asset } from '@/api/types/asset';
 import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
-import { CHARGE_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
+import { CHARGE_TYPE_LABELS, NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { formatNumber } from '@/utils/formatters';
 import { formatCapacityGB, formatUtilization, hasZeroException } from '@/views/storage/nas/nasMetrics';
 import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFilled } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -188,7 +189,8 @@ const tagList = computed(() => {
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); return s === 'running' ? 'running' : s === 'stopped' ? 'stopped' : '' }
 const getStatusText = (status?: string) => labelOfLenient(NAS_STATUS_LABELS, status, status || '-')
-const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { standard: '通用型', extreme: '极速型', cpfs: 'CPFS' }; return map[type] || type }
+/** 文件系统类型文案走 fieldLabels 单源 NAS_FILE_SYSTEM_TYPE_LABELS（与列表页同口径） */
+const getFileSystemTypeText = (type?: string) => { if (!type) return '-'; return labelOfLenient(NAS_FILE_SYSTEM_TYPE_LABELS, type, type || '-') }
 
 // ===== 监控 tab:容量/已用/使用率趋势(按需查询,读 ecam_nas_metric 指标表) =====
 // 与 CdnDetailDrawer 指标 tab 同构;echarts 渲染在 canvas 上,CSS 变量不可用
@@ -378,7 +380,7 @@ watch(() => props.visible, (val) => {
   if (val) window.addEventListener('resize', handleMetricsResize)
   else window.removeEventListener('resize', handleMetricsResize)
 })
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const getChargeTypeText = (type?: string) => labelOfLenient(CHARGE_TYPE_LABELS, type)
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }

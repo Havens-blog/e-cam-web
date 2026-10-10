@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { updateCmdbInstanceApi } from '@/api';
+import { updateCmdbInstanceApi } from '@/api/cmdb-instance';
 import type { Asset } from '@/api/types/asset';
 import { Delete, Plus } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';

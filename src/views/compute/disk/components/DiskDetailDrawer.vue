@@ -107,6 +107,7 @@ import { formatIOPS, formatThroughputMBps, formatUsagePercent, hasZeroException,
 import { Box, Close, DataLine, Document, WarningFilled } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -116,7 +117,7 @@ const activeTab = ref('detail')
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s.includes('use')) return 'running'; if (s.includes('available')) return 'stopped'; return 'pending' }
 const getStatusText = (status?: string) => { if (!status) return '-'; return DISK_STATUS_LABELS[status.toLowerCase()] || status }
 const getDiskCategory = (category?: string) => { if (!category) return '-'; return DISK_CATEGORY_LABELS[category] || category }
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 

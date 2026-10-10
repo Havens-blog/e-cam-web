@@ -220,6 +220,7 @@
                     <span class="cell-text">{{ item.region || '-' }}</span>
                   </template>
                   <template v-else-if="col.key === 'cloud_account_name'">{{ item.attributes?.cloud_account_name || '-' }}</template>
+                  <template v-else-if="col.key === 'resource_group_id'">{{ item.attributes?.resource_group_id || '-' }}</template>
                   <template v-else-if="col.key === 'qps'">{{ item.attributes?.qps || '-' }}</template>
                   <template v-else-if="col.key === 'expired_time'">
                     <span class="mono" :class="{ 'expiring-text': isExpiringSoon(item.attributes?.expired_time) }">
@@ -334,6 +335,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域仅 active(160)/suspended(252)/pending(13) 三值（2026-09-24 全量 425 条探查，全小写）；
@@ -466,6 +468,7 @@ const defaultColumnSettings: ColumnConfig[] = [
   { key: 'platform', label: '平台', width: 60, visible: true },
   { key: 'region', label: '地域', width: 130, visible: true },
   { key: 'cloud_account_name', label: '云账号', width: 150, visible: false },
+  { key: 'resource_group_id', label: '资源组', width: 150, visible: true },
   { key: 'qps', label: 'QPS', width: 80, visible: false },
   { key: 'expired_time', label: '到期时间', width: 130, visible: false },
   { key: 'creation_time', label: '创建时间', width: 150, visible: false },
@@ -479,7 +482,16 @@ const loadColumnSettings = () => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) { columnSettings.value = parsed; return }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 合并默认配置中新增的列(如 resource_group_id):用户既有列的可见性原样保留,
+        // 新列按默认 visible 状态追加到末尾
+        const merged = [...parsed]
+        for (const d of defaultColumnSettings) {
+          if (!merged.some((c: ColumnConfig) => c.key === d.key)) merged.push({ ...d })
+        }
+        columnSettings.value = merged
+        return
+      }
     } catch { /* ignore */ }
   }
   columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
@@ -783,7 +795,7 @@ const formatTime = (time: string | number | undefined) => {
   return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 

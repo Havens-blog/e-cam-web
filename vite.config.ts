@@ -57,11 +57,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/iam/, '/api'),
         },
-        // ecmdb: /api/cmdb/* -> ecmdb 后端 /api/*（对齐 nginx.dev.conf）
-        '/api/cmdb': {
-          target: 'http://localhost:8000',
+        // e-cmdb-service: /api/v1/cmdb/* -> CMDB 独立服务（拆分后路由前缀 /api/v1/cmdb）
+        '/api/v1/cmdb': {
+          target: 'http://localhost:8002',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/cmdb/, '/api'),
         },
         '/api': {
           target: env.VITE_BACKEND_URL || 'http://localhost:8001',

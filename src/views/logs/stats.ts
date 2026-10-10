@@ -127,7 +127,8 @@ export function buildKpis(logType: LogType, entries: LogEntry[], totalOverride?:
     const displayTotal = totalOverride ?? entries.length
     const rateTotal = entries.length
     if (logType === 'waf') return wafKpis(entries, displayTotal, rateTotal)
-    if (logType === 'slb') return slbKpis(entries, displayTotal, rateTotal)
+    // access(源站 nginx/gateway 访问日志)复用 SLB schema,同套 KPI(延迟/5xx)
+    if (logType === 'slb' || logType === 'access') return slbKpis(entries, displayTotal, rateTotal)
     return cdnKpis(entries, displayTotal, rateTotal)
 }
 

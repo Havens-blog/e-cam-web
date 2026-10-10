@@ -309,6 +309,7 @@ import {
 } from './diskMetrics'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import DiskDetailDrawer from './components/DiskDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 共享导出取值:S-Hard 使用率/IOPS/吞吐一律来自指标表(disk_id 去重代表行);无指标数据导出空串,不回退资产表快照 */
 const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
@@ -649,7 +650,7 @@ const handleColumnSettingsChange = (cols: any[]) => { columnSettings.value = col
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s.includes('use') || s === 'attached') return 'running'; if (s.includes('available')) return 'stopped'; if (s.includes('error')) return 'error'; return 'pending' }
 const getStatusText = (status?: string) => { if (!status) return '-'; return DISK_STATUS_LABELS[status.toLowerCase()] || status }
 const getDiskCategory = (category?: string) => { if (!category) return '-'; return DISK_CATEGORY_LABELS[category] || category }
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')

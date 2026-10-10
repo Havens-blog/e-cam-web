@@ -21,15 +21,6 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
-                path: '/topology',
-                name: 'Topology',
-                component: () => import('@/views/topology/index.vue'),
-                meta: {
-                    title: '资源拓扑',
-                    icon: 'Share',
-                },
-            },
-            {
                 path: '/accounts',
                 name: 'Accounts',
                 component: () => import('@/views/accounts/index.vue'),
@@ -51,16 +42,6 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: '资产管理',
                     icon: 'caise-public_cloud',
-                },
-            },
-            {
-                path: '/assets/instances/:uid',
-                name: 'AssetInstances',
-                component: () => import('@/views/cmdb/instances/index.vue'),
-                meta: {
-                    title: '资产实例',
-                    icon: 'Box',
-                    hideInMenu: true,
                 },
             },
             {
@@ -198,75 +179,6 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: 'IAM 对比',
                     icon: 'DataAnalysis',
-                },
-            },
-            // ==================== CMDB 管理路由 ====================
-            {
-                path: '/cmdb',
-                redirect: '/cmdb/models',
-            },
-            {
-                path: '/cmdb/models',
-                name: 'CmdbModels',
-                component: () => import('@/views/cmdb/models/index.vue'),
-                meta: {
-                    title: '资源模型',
-                    icon: 'Grid',
-                },
-            },
-            {
-                path: '/cmdb/instances',
-                name: 'CmdbInstances',
-                component: () => import('@/views/cmdb/instances/index.vue'),
-                meta: {
-                    title: '资源实例',
-                    icon: 'Box',
-                },
-            },
-            {
-                path: '/cmdb/relations',
-                name: 'CmdbRelations',
-                component: () => import('@/views/cmdb/relations/index.vue'),
-                meta: {
-                    title: '模型关系',
-                    icon: 'Connection',
-                },
-            },
-            {
-                path: '/cmdb/topology',
-                name: 'CmdbTopology',
-                component: () => import('@/views/cmdb/topology/index.vue'),
-                meta: {
-                    title: '拓扑视图',
-                    icon: 'Share',
-                },
-            },
-            // ==================== 服务树路由 ====================
-            {
-                path: '/service-tree',
-                name: 'ServiceTree',
-                component: () => import('@/views/service-tree/index.vue'),
-                meta: {
-                    title: '服务树',
-                    icon: 'Connection',
-                },
-            },
-            {
-                path: '/service-tree/environments',
-                name: 'ServiceTreeEnvironments',
-                component: () => import('@/views/service-tree/environments/index.vue'),
-                meta: {
-                    title: '环境管理',
-                    icon: 'Setting',
-                },
-            },
-            {
-                path: '/service-tree/rules',
-                name: 'ServiceTreeRules',
-                component: () => import('@/views/service-tree/rules/index.vue'),
-                meta: {
-                    title: '绑定规则',
-                    icon: 'List',
                 },
             },
             // ==================== 数据库管理路由 ====================
@@ -487,6 +399,15 @@ const routes: RouteRecordRaw[] = [
                 meta: {
                     title: 'WAF 防火墙',
                     icon: 'Shield',
+                },
+            },
+            {
+                path: '/network/ddos',
+                name: 'DDoS',
+                component: () => import('@/views/network/ddos/index.vue'),
+                meta: {
+                    title: 'DDoS 防护',
+                    icon: 'Monitor',
                 },
             },
             {

@@ -65,15 +65,18 @@ import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
 import { Camera, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
+import { SNAPSHOT_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
 
-const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (s.includes('accomplished') || s.includes('normal')) return 'running'; if (s.includes('failed')) return 'error'; return 'pending' }
-const getStatusText = (status?: string) => { if (!status) return '-'; const map: Record<string, string> = { accomplished: '正常', progressing: '创建中', failed: '失败', normal: '正常' }; return map[status.toLowerCase()] || status }
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (['accomplished', 'available', 'normal', 'completed'].some(k => s.includes(k))) return 'running'; if (s.includes('failed')) return 'error'; return 'pending' }
+/** 状态文案走 fieldLabels 单源 SNAPSHOT_STATUS_LABELS——补齐华为 available/腾讯 NORMAL/AWS completed 等厂商成功态(此前抽屉裸显英文) */
+const getStatusText = (status?: string) => labelOfLenient(SNAPSHOT_STATUS_LABELS, (status || '').toLowerCase(), '-')
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 </script>

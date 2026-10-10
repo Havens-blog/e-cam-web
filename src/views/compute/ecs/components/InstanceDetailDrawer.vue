@@ -539,6 +539,7 @@ import VpcDetailDrawer from '@/views/network/vpc/components/VpcDetailDrawer.vue'
 import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refresh, WarningFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { ref, watch } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 const props = defineProps<{
   visible: boolean
@@ -675,25 +676,7 @@ const getStatusText = (status: string | undefined) => {
   return ECS_STATUS_LABELS[status.toUpperCase()] || status
 }
 
-const getPlatformIconType = (provider: string | undefined): string => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
-  if (p.includes('tencent') || p.includes('qcloud')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
-  if (p.includes('google') || p.includes('gcp')) return 'Google_Cloud_Platform'
-  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance') || p.includes('volcano')) return 'Bytecloud'
-  if (p.includes('ucloud')) return 'UCloud'
-  if (p.includes('jd') || p.includes('jdcloud')) return 'JDCloud'
-  if (p.includes('ecloud') || p.includes('ctyun')) return 'Ctyun'
-  if (p.includes('openstack')) return 'OpenStack'
-  if (p.includes('vmware') || p.includes('vsphere')) return 'caise-vmware'
-  if (p.includes('nutanix')) return 'Nutanix'
-  if (p.includes('zstack')) return 'ZStack'
-  return 'Alibaba_Cloud'
-}
+const getPlatformIconType = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源（含 volcengine/bytedance 与扩展云归一） */
 const getProviderName = (provider: string | undefined): string => (provider ? getProviderLabel(provider) : '-')

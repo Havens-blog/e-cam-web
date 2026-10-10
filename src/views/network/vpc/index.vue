@@ -291,6 +291,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/OK 全为成功族；状态文案走 fieldLabels 单源 VPC_STATUS_LABELS */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'OK', 'ok', '正常'].includes(status || '')
@@ -498,6 +499,7 @@ const searchFieldOptions: Record<string, { label: string; value: string }[]> = {
     { label: '正常(Available)', value: 'Available' },
     { label: '正常(available)', value: 'available' },
     { label: '正常(OK)', value: 'OK' },
+    { label: '创建中(pending)', value: 'pending' },
   ],
   provider: [
     { label: '阿里云', value: 'aliyun' },
@@ -698,7 +700,7 @@ const getRegionLabel = (provider: string, region: string) => {
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 创建时间：后端为毫秒时间戳（原页裸显数字，统一格式化） */
 const formatTime = (time: number | string | undefined) => {

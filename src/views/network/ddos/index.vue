@@ -1,48 +1,48 @@
 <template>
-  <div class="vswitch-page">
-    <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡） -->
+  <div class="ddos-page">
+    <!-- 页面顶部：标题 + 内联状态标（WAF 页紧凑标准，无大统计卡）。
+         DDoS 单视图（无 WAF 的 4 tab：实例列表/防护域名/安全报表/攻击日志），
+         仅「实例列表」一体页；状态标为全局口径（全量分页计数，不受当前筛选影响） -->
     <div class="page-top">
       <div class="page-title-row">
-        <h1 class="page-title">交换机/子网 (VSwitch)</h1>
-        <div class="tab-nav">
-          <span class="tab-item active">全部</span>
-          <span class="tab-item">默认子网</span>
-          <span class="tab-item">非默认子网</span>
-        </div>
+        <h1 class="page-title">DDoS 防护</h1>
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ vswitchCounts.total }}</span>
+            <span class="stat-num">{{ ddosCounts.total }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">可用</span>
-            <span class="stat-num blue">{{ vswitchCounts.available }}</span>
+            <span class="stat-label">正常</span>
+            <span class="stat-num blue">{{ ddosCounts.normal }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">默认子网</span>
-            <span class="stat-num">{{ vswitchCounts.default }}</span>
+            <span class="stat-label">攻击中</span>
+            <span class="stat-num orange">{{ ddosCounts.attacking }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">创建中</span>
-            <span class="stat-num orange">{{ vswitchCounts.pending }}</span>
+            <span class="stat-label">封堵隔离</span>
+            <span class="stat-num">{{ ddosCounts.blocked }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ vswitchCounts.error }}</span>
+            <span class="stat-num red">{{ ddosCounts.error }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 操作栏：子网领域动作（创建子网未实现，禁用 + tooltip，佐证=asset.ts 仅 list/get 无写入端点）；
-         同步为唯一已接线动作（原 ManagerHeader 同步实例保留），故主色落在同步上 -->
+    <!-- 操作栏：DDoS 领域动作。创建实例/防护配置无后端接线能力（原页接线动作仅同步/导出），
+         按 eip/cdn/waf 先例禁用 + tooltip；同步为已接线动作，主色落在同步上 -->
     <div class="action-bar">
       <div class="action-left">
         <el-tooltip content="功能开发中" placement="top">
           <el-button size="small" disabled>
             <el-icon><Plus /></el-icon>
-            创建子网
+            创建实例
           </el-button>
+        </el-tooltip>
+        <el-tooltip content="功能开发中" placement="top">
+          <el-button size="small" disabled>防护配置</el-button>
         </el-tooltip>
         <el-button type="primary" size="small" @click="handleSync">
           <el-icon><Refresh /></el-icon>
@@ -50,20 +50,20 @@
         </el-button>
       </div>
       <div class="action-right">
-        <span class="page-info">本页{{ vswitchList.length }}条 / 共{{ pagination.total }}条</span>
+        <span class="page-info">本页{{ ddosList.length }}条 / 共{{ pagination.total }}条</span>
         <el-button size="small" circle @click="fetchData" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
-        <el-button size="small" circle @click="showExportDialog = true" title="导出">
+        <el-button size="small" circle @click="exportDialogVisible = true" title="导出">
           <el-icon><Download /></el-icon>
         </el-button>
-        <el-button size="small" circle @click="showColumnSettings = true" title="自定义列">
+        <el-button size="small" circle @click="columnSettingsVisible = true" title="自定义列">
           <el-icon><Setting /></el-icon>
         </el-button>
       </div>
     </div>
 
-    <!-- 字段搜索栏（回车加条件 + 条件 chips） -->
+    <!-- 字段搜索栏（回车加条件 + 条件 chips，WAF 同款交互） -->
     <div class="search-bar">
       <div class="search-row">
         <div class="search-input-wrap">
@@ -80,7 +80,7 @@
                   v-model="searchKeyword"
                   type="text"
                   class="search-input"
-                  placeholder="输入搜索内容，回车添加条件（名称 / 云上ID / 所属VPC…）"
+                  placeholder="输入搜索内容，回车添加条件（实例名称 / ID…）"
                   @focus="handleSearchFocus"
                   @keyup.enter="handleSearchEnter"
                 />
@@ -152,13 +152,13 @@
       </div>
     </div>
 
-    <!-- 表格区域（无多选列；首列名称 + 等宽 ID 副行） -->
+    <!-- 表格区域（无多选列；首列实例名 + 等宽 ID 副行） -->
     <div class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
             <tr>
-              <th class="col-name">云上ID/名称</th>
+              <th class="col-name">实例</th>
               <th v-for="col in visibleColumns" :key="col.key" :style="{ width: col.width + 'px' }">{{ col.label }}</th>
               <th class="col-actions">操作</th>
             </tr>
@@ -169,10 +169,10 @@
       <div class="table-body" v-loading="loading">
         <table class="data-table">
           <tbody>
-            <tr v-for="item in vswitchList" :key="item.id" @click="handleRowClick(item)">
+            <tr v-for="item in ddosList" :key="item.id" @click="openDdosDetailDrawer(item)">
               <td class="col-name">
                 <div class="name-cell">
-                  <span class="instance-name" @click.stop="handleViewDetail(item)">{{ item.asset_name || item.asset_id }}</span>
+                  <span class="instance-name" @click.stop="openDdosDetailDrawer(item)">{{ item.asset_name || item.asset_id || '-' }}</span>
                 </div>
                 <div class="cell-sub">{{ item.asset_id }}</div>
               </td>
@@ -181,42 +181,47 @@
                   <span class="status-dot" :class="getStatusClass(item.status)"></span>
                   <span class="status-text">{{ getStatusText(item.status) }}</span>
                 </template>
-                <template v-else-if="col.key === 'cidr_block'"><span class="mono">{{ item.attributes?.cidr_block || '-' }}</span></template>
-                <template v-else-if="col.key === 'vpc_id'">
-                  <span
-                    v-if="item.attributes?.vpc_id"
-                    class="mono vpc-link"
-                    @click.stop="handleVpcClick(item.attributes.vpc_id, item.provider)"
-                  >{{ item.attributes.vpc_id }}</span>
-                  <span v-else>-</span>
+                <template v-else-if="col.key === 'edition'">
+                  <span class="cell-text">{{ item.attributes?.edition || '-' }}</span>
                 </template>
-                <template v-else-if="col.key === 'zone'">{{ item.attributes?.zone || '-' }}</template>
-                <template v-else-if="col.key === 'instance_count'">
-                  <!-- 实测 860 行均无 instance_count 属性：按 AC 保留领域列位，缺值显示 -（不伪造 0） -->
-                  <span v-if="isAttrAbsent(item.attributes?.instance_count)">-</span>
-                  <span v-else>{{ item.attributes.instance_count }}</span>
+                <template v-else-if="col.key === 'basic_bandwidth'">
+                  <span class="mono">{{ getBandwidthText(item.attributes?.basic_bandwidth, item.attributes?.bandwidth_unit) }}</span>
                 </template>
-                <template v-else-if="col.key === 'available_ip_count'">{{ item.attributes?.available_ip_count ?? '-' }}</template>
-                <template v-else-if="col.key === 'total_ip_count'">{{ item.attributes?.total_ip_count ?? '-' }}</template>
-                <template v-else-if="col.key === 'gateway_ip'"><span class="mono">{{ item.attributes?.gateway_ip || '-' }}</span></template>
-                <template v-else-if="col.key === 'ipv6_cidr_block'"><span class="mono">{{ item.attributes?.ipv6_cidr_block || '-' }}</span></template>
-                <template v-else-if="col.key === 'is_default'">{{ item.attributes?.is_default ? '是' : '-' }}</template>
-                <template v-else-if="col.key === 'route_table_id'"><span class="mono">{{ item.attributes?.route_table_id || '-' }}</span></template>
-                <template v-else-if="col.key === 'account_name'">{{ item.attributes?.cloud_account_name || '-' }}</template>
+                <template v-else-if="col.key === 'elastic_bandwidth'">
+                  <span class="mono">{{ getBandwidthText(item.attributes?.elastic_bandwidth, item.attributes?.bandwidth_unit) }}</span>
+                </template>
+                <template v-else-if="col.key === 'service_bandwidth'">
+                  <span class="mono">{{ getBandwidthText(item.attributes?.service_bandwidth, item.attributes?.bandwidth_unit) }}</span>
+                </template>
+                <template v-else-if="col.key === 'cc_qps'">
+                  <span class="cell-text">{{ item.attributes?.cc_qps || '-' }}</span>
+                </template>
                 <template v-else-if="col.key === 'platform'">
                   <IconFont :type="getPlatformIcon(item.provider)" class="platform-icon" :title="getProviderName(item.provider)" />
                 </template>
-                <template v-else-if="col.key === 'region'">{{ getRegionLabel(item.provider, item.region) }}</template>
-                <template v-else-if="col.key === 'create_time'">{{ formatTime(item.attributes?.creation_time || item.create_time) }}</template>
+                <template v-else-if="col.key === 'region'">
+                  <span class="cell-text">{{ item.region || '-' }}</span>
+                </template>
+                <template v-else-if="col.key === 'protected_ip_count'">
+                  <span class="domain-count">{{ item.attributes?.protected_ip_count ?? '-' }}</span>
+                </template>
+                <template v-else-if="col.key === 'cloud_account_name'">{{ item.attributes?.cloud_account_name || '-' }}</template>
+                <template v-else-if="col.key === 'resource_group_id'">{{ item.attributes?.resource_group_id || '-' }}</template>
+                <template v-else-if="col.key === 'expired_time'">
+                  <span class="mono" :class="{ 'expiring-text': isExpiringSoon(item.attributes?.expired_time) }">
+                    {{ item.attributes?.expired_time || '-' }}
+                  </span>
+                </template>
+                <template v-else-if="col.key === 'creation_time'">{{ formatTime(item.attributes?.creation_time) }}</template>
                 <template v-else>-</template>
               </td>
               <td class="col-actions" @click.stop>
-                <span class="action-link" @click="handleViewDetail(item)">详情</span>
+                <span class="action-link" @click="openDdosDetailDrawer(item)">详情</span>
               </td>
             </tr>
           </tbody>
         </table>
-        <div v-if="!loading && vswitchList.length === 0" class="empty-state">
+        <div v-if="!loading && ddosList.length === 0" class="empty-state">
           <el-icon :size="48"><Box /></el-icon>
           <p>暂无数据</p>
         </div>
@@ -236,19 +241,12 @@
       />
     </div>
 
-    <!-- 同步对话框（原 ManagerHeader 同步实例，能力保留） -->
-    <el-dialog v-model="syncDialogVisible" title="同步交换机/子网" width="600px">
+    <!-- 同步对话框（WAF 同款同步实例能力，asset_types 切 ddos） -->
+    <el-dialog v-model="syncDialogVisible" title="同步DDoS实例" width="600px">
       <el-form :model="syncForm" label-width="100px">
         <el-form-item label="云厂商" required>
           <el-select v-model="syncForm.provider" placeholder="请选择云厂商" style="width: 100%">
             <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="区域">
-          <el-select v-model="syncForm.regions" multiple placeholder="留空表示同步所有区域" style="width: 100%" clearable allow-create filterable>
-            <el-option label="北京" value="cn-beijing" />
-            <el-option label="上海" value="cn-shanghai" />
-            <el-option label="广州" value="cn-guangzhou" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -258,14 +256,12 @@
       </template>
     </el-dialog>
 
-    <!-- 详情抽屉（保留现有能力：详情/标签 + VPC 跳转） -->
-    <VSwitchDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" @vpc-click="handleVpcClick" />
-    <!-- VPC 详情抽屉（所属 VPC 点击跳转，原页交互保留） -->
-    <VpcDetailDrawer v-model:visible="vpcDetailVisible" :instance="vpcDetailInstance" />
-    <!-- 原页无导出（VSwitchFilters 无此能力），按 proposal 风险缓解条款以 action-right 图标按钮新增；selectedIds 传 [] 与各页同口径 -->
+    <!-- 详情抽屉 -->
+    <DdosDetailDrawer v-model:visible="detailVisible" :instance="detailInstance" />
+    <!-- 无多选列（WAF AC 口径），传 [] 保持「已选中」禁用（零漂移） -->
     <AssetExportDialog
-      v-model:visible="showExportDialog"
-      :instances="vswitchList"
+      v-model:visible="exportDialogVisible"
+      :instances="ddosList"
       :selected-ids="[]"
       :total="pagination.total"
       :fetch-all-rows="fetchAllExportRows"
@@ -274,7 +270,7 @@
 
     <!-- 自定义列对话框 -->
     <ColumnSettingsDialog
-      v-model:visible="showColumnSettings"
+      v-model:visible="columnSettingsVisible"
       :columns="columnSettings"
       @update:columns="handleColumnsUpdate"
     />
@@ -283,86 +279,127 @@
 
 <script setup lang="ts">
 import { submitSyncAssetsTaskApi } from '@/api'
-import { getVPCAssetApi, listVSwitchAssetsApi } from '@/api/asset'
+import { listDDOSAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
 import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
 import IconFont from '@/components/IconFont/index.vue'
-import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
+import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
+import { DDOS_STATUS_LABELS } from '@/utils/fieldLabels'
 import { fetchAllRows } from '@/utils/exportAll'
-import { labelOfLenient, VSWITCH_STATUS_LABELS } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
-import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
-import VpcDetailDrawer from '../vpc/components/VpcDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
+import DdosDetailDrawer from './components/DdosDetailDrawer.vue'
 
-/** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/ACTIVE 全为成功族 */
-const isAvailableStatus = (status?: string) => ['Available', 'available', 'ACTIVE', 'active', '可用'].includes(status || '')
-const isPendingStatus = (status?: string) => ['Pending', 'pending', 'creating', 'Deleting', 'deleting', '创建中', '删除中'].includes(status || '')
+/**
+ * DDoS 状态族判定（状态点色调 + 全局统计共用同一函数，family 口径单源）。
+ * 按 DDoS 词表（DDOS_STATUS_LABELS，键值以腾讯云 DDoS 实例状态注释实证）定义状态族：
+ *   正常 = idle；
+ *   攻击中（进行中） = attacking / creating / deblocking；
+ *   封堵隔离 = blocking / isolate；
+ *   未知/其他 = 异常（阿里/华为为各自厂商原值，可能中文，未收录值一律计入异常）。
+ * 统计标「攻击中」计数 = 攻击中族合计（含创建中/解封中，任务口径：进行中=attacking/creating/deblocking）。
+ */
+const DDOS_NORMAL_FAMILY = ['idle']
+const DDOS_ATTACKING_FAMILY = ['attacking', 'creating', 'deblocking']
+const DDOS_BLOCKED_FAMILY = ['blocking', 'isolate']
 
-/** 状态 → 状态点色调类（可用=绿 / 创建中=黄 / 其余=红） */
-const getStatusClass = (status?: string) => {
-  if (isAvailableStatus(status)) return 'running'
-  if (isPendingStatus(status)) return 'pending'
+type DdosStatusFamily = 'normal' | 'attacking' | 'blocked' | 'error'
+
+const getDdosStatusFamily = (status?: string): DdosStatusFamily => {
+  const s = status || ''
+  if (DDOS_NORMAL_FAMILY.includes(s)) return 'normal'
+  if (DDOS_ATTACKING_FAMILY.includes(s)) return 'attacking'
+  if (DDOS_BLOCKED_FAMILY.includes(s)) return 'blocked'
   return 'error'
 }
 
-/** 状态 → 展示文案（列表口径与导出同源） */
-const getStatusText = (status?: string) => labelOfLenient(VSWITCH_STATUS_LABELS, status, status || '-')
+/** 状态 → 状态点色调类（正常=绿 / 攻击中·进行中=黄 / 封堵隔离=灰（服务被封停） / 其余=红） */
+const getStatusClass = (status?: string) => {
+  const family = getDdosStatusFamily(status)
+  if (family === 'normal') return 'running'
+  if (family === 'attacking') return 'pending'
+  if (family === 'blocked') return 'stopped'
+  return 'error'
+}
 
-/** 属性缺值判定（undefined/null 均视为无数据，与 0/false 区分） */
-const isAttrAbsent = (v: unknown) => v === undefined || v === null
+/** 状态 → 展示文案（列表口径与导出同源；直查 DDOS_STATUS_LABELS 单源，未知值原样透出，
+ *  不回退全局 ASSET_STATUS_LABELS——厂商原生值（阿里/华为可能中文）不得被全局通用词误译） */
+const getStatusText = (status?: string) => {
+  if (!status) return '-'
+  return DDOS_STATUS_LABELS[status] || status
+}
 
-/** 共享导出取值：状态/平台/默认域走单源，其余取 attributes 同名键（创建时间实测键为 creation_time ISO 串） */
+/** 带宽口径：数值与 bandwidth_unit 拼接（如 100 Gbps），空值 '-'
+ *  （防护带宽/弹性带宽/业务带宽三列与导出 getValue 共用，详情抽屉同口径） */
+const getBandwidthText = (value: any, unit?: string) => {
+  if (value === null || value === undefined || value === '') return '-'
+  return unit ? `${value} ${unit}` : String(value)
+}
+
+const isExpiringSoon = (expiredTime: string | undefined) => {
+  if (!expiredTime) return false
+  try {
+    const expDate = new Date(expiredTime)
+    const now = new Date()
+    const diffDays = (expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    return diffDays > 0 && diffDays <= 90
+  } catch {
+    return false
+  }
+}
+
+/** 共享导出取值：与列展示同口径（status 走 DDoS 词表、防护带宽走 getBandwidthText、空值 '-'） */
 const getExportValue: ExportFieldConfig['getValue'] = (instance: Asset, key: string): string => {
-  if (key === 'asset_id' || key === 'asset_name') return instance[key] || ''
   const attr = instance.attributes || {}
+  if (key === 'instance_name') return instance.asset_name || ''
+  if (key === 'instance_id') return instance.asset_id || ''
+  if (key === 'status') return getStatusText(instance.status)
+  if (key === 'edition') return attr.edition || ''
   if (key === 'provider') return getProviderLabel(instance.provider || '')
+  if (key === 'basic_bandwidth') return getBandwidthText(attr.basic_bandwidth, attr.bandwidth_unit)
+  if (key === 'cc_qps') return String(attr.cc_qps || '-')
   if (key === 'region') return instance.region || ''
-  if (key === 'status') return labelOfLenient(VSWITCH_STATUS_LABELS, instance.status, '')
-  if (key === 'is_default') return attr.is_default ? '是' : '否'
-  if (key === 'create_time') return attr.creation_time || String(instance.create_time || '')
+  if (key === 'expired_time') return attr.expired_time || ''
   return attr[key] || ''
 }
 
-/** 共享导出配置：本页原无导出能力，字段按本页列/实测属性新建，文件名前缀沿领域命名 */
+/** 共享导出配置：字段/默认勾选按 DDoS 域口径（默认不勾到期时间，与 WAF 页 exportConfig 同构） */
 const exportConfig: ExportFieldConfig = {
   fields: [
-    { key: 'asset_id', label: '交换机ID' },
-    { key: 'asset_name', label: '名称' },
-    { key: 'cidr_block', label: 'CIDR' },
-    { key: 'vpc_id', label: '所属VPC' },
-    { key: 'zone', label: '可用区' },
-    { key: 'instance_count', label: '实例数' },
+    { key: 'instance_name', label: '实例名称' },
+    { key: 'instance_id', label: '实例ID' },
     { key: 'status', label: '状态' },
-    { key: 'available_ip_count', label: '可用IP数' },
-    { key: 'total_ip_count', label: '总IP数' },
+    { key: 'edition', label: '版本' },
     { key: 'provider', label: '云平台' },
-    { key: 'region', label: '区域' },
-    { key: 'is_default', label: '默认子网' },
-    { key: 'cloud_account_name', label: '云账号' },
-    { key: 'create_time', label: '创建时间' },
+    { key: 'basic_bandwidth', label: '防护带宽' },
+    { key: 'cc_qps', label: 'CC峰值' },
+    { key: 'region', label: '地域' },
+    { key: 'expired_time', label: '到期时间' },
   ],
   getValue: getExportValue,
-  filename: '交换机子网列表',
-  defaultFields: ['asset_id', 'asset_name', 'cidr_block', 'vpc_id', 'status', 'provider', 'region'],
+  filename: 'DDoS防护',
+  defaultFields: ['instance_name', 'instance_id', 'status', 'edition', 'provider', 'basic_bandwidth', 'cc_qps', 'region'],
 }
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
 
-// 筛选条件（字段搜索栏映射到后端实测有效参数）
+// 筛选条件（字段搜索栏映射到后端筛选参数：
+// name LIKE 匹配 asset_name+asset_id；status/edition/provider/region 精确匹配）
 const filters = reactive({
-  keyword: '',
+  name: '',
   provider: '' as CloudProvider | '',
+  status: '',
+  edition: '',
   region: '',
-  vpc_id: '',
-  zone: '',
 })
 
 // 分页
@@ -373,52 +410,52 @@ const pagination = reactive({
 })
 
 // 数据列表
-const vswitchList = ref<Asset[]>([])
+const ddosList = ref<Asset[]>([])
 
 // 详情抽屉
 const detailVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
 
-// VPC 详情抽屉（所属 VPC 点击跳转）
-const vpcDetailVisible = ref(false)
-const vpcDetailInstance = ref<Asset | null>(null)
-
 // 导出和自定义列
-const showExportDialog = ref(false)
-const showColumnSettings = ref(false)
+const exportDialogVisible = ref(false)
+const columnSettingsVisible = ref(false)
 
-// 默认列配置：可见列按 AC 领域口径（CIDR/所属VPC/可用区/实例数/状态/平台/地域），
-// 可用IP数/总IP数/网关IP/IPv6网段/默认子网/路由表/云账号/创建时间 保留为可勾选列。
-// 实测 instance_count 属性 860 行均缺失（按 AC 保留领域列位，缺值显 -）；
-// vpc_name/project_name 实测 0 行有值（死属性不建列）；存储键 vswitch-column-settings 为新建（本页原无列设置能力）
+/**
+ * 默认列配置：可见列按 DDoS 领域口径（状态/版本/防护带宽/弹性带宽/CC QPS/平台/地域/到期时间/防IP数），
+ * 业务带宽/创建时间/账号/资源组为可勾选隐藏列不进默认视图；
+ * col key 新键 ddos-column-settings 无历史漂移，无迁移
+ */
 const defaultColumnSettings: ColumnConfig[] = [
-  { key: 'cidr_block', label: 'CIDR', width: 150, visible: true },
-  { key: 'vpc_id', label: '所属VPC', width: 180, visible: true },
-  { key: 'zone', label: '可用区', width: 120, visible: true },
-  { key: 'instance_count', label: '实例数', width: 80, visible: true },
   { key: 'status', label: '状态', width: 90, visible: true },
+  { key: 'edition', label: '版本', width: 120, visible: true },
+  { key: 'basic_bandwidth', label: '防护带宽', width: 100, visible: true },
+  { key: 'elastic_bandwidth', label: '弹性带宽', width: 100, visible: true },
+  { key: 'cc_qps', label: 'CC QPS', width: 90, visible: true },
   { key: 'platform', label: '平台', width: 60, visible: true },
-  { key: 'region', label: '地域', width: 140, visible: true },
-  { key: 'available_ip_count', label: '可用IP数', width: 100, visible: false },
-  { key: 'total_ip_count', label: '总IP数', width: 90, visible: false },
-  { key: 'gateway_ip', label: '网关IP', width: 130, visible: false },
-  { key: 'ipv6_cidr_block', label: 'IPv6网段', width: 150, visible: false },
-  { key: 'is_default', label: '默认子网', width: 90, visible: false },
-  { key: 'route_table_id', label: '路由表', width: 160, visible: false },
-  { key: 'account_name', label: '云账号', width: 120, visible: false },
-  { key: 'create_time', label: '创建时间', width: 160, visible: false },
+  { key: 'region', label: '地域', width: 130, visible: true },
+  { key: 'expired_time', label: '到期时间', width: 130, visible: true },
+  { key: 'protected_ip_count', label: '防IP数', width: 90, visible: true },
+  { key: 'service_bandwidth', label: '业务带宽', width: 100, visible: false },
+  { key: 'creation_time', label: '创建时间', width: 150, visible: false },
+  { key: 'cloud_account_name', label: '账号', width: 150, visible: false },
+  { key: 'resource_group_id', label: '资源组', width: 150, visible: false },
 ]
 
 const columnSettings = ref<ColumnConfig[]>([])
 const visibleColumns = computed(() => columnSettings.value.filter(c => c.visible))
 
 const loadColumnSettings = () => {
-  const saved = localStorage.getItem('vswitch-column-settings')
+  const saved = localStorage.getItem('ddos-column-settings')
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        columnSettings.value = parsed
+        // 合并默认配置中新增的列：用户既有列的可见性原样保留，新列按默认 visible 状态追加到末尾
+        const merged = [...parsed]
+        for (const d of defaultColumnSettings) {
+          if (!merged.some((c: ColumnConfig) => c.key === d.key)) merged.push({ ...d })
+        }
+        columnSettings.value = merged
         return
       }
     } catch { /* ignore */ }
@@ -426,59 +463,60 @@ const loadColumnSettings = () => {
   columnSettings.value = JSON.parse(JSON.stringify(defaultColumnSettings))
 }
 
-const handleColumnsUpdate = (columns: ColumnConfig[]) => {
-  columnSettings.value = columns
-  localStorage.setItem('vswitch-column-settings', JSON.stringify(columns))
-}
+const handleColumnsUpdate = (columns: ColumnConfig[]) => { columnSettings.value = columns }
 
 // 同步对话框
 const syncDialogVisible = ref(false)
-const syncForm = reactive({
-  provider: '',
-  regions: [] as string[],
-})
+const syncForm = reactive({ provider: '' })
 const syncing = ref(false)
 
-// ===== 全局领域统计（总数/可用/默认子网/创建中/异常） =====
-// 状态标为全局口径（不受当前筛选影响），全量分页拉取后本地计数。
-// 实测状态值域仅 Available(613)/available(130)/ACTIVE(117) 三个大小写变体、全为成功族（2026-09-24 全量 860 条探查），
-// 无 pending/异常态 → 两标为防御性计数（未知状态归异常）；默认域按 attributes.is_default 派生（实测 true 72 条）。
-const VSWITCH_COUNTS_PAGE_SIZE = 1000
-const VSWITCH_COUNTS_MAX_PAGES = 10
+// ===== 全局领域统计（总数/正常/攻击中/封堵隔离/异常） =====
+// 状态标为全局口径（不受当前筛选影响），全量分页拉取后本地计数（eip/cdn/waf 同款）。
+// 状态族判定与状态点色调共用 getDdosStatusFamily（同一函数）；异常 = 未知/其他状态族防御性计数；
+// 区域值域会被采集任务实时改写，同时从全量统计派生 region 搜索选项（静态枚举会漂移）
+const DDOS_COUNTS_PAGE_SIZE = 1000
+const DDOS_COUNTS_MAX_PAGES = 10
 
-const vswitchCounts = reactive({ total: 0, available: 0, default: 0, pending: 0, error: 0 })
+const ddosCounts = reactive({ total: 0, normal: 0, attacking: 0, blocked: 0, error: 0 })
 
-const fetchVSwitchCounts = async () => {
+const fetchDdosCounts = async () => {
   try {
-    let available = 0
-    let defaultCount = 0
-    let pending = 0
+    let normal = 0
+    let attacking = 0
+    let blocked = 0
     let error = 0
     let total = 0
-    for (let page = 1; page <= VSWITCH_COUNTS_MAX_PAGES; page++) {
-      const res = await listVSwitchAssetsApi({ limit: VSWITCH_COUNTS_PAGE_SIZE, offset: (page - 1) * VSWITCH_COUNTS_PAGE_SIZE })
+    const regionCounts: Record<string, number> = {}
+    for (let page = 1; page <= DDOS_COUNTS_MAX_PAGES; page++) {
+      const res = await listDDOSAssetsApi({ limit: DDOS_COUNTS_PAGE_SIZE, offset: (page - 1) * DDOS_COUNTS_PAGE_SIZE })
       const items = res.data?.items || []
       total = res.data?.total ?? total
       for (const it of items) {
-        if (isAvailableStatus(it.status)) available++
-        else if (isPendingStatus(it.status)) pending++
-        else error++ // 未知状态计入异常（当前值域下恒为 0，防御未来新增异常态）
-        if (it.attributes?.is_default) defaultCount++
+        switch (getDdosStatusFamily(it.status)) {
+          case 'normal': normal++; break
+          case 'attacking': attacking++; break
+          case 'blocked': blocked++; break
+          default: error++
+        }
+        if (it.region) regionCounts[it.region] = (regionCounts[it.region] || 0) + 1
       }
-      if (items.length < VSWITCH_COUNTS_PAGE_SIZE) break
+      if (items.length < DDOS_COUNTS_PAGE_SIZE) break
     }
-    vswitchCounts.total = total
-    vswitchCounts.available = available
-    vswitchCounts.default = defaultCount
-    vswitchCounts.pending = pending
-    vswitchCounts.error = error
+    ddosCounts.total = total
+    ddosCounts.normal = normal
+    ddosCounts.attacking = attacking
+    ddosCounts.blocked = blocked
+    ddosCounts.error = error
+    regionOptions.value = Object.entries(regionCounts)
+      .map(([value, count]) => ({ label: value, value, count }))
+      .sort((a, b) => b.count - a.count)
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
-    ElMessage.error('获取交换机统计失败')
+    ElMessage.error('获取DDoS统计失败')
   }
 }
 
-// ==================== 字段搜索栏（主机页同款：回车加条件 + 条件 chips） ====================
+// ==================== 字段搜索栏（WAF 同款：回车加条件 + 条件 chips） ====================
 
 // 搜索条件类型
 interface SearchCondition {
@@ -492,37 +530,41 @@ const currentSearchField = ref('')
 const searchKeyword = ref('')
 const searchConditions = ref<SearchCondition[]>([])
 
-// 搜索字段配置（后端实测有效参数，2026-09-24）：name 实测 LIKE 同时匹配 asset_name/asset_id（中段子串均命中）；
-// vpc_id/zone 实测精确匹配有效（zone 后端支持但不在 TS ListAssetsParams 类型里，实测为准）；
-// status 参数有效但值域 Available/available/ACTIVE 三变体同为「可用」语义、无区分度（选中其一反而漏另两变体），按排除判据不作搜索字段
+// 搜索字段配置（5 个后端有效筛选参数）
 const searchFields = [
-  { key: 'asset_name', label: '名称', hasOptions: false },
-  { key: 'asset_id', label: '云上ID', hasOptions: false },
-  { key: 'vpc_id', label: '所属VPC', hasOptions: false },
-  { key: 'zone', label: '可用区', hasOptions: false },
+  { key: 'name', label: '实例名称/ID', hasOptions: false },
+  { key: 'status', label: '状态', hasOptions: true },
+  { key: 'edition', label: '版本', hasOptions: true },
   { key: 'provider', label: '平台', hasOptions: true },
-  { key: 'region', label: '区域', hasOptions: false },
+  { key: 'region', label: '地域', hasOptions: true },
 ]
 
 const searchFieldLabels: Record<string, string> = {
-  asset_name: '名称',
-  asset_id: '云上ID',
-  vpc_id: '所属VPC',
-  zone: '可用区',
+  name: '实例名称/ID',
+  status: '状态',
+  edition: '版本',
   provider: '平台',
-  region: '区域',
+  region: '地域',
 }
 
-// 有固定选项的字段（provider 选项值 = 后端实测值域）
-const searchFieldOptions: Record<string, { label: string; value: string }[]> = {
-  provider: [
-    { label: '阿里云', value: 'aliyun' },
-    { label: '腾讯云', value: 'tencent' },
-    { label: '华为云', value: 'huawei' },
-    { label: 'AWS', value: 'aws' },
-    { label: '火山引擎', value: 'volcano' },
-  ],
+/** DDoS 版本(edition)固定展示选项：取值域尚未实测，选项值=文案原样下发给后端精确匹配（未知值列展示时原样透出） */
+const DDOS_EDITION_OPTIONS = ['高防IP', '高防包', 'DDoS原生防护', 'DDoS高防', 'Anti-DDoS', 'Standard', 'Advanced']
+
+// 有固定选项的字段（选项值 = 后端精确匹配值域）：
+// status 选项从 DDOS_STATUS_LABELS 词表生成（词表单源，包含腾讯取值域 6 值）；
+// region 例外：区域值域被采集任务实时改写，从全局统计全量拉取动态派生（WAF 同款方法）
+const staticFieldOptions: Record<string, { label: string; value: string }[]> = {
+  status: Object.entries(DDOS_STATUS_LABELS).map(([value, label]) => ({ label, value })),
+  edition: DDOS_EDITION_OPTIONS.map(v => ({ label: v, value: v })),
+  provider: CLOUD_PROVIDERS.map(p => ({ label: p.label, value: p.value })),
 }
+
+const regionOptions = ref<{ label: string; value: string }[]>([])
+
+const searchFieldOptions = computed<Record<string, { label: string; value: string }[]>>(() => ({
+  ...staticFieldOptions,
+  region: regionOptions.value,
+}))
 
 const handleSearchFocus = () => {
   searchFilterVisible.value = true
@@ -532,7 +574,7 @@ const selectSearchFilter = (field: string) => {
   currentSearchField.value = field
   searchKeyword.value = ''
   // 如果没有固定选项，聚焦到输入框
-  if (!searchFieldOptions[field]) {
+  if (!searchFieldOptions.value[field]) {
     setTimeout(() => {
       const input = document.querySelector('.search-value-input input') as HTMLInputElement
       if (input) input.focus()
@@ -559,8 +601,8 @@ const handleSearchEnter = () => {
   const value = searchKeyword.value.trim()
   if (!value) return
 
-  // 如果没有选择字段，默认用名称搜索
-  const field = currentSearchField.value || 'asset_name'
+  // 如果没有选择字段，默认按名称/ID 搜索
+  const field = currentSearchField.value || 'name'
 
   // 检查是否已存在相同字段的条件，如果存在则替换
   const existingIdx = searchConditions.value.findIndex(c => c.field === field)
@@ -591,25 +633,23 @@ const clearAllSearchConditions = () => {
 
 const applySearchConditions = () => {
   // 先清除所有搜索相关的筛选
-  filters.keyword = ''
+  filters.name = ''
   filters.provider = ''
+  filters.status = ''
+  filters.edition = ''
   filters.region = ''
-  filters.vpc_id = ''
-  filters.zone = ''
 
-  // 应用所有搜索条件（映射到后端实测有效的筛选参数）
+  // 应用所有搜索条件（映射到后端筛选参数）
   searchConditions.value.forEach(cond => {
     switch (cond.field) {
-      case 'asset_name':
-      case 'asset_id':
-        // 后端 name 参数同时 LIKE 匹配 asset_name/asset_id
-        filters.keyword = cond.value
+      case 'name':
+        filters.name = cond.value
         break
-      case 'vpc_id':
-        filters.vpc_id = cond.value
+      case 'status':
+        filters.status = cond.value
         break
-      case 'zone':
-        filters.zone = cond.value
+      case 'edition':
+        filters.edition = cond.value
         break
       case 'provider':
         // 选项值来自固定 provider 列表（hasOptions 字段），值域恒为合法 CloudProvider 键
@@ -633,36 +673,36 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
     offset: (page - 1) * size,
     limit: size,
   }
-  if (filters.keyword) params.name = filters.keyword
+  if (filters.name) params.name = filters.name
   if (filters.provider) params.provider = filters.provider
+  if (filters.status) params.status = filters.status
+  if (filters.edition) params.edition = filters.edition
   if (filters.region) params.region = filters.region
-  if (filters.vpc_id) params.vpc_id = filters.vpc_id
-  if (filters.zone) params.zone = filters.zone
   return params
 }
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listVSwitchAssetsApi(buildListParams(pagination.page, pagination.size))
-    vswitchList.value = res.data?.items || []
+    const res = await listDDOSAssetsApi(buildListParams(pagination.page, pagination.size))
+    ddosList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
     // 同步刷新全局领域统计
-    fetchVSwitchCounts()
+    fetchDdosCounts()
   } catch (error: any) {
-    console.error('获取交换机列表失败:', error)
-    ElMessage.error(error.message || '获取交换机列表失败')
-    vswitchList.value = []
+    console.error('获取DDoS列表失败:', error)
+    ElMessage.error(error.message || '获取DDoS列表失败')
+    ddosList.value = []
     pagination.total = 0
   } finally {
     loading.value = false
   }
 }
 
-/** 导出「全部数据」：按当前筛选分页拉取全量，供 AssetExportDialog 调用 */
+/** 导出「全部数据」：按当前筛选分页拉取全量（WAF 同款），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
   fetchAllRows<Asset>(async (page, pageSize) => {
-    const res = await listVSwitchAssetsApi(buildListParams(page, pageSize))
+    const res = await listDDOSAssetsApi(buildListParams(page, pageSize))
     const responseData = (res as any).data || res
     return { list: responseData.items || [], total: responseData.total || 0 }
   }, { onProgress })
@@ -670,38 +710,13 @@ const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) 
 const handleSizeChange = (size: number) => { pagination.size = size; pagination.page = 1; fetchData() }
 const handlePageChange = (page: number) => { pagination.page = page; fetchData() }
 
-// 行点击开详情（与主机/EIP/VPC 页一致）
-const handleRowClick = (row: Asset) => {
+/** 打开详情抽屉（行点击/实例名/操作列共用；与 eip/cdn/waf 页一致，行数据直接进抽屉） */
+const openDdosDetailDrawer = (row: Asset) => {
   detailInstance.value = row
   detailVisible.value = true
 }
 
-const handleViewDetail = (row: Asset) => {
-  detailInstance.value = row
-  detailVisible.value = true
-}
-
-/** 所属 VPC 点击 → VPC 详情抽屉（原页交互保留，逐字搬运） */
-const handleVpcClick = async (vpcId: string, provider?: string) => {
-  if (!vpcId) return
-  try {
-    const params: Record<string, string> = {}
-    if (provider) params.provider = provider
-    const res = await getVPCAssetApi(vpcId, params)
-    const data = (res as unknown as { data: Asset }).data || res
-    vpcDetailInstance.value = data as Asset
-    vpcDetailVisible.value = true
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : '获取 VPC 详情失败'
-    ElMessage.error(msg)
-  }
-}
-
-const handleSync = () => {
-  syncForm.provider = ''
-  syncForm.regions = []
-  syncDialogVisible.value = true
-}
+const handleSync = () => { syncForm.provider = ''; syncDialogVisible.value = true }
 
 const submitSync = async () => {
   if (!syncForm.provider) {
@@ -710,11 +725,7 @@ const submitSync = async () => {
   }
   syncing.value = true
   try {
-    const { data } = await submitSyncAssetsTaskApi({
-      provider: syncForm.provider,
-      asset_types: ['vswitch'],
-      regions: syncForm.regions.length > 0 ? syncForm.regions : undefined,
-    })
+    const { data } = await submitSyncAssetsTaskApi({ provider: syncForm.provider, asset_types: ['ddos'] })
     ElMessage.success(`同步任务已提交，任务ID: ${data.task_id}`)
     syncDialogVisible.value = false
     router.push(`/tasks/${data.task_id}`)
@@ -725,51 +736,31 @@ const submitSync = async () => {
   }
 }
 
-/** 区域文案：按厂商 regions 配置映射（保留原页能力） */
-const getRegionLabel = (provider: string, region: string) => {
-  const config = PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]
-  const regionItem = config?.regions?.find((r: any) => r.value === region)
-  return regionItem?.label || region || '-'
+/** 格式化时间：实测 ISO 带 Z（如 2026-09-24T03:37:17Z），dayjs 可解析 */
+const formatTime = (time: string | number | undefined) => {
+  if (!time) return '-'
+  const d = dayjs(time)
+  return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
-const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
-
-/** 创建时间：attributes.creation_time 为 ISO 串（原样展示），顶层 create_time 为毫秒时间戳（格式化） */
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  if (typeof time === 'string' && time.includes('-')) return time
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  if (Number.isNaN(ts)) return '-'
-  return new Date(ts).toLocaleString('zh-CN')
-}
-
-const route = useRoute()
-
 onMounted(() => {
   loadColumnSettings()
-  // VPC 详情「子网管理」跳入：带 query.vpc_id 时预填所属VPC条件（以 chip 呈现可移除，无 query 直达零改动）
-  const queryVpcId = route.query.vpc_id
-  if (typeof queryVpcId === 'string' && queryVpcId) {
-    searchConditions.value.push({ field: 'vpc_id', value: queryVpcId, displayValue: queryVpcId })
-  }
-  // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填资源ID条件
+  // 全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词（WAF 同款）
   const s = route.query.search
   if (typeof s === 'string' && s) {
-    searchConditions.value.push({ field: 'asset_id', value: s, displayValue: s })
+    filters.name = s
+    searchKeyword.value = s
   }
-  if (searchConditions.value.length > 0) {
-    applySearchConditions()
-  } else {
-    fetchData()
-  }
+  fetchData()
 })
 </script>
 
 <style lang="scss" scoped>
-.vswitch-page {
+.ddos-page {
   display: flex;
   flex-direction: column;
   background: var(--bg-base);
@@ -795,30 +786,6 @@ onMounted(() => {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-}
-
-.tab-nav {
-  display: flex;
-  gap: 4px;
-
-  .tab-item {
-    padding: 6px 16px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 150ms ease;
-
-    &:hover {
-      color: var(--text-primary);
-      background: var(--bg-hover);
-    }
-
-    &.active {
-      color: var(--accent-blue);
-      background: rgba(113, 112, 255, 0.1);
-    }
-  }
 }
 
 .stats-badges {
@@ -1096,7 +1063,7 @@ onMounted(() => {
     text-overflow: ellipsis;
   }
 
-  // 首/末列对齐页面 20px 横向节奏（去多选列后首列名称不再贴边错位）
+  // 首/末列对齐页面 20px 横向节奏（去多选列后首列实例不再贴边错位）
   th:first-child, td:first-child { padding-left: 20px; }
   th:last-child, td:last-child { padding-right: 20px; }
 
@@ -1120,7 +1087,7 @@ onMounted(() => {
   }
 }
 
-.col-name { width: 220px; max-width: 220px; }
+.col-name { width: 260px; max-width: 260px; }
 .col-actions { width: 70px; }
 
 // 单元格样式
@@ -1128,7 +1095,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 200px;
+  max-width: 240px;
 
   .instance-name {
     color: var(--accent-blue);
@@ -1150,6 +1117,20 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.cell-text {
+  color: var(--text-secondary);
+}
+
+.cell-muted {
+  color: var(--text-muted);
+}
+
+.domain-count {
+  color: var(--accent-blue);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .status-dot {
@@ -1175,17 +1156,11 @@ onMounted(() => {
   font-size: 12.5px;
 }
 
-.vpc-link {
-  color: var(--accent-blue);
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
+.expiring-text {
+  color: var(--accent-yellow);
 }
 
 .platform-icon { font-size: 20px; }
-.text-muted { color: var(--text-tertiary); }
 
 .action-link {
   color: var(--accent-blue);

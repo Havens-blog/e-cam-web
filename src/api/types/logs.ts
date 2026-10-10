@@ -2,8 +2,8 @@
  * 多云统一日志查询 API 类型(对应 e-cam-service internal/logquery 三接口)
  */
 
-/** 日志类型(cdn / waf / slb) */
-export type LogType = 'cdn' | 'waf' | 'slb'
+/** 日志类型(cdn / waf / slb / access) */
+export type LogType = 'cdn' | 'waf' | 'slb' | 'access'
 
 /** 统一字段定义(动态列驱动:后端加字段,前端自动多列) */
 export interface LogFieldDef {
@@ -37,6 +37,8 @@ export interface LogSource {
     name: string
     /** 投递是否开启(查询可用性) */
     enabled: boolean
+    /** 近 7 天无新数据(停采/历史;仍可查历史) */
+    stale: boolean
     /** 未开启原因 / 延迟特征等引导信息 */
     note: string
 }

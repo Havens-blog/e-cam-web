@@ -238,7 +238,7 @@ describe('CommandPalette 资产快捷搜索（searchAssetsApi 契约）', () => 
         vi.advanceTimersByTime(299)
         expect(searchAssetsApi).not.toHaveBeenCalled()
         vi.advanceTimersByTime(1)
-        expect(searchAssetsApi).toHaveBeenCalledWith({ keyword: 'web', limit: 50, types: 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,nas,oss' })
+        expect(searchAssetsApi).toHaveBeenCalledWith({ keyword: 'web', limit: 50, types: 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,ddos,nas,oss' })
 
         await vi.waitFor(() => {})
         await flushPromises()
@@ -261,7 +261,7 @@ describe('CommandPalette 资产快捷搜索（searchAssetsApi 契约）', () => 
         await input.setValue('ab')
         vi.advanceTimersByTime(300)
         expect(searchAssetsApi).toHaveBeenCalledTimes(1)
-        expect(searchAssetsApi).toHaveBeenCalledWith({ keyword: 'ab', limit: 50, types: 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,nas,oss' })
+        expect(searchAssetsApi).toHaveBeenCalledWith({ keyword: 'ab', limit: 50, types: 'ecs,rds,redis,mongodb,kafka,elasticsearch,lb,vpc,eip,eni,vswitch,cdn,waf,ddos,nas,oss' })
         wrapper.unmount()
     })
 

@@ -37,15 +37,14 @@ const icMap: Record<string, string> = {
   'assets-nas': 'caise-storage_device', 'assets-oss': 'caise-storage_pool',
   'assets-vpc': 'caise-VPC', 'assets-eip': 'caise-ip_address', 'assets-vsw': 'caise-distributed_switch',
   'assets-lb': 'caise-load_balancing', 'assets-cdn': 'caise-CDN', 'assets-waf': 'caise-network',
+  'assets-ddos': 'caise-network',
   'assets-dns': 'caise-network_devices',
   'assets-rds': 'caise-database', 'assets-redis': 'caise-database', 'assets-mongo': 'caise-database',
   'assets-kafka': 'caise-kafka', 'assets-es': 'caise-middleware',
-  'svc-main': 'caise-business', 'svc-env': 'caise-resource_pool', 'svc-rules': 'caise-standard_switch',
   tasks: 'caise-host_cluster', tags: 'caise-knowledge',
   'fin-cost': 'caise-data_center2', 'fin-alloc': 'caise-business', 'fin-budget': 'caise-folder',
   'fin-anomaly': 'caise-hardware', 'fin-collect': 'caise-data_center',
   'alert-ev': 'caise-hardware', 'alert-rules': 'caise-rack', 'alert-ch': 'caise-message_queue',
-  'cmdb-mod': 'caise-resource_pool', 'cmdb-inst': 'caise-computer', 'cmdb-rel': 'caise-network', 'cmdb-topo': 'caise-VPC',
   'audit-log': 'caise-folder', 'audit-chg': 'caise-storage_cluster',
   accounts: 'caise-public_cloud', dict: 'caise-knowledge',
   users: 'caise-pc', groups: 'caise-host_cluster', tpls: 'caise-data_storage', tenants: 'caise-data_center2',
@@ -91,6 +90,7 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
             <div class="pnav-it" @click="go('/network/lb')"><IconFont :type="ic('assets-lb')" :size="18" /><span>负载均衡</span><i :class="{on:isF('assets-lb')}" @click.stop="togF('assets-lb','负载均衡','网络','/network/lb')">{{ isF('assets-lb') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/network/cdn')"><IconFont :type="ic('assets-cdn')" :size="18" /><span>CDN 加速</span><i :class="{on:isF('assets-cdn')}" @click.stop="togF('assets-cdn','CDN 加速','网络','/network/cdn')">{{ isF('assets-cdn') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/network/waf')"><IconFont :type="ic('assets-waf')" :size="18" /><span>WAF 防火墙</span><i :class="{on:isF('assets-waf')}" @click.stop="togF('assets-waf','WAF 防火墙','网络','/network/waf')">{{ isF('assets-waf') ? '★' : '☆' }}</i></div>
+            <div class="pnav-it" @click="go('/network/ddos')"><IconFont :type="ic('assets-ddos')" :size="18" /><span>DDoS 防护</span><i :class="{on:isF('assets-ddos')}" @click.stop="togF('assets-ddos','DDoS 防护','网络','/network/ddos')">{{ isF('assets-ddos') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/network/eni')"><IconFont :type="ic('assets-eni')" :size="18" /><span>弹性网卡</span><i :class="{on:isF('assets-eni')}" @click.stop="togF('assets-eni','弹性网卡','网络','/network/eni')">{{ isF('assets-eni') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/network/dns')"><IconFont :type="ic('assets-dns')" :size="18" /><span>DNS 管理</span><i :class="{on:isF('assets-dns')}" @click.stop="togF('assets-dns','DNS 管理','网络','/network/dns')">{{ isF('assets-dns') ? '★' : '☆' }}</i></div>
             <div class="pnav-sub">数据库</div>
@@ -104,9 +104,6 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
           <!-- 资源·其他 -->
           <div class="pnav-col pnav-col-sm">
             <div class="pnav-hd"><span class="pnav-dot" style="background:#34d399"></span>资源 · 其他</div>
-            <div class="pnav-it" @click="go('/service-tree')"><IconFont :type="ic('svc-main')" :size="18" /><span>服务树总览</span><i :class="{on:isF('svc-main')}" @click.stop="togF('svc-main','服务树总览','服务树','/service-tree')">{{ isF('svc-main') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/service-tree/environments')"><IconFont :type="ic('svc-env')" :size="18" /><span>环境管理</span><i :class="{on:isF('svc-env')}" @click.stop="togF('svc-env','环境管理','服务树','/service-tree/environments')">{{ isF('svc-env') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/service-tree/rules')"><IconFont :type="ic('svc-rules')" :size="18" /><span>绑定规则</span><i :class="{on:isF('svc-rules')}" @click.stop="togF('svc-rules','绑定规则','服务树','/service-tree/rules')">{{ isF('svc-rules') ? '★' : '☆' }}</i></div>
             <div style="height:6px"></div>
             <div class="pnav-it" @click="go('/tasks')"><IconFont :type="ic('tasks')" :size="18" /><span>任务管理</span><i :class="{on:isF('tasks')}" @click.stop="togF('tasks','任务管理','资源','/tasks')">{{ isF('tasks') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/resource/tags')"><IconFont :type="ic('tags')" :size="18" /><span>标签管理</span><i :class="{on:isF('tags')}" @click.stop="togF('tags','标签管理','资源','/resource/tags')">{{ isF('tags') ? '★' : '☆' }}</i></div>
@@ -127,11 +124,6 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
             <div class="pnav-it" @click="go('/alert/events')"><IconFont :type="ic('alert-ev')" :size="18" /><span>告警事件</span><i :class="{on:isF('alert-ev')}" @click.stop="togF('alert-ev','告警事件','告警中心','/alert/events')">{{ isF('alert-ev') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/alert/rules')"><IconFont :type="ic('alert-rules')" :size="18" /><span>告警规则</span><i :class="{on:isF('alert-rules')}" @click.stop="togF('alert-rules','告警规则','告警中心','/alert/rules')">{{ isF('alert-rules') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/alert/channels')"><IconFont :type="ic('alert-ch')" :size="18" /><span>通知渠道</span><i :class="{on:isF('alert-ch')}" @click.stop="togF('alert-ch','通知渠道','告警中心','/alert/channels')">{{ isF('alert-ch') ? '★' : '☆' }}</i></div>
-            <div class="pnav-sub">CMDB</div>
-            <div class="pnav-it" @click="go('/cmdb/models')"><IconFont :type="ic('cmdb-mod')" :size="18" /><span>资源模型</span><i :class="{on:isF('cmdb-mod')}" @click.stop="togF('cmdb-mod','资源模型','CMDB','/cmdb/models')">{{ isF('cmdb-mod') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/cmdb/instances')"><IconFont :type="ic('cmdb-inst')" :size="18" /><span>资源实例</span><i :class="{on:isF('cmdb-inst')}" @click.stop="togF('cmdb-inst','资源实例','CMDB','/cmdb/instances')">{{ isF('cmdb-inst') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/cmdb/relations')"><IconFont :type="ic('cmdb-rel')" :size="18" /><span>模型关系</span><i :class="{on:isF('cmdb-rel')}" @click.stop="togF('cmdb-rel','模型关系','CMDB','/cmdb/relations')">{{ isF('cmdb-rel') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/cmdb/topology')"><IconFont :type="ic('cmdb-topo')" :size="18" /><span>拓扑视图</span><i :class="{on:isF('cmdb-topo')}" @click.stop="togF('cmdb-topo','拓扑视图','CMDB','/cmdb/topology')">{{ isF('cmdb-topo') ? '★' : '☆' }}</i></div>
             <div class="pnav-sub">系统</div>
             <div class="pnav-it" @click="go('/audit/logs')"><IconFont :type="ic('audit-log')" :size="18" /><span>操作审计</span><i :class="{on:isF('audit-log')}" @click.stop="togF('audit-log','操作审计','系统','/audit/logs')">{{ isF('audit-log') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/audit/changes')"><IconFont :type="ic('audit-chg')" :size="18" /><span>变更历史</span><i :class="{on:isF('audit-chg')}" @click.stop="togF('audit-chg','变更历史','系统','/audit/changes')">{{ isF('audit-chg') ? '★' : '☆' }}</i></div>

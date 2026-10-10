@@ -1,5 +1,5 @@
 /**
- * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc/vswitch/waf/dns) + 计算域(ecs/image/disk) + 数据库域(rds/redis/mongodb)
+ * 字段展示文案单源（fieldLabels）— 计费类型域 + 全局资产状态域 + 网络域(eip/eni/lb/vpc/vswitch/waf/ddos/dns) + 计算域(ecs/image/disk) + 数据库域(rds/redis/mongodb) + 中间件/存储域(es/kafka/nas) + 快照域(snapshot) + 服务树节点状态
  *
  * 背景：字段文案一致性审计（docs/features/ecam-web-ui-audit/reports/field-consistency.md §2 域4/域3）
  * 发现计费类型 `charge_type` 在 eip/ecs/cmdb/rds/redis/mongodb/nas/template/provision
@@ -30,6 +30,9 @@ export const CHARGE_TYPE_LABELS: Record<string, string> = {
     PostPaid: '按量付费',
     postpaid: '按量付费',
     Postpaid: '按量付费',
+    // WAF 域实测值（azure 系计费词,原 WAF 抽屉本地 map 并入）
+    subscription: '包年包月', Subscription: '包年包月',
+    payasyougo: '按量付费', PayAsYouGo: '按量付费',
 }
 
 // ==================== 资产状态（status，全局资产视图） ====================
@@ -97,9 +100,15 @@ export const ASSET_STATUS_LABELS: Record<string, string> = {
  * Available→未绑定、Bindable→可绑定。中文键(已绑定/未绑定)为回显态原样收口。
  */
 export const EIP_STATUS_LABELS: Record<string, string> = {
-    InUse: '已绑定', inuse: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
-    Available: '未绑定', available: '未绑定', '未绑定': '未绑定',
+    InUse: '已绑定', inuse: '已绑定', in_use: '已绑定', '已绑定': '已绑定', Attached: '已绑定',
+    BIND: '已绑定', BIND_ENI: '已绑定',
+    Available: '未绑定', available: '未绑定', UNBIND: '未绑定', '未绑定': '未绑定',
     Bindable: '可绑定',
+    associating: '绑定中', Associating: '绑定中', Attaching: '绑定中',
+    unassociating: '解绑中', Unassociating: '解绑中', Detaching: '解绑中',
+    releasing: '释放中', Releasing: '释放中',
+    pending: '创建中', error: '异常', frozen: '已冻结', Frozen: '已冻结',
+    unknown: '未知',
 }
 
 /**
@@ -168,13 +177,17 @@ export const LB_STATUS_LABELS: Record<string, string> = {
     available: '可用', Available: '可用',
     creating: '创建中', Creating: '创建中',
     configuring: '配置中', Configuring: '配置中',
+    updating: '更新中',
+    deleting: '删除中', Deleting: '删除中',
     pending: '等待中', Pending: '等待中',
     locked: '已锁定', Locked: '已锁定',
     error: '异常', Error: '异常',
+    frozen: '已冻结',
+    unknown: '未知',
 }
 
 /** LB 类型 → 展示文案。实测值域 clb(155)/alb(127)/nlb(21)/slb(17)。 */
-export const LB_TYPE_LABELS: Record<string, string> = { slb: 'SLB', alb: 'ALB', nlb: 'NLB', clb: 'CLB' }
+export const LB_TYPE_LABELS: Record<string, string> = { slb: 'SLB', alb: 'ALB', nlb: 'NLB', clb: 'CLB', elb: 'ELB' }
 
 /**
  * VPC 状态 → 展示文案。
@@ -185,7 +198,9 @@ export const LB_TYPE_LABELS: Record<string, string> = { slb: 'SLB', alb: 'ALB', 
 export const VPC_STATUS_LABELS: Record<string, string> = {
     Available: '正常', available: '正常', OK: '正常', ok: '正常', '正常': '正常',
     Pending: '创建中', pending: '创建中', '创建中': '创建中',
+    deleting: '删除中', Deleting: '删除中',
     error: '异常', Error: '异常',
+    unknown: '未知',
 }
 
 // ==================== 网络域产品状态/枚举（vswitch/waf/dns） ====================
@@ -201,6 +216,8 @@ export const VSWITCH_STATUS_LABELS: Record<string, string> = {
     Available: '可用', available: '可用', ACTIVE: '可用', active: '可用', '可用': '可用',
     Pending: '创建中', pending: '创建中', creating: '创建中',
     Deleting: '删除中', deleting: '删除中',
+    DOWN: '异常', error: '异常',
+    unknown: '未知',
 }
 
 /**
@@ -230,6 +247,24 @@ export const WAF_EDITION_LABELS: Record<string, string> = {
 
 /** WAF 防护模式 → 展示文案。实测 block(99)/observe(11)/空(315)；仅展示，非有效后端筛参。 */
 export const WAF_PROTECTION_MODE_LABELS: Record<string, string> = { block: '拦截', observe: '观察', off: '关闭' }
+
+/**
+ * DDoS 状态 → 展示文案（列表页 canonical；键值以腾讯云 DDoS 防护实例状态注释实证）。
+ *
+ * 腾讯取值域：idle/attacking/blocking/creating/deblocking/isolate（全小写厂商原生字符串，
+ * 后端直透 SDK 值）；阿里/华为为各自厂商原值（可能为中文），本表不臆造、不代收其他
+ * 厂商状态。未知值透出策略：调用方直查本表（DDoS 页 getStatusText / 详情抽屉），
+ * 未命中时原样透出原始值，不回退全局 ASSET_STATUS_LABELS —— 避免厂商原生值被全局
+ * 通用词（如 active→运行中）误译。
+ */
+export const DDOS_STATUS_LABELS: Record<string, string> = {
+    idle: '正常',
+    attacking: '攻击中',
+    blocking: '封堵中',
+    creating: '创建中',
+    deblocking: '解封中',
+    isolate: '隔离中',
+}
 
 /**
  * DNS 域名状态 → 展示文案。
@@ -350,6 +385,69 @@ export const MONGODB_STATUS_LABELS: Record<string, string> = {
     deleting: '删除中', Deleting: '删除中',
 }
 
+// ==================== 快照域产品状态（snapshot） ====================
+
+/**
+ * 快照状态 → 展示文案（列表页 canonical）。
+ *
+ * 实测值域（2026-09-24 全量 3620 条）：顶层 status 的「成功族」为
+ * accomplished(阿里云)/available(华为+火山)/NORMAL(腾讯)/completed(AWS)，
+ * 不同类型同义而值不同，统一收敛为「正常」；progressing/failed 为历史映射保留。
+ * 抽屉此前只认 accomplished/normal/progressing/failed，available/NORMAL/completed
+ * 会裸显英文，本表补齐厂商成功态变体（大小写均收）。
+ */
+export const SNAPSHOT_STATUS_LABELS: Record<string, string> = {
+    accomplished: '正常', Accomplished: '正常', ACCOMPLISHED: '正常',
+    available: '正常', Available: '正常', AVAILABLE: '正常',
+    NORMAL: '正常', normal: '正常', Normal: '正常',
+    completed: '正常', Completed: '正常', COMPLETED: '正常',
+    progressing: '创建中', Progressing: '创建中',
+    failed: '失败', Failed: '失败', FAILED: '失败',
+}
+
+// ==================== 服务树节点状态（service-tree） ====================
+
+/**
+ * 服务树节点状态 → 展示文案。
+ *
+ * 服务树节点为业务维度健康态（active→活跃、inactive→未激活），与资产运行态
+ * （ASSET_STATUS_LABELS 的 active→运行中）语义不同，不并入通用词表；
+ * service-tree/index.vue 与 BindResourceDialog.vue 共用此单源以防漂移。
+ */
+export const SERVICE_NODE_STATUS_LABELS: Record<string, string> = {
+    running: '运行中',
+    active: '活跃',
+    stopped: '已停止',
+    inactive: '未激活',
+    error: '错误',
+    terminated: '已终止',
+}
+
+// ==================== 对象存储域枚举（oss） ====================
+
+/**
+ * OSS 存储类型 → 展示文案。
+ *
+ * 真实值域含厂商大小写差异（实测 aliyun=Standard、tencent/aws=STANDARD），
+ * 统一以小写键归一展示；列表/详情/导出共用此单源（原列表 map、导出 map、抽屉
+ * map 三份键集不等、导出缺 ColdArchive、抽屉对 STANDARD 裸显英文）。
+ */
+export const OSS_STORAGE_CLASS_LABELS: Record<string, string> = {
+    standard: '标准存储',
+    ia: '低频存储',
+    archive: '归档存储',
+    coldarchive: '冷归档存储',
+}
+
+/**
+ * OSS ACL 权限 → 展示文案（列表导出与详情抽屉共用，防双份漂移）。
+ */
+export const OSS_ACL_LABELS: Record<string, string> = {
+    private: '私有',
+    'public-read': '公共读',
+    'public-read-write': '公共读写',
+}
+
 // ==================== 中间件+存储域产品状态（es/kafka/nas） ====================
 
 /**
@@ -386,11 +484,19 @@ export const KAFKA_STATUS_LABELS: Record<string, string> = {
  * pending/creating→创建中 为 NAS 域创建期两态；大写 Running/Stopped 为历史
  * 回显值（2026-09 实测 95 条全小写 running），保留防御键防裸显英文。
  */
-export const NAS_STATUS_LABELS: Record<string, string> = {
-    running: '运行中', Running: '运行中', RUNNING: '运行中',
+export const NAS_STATUS_LABELS: Record<string, string> = { running: '运行中', Running: '运行中', RUNNING: '运行中',
     stopped: '已停止', Stopped: '已停止', STOPPED: '已停止',
     pending: '创建中', Pending: '创建中', PENDING: '创建中',
     creating: '创建中', Creating: '创建中',
+}
+
+/**
+ * NAS 文件系统类型 → 展示文案（列表页与详情抽屉共用，防双份漂移）。
+ */
+export const NAS_FILE_SYSTEM_TYPE_LABELS: Record<string, string> = {
+    standard: '通用型',
+    extreme: '极速型',
+    cpfs: 'CPFS',
 }
 
 // ==================== 查表助手 ====================

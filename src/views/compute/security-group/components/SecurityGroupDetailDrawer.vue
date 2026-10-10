@@ -103,13 +103,14 @@ import IconFont from '@/components/IconFont/index.vue';
 import { getProviderLabel } from '@/utils/constants';
 import { Close, Document, Lock } from '@element-plus/icons-vue';
 import { ref } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 </script>

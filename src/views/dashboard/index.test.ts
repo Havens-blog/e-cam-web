@@ -12,7 +12,7 @@ import {
     getExpiringApi,
     getOverviewApi,
 } from '@/api/dashboard'
-import { getGlobalAssetStatsApi } from '@/api/service-tree'
+import { getGlobalAssetStatsApi } from '@/api/service-tree-stats'
 import ElementPlus, { ElMessage } from 'element-plus'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,7 +30,7 @@ vi.mock('@/api/dashboard', () => ({
 vi.mock('@/api/finops', () => ({
     getCostDistributionApi: vi.fn(),
 }))
-vi.mock('@/api/service-tree', () => ({
+vi.mock('@/api/service-tree-stats', () => ({
     getGlobalAssetStatsApi: vi.fn(),
 }))
 

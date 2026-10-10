@@ -143,7 +143,7 @@ import {
     type OverviewData
 } from '@/api/dashboard'
 import { getCostDistributionApi } from '@/api/finops'
-import { getGlobalAssetStatsApi } from '@/api/service-tree'
+import { getGlobalAssetStatsApi } from '@/api/service-tree-stats'
 import type { CostDistItem } from '@/api/types/finops'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StateBlock from '@/components/StateBlock/index.vue'

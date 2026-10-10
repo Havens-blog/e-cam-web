@@ -300,6 +300,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import LbDetailDrawer from './components/LbDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 LB_STATUS_LABELS */
 const isRunningStatus = (status?: string) => ['Active', 'active', 'ACTIVE', 'running', 'Running'].includes(status || '')
@@ -553,6 +554,10 @@ const searchFieldOptions: Record<string, { label: string; value: string }[]> = {
     { label: '运行中(active)', value: 'active' },
     { label: '运行中(ACTIVE)', value: 'ACTIVE' },
     { label: '已停止(inactive)', value: 'inactive' },
+    { label: '创建中(creating)', value: 'creating' },
+    { label: '更新中(updating)', value: 'updating' },
+    { label: '删除中(deleting)', value: 'deleting' },
+    { label: '异常(error)', value: 'error' },
   ],
   lb_type: [
     { label: 'CLB (传统)', value: 'clb' },
@@ -777,7 +782,7 @@ const getRegionLabel = (provider: string, region: string) => {
 }
 
 // 平台图标：统一走 IconFont 厂商字形（主机页同款）
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 

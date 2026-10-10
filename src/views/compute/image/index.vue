@@ -293,6 +293,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ImageDetailDrawer from './components/ImageDetailDrawer.vue'
 import ImageSyncDialog from './components/ImageSyncDialog.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 「导入中」统计共用口径）。
  *  实测值域仅 Available(141)/available(506)/active(16)/NORMAL(6) 四个大小写变体，
@@ -770,7 +771,7 @@ const formatTime = (time: string | number | undefined) => {
   return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 

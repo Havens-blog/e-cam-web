@@ -299,6 +299,7 @@ import { useRoute, useRouter } from 'vue-router'
 import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测统一值域仅 online(566)/offline(31)/InProgress(1) 三值（2026-09-24 全量 598 条探查）；
@@ -716,7 +717,7 @@ const formatTime = (time: string | number | undefined) => {
   return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(time)
 }
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 

@@ -474,6 +474,7 @@ import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExp
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import InstanceDetailDrawer from './components/InstanceDetailDrawer.vue'
 import InstanceForm from './components/InstanceForm.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 const route = useRoute()
 const router = useRouter()
@@ -932,26 +933,7 @@ const getOsIcon = (osType: string | undefined): string => {
   return 'caise-Linux'
 }
 
-const getPlatformIcon = (provider: string | undefined): string => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  // 映射到 IconFont 彩色图标
-  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
-  if (p.includes('tencent') || p.includes('qcloud')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws') || p.includes('amazon')) return 'AWS'
-  if (p.includes('azure') || p.includes('microsoft')) return 'Azure'
-  if (p.includes('google') || p.includes('gcp')) return 'Google_Cloud_Platform'
-  if (p.includes('volcengine') || p.includes('volc') || p.includes('bytedance')) return 'Bytecloud'
-  if (p.includes('ucloud')) return 'UCloud'
-  if (p.includes('jd') || p.includes('jdcloud')) return 'JDCloud'
-  if (p.includes('ecloud') || p.includes('ctyun')) return 'Ctyun'
-  if (p.includes('openstack')) return 'OpenStack'
-  if (p.includes('vmware') || p.includes('vsphere')) return 'caise-vmware'
-  if (p.includes('nutanix')) return 'Nutanix'
-  if (p.includes('zstack')) return 'ZStack'
-  return 'Alibaba_Cloud'
-}
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 const getChargeTypeText = (chargeType: string | undefined) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType, '包年包月')
 

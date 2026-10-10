@@ -237,6 +237,7 @@ const menuGroups = ref<MenuGroup[]>([
               { key: 'assets-lb', path: '/network/lb', title: '负载均衡' },
               { key: 'assets-cdn', path: '/network/cdn', title: 'CDN 加速' },
               { key: 'assets-waf', path: '/network/waf', title: 'WAF 防火墙' },
+              { key: 'assets-ddos', path: '/network/ddos', title: 'DDoS 防护' },
               { key: 'assets-eni', path: '/network/eni', title: '弹性网卡' },
               { key: 'assets-dns', path: '/network/dns', title: 'DNS 管理' },
             ]

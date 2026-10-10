@@ -132,15 +132,18 @@ import { formatCapacityGB, formatObjectCount, hasZeroException } from '@/views/s
 import { ArrowDown, Close, DataLine, Document, Folder, WarningFilled } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { getProviderIcon } from '@/utils/icon-mapping'
+import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
 
-const getStorageClassText = (type?: string) => { if (!type) return '-'; const map: Record<string, string> = { Standard: '标准存储', IA: '低频存储', Archive: '归档存储', ColdArchive: '冷归档存储' }; return map[type] || type }
-const getStorageClassType = (type?: string) => { if (!type) return 'info'; const map: Record<string, string> = { Standard: 'info', IA: 'warning', Archive: 'info' }; return safeTagType(map[type] || 'info') }
-const getAclText = (acl?: string) => { if (!acl) return '-'; const map: Record<string, string> = { private: '私有', 'public-read': '公共读', 'public-read-write': '公共读写' }; return map[acl] || acl }
+/** 存储类型/ACL 文案走 fieldLabels 单源，小写键归一（aliyun=Standard、tencent/aws=STANDARD 同词），与列表/导出同口径 */
+const getStorageClassText = (type?: string) => labelOfLenient(OSS_STORAGE_CLASS_LABELS, (type || '').toLowerCase(), '-')
+const getStorageClassType = (type?: string) => { if (!type) return 'info'; const t = type.toLowerCase(); if (t === 'ia') return safeTagType('warning'); return safeTagType('info') }
+const getAclText = (acl?: string) => labelOfLenient(OSS_ACL_LABELS, acl, '-')
 
 // ===== 监控 tab:存储量/对象数趋势(按需查询,读 ecam_oss_metric 指标表) =====
 // 与 NasDetailDrawer 监控 tab 同构;echarts 渲染在 canvas 上,CSS 变量不可用
@@ -326,7 +329,7 @@ watch(() => props.visible, (val) => {
   else window.removeEventListener('resize', handleMetricsResize)
 })
 
-const getPlatformIcon = (provider?: string) => { if (!provider) return 'Alibaba_Cloud'; const p = provider.toLowerCase(); if (p.includes('aliyun')) return 'Alibaba_Cloud'; if (p.includes('tencent')) return 'Tencent_Cloud'; if (p.includes('huawei')) return 'Huawei_Cloud'; if (p.includes('aws')) return 'AWS'; if (p.includes('volcano')) return 'Bytecloud'; return 'Alibaba_Cloud' }
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>

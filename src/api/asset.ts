@@ -281,6 +281,62 @@ export function getNasTopApi(params?: GetNASTopParams) {
     })
 }
 
+// ===== RDS 指标(读 ecam_rds_metric 指标表;rds:collect_metrics 采集任务落库) =====
+
+/** RDS 单日指标点:缺失日四指标为 null(不填充假值,以 data_status=missing 标注) */
+export interface RDSMetricPoint {
+    /** 日期 YYYY-MM-DD(Asia/Shanghai) */
+    date: string
+    /** CPU 使用率(百分比 0~100);缺失日 null */
+    cpu_percent: number | null
+    /** 内存使用率(百分比 0~100);缺失日 null */
+    memory_percent: number | null
+    /** 磁盘使用率(百分比 0~100);缺失日 null */
+    disk_percent: number | null
+    /** 连接数(个,绝对值);缺失日 null */
+    connections: number | null
+    /** ok | zero_exception | missing */
+    data_status: string
+    /** 落库 qc_status 原样透出(空=正常;zero_exception=四指标全 0 异常行) */
+    qc_status?: string
+}
+
+/** 「最新一天」/「近 N 天均值」摘要;无可用行时各字段为 null */
+export interface RDSMetricSummary {
+    date?: string
+    cpu_percent: number | null
+    memory_percent: number | null
+    disk_percent: number | null
+    connections: number | null
+}
+
+/** GET /assets/rds/metrics 响应体(days[] 按日期升序) */
+export interface RDSMetricsView {
+    rds_id: string
+    days: RDSMetricPoint[]
+    latest: RDSMetricSummary | null
+    average: RDSMetricSummary | null
+}
+
+/** 查询 RDS 实例近 N 天 CPU/内存/磁盘使用率与连接数趋势参数 */
+export interface GetRDSMetricsParams {
+    /** RDS 实例 ID */
+    rds_id: string
+    /** 云账号 ID(必填,服务端校验租户归属) */
+    account_id: number
+    /** 回看天数(缺省 30,限 1~90) */
+    days?: number
+}
+
+/** 获取 RDS 实例近 N 天使用率/连接数趋势(读指标表,采集任务落库) */
+export function getRdsMetricsApi(params: GetRDSMetricsParams) {
+    return instance.get<RDSMetricsView>({
+        url: `${API_SERVICE.CAM}/assets/rds/metrics`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
 // ==================== OSS API ====================
 
 /** OSS 列表查询参数 */
@@ -907,6 +963,26 @@ export function listWAFAssetsApi(params?: ListAssetsParams) {
 export function getWAFAssetApi(assetId: string, params?: { tenant_id?: string; provider?: string }) {
     return instance.get<{ code: number; data: Asset; msg: string }>({
         url: `${API_SERVICE.CAM}/assets/waf/${assetId}`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+// ==================== DDoS (DDoS防护) API ====================
+
+/** 获取DDoS防护实例列表 */
+export function listDDOSAssetsApi(params?: ListAssetsParams) {
+    return instance.get<AssetListResponse>({
+        url: `${API_SERVICE.CAM}/assets/ddos`,
+        params,
+        interceptorsToOnce: createAssetApiInterceptor()
+    })
+}
+
+/** 获取DDoS防护实例详情 */
+export function getDDOSAssetApi(assetId: string, params?: { provider?: string }) {
+    return instance.get<{ code: number; data: Asset; msg: string }>({
+        url: `${API_SERVICE.CAM}/assets/ddos/${assetId}`,
         params,
         interceptorsToOnce: createAssetApiInterceptor()
     })

@@ -265,6 +265,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import RedisDetailDrawer from './components/RedisDetailDrawer.vue'
+import { getProviderIcon } from '@/utils/icon-mapping'
 
 /** 共享导出配置：字段沿用原 stub availableFields，取值走通用映射（asset_id/asset_name 直取、provider 归一、其余 attributes[key]） */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -546,16 +547,7 @@ const getStatusClass = (status?: string) => {
 /** 状态文案统一走 fieldLabels 单源（Redis 列表页 canonical） */
 const getStatusText = (status?: string) => labelOfLenient(REDIS_STATUS_LABELS, status, status || '-')
 
-const getPlatformIcon = (provider?: string) => {
-  if (!provider) return 'Alibaba_Cloud'
-  const p = provider.toLowerCase()
-  if (p.includes('aliyun') || p.includes('alibaba')) return 'Alibaba_Cloud'
-  if (p.includes('tencent')) return 'Tencent_Cloud'
-  if (p.includes('huawei')) return 'Huawei_Cloud'
-  if (p.includes('aws')) return 'AWS'
-  if (p.includes('volcano')) return 'Bytecloud'
-  return 'Alibaba_Cloud'
-}
+const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
