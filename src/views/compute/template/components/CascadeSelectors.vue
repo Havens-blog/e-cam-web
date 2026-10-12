@@ -329,11 +329,6 @@ async function handleRegionChange(region: string) {
         status: v?.attributes?.status || 'Available'
       }))
     }
-    console.log('[CascadeSelectors] Loaded resources:', {
-      instanceTypes: instanceTypes.value.length,
-      images: images.value.length,
-      vpcs: vpcs.value.length
-    })
   } catch (err) {
     console.error('[CascadeSelectors] Failed to load cloud resources:', err)
     ElMessage.error('加载云资源失败，请重试')
@@ -380,7 +375,7 @@ async function handleVPCChange(vpcId: string) {
         vpc_id: s?.attributes?.vpc_id || ''
       }))
     }
-  } catch (err) {
+  } catch {
     ElMessage.error('加载子网和安全组失败，请重试')
     subnets.value = []
     securityGroups.value = []

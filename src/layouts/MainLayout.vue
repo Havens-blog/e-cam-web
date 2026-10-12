@@ -101,9 +101,7 @@ const toggleSidebar = () => {
 
 // 切换主题
 const toggleTheme = () => {
-  console.log('Theme button clicked, current theme:', appStore.theme)
   appStore.toggleTheme()
-  console.log('After toggle, theme:', appStore.theme)
 }
 
 // 菜单项接口
@@ -479,16 +477,64 @@ const toggleFullscreen = () => {
   <div class="layout-wrapper">
     <!-- 左侧边栏 -->
     <aside class="sidebar" :class="{ collapsed: isCollapsed }">
-      <!-- Logo -->
+      <!-- Logo：折叠态显示方块 mark，展开态显示横版 wordmark（息壤 XIRANG CLOUD） -->
       <div class="sidebar-logo" @click="router.push('/dashboard')">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#5e6ad2"/>
-            <path d="M2 17L12 22L22 17" stroke="#7170ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="#7170ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <div v-if="isCollapsed" class="logo-icon" role="img" aria-label="息壤 Xirang">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>息壤 Xirang</title>
+            <defs>
+              <linearGradient id="xrm-top" x1="8" y1="22" x2="56" y2="46" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7170ff"/>
+                <stop offset="1" stop-color="#5e6ad2"/>
+              </linearGradient>
+              <linearGradient id="xrm-sprout" x1="32" y1="34" x2="32" y2="6" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7170ff"/>
+                <stop offset="1" stop-color="#a5b4fc"/>
+              </linearGradient>
+            </defs>
+            <path d="M8 46 L32 58 L56 46" fill="none" stroke="#5e6ad2" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 40 L32 52 L56 40" fill="none" stroke="#5e6ad2" stroke-opacity="0.75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 22 L56 34 L32 46 L8 34 Z" fill="url(#xrm-top)"/>
+            <g stroke="url(#xrm-sprout)" stroke-width="3" stroke-linecap="round" fill="none">
+              <path d="M32 34 V14"/>
+              <path d="M32 24 L22 17"/>
+              <path d="M32 24 L42 17"/>
+            </g>
+            <circle cx="32" cy="34" r="3.2" fill="#ffffff"/>
+            <circle cx="32" cy="11" r="3.6" fill="#a5b4fc"/>
+            <circle cx="20" cy="15.5" r="3" fill="#8b93ff"/>
+            <circle cx="44" cy="15.5" r="3" fill="#8b93ff"/>
           </svg>
         </div>
-        <span v-if="!isCollapsed" class="logo-text">CloudMux</span>
+        <div v-else class="logo-horizontal" role="img" aria-label="息壤 Xirang">
+          <svg viewBox="0 0 260 64" xmlns="http://www.w3.org/2000/svg">
+            <title>息壤 Xirang</title>
+            <defs>
+              <linearGradient id="xrh-top" x1="8" y1="22" x2="56" y2="46" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7170ff"/>
+                <stop offset="1" stop-color="#5e6ad2"/>
+              </linearGradient>
+              <linearGradient id="xrh-sprout" x1="32" y1="34" x2="32" y2="6" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#7170ff"/>
+                <stop offset="1" stop-color="#a5b4fc"/>
+              </linearGradient>
+            </defs>
+            <path d="M8 46 L32 58 L56 46" fill="none" stroke="#5e6ad2" stroke-opacity="0.45" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 40 L32 52 L56 40" fill="none" stroke="#5e6ad2" stroke-opacity="0.75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 22 L56 34 L32 46 L8 34 Z" fill="url(#xrh-top)"/>
+            <g stroke="url(#xrh-sprout)" stroke-width="3" stroke-linecap="round" fill="none">
+              <path d="M32 34 V14"/>
+              <path d="M32 24 L22 17"/>
+              <path d="M32 24 L42 17"/>
+            </g>
+            <circle cx="32" cy="34" r="3.2" fill="#ffffff"/>
+            <circle cx="32" cy="11" r="3.6" fill="#a5b4fc"/>
+            <circle cx="20" cy="15.5" r="3" fill="#8b93ff"/>
+            <circle cx="44" cy="15.5" r="3" fill="#8b93ff"/>
+            <text x="74" y="36" fill="currentColor" font-family="'PingFang SC','Microsoft YaHei','Noto Sans SC','Source Han Sans SC',sans-serif" font-size="28" font-weight="700" letter-spacing="4">息壤</text>
+            <text x="75" y="54" fill="#7170ff" font-family="'Inter Variable',Inter,'Segoe UI',Roboto,Arial,sans-serif" font-size="11.5" font-weight="600" letter-spacing="5.2">XIRANG CLOUD</text>
+          </svg>
+        </div>
       </div>
 
       <!-- 菜单 -->
@@ -797,24 +843,26 @@ $navbar-height: 56px;
     width: 28px;
     height: 28px;
     flex-shrink: 0;
-    
+
     svg {
       width: 100%;
       height: 100%;
     }
   }
 
-  .logo-text {
-    font-size: 18px;
-    font-weight: 700;
+  // 展开态：横版 wordmark（息壤 XIRANG CLOUD），受 .sidebar-logo 220px 宽约束；
+  // 折叠态由 .logo-icon 的方块 mark 承担，此 wrapper 不渲染（v-else）。
+  .logo-horizontal {
+    max-width: 180px;
+    height: auto;
+    flex-shrink: 0;
+    // 息壤文字 fill=currentColor 跟随此值；XIRANG CLOUD 副标为固定品牌色
     color: var(--text-primary);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
 
-  &:hover {
-    .logo-text {
-      color: var(--accent-blue);
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
     }
   }
 }

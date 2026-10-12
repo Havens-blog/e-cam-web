@@ -546,7 +546,8 @@ const props = defineProps<{
   instance: Asset | null
 }>()
 
-const emit = defineEmits<{
+// 模板经 $emit 触发（update:visible / edit / delete）；声明事件类型即可，无需 emit 变量
+defineEmits<{
   'update:visible': [value: boolean]
   edit: [instance: Asset]
   delete: [instance: Asset]
@@ -573,16 +574,9 @@ const fetchRelations = async () => {
   }
   // 如果已加载过，不重复请求
   if (relationsLoaded.value) {
-    console.log('fetchRelations: 已加载过，跳过')
     return
   }
-  
-  console.log('fetchRelations: 开始请求', {
-    asset_id: props.instance.asset_id,
-    tenant_id: props.instance.tenant_id,
-    provider: props.instance.attributes?.provider
-  })
-  
+
   relationsLoading.value = true
   relationsError.value = false
   try {
@@ -590,17 +584,9 @@ const fetchRelations = async () => {
       tenant_id: props.instance.tenant_id,
       provider: props.instance.attributes?.provider
     }) as any
-    console.log('ECS Relations API Response:', JSON.stringify(res, null, 2))
     if (res && (res.code === 0 || res.code === 200) && res.data) {
       relationsData.value = res.data as ECSRelationsResp
       relationsLoaded.value = true
-      console.log('fetchRelations: 数据已设置', {
-        disks: res.data.disks?.length || 0,
-        security_groups: res.data.security_groups?.length || 0,
-        snapshots: res.data.snapshots?.length || 0,
-        vpc: !!res.data.vpc,
-        subnet: !!res.data.subnet
-      })
     } else if (res && !res.code && res.ecs) {
       // 直接返回数据的情况
       relationsData.value = res as ECSRelationsResp
