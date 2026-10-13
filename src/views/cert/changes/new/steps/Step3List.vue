@@ -13,7 +13,7 @@
     </div>
 
     <template v-else-if="changeList">
-      <!-- 盲区声���横幅常驻（不可关闭） -->
+      <!-- 盲区声明横幅常驻（不可关闭） -->
       <el-alert type="warning" :closable="false" show-icon class="blindspot-banner">
         <template #title>盲区声明</template>
         本清单不含 VM Nginx 配置级引用，需在变更后人工核对。

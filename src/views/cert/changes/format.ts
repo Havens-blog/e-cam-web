@@ -107,7 +107,7 @@ export function filterRowsByTab(rows: readonly ChangeOrder[], tab: ChangeTabKey)
     return rows.filter((r) => statusToTab(r.status) === tab)
 }
 
-/** 草稿/待确认行操作为「继续编辑」（进入向导恢复���，其余为「详情」（报告页） */
+/** 草稿/待确认行操作为「继续编辑」（进入向导恢复编辑，其余为「详情」（报告页） */
 export function isEditableRow(status: ChangeStatus): boolean {
     return status === 'draft' || status === 'pending_confirm'
 }

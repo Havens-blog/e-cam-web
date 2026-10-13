@@ -274,7 +274,7 @@ function accountCell(item: CertReferenceItem): string {
     return '—'
 }
 
-/** aria-live 通告文��（筛选状态变化；高频输入经防抖后仅按结果态通告一次） */
+/** aria-live 通告文案（筛选状态变化；高频输入经防抖后仅按结果态通告一次） */
 const announceText = computed(() => {
     const hasFilter =
         filters.cloud || filters.product || filters.cluster || filters.keyword.trim()

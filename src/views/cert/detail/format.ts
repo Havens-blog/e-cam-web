@@ -122,7 +122,7 @@ interface CloudAgg {
 
 /**
  * 覆盖率按云聚合：百分比 = Σcovered/Σtotal（仅可用分母项）；
- * total=-1 项 → 「分母不可用」（不显示 0%，tech-design 失效处理���；
+ * total=-1 项 → 「分母不可用」（不显示 0%，tech-design 失效处理）；
  * K8s 云展示「N 集群」（N=引用分组去重集群数，非覆盖率）；
  * lagging → 百分比封顶 100% + 「asset 盘点滞后」标记。
  */
@@ -282,7 +282,7 @@ export interface ChangeStatusMeta {
     tone: 'accent' | 'secondary' | 'success' | 'warning' | 'error' | 'verifying'
     /** 非色觉通道图标字符（执行中用 CSS spinner，icon 为空） */
     icon: string
-    /** true=渲染 spinner 动画（执���中） */
+    /** true=渲染 spinner 动画（执行中） */
     spinner?: boolean
 }
 
@@ -463,7 +463,7 @@ export function parseScanConflict(err: unknown, now: Date = new Date()): ScanInP
 
 /**
  * 轮询完成判定：references.lastScanAt（最新成功快照 startedAt，服务端口径）
- * >= 会话 startedAt → 该轮扫描已���功落库，可退出「扫描中」态并刷新元数据。
+ * >= 会话 startedAt → 该轮扫描已成功落库，可退出「扫描中」态并刷新元数据。
  */
 export function isScanComplete(lastScanAt: string | null | undefined, startedAt: number): boolean {
     if (!lastScanAt) return false

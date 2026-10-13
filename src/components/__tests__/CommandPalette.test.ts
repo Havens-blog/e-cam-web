@@ -3,7 +3,7 @@
  * CommandPalette 组件单测（ui-unify-phase2-components 任务 6）：
  * 覆盖 ⌘K/Ctrl+K 唤起与 Esc 关闭、焦点管理（开时捕获输入框、关时归还）、
  * 路由页面条目渲染与关键词过滤、内置「切换主题」动作与 registerActions 注册 API、
- * searchAssetsApi 复用契约（300ms 防抖、{keyword, limit:10} 参数、结果���达资产详情）、
+ * searchAssetsApi 复用契约（300ms 防抖、{keyword, limit:10} 参数、结果项可直达资产详情）、
  * 最近访问记录，以及空态与遮罩关闭。
  */
 import { flushPromises, mount } from '@vue/test-utils'

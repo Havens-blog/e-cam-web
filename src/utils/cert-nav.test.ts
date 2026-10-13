@@ -23,7 +23,7 @@ function findRoute(path: string) {
 }
 
 describe('证书管理一级菜单注册（任务 6.7 AC#4）', () => {
-    it('三项一级菜单按 prd-ui-functions 顺序：证书���账 → 到期看板 → 变更管理', () => {
+    it('三项一级菜单按 prd-ui-functions 顺序：证书台账 → 到期看板 → 变更管理', () => {
         expect(CERT_MENU_ITEMS.map((i) => i.title)).toEqual(['证书台账', '到期看板', '探测结果', '变更管理'])
     })
 

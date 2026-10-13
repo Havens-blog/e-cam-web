@@ -229,7 +229,7 @@ watch(
   { immediate: true },
 )
 
-/** StateBlock retry：向父级透出事件并内部重新拉��� */
+/** StateBlock retry：向父级透出事件并内部重新拉取 */
 const handleRetry = (): void => {
   emit('retry')
   void load()

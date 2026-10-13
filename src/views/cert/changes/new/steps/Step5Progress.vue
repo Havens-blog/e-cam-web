@@ -187,7 +187,7 @@ async function poll() {
         // 离开执行态（进入验证/终态）停止本组件轮询（后续步接管）
         if (p.status !== 'executing') stopPolling()
     } catch {
-        /* 轮询失败静默，下个 tick 重��� */
+        /* 轮询失败静默，下个 tick 重试 */
     }
 }
 

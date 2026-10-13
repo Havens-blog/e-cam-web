@@ -364,7 +364,7 @@ describe('computeFitLayout 折叠阈值纯函数', () => {
         expect(computeFitLayout([120, 120, 120], total)).toEqual({ visibleCount: 3, needToggle: false })
     })
 
-    it('放不下时按预留���度求解一行可容纳的字段数', () => {
+    it('放不下时按预留的宽度求解一行可容纳的字段数', () => {
         // reserve 88：120≤412 ✓ / 256≤412 ✓ / 392≤412 ✓ / 528>412 ✗ → 可容纳 3 个
         expect(computeFitLayout([120, 120, 120, 120, 120], 500, 16, FILTER_BAR_TOGGLE_WIDTH)).toEqual({
             visibleCount: 3,

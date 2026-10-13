@@ -351,7 +351,7 @@ defineExpose({ notifyAddResult, notifyRemoveResult })
   color: var(--text-primary);
 }
 
-// 响应式：小屏隐藏���优先列（ui-design 表格列优先级）
+// 响应式：小屏隐藏低优先列（ui-design 表格列优先级）
 @media (max-width: 767px) {
   .hide-sm {
     display: none;
