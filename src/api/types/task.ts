@@ -75,4 +75,4 @@ export interface SubmitTaskResponse {
 /**
  * 任务详情响应
  */
-export interface TaskDetailResponse extends Task { }
+export type TaskDetailResponse = Task

@@ -99,18 +99,18 @@ function clearCookies(): void {
     document.cookie = `${TOKEN_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
 }
 
-function getResponseSuccessInterceptor(idx: number): Function {
+function getResponseSuccessInterceptor(idx: number): (...args: any[]) => any {
     const calls = axiosMock.instances[idx]!.interceptors.response.use.mock
-        .calls as unknown as Function[][]
+        .calls as unknown as ((...args: any[]) => any)[][]
     const lastCall = calls[calls.length - 1]!
-    return lastCall[0] as Function
+    return lastCall[0] as (...args: any[]) => any
 }
 
-function getRequestSuccessInterceptor(idx: number): Function {
+function getRequestSuccessInterceptor(idx: number): (...args: any[]) => any {
     const calls = axiosMock.instances[idx]!.interceptors.request.use.mock
-        .calls as unknown as Function[][]
+        .calls as unknown as ((...args: any[]) => any)[][]
     const lastCall = calls[calls.length - 1]!
-    return lastCall[0] as Function
+    return lastCall[0] as (...args: any[]) => any
 }
 
 afterEach(() => {

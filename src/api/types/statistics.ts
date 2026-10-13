@@ -12,4 +12,4 @@ export interface Statistics {
     last_discover_time?: string
 }
 
-export interface StatisticsResponse extends Statistics { }
+export type StatisticsResponse = Statistics

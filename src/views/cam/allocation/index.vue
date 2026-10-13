@@ -255,7 +255,7 @@ import type { AllocationRule, CreateAllocationRuleRequest, DimensionCombo, Dimen
 import ManagerHeader from '@/components/ManagerHeader/index.vue'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatCost } from '@/utils/formatters'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
  
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'

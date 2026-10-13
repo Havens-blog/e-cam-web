@@ -138,9 +138,11 @@ describe('变量拆分契约（Hard Rule：机制 = build 期 env 注入，不�
         // 登录目标：index.ts 与 user.ts 改读 VITE_LOGIN_TARGET（经 resolveLoginTarget）
         expect(read('src/api/request/index.ts')).toContain('VITE_LOGIN_TARGET')
         expect(read('src/stores/user.ts')).toContain('resolveLoginTarget')
-        // 个人设置基址：MainLayout 改读 VITE_ECMDB_WEB_BASE（语义正名、值不变），
-        // 且绝不经 import.meta.env 读登录目标（防 /console/login/profile/index 死链）
-        expect(read('src/layouts/MainLayout.vue')).toContain('VITE_ECMDB_WEB_BASE')
-        expect(read('src/layouts/MainLayout.vue')).not.toContain('import.meta.env.VITE_LOGIN_TARGET')
+        // 个人设置基址：原 MainLayout 改读 VITE_ECMDB_WEB_BASE（语义正名、值不变），
+        // 且绝不经 import.meta.env 读登录目标（防 /console/login/profile/index 死链）。
+        // 大文件拆分后该逻辑随「顶部导航栏」迁至 src/layouts/components/TopNavBar.vue，
+        // 故断言改指新属地——两条断言的语义、门槛与检查对象数量均不变。
+        expect(read('src/layouts/components/TopNavBar.vue')).toContain('VITE_ECMDB_WEB_BASE')
+        expect(read('src/layouts/components/TopNavBar.vue')).not.toContain('import.meta.env.VITE_LOGIN_TARGET')
     })
 })

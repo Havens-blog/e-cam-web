@@ -118,25 +118,25 @@ function clearCookies(): void {
  * HttpRequest registers two response.use calls: instance-level (undefined for
  * default config) and global (success handler + error handler).
  */
-function getResponseErrorInterceptor(idx: number): Function {
+function getResponseErrorInterceptor(idx: number): (...args: any[]) => any {
     const calls = axiosMock.instances[idx]!.interceptors.response.use.mock
-        .calls as unknown as Function[][]
+        .calls as unknown as ((...args: any[]) => any)[][]
     const lastCall = calls[calls.length - 1]!
-    return lastCall[1] as Function
+    return lastCall[1] as (...args: any[]) => any
 }
 
-function getResponseSuccessInterceptor(idx: number): Function {
+function getResponseSuccessInterceptor(idx: number): (...args: any[]) => any {
     const calls = axiosMock.instances[idx]!.interceptors.response.use.mock
-        .calls as unknown as Function[][]
+        .calls as unknown as ((...args: any[]) => any)[][]
     const lastCall = calls[calls.length - 1]!
-    return lastCall[0] as Function
+    return lastCall[0] as (...args: any[]) => any
 }
 
-function getRequestSuccessInterceptor(idx: number): Function {
+function getRequestSuccessInterceptor(idx: number): (...args: any[]) => any {
     const calls = axiosMock.instances[idx]!.interceptors.request.use.mock
-        .calls as unknown as Function[][]
+        .calls as unknown as ((...args: any[]) => any)[][]
     const lastCall = calls[calls.length - 1]!
-    return lastCall[0] as Function
+    return lastCall[0] as (...args: any[]) => any
 }
 
 afterEach(() => {

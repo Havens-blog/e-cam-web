@@ -112,10 +112,13 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           // 代码分割
+          // echarts 按需注册后走子路径（echarts/core|charts|components|renderers，
+          // 见 src/utils/echarts.ts）；zrender 仅被 echarts 引用，自动并入该 chunk。
+          // ⚠ 不可写回 'echarts': ['echarts']——全量 barrel 会让按需引入白做。
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'element-plus': ['element-plus'],
-            'echarts': ['echarts'],
+            'echarts': ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
           },
           // 静态资源分类
           chunkFileNames: 'js/[name]-[hash].js',

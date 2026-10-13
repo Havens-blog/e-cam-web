@@ -130,7 +130,7 @@ import { safeTagType, getProviderLabel } from '@/utils/constants';
 import { formatNumber } from '@/utils/formatters';
 import { formatCapacityGB, formatObjectCount, hasZeroException } from '@/views/storage/oss/ossMetrics';
 import { ArrowDown, Close, DataLine, Document, Folder, WarningFilled } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'

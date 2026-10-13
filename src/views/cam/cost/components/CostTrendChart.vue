@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import type { CostTrendPoint } from '@/api/types/finops';
 import { Loading } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{

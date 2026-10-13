@@ -341,7 +341,7 @@ import {
 import { getProviderLabel } from '@/utils/constants'
 import { formatNumber } from '@/utils/formatters'
 import { Connection, DataLine, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import dayjs from 'dayjs'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 

@@ -24,7 +24,7 @@ importers:
         specifier: ^5.5.0
         version: 5.6.0
       element-plus:
-        specifier: ^2.10.5
+        specifier: ^2.11.7
         version: 2.11.7(vue@3.5.22(typescript@5.9.3))
       fflate:
         specifier: ^0.8.3

@@ -171,7 +171,7 @@ const handleDelete = async () => {
     )
     
     emit('delete', user.value)
-  } catch (error) {
+  } catch {
     // 用户取消
   }
 }

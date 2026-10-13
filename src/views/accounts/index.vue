@@ -132,222 +132,32 @@
     </div>
 
     <!-- 卡片视图 -->
-    <div v-if="!errorInfo && viewMode === 'card'" v-loading="loading" :element-loading-text="loadingMessage">
-      <div v-if="filteredAccounts.length > 0" class="accounts-grid">
-        <div
-          v-for="account in filteredAccounts"
-          :key="account.id"
-          class="account-card"
-          @click="handleViewDetail(account)"
-        >
-          <div class="card-accent" :class="getProviderAccentClass(account.provider)" />
-          <div class="card-body">
-            <div class="card-top">
-              <div class="card-top-left">
-                <div class="card-avatar" :class="getProviderClass(account.provider)">
-                  <ProviderIcon :provider="account.provider || ''" size="small" />
-                </div>
-                <div>
-                  <div class="card-name">{{ account.name }}</div>
-                  <div class="card-provider-label">{{ getProviderName(account.provider || '') }}</div>
-                </div>
-              </div>
-              <span class="card-status" :class="getStatusClass(account.status)">
-                <span class="dot" />
-                {{ getStatusLabel(account.status) }}
-              </span>
-            </div>
-
-            <div class="card-desc">{{ account.description || getProviderName(account.provider || '') + ' · ' + getEnvironmentLabel(account.environment) }}</div>
-
-            <div class="card-meta">
-              <div class="meta-item">
-                <span class="meta-label">Access Key</span>
-                <span class="meta-value mono">{{ maskAccessKey(account.access_key_id) }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">环境</span>
-                <span class="meta-value">
-                  <span class="env-badge" :class="getEnvClass(account.environment)">
-                    {{ getEnvironmentLabel(account.environment) }}
-                  </span>
-                </span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">月费用</span>
-                <span class="meta-value" style="color: var(--accent-yellow)">-</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">最近同步</span>
-                <span class="meta-value">{{ formatSyncTime(account.last_sync_time) }}</span>
-              </div>
-            </div>
-
-            <div v-if="account.regions && account.regions.length > 0" class="card-regions">
-              <span
-                v-for="region in account.regions.slice(0, 3)"
-                :key="region"
-                class="region-chip"
-              >{{ region }}</span>
-              <span v-if="account.regions.length > 3" class="region-chip more">+{{ account.regions.length - 3 }}</span>
-            </div>
-
-            <div class="card-footer">
-              <div class="card-footer-left">
-                <span class="card-asset-tag">资产 <strong>{{ account.asset_count || 0 }}</strong></span>
-              </div>
-              <div class="card-footer-right" @click.stop>
-                <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => handleAction(cmd, account)">
-                  <button class="card-action-btn">
-                    <el-icon><MoreFilled /></el-icon>
-                  </button>
-                  <template #dropdown>
-                    <el-dropdown-menu>
-                      <el-dropdown-item command="view"><el-icon><View /></el-icon>查看详情</el-dropdown-item>
-                      <el-dropdown-item command="edit"><el-icon><Edit /></el-icon>编辑</el-dropdown-item>
-                      <el-dropdown-item command="test" divided><el-icon><Connection /></el-icon>测试连接</el-dropdown-item>
-                      <el-dropdown-item command="sync"><el-icon><Refresh /></el-icon>同步资产</el-dropdown-item>
-                      <el-dropdown-item command="toggle" divided><el-icon><Switch /></el-icon>{{ account.status === 'active' ? '禁用' : '启用' }}</el-dropdown-item>
-                      <el-dropdown-item command="delete"><el-icon><Delete /></el-icon><span style="color: var(--accent-red)">删除</span></el-dropdown-item>
-                    </el-dropdown-menu>
-                  </template>
-                </el-dropdown>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 卡片视图空状态 -->
-      <div v-if="!loading && filteredAccounts.length === 0" class="empty-state-card">
-        <el-icon :size="48" color="var(--text-muted)"><Cloudy /></el-icon>
-        <div class="empty-title">{{ hasFilters ? '没有符合条件的账号' : '暂无云账号' }}</div>
-        <div class="empty-desc">{{ hasFilters ? '尝试调整筛选条件' : '点击上方按钮添加第一个云账号' }}</div>
-        <el-button v-if="hasFilters" @click="clearFilters">清除筛选</el-button>
-        <el-button v-else type="primary" @click="handleAdd"><el-icon><Plus /></el-icon>添加账号</el-button>
-      </div>
-    </div>
+    <AccountCardView
+      v-if="!errorInfo && viewMode === 'card'"
+      :accounts="filteredAccounts"
+      :loading="loading"
+      :loading-message="loadingMessage"
+      :has-filters="hasFilters"
+      :account-action-pending="accountActionPending"
+      @view-detail="handleViewDetail"
+      @action="handleAction"
+      @add="handleAdd"
+      @clear-filters="clearFilters"
+    />
 
     <!-- 列表视图 -->
-    <div v-if="!errorInfo && viewMode === 'list'" class="accounts-list" v-loading="loading" :element-loading-text="loadingMessage">
-      <!-- 列表头部 -->
-      <div class="list-header">
-        <div class="col-account">账号信息</div>
-        <div class="col-provider">云平台</div>
-        <div class="col-env">环境</div>
-        <div class="col-status">状态</div>
-        <div class="col-regions">区域</div>
-        <div class="col-assets">资产</div>
-        <div class="col-time">最近同步</div>
-        <div class="col-actions">操作</div>
-      </div>
-
-      <!-- 账号列表项 -->
-      <TransitionGroup name="list">
-        <div
-          v-for="account in filteredAccounts"
-          :key="account.id"
-          class="account-item"
-          @click="handleViewDetail(account)"
-        >
-          <div class="col-account">
-            <div class="account-avatar" :class="getProviderClass(account.provider)">
-              <ProviderIcon :provider="account.provider || ''" size="small" />
-            </div>
-            <div class="account-info">
-              <div class="account-name">{{ account.name }}</div>
-              <div class="account-key">{{ maskAccessKey(account.access_key_id) }}</div>
-            </div>
-          </div>
-          <div class="col-provider">
-            <span class="provider-name">{{ getProviderName(account.provider || '') }}</span>
-          </div>
-          <div class="col-env">
-            <span class="env-badge" :class="getEnvClass(account.environment)">
-              {{ getEnvironmentLabel(account.environment) }}
-            </span>
-          </div>
-          <div class="col-status">
-            <span class="status-dot" :class="getStatusClass(account.status)"></span>
-            <span class="status-text">{{ getStatusLabel(account.status) }}</span>
-          </div>
-          <div class="col-regions">
-            <template v-if="account.regions && account.regions.length > 0">
-              <div class="regions-list">
-                <span
-                  v-for="region in account.regions.slice(0, 2)"
-                  :key="region"
-                  class="region-tag"
-                >
-                  {{ region }}
-                </span>
-                <span v-if="account.regions.length > 2" class="region-more">
-                  +{{ account.regions.length - 2 }}
-                </span>
-              </div>
-            </template>
-            <span v-else class="no-regions">{{ account.region || '-' }}</span>
-          </div>
-          <div class="col-assets">
-            <span class="asset-count">{{ account.asset_count || 0 }}</span>
-          </div>
-          <div class="col-time">
-            {{ formatSyncTime(account.last_sync_time) }}
-          </div>
-          <div class="col-actions" @click.stop>
-            <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => handleAction(cmd, account)">
-              <button class="action-trigger">
-                <el-icon><MoreFilled /></el-icon>
-              </button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="view">
-                    <el-icon><View /></el-icon>
-                    查看详情
-                  </el-dropdown-item>
-                  <el-dropdown-item command="edit">
-                    <el-icon><Edit /></el-icon>
-                    编辑
-                  </el-dropdown-item>
-                  <el-dropdown-item command="test" divided>
-                    <el-icon><Connection /></el-icon>
-                    测试连接
-                  </el-dropdown-item>
-                  <el-dropdown-item command="sync">
-                    <el-icon><Refresh /></el-icon>
-                    同步资产
-                  </el-dropdown-item>
-                  <el-dropdown-item command="toggle" divided>
-                    <el-icon><Switch /></el-icon>
-                    {{ account.status === 'active' ? '禁用' : '启用' }}
-                  </el-dropdown-item>
-                  <el-dropdown-item command="delete">
-                    <el-icon><Delete /></el-icon>
-                    <span style="color: var(--accent-red)">删除</span>
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </div>
-      </TransitionGroup>
-
-      <!-- 空状态 -->
-      <div v-if="!loading && filteredAccounts.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <el-icon :size="48"><Cloudy /></el-icon>
-        </div>
-        <div class="empty-title">{{ hasFilters ? '没有符合条件的账号' : '暂无云账号' }}</div>
-        <div class="empty-desc">{{ hasFilters ? '尝试调整筛选条件' : '点击上方按钮添加第一个云账号' }}</div>
-        <div class="empty-actions">
-          <el-button v-if="hasFilters" @click="clearFilters">清除筛选</el-button>
-          <el-button v-else type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon>
-            添加账号
-          </el-button>
-        </div>
-      </div>
-    </div>
+    <AccountListView
+      v-if="!errorInfo && viewMode === 'list'"
+      :accounts="filteredAccounts"
+      :loading="loading"
+      :loading-message="loadingMessage"
+      :has-filters="hasFilters"
+      :account-action-pending="accountActionPending"
+      @view-detail="handleViewDetail"
+      @action="handleAction"
+      @add="handleAdd"
+      @clear-filters="clearFilters"
+    />
 
     <!-- 分页 -->
     <div v-if="!errorInfo && pagination.total > 0" class="pagination-bar">
@@ -537,7 +347,6 @@ import {
 } from '@/api'
 import type { CloudAccount } from '@/api/types/account'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
-import ProviderIcon from '@/components/ProviderIcon.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
 import { cacheManager } from '@/utils/cache-manager'
 import { ACCOUNT_STATUS, CLOUD_PROVIDERS, ENVIRONMENTS, PROVIDER_CONFIGS } from '@/utils/constants'
@@ -547,25 +356,20 @@ import {
   ArrowLeft,
   ArrowRight,
   Close,
-  Cloudy,
-  Connection,
-  Delete,
-  Edit,
   Grid,
   InfoFilled,
   List,
-  MoreFilled,
   Plus,
   Refresh,
   RefreshLeft,
   Search,
-  Switch,
-  View,
   Warning
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import AccountCardView from './components/AccountCardView.vue'
 import AccountDetailDrawer from './components/AccountDetailDrawer.vue'
+import AccountListView from './components/AccountListView.vue'
 import AccountForm from './form.vue'
 
 // 状态
@@ -624,7 +428,7 @@ const syncRegionOptions = computed(() => {
 
 // 计算属性
 const apiUrl = computed(() => getFullApiUrl('/cloud-accounts'))
-const hasFilters = computed(() => filters.provider || filters.environment || filters.status || searchKeyword.value)
+const hasFilters = computed(() => Boolean(filters.provider || filters.environment || filters.status || searchKeyword.value))
 const totalPages = computed(() => Math.ceil(pagination.total / pagination.size) || 1)
 
 // 统计数据
@@ -689,94 +493,6 @@ const visiblePages = computed(() => {
   }
   return pages
 })
-
-// 辅助函数
-const getProviderName = (provider: string) => {
-  return PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]?.displayName || provider || '-'
-}
-
-const getProviderClass = (provider: string | undefined) => {
-  if (!provider) return ''
-  const map: Record<string, string> = {
-    'aliyun': 'provider-aliyun',
-    'tencent': 'provider-tencent',
-    'aws': 'provider-aws',
-    'huawei': 'provider-huawei',
-    'azure': 'provider-azure'
-  }
-  return map[provider] || ''
-}
-
-const getProviderAccentClass = (provider: string | undefined) => {
-  if (!provider) return ''
-  const map: Record<string, string> = {
-    'aliyun': 'accent-aliyun',
-    'tencent': 'accent-tencent',
-    'aws': 'accent-aws',
-    'huawei': 'accent-huawei',
-    'azure': 'accent-azure'
-  }
-  return map[provider] || ''
-}
-
-const getEnvClass = (env: string | undefined) => {
-  if (!env) return ''
-  const map: Record<string, string> = {
-    'production': 'env-prod',
-    'staging': 'env-staging',
-    'development': 'env-dev',
-    'test': 'env-test'
-  }
-  return map[env] || ''
-}
-
-const getStatusClass = (status: string | undefined) => {
-  if (!status) return ''
-  const map: Record<string, string> = {
-    'active': 'status-active',
-    'disabled': 'status-disabled',
-    'error': 'status-error',
-    'testing': 'status-testing',
-    'inactive': 'status-inactive'
-  }
-  return map[status] || ''
-}
-
-const getEnvironmentLabel = (env: string | undefined) => {
-  if (!env) return '-'
-  const item = ENVIRONMENTS.find(e => e.value === env)
-  return item?.label || env
-}
-
-const getStatusLabel = (status: string | undefined) => {
-  if (!status) return '-'
-  const item = ACCOUNT_STATUS.find(s => s.value === status)
-  return item?.label || status
-}
-
-const maskAccessKey = (key: string | undefined) => {
-  if (!key) return '-'
-  if (key.length <= 8) return key
-  return key.slice(0, 4) + '****' + key.slice(-4)
-}
-
-
-
-const formatSyncTime = (time: string | undefined) => {
-  if (!time) return '从未同步'
-  const date = new Date(time)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
-}
 
 // 获取账号列表
 const fetchAccounts = async () => {
@@ -1402,484 +1118,6 @@ onMounted(() => {
 }
 
 // 卡片视图
-.accounts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.account-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 200ms ease;
-
-  &:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-.card-accent {
-  height: 3px;
-  width: 100%;
-
-  &.accent-aliyun { background: linear-gradient(90deg, #ff6a00, #ff9500); }
-  &.accent-aws { background: linear-gradient(90deg, #ff9900, #ffb84d); }
-  &.accent-tencent { background: linear-gradient(90deg, #0052d9, #4d8fff); }
-  &.accent-huawei { background: linear-gradient(90deg, #cf000f, #ff4d4d); }
-  &.accent-azure { background: linear-gradient(90deg, #0078d4, #50a0e6); }
-}
-
-.card-body {
-  padding: 18px 20px 16px;
-}
-
-.card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.card-top-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.card-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: var(--bg-hover);
-
-  &.provider-aliyun { background: rgba(255, 106, 0, 0.12); }
-  &.provider-aws { background: rgba(255, 153, 0, 0.12); }
-  &.provider-tencent { background: rgba(0, 82, 217, 0.12); }
-  &.provider-huawei { background: rgba(207, 0, 15, 0.12); }
-  &.provider-azure { background: rgba(0, 120, 212, 0.12); }
-}
-
-.card-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.card-provider-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.card-status {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  flex-shrink: 0;
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-
-  &.status-active { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); .dot { background: var(--accent-green); } }
-  &.status-error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); .dot { background: var(--accent-red); } }
-  &.status-disabled { background: rgba(255, 255, 255, 0.05); color: var(--text-tertiary); .dot { background: var(--text-tertiary); } }
-  &.status-testing { background: rgba(113, 112, 255, 0.1); color: var(--accent-blue); .dot { background: var(--accent-blue); } }
-  &.status-inactive { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); .dot { background: var(--text-muted); } }
-}
-
-.card-desc {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-bottom: 14px;
-  line-height: 1.5;
-  min-height: 18px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  background: var(--bg-hover);
-  border-radius: 6px;
-  border: 1px solid var(--border-subtle);
-
-  .meta-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .meta-value {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-primary);
-
-    &.mono {
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-    }
-  }
-}
-
-.card-regions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.region-chip {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  background: var(--bg-hover);
-  color: var(--text-tertiary);
-  border: 1px solid var(--border-subtle);
-
-  &.more {
-    color: var(--text-muted);
-  }
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.card-footer-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.card-asset-tag {
-  font-size: 12px;
-  color: var(--text-tertiary);
-
-  strong {
-    color: var(--accent-blue);
-    font-weight: 600;
-    font-size: 14px;
-  }
-}
-
-.card-footer-right {
-  display: flex;
-  gap: 4px;
-}
-
-.card-action-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  transition: all 150ms ease;
-  padding: 0;
-
-  &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-
-.empty-state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  gap: 12px;
-
-  .empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-  .empty-desc { font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px; }
-}
-
-// 账号列表
-.accounts-list {
-  background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.list-header {
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  background: var(--bg-hover);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-
-  @media (max-width: 1200px) { display: none; }
-
-  .col-account { flex: 2; min-width: 180px; }
-  .col-provider { width: 140px; flex-shrink: 0; }
-  .col-env { width: 80px; flex-shrink: 0; text-align: center; }
-  .col-status { width: 80px; flex-shrink: 0; }
-  .col-regions { width: 100px; flex-shrink: 0; }
-  .col-assets { width: 60px; flex-shrink: 0; text-align: center; }
-  .col-time { width: 100px; flex-shrink: 0; }
-  .col-actions { width: 50px; flex-shrink: 0; text-align: center; }
-}
-
-.account-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  cursor: pointer;
-  transition: all 200ms ease;
-
-  &:last-child { border-bottom: none; }
-  &:hover { background: var(--bg-hover); }
-
-  @media (max-width: 1200px) {
-    flex-wrap: wrap;
-
-    .col-account { flex: 1; min-width: 0; }
-    .col-actions { flex-shrink: 0; }
-    .col-provider, .col-env, .col-status, .col-regions, .col-assets, .col-time { display: none; }
-  }
-}
-
-.col-account {
-  flex: 2;
-  min-width: 180px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .account-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: var(--bg-hover);
-
-    &.provider-aliyun { background: rgba(255, 106, 0, 0.15); }
-    &.provider-tencent { background: rgba(0, 122, 255, 0.15); }
-    &.provider-aws { background: rgba(255, 153, 0, 0.15); }
-    &.provider-huawei { background: rgba(207, 9, 32, 0.15); }
-  }
-
-  .account-info {
-    min-width: 0;
-
-    .account-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .account-key {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      font-family: var(--font-mono);
-    }
-  }
-}
-
-.col-provider {
-  width: 140px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-
-  .provider-name {
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-}
-
-.col-env {
-  width: 80px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .env-badge {
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    background: var(--bg-hover);
-    color: var(--text-secondary);
-
-    &.env-prod { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
-    &.env-staging { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
-    &.env-dev { background: rgba(113, 112, 255, 0.15); color: var(--accent-blue); }
-    &.env-test { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
-  }
-}
-
-.col-status {
-  width: 80px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--text-muted);
-
-    &.status-active { background: var(--accent-green); }
-    &.status-disabled { background: var(--text-tertiary); }
-    &.status-error { background: var(--accent-red); }
-    &.status-testing { background: var(--accent-blue); animation: pulse 1.5s infinite; }
-    &.status-inactive { background: var(--text-muted); }
-  }
-
-  .status-text {
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-}
-
-.col-regions {
-  width: 100px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-
-  .regions-list {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .region-tag {
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    background: var(--bg-hover);
-    color: var(--text-tertiary);
-  }
-
-  .region-more {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  .no-regions {
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-}
-
-.col-assets {
-  width: 60px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .asset-count {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent-blue);
-  }
-}
-
-.col-time {
-  width: 100px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
-.col-actions {
-  width: 50px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .action-trigger {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-tertiary);
-    transition: all 200ms ease;
-
-    &:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
-    }
-  }
-}
-
-// 空状态
-.empty-state {
-  padding: 60px 20px;
-  text-align: center;
-
-  .empty-icon { color: var(--text-muted); margin-bottom: 16px; }
-  .empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
-  .empty-desc { font-size: 14px; color: var(--text-tertiary); margin-bottom: 20px; }
-  .empty-actions { display: flex; justify-content: center; gap: 12px; }
-}
-
 // 分页
 .pagination-bar {
   display: flex;
@@ -1998,21 +1236,6 @@ onMounted(() => {
     font-size: 13px;
     color: var(--accent-blue);
   }
-}
-
-// 动画
-.list-enter-active, .list-leave-active {
-  transition: all 200ms ease;
-}
-
-.list-enter-from, .list-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
 }
 
 // 添加/编辑账号对话框 - 现代化

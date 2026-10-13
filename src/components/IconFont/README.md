@@ -30,7 +30,7 @@ import IconFont from "@/components/IconFont/index.vue";
 
 ## 可用图标
 
-图标列表请查看 `/public/iconfont/demo_index.html`
+图标列表请查看 `scripts/iconfont-source/iconfont.json`（iconfont.cn 导出的清单）。彩色 SVG 图标的可用集合 = `caise-*` 前缀 ∪ 组件内 `colorIcons` 白名单（见 `index.vue`）。
 
 ## Props
 
@@ -75,10 +75,12 @@ import IconFont from "@/components/IconFont/index.vue";
 
 3. **文件位置**：
 
-   - 图标文件位于 `/public/iconfont/` 目录
-   - `iconfont.css` - 字体图标样式
-   - `iconfont.js` - SVG symbol 定义（彩色图标）
+   - 图标文件位于 `src/assets/iconfont/` 目录（资源已移出 public/，经 Vite 处理只发一份带 hash 产物）
+   - `iconfont.css` - 字体图标样式（静态引入，首屏必需）
+   - `iconfont.js` - 彩色 SVG symbol 定义（由 `scripts/trim-iconfont.mjs` 生成的精简 sprite，只保留 `caise-*` 与 `colorIcons` 白名单 symbol；以动态 `import()` 异步分包加载，不进首屏 entry，见 `src/main.ts`）
+   - iconfont.cn 原始产物置于 `scripts/iconfont-source/`，不随构建发布
 
 4. **更新图标库**：
-   - 替换 `/public/iconfont/` 目录下的文件
-   - 确保同时更新 `.css` 和 `.js` 文件
+   - 将 iconfont.cn 重新下载的 `iconfont.js` / `iconfont.json` 覆盖到 `scripts/iconfont-source/`
+   - 将更新后的 `iconfont.css` 与字体文件覆盖到 `src/assets/iconfont/`
+   - 运行 `node scripts/trim-iconfont.mjs` 重新生成精简 sprite

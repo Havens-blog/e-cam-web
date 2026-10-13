@@ -18,8 +18,9 @@ RUN pnpm install --frozen-lockfile
 # 复制源代码
 COPY . .
 
-# 构建应用
-RUN pnpm run build
+# 构建应用（build:gz = vite build + 构建期 .gz 预生成，供 nginx gzip_static 直出；
+# 镜像内置 nginx.cam.conf 已开 gzip_static，用裸 build 则 dist 无 .gz、预压缩空转）
+RUN pnpm run build:gz
 
 # 阶段 2: 生产阶段
 FROM nginx:alpine

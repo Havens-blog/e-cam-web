@@ -49,7 +49,7 @@ import type { DnsStats } from '@/api/types/dns'
 import { getProviderLabel } from '@/utils/constants'
 import { Cloudy, Connection, List } from '@element-plus/icons-vue'
 import { ElButton, ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const stats = ref<DnsStats | null>(null)

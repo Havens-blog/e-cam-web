@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── typecheck（vue-tsc）+ build ────────────────────────────────────────
+  # 构建用 build:gz（= vite build + 构建期 .gz 预生成），与 Dockerfile 保持同一
+  # 构建命令——镜像内 nginx.cam.conf 的 gzip_static 依赖 dist 含 .gz。
+  typecheck-build:
+    name: Typecheck & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout e-cam-web
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (vue-tsc)
+        run: pnpm typecheck
+
+      - name: Build + 生成 .gz（构建期预生成，供 nginx gzip_static）
+        run: pnpm build:gz
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # ── vitest（49 个测试文件 = 48 src + 1 scripts/gzip-budget；test = vitest run）─
+  vitest:
+    name: Vitest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout e-cam-web
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Vitest
+        run: pnpm test
+
+  # ── gzip 预算闸门（echarts 已改 echarts/core 按需注册，见 src/utils/echarts.ts）──
+  # 桶与限值依据 2026-02 实测（总 gz 2084.7 KB）：entry 40 / element-plus 200 /
+  # echarts 220 / vue-ecosystem 50 / iconfont-sprite 170 / routes 640 /
+  # remainder 1080 / 总计 2300 KB。Hard Rule：超限必须 fail，不得放宽后放行。
+  # 失效保护：dist 无 .gz（误用 vite build 而非 build:gz）或 index.html 缺失
+  # （无法识别 entry）一律 fail，防止 0 KB 误判通过。
+  # 本地重建而非下载 dist 工件：同时验证构建可重现性，任务自包含。
+  gzip-budget:
+    name: Gzip Budget
+    runs-on: ubuntu-latest
+    needs: [typecheck-build]
+    steps:
+      - name: Checkout e-cam-web
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build + .gz 预压缩
+        run: pnpm build:gz
+
+      - name: Gzip budget
+        run: pnpm ci:gzip-budget
+
+  # ── lint：0 error / 0 warning 基线（2026-02 全量核查后接入）─────────────
+  # `pnpm lint` = 纯检查（修复用 lint:fix）。基线意义：全仓曾有存量违规时
+  # 不得接入；现全量核查为 0/0，任何新增违规都应让 CI 变红。
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout e-cam-web
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint
+        run: pnpm lint

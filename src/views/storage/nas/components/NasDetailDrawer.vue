@@ -166,7 +166,7 @@ import { CHARGE_TYPE_LABELS, NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, lab
 import { formatNumber } from '@/utils/formatters';
 import { formatCapacityGB, formatUtilization, hasZeroException } from '@/views/storage/nas/nasMetrics';
 import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFilled } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 
