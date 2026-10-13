@@ -27,3 +27,4 @@ coverage
 #
 docs
 .kiro
+.claude/
