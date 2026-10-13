@@ -275,10 +275,13 @@ const assetItems = computed<PaletteItem[]>(() =>
       path: route,
       filterable: false,
       run: () => {
-        // 命中产品页：带 ?search= 预填关键词；未知类型回落资源实例列表（同一 ecam_instance 数据源，绝不跳 /assets/:id 以免 404）
-        void router.push(route
-          ? { path: route, query: { search: item.asset_id } }
-          : { path: '/cmdb/instances' })
+        // 命中产品页：带 ?search= 预填关键词；未知类型回落 CMDB 独立应用的
+        // 资源实例列表（跨应用：e-cmdb-web 挂在 /cmdb/，SPA 内跳转会 404，须外开）
+        if (route) {
+          void router.push({ path: route, query: { search: item.asset_id } })
+        } else {
+          window.open('/cmdb/instances', '_blank')
+        }
       }
     }
   })

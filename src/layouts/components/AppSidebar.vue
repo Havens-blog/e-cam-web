@@ -155,11 +155,18 @@ const activeMenuKey = computed(() => {
   return 'dashboard'
 })
 
+// 跨应用菜单前缀：CMDB 已拆分为独立应用 e-cmdb-web（nginx /cmdb/），
+// SPA 内 router.push 会命中 404，统一新窗口打开。
+const EXTERNAL_APP_PREFIXES = ['/cmdb/']
+
 // 菜单点击
 const handleMenuClick = (item: MenuItem) => {
-  if (item.path) {
-    router.push(item.path)
+  if (!item.path) return
+  if (EXTERNAL_APP_PREFIXES.some((p) => item.path!.startsWith(p))) {
+    window.open(item.path, '_blank')
+    return
   }
+  router.push(item.path)
 }
 </script>
 
