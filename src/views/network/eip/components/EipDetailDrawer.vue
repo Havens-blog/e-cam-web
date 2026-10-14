@@ -200,7 +200,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { CHARGE_TYPE_LABELS, EIP_INSTANCE_TYPE_LABELS, EIP_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'

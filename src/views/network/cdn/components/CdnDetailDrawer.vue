@@ -329,7 +329,7 @@
 import { getCDNCacheConfigApi, getCDNDomainSettingsApi, getCdnMetricsApi, type CDNCacheRule, type CDNConfigGroup, type CDNConfigSetting, type CDNMetricItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import {
   CDN_STATUS_LABELS,
   cdnBusinessTypeLabel,

@@ -352,7 +352,7 @@ import DetailDrawer from '@/components/DetailDrawer/index.vue'
 import FilterBar from '@/components/FilterBar/index.vue'
 import type { FilterField } from '@/components/FilterBar/types'
 import PageContainer from '@/components/PageContainer/index.vue'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import {
   ASSET_STATUS,
   ASSET_TYPES,

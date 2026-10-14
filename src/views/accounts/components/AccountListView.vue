@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import {
   Cloudy,
   Connection,

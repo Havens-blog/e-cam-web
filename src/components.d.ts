@@ -68,7 +68,7 @@ declare module 'vue' {
     PageContainer: typeof import('./components/PageContainer/index.vue')['default']
     PageHeader: typeof import('./components/PageHeader.vue')['default']
     PlatformNav: typeof import('./components/PlatformNav/index.vue')['default']
-    ProviderIcon: typeof import('./components/ProviderIcon.vue')['default']
+    ProviderIcon: typeof import('@haven/ui/ProviderIcon')['ProviderIcon']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StatCard: typeof import('./components/StatCard.vue')['default']

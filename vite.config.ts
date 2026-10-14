@@ -15,14 +15,15 @@ import type { ComponentResolver } from 'unplugin-vue-components'
  * 这几个组件原先由 Components 插件扫描 src/components 自动注册；迁到 @haven/ui 后
  * 本地已无文件可扫描，故显式声明来源，保持“模板内直接用组件名”的既有写法不变。
  *
- * 注意：ProviderIcon 依赖本仓 @/utils（getProviderConfig / getProviderIcon），
- * 仍留在 src/components 内由扫描注册，**不要**加入此列表。
+ * 注意：ProviderIcon 已随其依赖的平台级厂商数据一并下沉到 @haven/ui
+ * （见 src/utils/icon-mapping.ts 的 re-export），故一并列入本表。
  */
 const SHARED_COMPONENTS: Record<string, string> = {
   IconFont: '@haven/ui/IconFont',
   ManagerHeader: '@haven/ui/ManagerHeader',
   AssetExportDialog: '@haven/ui/AssetExportDialog',
   CustomIconSelect: '@haven/ui/CustomIconSelect',
+  ProviderIcon: '@haven/ui/ProviderIcon',
 }
 
 const havenUiResolver: ComponentResolver = {

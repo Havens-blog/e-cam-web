@@ -161,7 +161,7 @@
 
 <script setup lang="ts">
 import type { CloudUser } from '@/api/types/iam'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel, getUserStatus, getUserTypeLabel } from '@/utils/constants'
 import { Delete, Document, Edit, Folder, FolderRemove } from '@element-plus/icons-vue'
 import { ref } from 'vue'

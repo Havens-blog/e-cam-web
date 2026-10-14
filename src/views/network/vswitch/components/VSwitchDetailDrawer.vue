@@ -146,7 +146,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'

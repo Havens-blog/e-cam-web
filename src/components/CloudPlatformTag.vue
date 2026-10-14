@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import type { CloudProvider } from '@/api/types/iam'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel } from '@/utils/constants'
 import { computed } from 'vue'
 
