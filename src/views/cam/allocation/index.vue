@@ -252,7 +252,7 @@ import {
     updateAllocationRuleApi
 } from '@/api/finops'
 import type { AllocationRule, CreateAllocationRuleRequest, DimensionCombo, DimensionFilter } from '@/api/types/finops'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatCost } from '@/utils/formatters'
 import echarts from '@/utils/echarts'

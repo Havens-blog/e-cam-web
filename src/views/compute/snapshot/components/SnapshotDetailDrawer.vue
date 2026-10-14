@@ -61,7 +61,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { Camera, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';

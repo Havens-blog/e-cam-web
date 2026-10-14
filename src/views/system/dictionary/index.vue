@@ -101,7 +101,7 @@ import type {
     UpdateDictItemReq,
     UpdateDictTypeReq
 } from '@/api/types/dictionary'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { Plus } from '@element-plus/icons-vue'
 import DictItemForm from './components/DictItemForm.vue'

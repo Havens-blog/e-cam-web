@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { deleteUserApi, listGroupsApi, updateUserApi } from '@/api'
 import type { CloudUser } from '@/api/types/iam'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { USER_STATUS } from '@/utils/constants'
 import { Delete, Edit } from '@element-plus/icons-vue'

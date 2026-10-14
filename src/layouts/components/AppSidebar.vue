@@ -22,7 +22,7 @@
  * menuGroups 已抽到 ../menu-config.ts —— 本组件与 TopNavBar 都要用它（后者据路由
  * 反查面包屑），留在父组件会让父组件无法变薄。
  */
-import IconFont from '@/components/IconFont/index.vue'
+import { IconFont } from '@haven/ui/IconFont'
 import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import { ArrowDown, ArrowRight, Setting } from '@element-plus/icons-vue'

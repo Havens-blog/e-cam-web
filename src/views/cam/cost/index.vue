@@ -82,7 +82,7 @@ import type {
     CostSummary,
     CostTrendPoint
 } from '@/api/types/finops'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'

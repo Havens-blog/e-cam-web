@@ -125,7 +125,7 @@
 <script setup lang="ts">
 import { getOssMetricsApi, type OSSBucketMetricsView, type OSSMetricPoint } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { safeTagType, getProviderLabel } from '@/utils/constants';
 import { formatNumber } from '@/utils/formatters';
 import { formatCapacityGB, formatObjectCount, hasZeroException } from '@/views/storage/oss/ossMetrics';

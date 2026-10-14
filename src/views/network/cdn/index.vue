@@ -280,8 +280,8 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { listCDNAssetsApi } from '@/api/asset'
 import type { Asset, CloudProvider } from '@/api/types/asset'
-import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
-import IconFont from '@/components/IconFont/index.vue'
+import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
+import { IconFont } from '@haven/ui/IconFont'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import {

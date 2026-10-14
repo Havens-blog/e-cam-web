@@ -529,7 +529,7 @@
 <script setup lang="ts">
 import { getECSRelationsApi, type ECSRelationsResp } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, DISK_STATUS_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import DiskDetailDrawer from '@/views/compute/disk/components/DiskDetailDrawer.vue';

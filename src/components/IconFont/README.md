@@ -2,6 +2,9 @@
 
 从 cmdb-ui 项目集成的图标库，支持字体图标和彩色 SVG 图标两种渲染方式。
 
+> **组件本身已迁至平台共享包 `@haven/ui`**（本仓不再持有实现）。本文件保留的是
+> **应用侧**说明——图标资产、sprite 生成脚本都在各应用自己仓内维护。
+
 ## 使用方法
 
 ```vue
@@ -24,7 +27,8 @@
 </template>
 
 <script setup lang="ts">
-import IconFont from "@/components/IconFont/index.vue";
+// 子路径导入：不要写成 from '@haven/ui'（桶文件会把 4 个组件的 EP 样式全部提进首屏 CSS）
+import { IconFont } from '@haven/ui/IconFont'
 </script>
 ```
 

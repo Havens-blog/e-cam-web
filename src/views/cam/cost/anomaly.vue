@@ -129,7 +129,7 @@
 <script setup lang="ts">
 import { dismissRecommendationApi, getCostAnomaliesApi, getRecommendationsApi, triggerAnomalyDetectionApi } from '@/api/finops'
 import type { CostAnomaly, Recommendation } from '@/api/types/finops'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'

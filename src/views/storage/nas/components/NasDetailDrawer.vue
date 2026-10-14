@@ -160,7 +160,7 @@
 <script setup lang="ts">
 import { getNasMetricsApi, type NASFsMetricsView, type NASMetricPoint } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { formatNumber } from '@/utils/formatters';

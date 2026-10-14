@@ -175,7 +175,7 @@ import {
   listUsersApi
 } from '@/api'
 import type { CloudUser } from '@/api/types/iam'
-import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
+import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
 import {

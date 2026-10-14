@@ -100,7 +100,7 @@
 import { listCloudAccountsApi } from '@/api'
 import { listCollectLogsApi, triggerCollectApi } from '@/api/finops'
 import type { CollectLog } from '@/api/types/finops'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'

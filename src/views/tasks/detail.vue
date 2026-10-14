@@ -119,7 +119,7 @@
 <script setup lang="ts">
 import { cancelTaskApi, deleteTaskApi, getTaskDetailApi } from '@/api'
 import type { Task } from '@/api/types/task'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
 import { WarningFilled } from '@element-plus/icons-vue'

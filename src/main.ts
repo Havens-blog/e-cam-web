@@ -29,7 +29,7 @@ void import('@/assets/iconfont/iconfont.js').catch((err) => {
 })
 
 // 导入全局组件
-import IconFont from './components/IconFont/index.vue'
+import { IconFont } from '@haven/ui/IconFont'
 
 // 创建应用实例
 const app = createApp(App)

@@ -176,7 +176,7 @@
  *   完全一致（父组件两个处理函数原样保留、不产生未使用变量），这里保留两条事件通道。
  */
 import type { Asset } from '@/api/types/asset'
-import IconFont from '@/components/IconFont/index.vue'
+import { IconFont } from '@haven/ui/IconFont'
 import { Box, Lock } from '@element-plus/icons-vue'
 import type { ColumnConfig } from './ColumnSettingsDialog.vue'
 import {

@@ -7,12 +7,10 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AssetExportDialog: typeof import('./components/AssetExportDialog.vue')['default']
     AssetStatusBadge: typeof import('./components/AssetStatusBadge.vue')['default']
     ChartCard: typeof import('./components/ChartCard.vue')['default']
     CloudPlatformTag: typeof import('./components/CloudPlatformTag.vue')['default']
     CommandPalette: typeof import('./components/CommandPalette/index.vue')['default']
-    CustomIconSelect: typeof import('./components/CustomIconSelect/index.vue')['default']
     DataTable: typeof import('./components/DataTable/index.vue')['default']
     DetailDrawer: typeof import('./components/DetailDrawer/index.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
@@ -66,8 +64,7 @@ declare module 'vue' {
     ErrorDisplay: typeof import('./components/ErrorDisplay.vue')['default']
     ErrorMonitor: typeof import('./components/ErrorMonitor.vue')['default']
     FilterBar: typeof import('./components/FilterBar/index.vue')['default']
-    IconFont: typeof import('./components/IconFont/index.vue')['default']
-    ManagerHeader: typeof import('./components/ManagerHeader/index.vue')['default']
+    IconFont: typeof import('@haven/ui/IconFont')['IconFont']
     PageContainer: typeof import('./components/PageContainer/index.vue')['default']
     PageHeader: typeof import('./components/PageHeader.vue')['default']
     PlatformNav: typeof import('./components/PlatformNav/index.vue')['default']

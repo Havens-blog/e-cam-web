@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import IconFont from '@/components/IconFont/index.vue'
+import { IconFont } from '@haven/ui/IconFont'
 import { getProviderConfig } from '@/utils/constants'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { computed } from 'vue'

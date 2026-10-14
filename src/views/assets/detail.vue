@@ -172,7 +172,7 @@
 <script setup lang="ts">
 import { deleteAssetApi, getAssetDetailApi, updateAssetApi } from '@/api'
 import type { Asset } from '@/api/types/asset'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import {
   ASSET_STATUS,
