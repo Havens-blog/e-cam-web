@@ -28,6 +28,7 @@ import { hasCertManageAccess } from '@/utils/cert-permission'
 import { ArrowDown, ArrowRight, Setting } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { resolveMenuTarget } from '../external-app'
 import { menuGroups, type MenuGroup, type MenuItem } from '../menu-config'
 
 // 折叠态：父组件持有，本组件只读（折叠按钮在顶部导航栏，不在这里）
@@ -155,15 +156,17 @@ const activeMenuKey = computed(() => {
   return 'dashboard'
 })
 
-// 跨应用菜单前缀：CMDB 已拆分为独立应用 e-cmdb-web（nginx /cmdb/），
-// SPA 内 router.push 会命中 404，统一新窗口打开。
-const EXTERNAL_APP_PREFIXES = ['/cmdb/']
+// 跨应用菜单前缀与外开 URL 构造收敛到 layouts/external-app.ts：
+// CMDB 已拆分为独立应用 e-cmdb-web（nginx /cmdb/），SPA 内 router.push 会命中 404，
+// 统一新窗口打开；且必须携带当前会话租户（e-cmdb-web 路由守卫强约束，
+// 缺失会弹回控制台登录——6f3088f 引入外开时漏拼 tenant_id 导致链路断）。
 
 // 菜单点击
 const handleMenuClick = (item: MenuItem) => {
   if (!item.path) return
-  if (EXTERNAL_APP_PREFIXES.some((p) => item.path!.startsWith(p))) {
-    window.open(item.path, '_blank')
+  const external = resolveMenuTarget(item.path, userStore.currentTenantId)
+  if (external !== null) {
+    window.open(external, '_blank')
     return
   }
   router.push(item.path)
