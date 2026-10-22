@@ -269,7 +269,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
-import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
+import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
 
 const props = defineProps<{
   activeView: 'policies' | 'compliance'

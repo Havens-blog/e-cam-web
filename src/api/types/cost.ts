@@ -25,7 +25,7 @@ export interface CostAnalysisParams {
 /**
  * @deprecated 使用 CostAnalysisParams 代替 (API 已改为 GET 方法)
  */
-export interface CostAnalysisRequest extends CostAnalysisParams { }
+export type CostAnalysisRequest = CostAnalysisParams
 
 export interface CostAnalysisResponse {
     provider: string

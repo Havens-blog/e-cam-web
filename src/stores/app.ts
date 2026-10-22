@@ -39,7 +39,6 @@ export const useAppStore = defineStore(
          */
         const applyTheme = (themeValue: 'light' | 'dark') => {
             const root = document.documentElement
-            console.log('Apply theme:', themeValue)
             if (themeValue === 'light') {
                 root.classList.add('light')
                 root.classList.remove('dark')
@@ -68,7 +67,6 @@ export const useAppStore = defineStore(
         const toggleTheme = () => {
             const currentTheme = theme.value === 'auto' ? getSystemTheme() : theme.value
             const newTheme = currentTheme === 'light' ? 'dark' : 'light'
-            console.log('Toggle theme:', currentTheme, '->', newTheme)
             setTheme(newTheme)
         }
 

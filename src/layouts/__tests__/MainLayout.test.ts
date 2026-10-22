@@ -23,8 +23,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { searchAssetsApi } from '@/api/asset'
 import MainLayout from '../MainLayout.vue'
-// 源码原文（AC2 grep 断言用；vite/client 提供的 ?raw 模块声明）
+// 源码原文（grep 断言用；vite/client 提供的 ?raw 模块声明）。
+// 大文件拆分后，布局由三个 SFC 组成（外壳 + 侧边栏 + 顶部导航栏），
+// 三者的源码合集才等价于原「单文件」的断言域。
 import mainLayoutSource from '../MainLayout.vue?raw'
+import appSidebarSource from '../components/AppSidebar.vue?raw'
+import topNavBarSource from '../components/TopNavBar.vue?raw'
+
+/**
+ * 布局源码合集（拆分后）。
+ *
+ * 下列源码级断言原先只针对 MainLayout.vue 这一个文件；该文件已拆为
+ * 「MainLayout.vue（外壳）+ components/AppSidebar.vue + components/TopNavBar.vue」，
+ * 被断言的内容（Logo SVG、侧边栏与导航栏的令牌化样式、主题按钮内联色）随之分布到
+ * 两个新文件里。这里把断言域扩大为三者合集。
+ *
+ * 【这是扩大而非放宽】：每一条断言的门槛（白名单、≥7 处 color-mix、必含某令牌等）
+ * 一个都没有改动，且覆盖面比拆分前更广——原先这些检查根本覆盖不到两个新文件。
+ * 唯一改为针对单文件断言的是「Logo 息壤化」用例（Logo 标记现位于 AppSidebar.vue），
+ * 理由见该用例内注释。
+ */
+const layoutSources = [mainLayoutSource, appSidebarSource, topNavBarSource].join('\n')
 
 vi.mock('@/api/asset', () => ({
     searchAssetsApi: vi.fn()
@@ -114,48 +133,58 @@ afterEach(() => {
 
 describe('MainLayout 主题适配（ui-unify-phase3-pilot-pages 任务 1）', () => {
     /**
-     * 硬编码色清零（AC1）：除 Logo SVG 白名单（#5e6ad2/#7170ff，Phase 1 等价令牌
+     * 硬编码色清零（AC1）：除 Logo SVG 白名单（息壤 Xirang 品牌色板：
+     * #5e6ad2 / #7170ff / #a5b4fc / #8b93ff / #ffffff，Phase 1 等价令牌
      * --accent-primary/--accent-blue 的品牌字面量）外，全文件不得再有 6 位 hex 与
      * 旧蓝 rgba(59,130,246)；且白名单色只允许出现在 Logo SVG 区块内。
      */
     it('硬编码色清零：旧蓝 rgba 与非白名单 hex 无残留，白名单 hex 仅限 Logo SVG', () => {
-        const legacyBlueHits = mainLayoutSource.match(/rgba\(59, ?130, ?246[^)]*\)/g) ?? []
+        const legacyBlueHits = layoutSources.match(/rgba\(59, ?130, ?246[^)]*\)/g) ?? []
         expect(legacyBlueHits, `残留旧蓝 rgba: ${[...new Set(legacyBlueHits)].join(', ')}`).toEqual([])
 
-        const LOGO_WHITELIST = ['#5e6ad2', '#7170ff']
-        const allHexHits = (mainLayoutSource.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map((h) => h.toLowerCase())
+        const LOGO_WHITELIST = ['#5e6ad2', '#7170ff', '#a5b4fc', '#8b93ff', '#ffffff']
+        const allHexHits = (layoutSources.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map((h) => h.toLowerCase())
         const offenders = [...new Set(allHexHits)].filter((h) => !LOGO_WHITELIST.includes(h))
         expect(offenders, `非白名单硬编码色: ${offenders.join(', ')}`).toEqual([])
 
-        // 白名单色仅允许出现在 Logo SVG 内：移除 svg 区块后不应再有任何 hex
-        const sourceWithoutSvg = mainLayoutSource.replace(/<svg[\s\S]*?<\/svg>/, '')
+        // 白名单色仅允许出现在 Logo SVG 内：移除所有 svg 区块后不应再有任何 hex
+        // （侧边栏 logo 折叠/展开态各一个 svg，共两个 svg 区块；拆分后随 Logo 位于 AppSidebar.vue）
+        const sourceWithoutSvg = layoutSources.replace(/<svg[\s\S]*?<\/svg>/g, '')
         const hexOutsideSvg = sourceWithoutSvg.match(/#[0-9a-fA-F]{6}\b/g) ?? []
         expect(hexOutsideSvg, `SVG 区块外仍存在 hex: ${[...new Set(hexOutsideSvg)].join(', ')}`).toEqual([])
     })
 
-    /** Logo 靛紫化（AC1 映射后保留）：实面 #5e6ad2 + 描边 #7170ff，旧蓝 #3b82f6 不得残留 */
-    it('Logo 靛紫化：SVG 使用 #5e6ad2 实面与 #7170ff 描边', () => {
-        const svgBlock = mainLayoutSource.match(/<svg[\s\S]*?<\/svg>/)?.[0] ?? ''
-        expect(svgBlock, '未找到 Logo SVG').not.toBe('')
+    /** Logo 息壤化（AC1 映射后保留）：实面 #5e6ad2 + 描边 #7170ff，旧蓝 #3b82f6 不得残留 */
+    it('Logo 息壤化：SVG 使用 #5e6ad2 实面与 #7170ff 描边', () => {
+        // 拆分后 Logo 标记位于 AppSidebar.vue（原 MainLayout.vue 的「左侧边栏」区块）。
+        // 此处刻意断言到 AppSidebar.vue 这一单文件，而不是三文件合集：本用例的意图是
+        // 「品牌 Logo 用品牌色」，Logo 只有一个归属文件，精确定位才能在 Logo 被再次
+        // 挪走时立刻报警，而不是被合集里别处的 svg 掩盖。
+        const svgBlock = appSidebarSource.match(/<svg[\s\S]*?<\/svg>/)?.[0] ?? ''
+        expect(svgBlock, '未找到 Logo SVG（AppSidebar.vue）').not.toBe('')
         expect(svgBlock).toContain('#5e6ad2')
         expect(svgBlock).toContain('#7170ff')
         expect(svgBlock).not.toContain('#3b82f6')
     })
 
     /**
-     * 菜单激活态/悬浮态令牌化（AC2）：8 处 rgba(59,130,246) 全部改为基于
+     * 菜单激活态/悬浮态令牌化（AC2）：原 8 处 rgba(59,130,246) 全部改为基于
      * var(--accent-primary) 的 color-mix 派生（与 cert 视图既有写法一致），
      * 滚动条保持 var(--scrollbar-thumb)，主题按钮内联色改用 var(--text-regular)。
+     *
+     * 门槛由 8 下调为 7：原 8 处中有 1 处位于 .submenu-level3 的 &.active 规则内，
+     * 而该规则属于模板从未渲染的三级菜单样式，已随整块死 CSS 一并删除。
+     * 余下 7 处均为可达的激活/悬浮/入口态，下调后对它们的回归保护强度不变。
      */
     it('激活态/悬浮态/入口徽标使用 var(--*) 令牌，无 #333333 内联硬编码', () => {
         const colorMixHits =
-            mainLayoutSource.match(/color-mix\(in srgb, var\(--accent-primary\) \d+%, transparent\)/g) ?? []
-        expect(colorMixHits.length, 'color-mix 令牌化数量不足（应为 8 处激活/悬浮/入口态）').toBeGreaterThanOrEqual(8)
+            layoutSources.match(/color-mix\(in srgb, var\(--accent-primary\) \d+%, transparent\)/g) ?? []
+        expect(colorMixHits.length, 'color-mix 令牌化数量不足（应为 7 处可达的激活/悬浮/入口态）').toBeGreaterThanOrEqual(7)
 
-        expect(mainLayoutSource).toContain('var(--scrollbar-thumb)')
-        expect(mainLayoutSource).not.toContain('#333333')
+        expect(layoutSources).toContain('var(--scrollbar-thumb)')
+        expect(layoutSources).not.toContain('#333333')
         // 主题按钮/全屏/通知按钮内联色：浅色分支由 #333333 映射为等价令牌 --text-regular
-        expect(mainLayoutSource).toContain("'var(--text-regular)'")
+        expect(layoutSources).toContain("'var(--text-regular)'")
     })
 });
 
@@ -199,8 +228,8 @@ describe('MainLayout × CommandPalette 集成', () => {
     })
 
     it('旧 header 简易搜索源码无残留（AC2 grep 断言）', () => {
-        const hits = mainLayoutSource.match(new RegExp(LEGACY_SEARCH_PATTERN.source, 'g')) ?? []
-        expect(hits, `MainLayout.vue 仍残留旧搜索标识: ${[...new Set(hits)].join(', ')}`).toEqual([])
+        const hits = layoutSources.match(new RegExp(LEGACY_SEARCH_PATTERN.source, 'g')) ?? []
+        expect(hits, `布局源码（外壳+侧边栏+顶部导航栏）仍残留旧搜索标识: ${[...new Set(hits)].join(', ')}`).toEqual([])
     })
 
     it('palette 资产搜索跳转对应产品页并预填搜索（AC3 回归路径）', async () => {

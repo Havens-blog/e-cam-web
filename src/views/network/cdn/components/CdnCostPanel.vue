@@ -53,7 +53,7 @@ import {
   type CDNCostView,
 } from '@/api/asset'
 import { formatNumber } from '@/utils/formatters'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 

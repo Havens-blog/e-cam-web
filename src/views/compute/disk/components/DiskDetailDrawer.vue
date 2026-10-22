@@ -100,12 +100,12 @@
 <script setup lang="ts">
 import { getDiskMetricsApi, type DiskMetricsView, type DiskMetricPoint } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { DISK_CATEGORY_LABELS, DISK_STATUS_LABELS } from '@/utils/fieldLabels';
 import { formatIOPS, formatThroughputMBps, formatUsagePercent, hasZeroException, isBusyShareScope, usageScopeLabel } from '@/views/compute/disk/diskMetrics';
 import { Box, Close, DataLine, Document, WarningFilled } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 

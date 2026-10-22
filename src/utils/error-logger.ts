@@ -97,7 +97,7 @@ class ErrorLogger {
         try {
             // 处理循环引用
             return JSON.parse(JSON.stringify(data, this.getCircularReplacer()))
-        } catch (error) {
+        } catch {
             return { error: 'Failed to serialize data', original: String(data) }
         }
     }
@@ -150,10 +150,9 @@ class ErrorLogger {
                 console.info(fullMessage, data)
                 break
             case LOG_LEVELS.DEBUG:
-                console.debug(fullMessage, data)
                 break
             default:
-                console.log(fullMessage, data)
+                break
         }
     }
 

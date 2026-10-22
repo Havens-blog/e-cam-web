@@ -134,7 +134,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, Lock } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
@@ -164,7 +164,8 @@ const getProviderName = (provider: string | undefined): string => (provider ? ge
 const getRegionLabel = computed(() => {
   if (!props.instance) return '-'
   const config = PROVIDER_CONFIGS[props.instance.provider as keyof typeof PROVIDER_CONFIGS]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PROVIDER_CONFIGS regions 类型不精确
+  // PROVIDER_CONFIGS regions 元素类型不精确，此处仅做窄化比较（flat config 未启用
+  // no-explicit-any，原 eslint-disable 指令已被判定 dead 并移除）
   const regionItem = config?.regions?.find((r: any) => r.value === props.instance?.region)
   return regionItem?.label || props.instance.region || '-'
 })

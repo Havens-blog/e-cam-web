@@ -49,11 +49,11 @@ const initChart = async () => {
   if (!chartRef.value || !props.option) return
 
   try {
-    const echarts = await import('echarts')
+    const echarts = await import('@/utils/echarts')
     chartInstance = echarts.init(chartRef.value)
     chartInstance.setOption(props.option)
     window.addEventListener('resize', handleResize)
-  } catch (error) {
+  } catch {
     console.warn('ECharts not installed. Please install echarts: npm install echarts')
     hasData.value = false
   }

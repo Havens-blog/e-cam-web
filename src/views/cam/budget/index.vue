@@ -189,7 +189,7 @@ import {
     updateBudgetApi
 } from '@/api/finops'
 import type { BudgetProgress, BudgetRule, CreateBudgetRequest } from '@/api/types/finops'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'

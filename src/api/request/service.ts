@@ -9,13 +9,6 @@ export const API_SERVICE = {
     CAM: '/cam'
 }
 
-// 开发环境输出配置信息
-if (import.meta.env.DEV) {
-    console.log('[API Config] baseURL:', import.meta.env.VITE_API_BASE_URL || '/api/v1')
-    console.log('[API Config] API_SERVICE.CAM:', API_SERVICE.CAM)
-    console.log('[API Config] Example full URL:', `${import.meta.env.VITE_API_BASE_URL || '/api/v1'}${API_SERVICE.CAM}/cloud-accounts`)
-}
-
 /**
  * HTTP客户端实例
  */

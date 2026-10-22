@@ -150,7 +150,7 @@ import StateBlock from '@/components/StateBlock/index.vue'
 import type { StateBlockStatus } from '@/components/StateBlock/index.vue'
 import StatCard from '@/components/StatCard.vue'
 import { getProviderLabel } from '@/utils/constants'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -569,7 +569,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-// 页面只承载组件无法吸收的布局微调，全部颜色走 Phase 1 令牌（零硬编���色）。
+// 页面只承载组件无法吸收的布局微调，全部颜色走 Phase 1 令牌（零硬编码色）。
 .page-header {
   .page-title {
     font-size: 24px;

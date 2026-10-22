@@ -354,7 +354,7 @@ watch(
     { immediate: false },
 )
 
-// 首屏拉取候选（供下拉与空态判定���
+// 首屏拉取候选（供下拉与空态判定）
 void searchOld('')
 void searchNew('')
 </script>

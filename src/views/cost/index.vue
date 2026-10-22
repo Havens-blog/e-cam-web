@@ -79,7 +79,7 @@
 <script setup lang="ts">
 import { getCostAnalysisApi } from '@/api'
 import type { CostAnalysisResponse } from '@/api/types/cost'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import StatCard from '@/components/StatCard.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'

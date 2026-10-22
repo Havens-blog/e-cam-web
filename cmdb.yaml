@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CMDB API
-  description: 配置管理数据�?API - 提供资源模型和实例的统一管理接口
+  description: 配置管理数据库API - 提供资源模型和实例的统一管理接口
   version: 1.0.0
   contact:
     name: API Support
@@ -16,9 +16,9 @@ tags:
   - name: ModelGroup
     description: 模型分组管理
   - name: Attribute
-    description: 模型属性管�?
+    description: 模型属性管理
   - name: AttributeGroup
-    description: 属性分组管�?
+    description: 属性分组管理
   - name: Instance
     description: 资源实例管理
   - name: ModelRelation
@@ -80,7 +80,7 @@ paths:
             type: integer
         - name: offset
           in: query
-          description: 偏移�?
+          description: 偏移量
           schema:
             type: integer
             default: 0
@@ -120,7 +120,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ModelResp'
         '404':
-          description: 模型不存�?
+          description: 模型不存在
           content:
             application/json:
               schema:
@@ -153,13 +153,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResp'
         '404':
-          description: 模型不存�?
+          description: 模型不存在
 
     delete:
       tags:
         - Model
       summary: 删除模型
-      description: 删除指定的资源模�?
+      description: 删除指定的资源模型
       operationId: deleteModel
       parameters:
         - name: uid
@@ -176,7 +176,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResp'
         '404':
-          description: 模型不存�?
+          description: 模型不存在
 
   # ==================== 模型分组管理 ====================
   /cmdb/model-groups:
@@ -200,7 +200,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateIDResp'
         '409':
-          description: 分组已存�?
+          description: 分组已存在
 
     get:
       tags:
@@ -245,7 +245,7 @@ paths:
     post:
       tags:
         - ModelGroup
-      summary: 初始化内置分�?
+      summary: 初始化内置分组
       description: 初始化系统预置的模型分组
       operationId: initBuiltinModelGroups
       responses:
@@ -272,7 +272,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ModelGroupResp'
         '404':
-          description: 分组不存�?
+          description: 分组不存在
 
     put:
       tags:
@@ -313,7 +313,7 @@ paths:
         '400':
           description: 分组不可删除（内置分组或有模型）
         '404':
-          description: 分组不存�?
+          description: 分组不存在
 
   # ==================== 字段类型 ====================
   /cmdb/field-types:
@@ -331,13 +331,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/FieldTypesResp'
 
-  # ==================== 模型属性管�?====================
+  # ==================== 模型属性管理====================
   /cmdb/models/{uid}/attributes:
     post:
       tags:
         - Attribute
-      summary: 创建模型属�?
-      description: 为指定模型创建新的属性字�?
+      summary: 创建模型属性
+      description: 为指定模型创建新的属性字典
       operationId: createAttribute
       parameters:
         - name: uid
@@ -360,15 +360,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateIDResp'
         '404':
-          description: 模型不存�?
+          description: 模型不存在
         '409':
           description: 属性已存在
 
     get:
       tags:
         - Attribute
-      summary: 获取模型属性列�?
-      description: 获取指定模型的所有属�?
+      summary: 获取模型属性列表
+      description: 获取指定模型的所有属性
       operationId: listAttributes
       parameters:
         - name: uid
@@ -410,7 +410,7 @@ paths:
     get:
       tags:
         - Attribute
-      summary: 获取分组后的属性列�?
+      summary: 获取分组后的属性列表
       description: 获取按分组组织的属性列表，用于前端分组展示
       operationId: listAttributesWithGroups
       parameters:
@@ -432,7 +432,7 @@ paths:
     get:
       tags:
         - Attribute
-      summary: 获取属性详�?
+      summary: 获取属性详情
       operationId: getAttribute
       parameters:
         - name: uid
@@ -460,7 +460,7 @@ paths:
     put:
       tags:
         - Attribute
-      summary: 更新属�?
+      summary: 更新属性
       operationId: updateAttribute
       parameters:
         - name: uid
@@ -493,7 +493,7 @@ paths:
     delete:
       tags:
         - Attribute
-      summary: 删除属�?
+      summary: 删除属性
       operationId: deleteAttribute
       parameters:
         - name: uid
@@ -513,13 +513,13 @@ paths:
         '404':
           description: 属性不存在
 
-  # ==================== 属性分组管�?====================
+  # ==================== 属性分组管理====================
   /cmdb/models/{uid}/attribute-groups:
     post:
       tags:
         - AttributeGroup
-      summary: 创建属性分�?
-      description: 为指定模型创建新的属性分�?
+      summary: 创建属性分组
+      description: 为指定模型创建新的属性分组
       operationId: createAttributeGroup
       parameters:
         - name: uid
@@ -542,12 +542,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateIDResp'
         '404':
-          description: 模型不存�?
+          description: 模型不存在
 
     get:
       tags:
         - AttributeGroup
-      summary: 获取属性分组列�?
+      summary: 获取属性分组列表
       operationId: listAttributeGroups
       parameters:
         - name: uid
@@ -568,7 +568,7 @@ paths:
     get:
       tags:
         - AttributeGroup
-      summary: 获取属性分组详�?
+      summary: 获取属性分组详情
       operationId: getAttributeGroup
       parameters:
         - name: uid
@@ -591,12 +591,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/AttributeGroupResp'
         '404':
-          description: 分组不存�?
+          description: 分组不存在
 
     put:
       tags:
         - AttributeGroup
-      summary: 更新属性分�?
+      summary: 更新属性分组
       operationId: updateAttributeGroup
       parameters:
         - name: uid
@@ -624,12 +624,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResp'
         '404':
-          description: 分组不存�?
+          description: 分组不存在
 
     delete:
       tags:
         - AttributeGroup
-      summary: 删除属性分�?
+      summary: 删除属性分组
       description: 删除属性分组（内置分组不可删除�?
       operationId: deleteAttributeGroup
       parameters:
@@ -650,7 +650,7 @@ paths:
         '400':
           description: 内置分组不可删除
         '404':
-          description: 分组不存�?
+          description: 分组不存在
 
   # ==================== 实例管理 ====================
   /cmdb/instances:
@@ -716,7 +716,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: 偏移�?
+          description: 偏移量
           schema:
             type: integer
             default: 0
@@ -759,7 +759,7 @@ paths:
     post:
       tags:
         - Instance
-      summary: 更新或插入实�?
+      summary: 更新或插入实例
       description: 根据 tenant_id + uid + asset_id 更新或插入实例，适用于资源同步场�?
       operationId: upsertInstance
       requestBody:
@@ -780,8 +780,8 @@ paths:
     post:
       tags:
         - Instance
-      summary: 批量更新或插入实�?
-      description: 批量根据 tenant_id + uid + asset_id 更新或插入实�?
+      summary: 批量更新或插入实例
+      description: 批量根据 tenant_id + uid + asset_id 更新或插入实例
       operationId: upsertInstanceBatch
       requestBody:
         required: true
@@ -820,7 +820,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstanceResp'
         '404':
-          description: 实例不存�?
+          description: 实例不存在
 
     put:
       tags:
@@ -850,13 +850,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResp'
         '404':
-          description: 实例不存�?
+          description: 实例不存在
 
     delete:
       tags:
         - Instance
       summary: 删除实例
-      description: 删除指定的资源实�?
+      description: 删除指定的资源实例
       operationId: deleteInstance
       parameters:
         - name: id
@@ -874,7 +874,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResp'
         '404':
-          description: 实例不存�?
+          description: 实例不存在
 
   # ==================== 模型关系类型管理 ====================
   /cmdb/model-relations:
@@ -882,7 +882,7 @@ paths:
       tags:
         - ModelRelation
       summary: 创建模型关系类型
-      description: 定义两个模型之间可以建立什么样的关�?
+      description: 定义两个模型之间可以建立什么样的关系
       operationId: createModelRelation
       requestBody:
         required: true
@@ -958,7 +958,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ModelRelationResp'
         '404':
-          description: 关系类型不存�?
+          description: 关系类型不存在
 
     put:
       tags:
@@ -1006,7 +1006,7 @@ paths:
       tags:
         - InstanceRelation
       summary: 创建实例关系
-      description: 创建两个实例之间的关�?
+      description: 创建两个实例之间的关联
       operationId: createInstanceRelation
       requestBody:
         required: true
@@ -1114,7 +1114,7 @@ paths:
     get:
       tags:
         - Topology
-      summary: 获取实例拓扑�?
+      summary: 获取实例拓扑图
       description: 获取指定实例的关联拓扑图，用于可视化展示资源关系
       operationId: getInstanceTopology
       parameters:
@@ -1140,7 +1140,7 @@ paths:
             default: both
         - name: uid
           in: query
-          description: 按模型过�?
+          description: 按模型过滤
           schema:
             type: string
         - name: tenant_id
@@ -1160,13 +1160,13 @@ paths:
     get:
       tags:
         - Topology
-      summary: 获取模型拓扑�?
+      summary: 获取模型拓扑图
       description: 获取模型间的关系定义图，用于展示资源模型架构
       operationId: getModelTopology
       parameters:
         - name: provider
           in: query
-          description: 云厂商过�?
+          description: 云厂商过滤
           schema:
             type: string
             enum: [aliyun, aws, azure]
@@ -1183,7 +1183,7 @@ paths:
       tags:
         - Topology
       summary: 获取关联实例列表
-      description: 获取指定实例的关联实例列�?
+      description: 获取指定实例的关联实例列表
       operationId: getRelatedInstances
       parameters:
         - name: id
@@ -1276,12 +1276,12 @@ components:
           description: 描述
         provider:
           type: string
-          description: 云厂�?
+          description: 云厂商
           enum: [aliyun, aws, azure, all]
           example: aliyun
         extensible:
           type: boolean
-          description: 是否可扩�?
+          description: 是否可扩展
           default: true
 
     UpdateModelReq:
@@ -1302,7 +1302,7 @@ components:
           description: 描述
         extensible:
           type: boolean
-          description: 是否可扩�?
+          description: 是否可扩展
 
     ModelVO:
       type: object
@@ -1344,19 +1344,19 @@ components:
           description: 描述
         provider:
           type: string
-          description: 云厂�?
+          description: 云厂商
           example: aliyun
         extensible:
           type: boolean
-          description: 是否可扩�?
+          description: 是否可扩展
         create_time:
           type: integer
           format: int64
-          description: 创建时间�?毫秒)
+          description: 创建时间(毫秒)
         update_time:
           type: integer
           format: int64
-          description: 更新时间�?毫秒)
+          description: 更新时间(毫秒)
 
     CreateModelResp:
       type: object
@@ -1481,11 +1481,11 @@ components:
         create_time:
           type: integer
           format: int64
-          description: 创建时间�?毫秒)
+          description: 创建时间(毫秒)
         update_time:
           type: integer
           format: int64
-          description: 更新时间�?毫秒)
+          description: 更新时间(毫秒)
 
     ModelGroupWithModelsVO:
       type: object
@@ -1577,7 +1577,7 @@ components:
         label:
           type: string
           description: 字段类型显示名称
-          example: 短文�?
+          example: 短文本
 
     FieldTypesResp:
       type: object
@@ -1634,11 +1634,11 @@ components:
           default: false
         editable:
           type: boolean
-          description: 是否可编�?
+          description: 是否可编辑
           default: true
         searchable:
           type: boolean
-          description: 是否可搜�?
+          description: 是否可搜索
           default: false
         unique:
           type: boolean
@@ -1697,10 +1697,10 @@ components:
           description: 是否必填
         editable:
           type: boolean
-          description: 是否可编�?
+          description: 是否可编辑
         searchable:
           type: boolean
-          description: 是否可搜�?
+          description: 是否可搜索
         unique:
           type: boolean
           description: 是否唯一
@@ -1767,10 +1767,10 @@ components:
           description: 是否必填
         editable:
           type: boolean
-          description: 是否可编�?
+          description: 是否可编辑
         searchable:
           type: boolean
-          description: 是否可搜�?
+          description: 是否可搜索
         unique:
           type: boolean
           description: 是否唯一
@@ -1798,11 +1798,11 @@ components:
         create_time:
           type: integer
           format: int64
-          description: 创建时间�?毫秒)
+          description: 创建时间(毫秒)
         update_time:
           type: integer
           format: int64
-          description: 更新时间�?毫秒)
+          description: 更新时间(毫秒)
 
     AttributeResp:
       type: object
@@ -1902,11 +1902,11 @@ components:
         create_time:
           type: integer
           format: int64
-          description: 创建时间�?毫秒)
+          description: 创建时间(毫秒)
         update_time:
           type: integer
           format: int64
-          description: 更新时间�?毫秒)
+          description: 更新时间(毫秒)
 
     AttributeGroupWithAttrsVO:
       type: object
@@ -1934,7 +1934,7 @@ components:
           format: int64
         attributes:
           type: array
-          description: 分组下的属性列�?
+          description: 分组下的属性列表
           items:
             $ref: '#/components/schemas/AttributeVO'
 
@@ -2009,7 +2009,7 @@ components:
           example: 1
         attributes:
           type: object
-          description: 动态属�?
+          description: 动态属性
           additionalProperties: true
           example:
             status: Running
@@ -2055,7 +2055,7 @@ components:
           description: 云账号ID
         attributes:
           type: object
-          description: 动态属�?
+          description: 动态属性
           additionalProperties: true
 
     UpsertBatchInstanceReq:
@@ -2110,7 +2110,7 @@ components:
           example: 1
         attributes:
           type: object
-          description: 动态属�?
+          description: 动态属性
           additionalProperties: true
           example:
             status: Running
@@ -2124,11 +2124,11 @@ components:
         create_time:
           type: integer
           format: int64
-          description: 创建时间�?毫秒)
+          description: 创建时间(毫秒)
         update_time:
           type: integer
           format: int64
-          description: 更新时间�?毫秒)
+          description: 更新时间(毫秒)
 
     CreateInstanceResp:
       type: object
@@ -2453,7 +2453,7 @@ components:
           example: web-server-01
         attributes:
           type: object
-          description: 动态属�?
+          description: 动态属性
           additionalProperties: true
         icon:
           type: string
@@ -2465,7 +2465,7 @@ components:
 
     TopologyEdge:
       type: object
-      description: 拓扑边（关系�?
+      description: 拓扑边（关系）
       properties:
         source_id:
           type: integer
@@ -2492,7 +2492,7 @@ components:
 
     TopologyGraph:
       type: object
-      description: 实例拓扑�?
+      description: 实例拓扑图
       properties:
         nodes:
           type: array
@@ -2501,7 +2501,7 @@ components:
             $ref: '#/components/schemas/TopologyNode'
         edges:
           type: array
-          description: 边列�?
+          description: 边列表
           items:
             $ref: '#/components/schemas/TopologyEdge'
 
@@ -2535,7 +2535,7 @@ components:
           example: compute
         provider:
           type: string
-          description: 云厂�?
+          description: 云厂商
           example: aliyun
         icon:
           type: string

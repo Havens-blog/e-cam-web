@@ -5,6 +5,10 @@
  * 本文件保留复杂映射关系、配置对象、表单规则、错误码和工具函数。
  */
 
+// 平台级：云厂商展示名（唯一实现在 @haven/ui/provider，本仓只 re-export 以保持导入路径不变）
+import { PROVIDER_DISPLAY_NAMES } from '@haven/ui/provider'
+export { getProviderLabel } from '@haven/ui/provider'
+
 // ==================== el-tag type 安全类型 ====================
 
 /** el-tag 组件允许的 type 值 */
@@ -35,7 +39,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     aliyun: {
         id: 'aliyun',
         name: 'aliyun',
-        displayName: '阿里云',
+        displayName: PROVIDER_DISPLAY_NAMES.aliyun,
         icon: 'icon-aliyun',
         color: '#ff6a00',
         regions: [
@@ -72,7 +76,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     aws: {
         id: 'aws',
         name: 'aws',
-        displayName: 'Amazon Web Services',
+        displayName: PROVIDER_DISPLAY_NAMES.aws,
         icon: 'icon-aws',
         color: '#ff9900',
         regions: [
@@ -102,7 +106,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     azure: {
         id: 'azure',
         name: 'azure',
-        displayName: 'Microsoft Azure',
+        displayName: PROVIDER_DISPLAY_NAMES.azure,
         icon: 'icon-azure',
         color: '#0078d4',
         regions: [
@@ -126,7 +130,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     tencent: {
         id: 'tencent',
         name: 'tencent',
-        displayName: '腾讯云',
+        displayName: PROVIDER_DISPLAY_NAMES.tencent,
         icon: 'icon-tencent',
         color: '#006eff',
         regions: [
@@ -159,7 +163,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     huawei: {
         id: 'huawei',
         name: 'huawei',
-        displayName: '华为云',
+        displayName: PROVIDER_DISPLAY_NAMES.huawei,
         icon: 'icon-huawei',
         color: '#ff0000',
         regions: [
@@ -190,7 +194,7 @@ export const PROVIDER_CONFIGS: Record<CloudProvider, ProviderConfig> = {
     volcano: {
         id: 'volcano',
         name: 'volcano',
-        displayName: '火山引擎',
+        displayName: PROVIDER_DISPLAY_NAMES.volcano,
         icon: 'icon-volcano',
         color: '#3370ff',
         regions: [
@@ -434,66 +438,6 @@ export function getErrorMessage(code: number): string {
 export function getProviderConfig(value: string): ProviderConfig | undefined {
     if (!value) return undefined
     return PROVIDER_CONFIGS[value as CloudProvider]
-}
-
-/**
- * provider 值 → 展示名的子串归一表（各列表/抽屉/导出历史本地映射的并集）。
- *
- * 历史链路对同一云厂商下发过多种拼写（CMDB 筛选下拉用 `volcengine`、部分实例用
- * `bytedance`，阿里云出现过 `alibaba`，腾讯云出现过 `qcloud`），而 asset.ts 的
- * CloudProvider 联合类型不含这些变体，PROVIDER_CONFIGS 的键集又被
- * Record<CloudProvider, ProviderConfig> 锁定，因此变体归一收在 getProviderLabel
- * 内部做展示层兜底，不改配置对象本身。
- *
- * 六个标准键之外还收录 ecs 列表/实例抽屉历史映射里的扩展云
- * （Google/UCloud/京东云/天翼云/OpenStack/VMware/Nutanix/ZStack）。
- */
-const PROVIDER_TOKEN_LABELS: Array<{ token: string; label: string }> = [
-    { token: 'volcengine', label: PROVIDER_CONFIGS.volcano.displayName },
-    { token: 'alibabacloud', label: PROVIDER_CONFIGS.aliyun.displayName },
-    { token: 'bytecloud', label: PROVIDER_CONFIGS.volcano.displayName },
-    { token: 'bytedance', label: PROVIDER_CONFIGS.volcano.displayName },
-    { token: 'alibaba', label: PROVIDER_CONFIGS.aliyun.displayName },
-    { token: 'amazon', label: PROVIDER_CONFIGS.aws.displayName },
-    { token: 'tencent', label: PROVIDER_CONFIGS.tencent.displayName },
-    { token: 'volcano', label: PROVIDER_CONFIGS.volcano.displayName },
-    { token: 'jdcloud', label: '京东云' },
-    { token: 'huawei', label: PROVIDER_CONFIGS.huawei.displayName },
-    { token: 'qcloud', label: PROVIDER_CONFIGS.tencent.displayName },
-    { token: 'aliyun', label: PROVIDER_CONFIGS.aliyun.displayName },
-    { token: 'google', label: 'Google Cloud' },
-    { token: 'ucloud', label: 'UCloud' },
-    { token: 'ecloud', label: '天翼云' },
-    { token: 'microsoft', label: PROVIDER_CONFIGS.azure.displayName },
-    { token: 'ctyun', label: '天翼云' },
-    { token: 'azure', label: PROVIDER_CONFIGS.azure.displayName },
-    { token: 'aws', label: PROVIDER_CONFIGS.aws.displayName },
-    { token: 'gcp', label: 'Google Cloud' },
-    { token: 'openstack', label: 'OpenStack' },
-    { token: 'vmware', label: 'VMware' },
-    { token: 'vsphere', label: 'VMware' },
-    { token: 'nutanix', label: 'Nutanix' },
-    { token: 'zstack', label: 'ZStack' },
-    { token: 'volc', label: PROVIDER_CONFIGS.volcano.displayName },
-    { token: 'jd', label: '京东云' }
-].sort((a, b) => b.token.length - a.token.length)
-
-/**
- * 云厂商展示名（单源，各列表/抽屉/导出统一走这里）。
- * 严格键优先取 PROVIDER_CONFIGS.displayName，变体与扩展云按上表子串归一，
- * 都未命中的未知值原样返回（与既有兜底语义一致，不吞原始值）。
- */
-export function getProviderLabel(value: string): string {
-    if (!value) return value
-
-    const config = getProviderConfig(value)
-    if (config) return config.displayName
-
-    const normalized = value.trim().toLowerCase()
-    const matched = PROVIDER_TOKEN_LABELS.find((item) => normalized.includes(item.token))
-    if (matched) return matched.label
-
-    return value
 }
 
 export function getProviderRegions(provider: string): Array<{ value: string; label: string }> {

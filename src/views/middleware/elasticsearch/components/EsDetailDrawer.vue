@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { ES_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Close, Document } from '@element-plus/icons-vue';

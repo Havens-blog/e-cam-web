@@ -10,7 +10,7 @@
  * - 可见性：台账/变更管理 requireCertManage（只读查看者仅见"到期看板"，
  *   MainLayout 渲染层按 certManageAccess 过滤）；到期看板对全角色开放
  * - 图标：iconfont 线性图标（certificate/clock-alert/swap 语义对应
- *   已认证/报警/切换），类名需存在于 public/iconfont/iconfont.css
+ *   已认证/报警/切换），类名需存在于 src/assets/iconfont/iconfont.css
  */
 
 /** 一级菜单项（MainLayout MenuItem 的结构子集，多余字段由布局层补充） */

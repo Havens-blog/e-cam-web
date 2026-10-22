@@ -116,7 +116,7 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { getDnsDomainsApi } from '@/api/dns'
 import type { DnsDomain } from '@/api/types/dns'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { DNS_DOMAIN_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { List, Refresh, Search, Share } from '@element-plus/icons-vue'

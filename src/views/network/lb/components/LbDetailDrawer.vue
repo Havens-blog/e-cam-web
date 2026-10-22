@@ -309,7 +309,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { LB_STATUS_LABELS, LB_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Close, Headset, Monitor, PriceTag, SetUp } from '@element-plus/icons-vue'

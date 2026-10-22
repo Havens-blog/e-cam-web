@@ -859,7 +859,6 @@ async function handleVPCChange(vpcId: string) {
   // 从 VPC 数据中提取地域并自动填充
   const selectedVPC = safeVPCs.value.find(v => v?.vpc_id === vpcId)
   const vpcRegion = selectedVPC?.region || ''
-  console.log('[Provision] VPC region extraction:', { vpcId, vpcRegion, selectedVPC })
   if (vpcRegion) {
     form.region = vpcRegion
   }
@@ -869,7 +868,6 @@ async function handleVPCChange(vpcId: string) {
   specLoading.value = true
   const accountId = form.cloud_account_id!
   const region = form.region
-  console.log('[Provision] handleVPCChange loading resources:', { accountId, region, vpcId })
   try {
     const results = await Promise.allSettled([
       listVSwitchAssetsApi({ account_id: accountId, region, vpc_id: vpcId, limit: 200 }),

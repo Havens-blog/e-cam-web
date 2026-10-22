@@ -38,8 +38,6 @@ export function initApiValidation() {
     if (!valid) {
         console.error('❌ API 配置验证失败:')
         errors.forEach((error) => console.error(`  - ${error}`))
-    } else if (import.meta.env.DEV) {
-        console.log('✅ API 配置验证通过')
     }
 
     return valid

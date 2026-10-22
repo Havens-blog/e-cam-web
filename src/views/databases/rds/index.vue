@@ -258,8 +258,8 @@
 <script setup lang="ts">
 import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
-import AssetExportDialog, { type ExportFieldConfig } from '@/components/AssetExportDialog.vue'
-import IconFont from '@/components/IconFont/index.vue'
+import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
+import { IconFont } from '@haven/ui/IconFont'
 import { CHARGE_TYPE_LABELS, RDS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'

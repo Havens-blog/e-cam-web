@@ -212,7 +212,7 @@ export function validatePolicyJson(policyJson: string): { valid: boolean; error?
         }
 
         return { valid: true }
-    } catch (error) {
+    } catch {
         return { valid: false, error: 'JSON 格式错误' }
     }
 }
@@ -233,7 +233,7 @@ export function generatePolicySummary(policy: any): string {
         ).length
 
         return `${statements.length} 条规则 (${allowCount} 允许, ${denyCount} 拒绝)`
-    } catch (error) {
+    } catch {
         return '无法解析策略'
     }
 }
@@ -247,7 +247,7 @@ export function generatePolicySummary(policy: any): string {
 export function comparePolicies(policy1: any, policy2: any): boolean {
     try {
         return JSON.stringify(policy1) === JSON.stringify(policy2)
-    } catch (error) {
+    } catch {
         return false
     }
 }

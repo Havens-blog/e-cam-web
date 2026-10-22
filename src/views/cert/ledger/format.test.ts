@@ -221,7 +221,7 @@ describe('isBatchTerminal + batchProgressPercent（轮询终态与进度，AC4�
     })
 })
 
-describe('pairBaseName（逐文件私钥按去扩展���基名配对，AC4）', () => {
+describe('pairBaseName（逐文件私钥按去扩展名基名配对，AC4）', () => {
     it('证书与私钥以去扩展名基名配对', () => {
         expect(pairBaseName('shop.example.com.pem')).toBe('shop.example.com')
         expect(pairBaseName('shop.example.com.key')).toBe('shop.example.com')

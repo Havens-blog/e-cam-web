@@ -1,0 +1,9 @@
+# pnpm 10.30.3 起配置迁至本文件（package.json 的 "pnpm" 字段已不再读取）
+# onlyBuiltDependencies：允许执行安装脚本的依赖白名单。
+# esbuild/@parcel/watcher/vue-demi 均为 vite/pinia 依赖树的正规成员——
+# esbuild 二进制经 optionalDeps 提供，postinstall 仅做版本校验；vue-demi 的
+# postinstall 在 vue3 下为空操作。审批它们以消除 ERR_PNPM_IGNORED_BUILDS 硬失败。
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - vue-demi

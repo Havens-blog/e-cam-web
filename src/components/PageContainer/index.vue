@@ -93,7 +93,7 @@ function hasChrome(): boolean {
   overflow-x: hidden;
   padding: 0;
 
-  // ---- 2.0 标准骨架���块（仅在实际启用时渲染，v1 模式下 DOM 与 v1 完全一致）----
+  // ---- 2.0 标准骨架区块（仅在实际启用时渲染，v1 模式下 DOM 与 v1 完全一致）----
 
   &__header {
     display: flex;

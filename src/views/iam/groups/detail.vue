@@ -166,7 +166,7 @@
 import { deleteGroupApi, getGroupDetailApi } from '@/api'
 import type { CloudUser, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
-import ManagerHeader from '@/components/ManagerHeader/index.vue'
+import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getUserStatus, getUserTypeLabel, safeTagType } from '@/utils/constants'
 import { formatDateTime } from '@/utils/format'

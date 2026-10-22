@@ -26,7 +26,7 @@ import type { CostDistItem } from '@/api/types/finops'
 import { useDictionary } from '@/composables/useDictionary'
 import { getProviderLabel } from '@/utils/constants'
 import { Loading } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const { loadDict, getDictLabel } = useDictionary()

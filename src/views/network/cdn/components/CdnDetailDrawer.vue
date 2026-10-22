@@ -329,7 +329,7 @@
 import { getCDNCacheConfigApi, getCDNDomainSettingsApi, getCdnMetricsApi, type CDNCacheRule, type CDNConfigGroup, type CDNConfigSetting, type CDNMetricItem } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import {
   CDN_STATUS_LABELS,
   cdnBusinessTypeLabel,
@@ -341,7 +341,7 @@ import {
 import { getProviderLabel } from '@/utils/constants'
 import { formatNumber } from '@/utils/formatters'
 import { Connection, DataLine, PriceTag, QuestionFilled, WarningFilled } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import dayjs from 'dayjs'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 

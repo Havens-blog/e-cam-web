@@ -124,13 +124,13 @@
 <script setup lang="ts">
 import { getRdsMetricsApi, type RDSMetricPoint, type RDSMetricsView } from '@/api/asset';
 import type { Asset } from '@/api/types/asset';
-import IconFont from '@/components/IconFont/index.vue';
+import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, RDS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { formatNumber } from '@/utils/formatters';
 import { formatConnections, formatPercent, hasZeroException } from '@/views/databases/rds/rdsMetrics';
 import { ArrowDown, Close, DataLine, Document, WarningFilled } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 

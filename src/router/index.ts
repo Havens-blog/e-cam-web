@@ -87,9 +87,8 @@ router.beforeEach(
  * 全局后置钩子
  * 在路由跳转后执行
  */
-router.afterEach((to: RouteLocationNormalized) => {
+router.afterEach((_to: RouteLocationNormalized) => {
     // 可以在这里添加页面访问统计等逻辑
-    console.log(`[Router] Navigated to: ${to.path}`)
 })
 
 /**

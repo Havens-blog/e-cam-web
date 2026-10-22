@@ -57,7 +57,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<{
+// 模板经 $emit('retry') 触发；声明事件类型即可，无需 emit 变量
+defineEmits<{
   retry: []
 }>()
 

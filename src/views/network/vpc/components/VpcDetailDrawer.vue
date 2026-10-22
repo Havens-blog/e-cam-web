@@ -297,7 +297,7 @@
 <script setup lang="ts">
 import { listSecurityGroupAssetsApi, listVSwitchAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'

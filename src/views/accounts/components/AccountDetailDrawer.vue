@@ -179,7 +179,7 @@
 
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel } from '@/utils/constants'
 import { Box, Connection, Delete, Edit, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'

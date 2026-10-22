@@ -55,16 +55,19 @@ type ChartStub = {
 const chartStubs = vi.hoisted(
     () => [] as Array<{ setOption: { mock: { calls: Array<Array<unknown>> } }; resize: unknown; dispose: unknown }>,
 )
-vi.mock('echarts', () => ({
-    init: vi.fn(() => {
-        const stub = {
-            setOption: vi.fn(),
-            resize: vi.fn(),
-            dispose: vi.fn(),
-        }
-        chartStubs.push(stub as never)
-        return stub
-    }),
+vi.mock('@/utils/echarts', () => ({
+    // 组件 `import echarts from '@/utils/echarts'` 取 default（按需注册入口，见 utils/echarts.ts）
+    default: {
+        init: vi.fn(() => {
+            const stub = {
+                setOption: vi.fn(),
+                resize: vi.fn(),
+                dispose: vi.fn(),
+            }
+            chartStubs.push(stub as never)
+            return stub
+        }),
+    },
 }))
 
 const optionOf = (stub: ChartStub): ChartOption => stub.setOption.mock.calls[0]![0] as ChartOption

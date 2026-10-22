@@ -292,7 +292,7 @@
 
 <script setup lang="ts">
 import type { Asset } from '@/api/types/asset'
-import ProviderIcon from '@/components/ProviderIcon.vue'
+import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { Close, Connection, DataAnalysis, Document, Lock, Position, PriceTag } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'

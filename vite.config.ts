@@ -6,6 +6,33 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
+import type { ComponentResolver } from 'unplugin-vue-components'
+
+/**
+ * 平台共享组件（@haven/ui）：模板中直接写 <IconFont> / <ManagerHeader> /
+ * <AssetExportDialog> / <CustomIconSelect> 即可，无需逐文件 import。
+ *
+ * 这几个组件原先由 Components 插件扫描 src/components 自动注册；迁到 @haven/ui 后
+ * 本地已无文件可扫描，故显式声明来源，保持“模板内直接用组件名”的既有写法不变。
+ *
+ * 注意：ProviderIcon 已随其依赖的平台级厂商数据一并下沉到 @haven/ui
+ * （见 src/utils/icon-mapping.ts 的 re-export），故一并列入本表。
+ */
+const SHARED_COMPONENTS: Record<string, string> = {
+  IconFont: '@haven/ui/IconFont',
+  ManagerHeader: '@haven/ui/ManagerHeader',
+  AssetExportDialog: '@haven/ui/AssetExportDialog',
+  CustomIconSelect: '@haven/ui/CustomIconSelect',
+  ProviderIcon: '@haven/ui/ProviderIcon',
+}
+
+const havenUiResolver: ComponentResolver = {
+  type: 'component',
+  resolve: (name) => {
+    const from = SHARED_COMPONENTS[name]
+    return from ? { name, from } : undefined
+  },
+}
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd())
@@ -28,7 +55,7 @@ export default defineConfig(({ mode }) => {
       }),
       // 自动导入组件
       Components({
-        resolvers: [ElementPlusResolver()],
+        resolvers: [ElementPlusResolver(), havenUiResolver],
         dts: 'src/components.d.ts',
       }),
     ],
@@ -39,6 +66,13 @@ export default defineConfig(({ mode }) => {
         '@': resolve(__dirname, 'src'),
       },
       extensions: ['.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
+      // 平台共享组件包 @haven/ui 自带 node_modules（其单测需要 element-plus/vue）。
+      // 不去重时，包内 `import { ElDialog } from 'element-plus'` 会解析到
+      // haven-ui/node_modules 下**另一份物理副本**，与主应用各持一份，后果：
+      //   1) 产物里出现重复的 element-plus / vue 代码（实测多出 2 个 chunk）；
+      //   2) 两套 provide/inject 上下文，ElCheckboxGroup 等父子协作会静默失效。
+      // 故强制这三者只解析到本应用这一份。
+      dedupe: ['vue', 'element-plus', '@element-plus/icons-vue'],
     },
 
     // 开发服务器配置
@@ -112,10 +146,13 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           // 代码分割
+          // echarts 按需注册后走子路径（echarts/core|charts|components|renderers，
+          // 见 src/utils/echarts.ts）；zrender 仅被 echarts 引用，自动并入该 chunk。
+          // ⚠ 不可写回 'echarts': ['echarts']——全量 barrel 会让按需引入白做。
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'element-plus': ['element-plus'],
-            'echarts': ['echarts'],
+            'echarts': ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
           },
           // 静态资源分类
           chunkFileNames: 'js/[name]-[hash].js',

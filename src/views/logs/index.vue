@@ -202,7 +202,7 @@
       >
         {{ cloudLabel(s.cloud) }}·{{ s.account_name }}:{{ s.error ? '失败' : s.count + ' 条' }}
       </el-tag>
-      <el-tag v-if="resp.truncated" type="warning" size="small">结果已���断(可缩小时间范围或加筛选)</el-tag>
+      <el-tag v-if="resp.truncated" type="warning" size="small">结果已截断(可缩小时间范围或加筛选)</el-tag>
       <span class="strip-total">共 {{ resp.total }} 条</span>
     </div>
 
@@ -479,31 +479,29 @@
  * - 结果区统计视图为主(KPI + 图表,前端聚合),明细默认折叠;
  * - 明细按 云·账号 折叠分组,组头含条数/源状态(失败不静默),组内仍统一时间倒序;
  * - 行点击开详情抽屉:统一字段 + Raw 原始字段 JSON(信息零丢失)。
+ *
+ * 本文件是**编排层**:页面级状态、生命周期与跨模块接线在此。四类可独立推演的逻辑
+ * 已分置同目录 composable ——
+ *   useLogSearch(查询/翻页/取消/进度)、useLogFilters(筛选/下钻/聚合/导出)、
+ *   useEntryGroups(明细分组)、useLogUrlSync(URL 水合与分享)、useLogSources(日志源)。
+ * 纯计算(格式化/统计聚合/下钻行/CSV/URL 编解码)更早已抽到
+ * format / stats / drilldown / csv / url-state,本次不再改动。
+ *
+ * 未外移的取舍:模板中的筛选卡与结果区**未**拆成子组件 —— 二者各自需要 20+ 个
+ * 双向绑定与事件透传(几乎覆盖全页状态),抽出去只会把「一个长文件」换成
+ * 「一个 35 项 props 的组件 + 一个长文件」,可读性反而下降。真正可复用的
+ * 展示块(统计图/详情抽屉/WAF 诊断卡/CDN 缓存卡)此前已组件化。
  */
 import { ArrowDown, ArrowRight, Delete, Refresh } from '@element-plus/icons-vue'
-import { aggregateLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
-import type {
-    FieldFilter,
-    LogAggregateResponse,
-    LogDiagnoseContext,
-    LogEntry,
-    LogSearchResponse,
-    LogSource,
-    LogSourceOutcome,
-    LogType,
-    LogTypeMeta,
-} from '@/api/types/logs'
+import { getLogTypesApi } from '@/api/logs'
+import type { LogAggregateResponse, LogDiagnoseContext, LogEntry, LogType, LogTypeMeta } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import CacheAnalyzeCard from './components/CacheAnalyzeCard.vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
-import CacheAnalyzeCard from './components/CacheAnalyzeCard.vue'
 import LogStats from './components/LogStats.vue'
-import { applyDrilldown, stripDrilldown, topnDrilldownField } from './drilldown'
-import { csvSerialize, downloadCsv, entryRows } from './csv'
-import { decodeUrlState, encodeUrlState, hasQueryParams } from './url-state'
-import type { LogQueryState } from './url-state'
-import type { FieldFilterRow } from './drilldown'
+// 模板直接使用的格式化函数(表格列渲染 / 状态码与动作标签配色)
 import {
     actionTagType,
     cacheHitTagType,
@@ -513,39 +511,33 @@ import {
     defaultWindowMs,
     formatBytes,
     formatLogTime,
-    formatSpanMs,
-    QUICK_VALUES_MAX,
-    quickValuesFor,
     severityTagType,
     statusTagType,
 } from './format'
+import { useEntryGroups } from './useEntryGroups'
+import { DIM_TIP, FILTER_OPS, METRIC_OPTS, useLogFilters } from './useLogFilters'
+import { useLogSearch } from './useLogSearch'
+import { useLogSources } from './useLogSources'
+import { useLogUrlSync } from './useLogUrlSync'
+import { hasQueryParams } from './url-state'
 
-const typeMetas = ref<LogTypeMeta[]>([])
-const activeType = ref<LogType>('cdn')
-const sources = ref<LogSource[]>([])
-const sourcesLoading = ref(false)
-/**
- * 各类型日志源本地缓存:源清单(CDN/WAF 域名、S3 前缀、LTS 流)变动频率
- * 远低于请求频率,切 Tab 复用缓存立即渲染(零请求);「刷新源列表」按钮
- * 强制重拉兜底。云选择过滤是本地 computed,不再触发重拉。
- */
-const sourcesCache = ref<Record<string, LogSource[]>>({})
-
-const timeRange = ref<[Date, Date] | null>(null)
 /** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
 const DEFAULT_CLOUDS = ['aliyun']
+/** 每日志源采样上限(后端单源硬顶 2000、联邦 3000;默认 1000 提高样本覆盖) */
+const LIMIT_OPTIONS = [100, 500, 1000, 2000]
+
+// ---- 页面级状态:被两个及以上 composable 读写,故由页面持有并注入 ----
+const typeMetas = ref<LogTypeMeta[]>([])
+const activeType = ref<LogType>('cdn')
+const timeRange = ref<[Date, Date] | null>(null)
 const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
 /** 用户是否手动改过云选择(改过后不再自动收敛到默认) */
 const cloudsTouched = ref(false)
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
-/** 每日志源采样上限(后端单源硬顶 2000、联邦 3000;默认 1000 提高样本覆盖) */
-const LIMIT_OPTIONS = [100, 500, 1000, 2000]
 const limit = ref(1000)
-
-const searching = ref(false)
-const searchError = ref('')
-const resp = ref<LogSearchResponse | null>(null)
+/** 明细表格默认折叠(统计视图为主) */
+const detailVisible = ref(false)
 /**
  * 累积明细(跨页追加,时间倒序)。分页 = 时间游标翻页:下一页把窗口上界
  * 改为当前最旧一条 - 1 秒(覆盖秒级时间戳源如 WAF3,整批不丢不重),
@@ -553,366 +545,153 @@ const resp = ref<LogSearchResponse | null>(null)
  * ts:resource:source 做 key,把 WAF3 同秒数百条整批滤成 1 条)。
  */
 const allEntries = ref<LogEntry[]>([])
-const pageLoading = ref(false)
-/** 上次翻页增量(条);null=尚未翻过页 */
-const pageInc = ref<number | null>(null)
-/** 已到底:窗口起点已无更早日志 */
-const pageBottom = ref(false)
-/** 累积明细最旧时间戳(时间倒序,末位即最旧);无数据时 0 */
-const oldestTs = computed(() => (allEntries.value.length ? allEntries.value[allEntries.value.length - 1]!.timestamp : 0))
-const canLoadEarlier = computed(() => {
-    if (!resp.value || !timeRange.value || allEntries.value.length === 0) return false
-    return oldestTs.value > timeRange.value[0].getTime() && !pageBottom.value
-})
-/** 服务端聚合(真实总数/趋势/TopN;null=失败,统计图回退采样) */
+/** 服务端聚合(真实总数/趋势/TopN;null=失败,统计图回退采样);doSearch 与「查分组」共用 */
 const aggregate = ref<LogAggregateResponse | null>(null)
-/** 明细表格默认折叠(统计视图为主) */
-const detailVisible = ref(false)
 
-// ---- 明细按 云·账号 折叠分组(组头:账号名/条数/源状态;翻页追加 allEntries 后自动重排) ----
-/**
- * 分组键 = meta.cloud + meta.account_name;组数据 = allEntries 过滤 —— allEntries
- * 本身时间倒序,过滤天然保持组内倒序不变;翻页追加后 computed 自动重算。
- * 组序按 cloudOrder 固定云序,与上方日志源下拉分组一致。
- */
-const entryGroups = computed(() => {
-    const map = new Map<string, { cloud: string; accountName: string; entries: LogEntry[] }>()
-    for (const e of allEntries.value) {
-        const key = `${e.meta.cloud}·${e.meta.account_name}`
-        if (!map.has(key)) map.set(key, { cloud: e.meta.cloud, accountName: e.meta.account_name, entries: [] })
-        map.get(key)!.entries.push(e)
-    }
-    // 失败且无样本的源也要有组头可标注(0 条 + 失败 tag),避免整组失败被隐藏
-    for (const o of resp.value?.sources ?? []) {
-        const key = `${o.cloud}·${o.account_name}`
-        if (!map.has(key)) map.set(key, { cloud: o.cloud, accountName: o.account_name, entries: [] })
-    }
-    return Array.from(map.entries())
-        .sort((a, b) => groupRank(a[0]) - groupRank(b[0]))
-        .map(([key, g]) => ({ key, label: `${cloudLabel(g.cloud)}·${g.accountName}`, entries: g.entries }))
+// ---- 派生:当前类型元数据与字段字典 ----
+const currentMeta = computed(() => typeMetas.value.find((t) => t.type === activeType.value))
+const currentFields = computed(() => currentMeta.value?.fields ?? [])
+
+// ================= composable 装配 =================
+const {
+    sources,
+    sourcesLoading,
+    filteredSources,
+    sourceGroups,
+    availableClouds,
+    disabledSources,
+    loadSources,
+    refreshSources,
+} = useLogSources({
+    activeType,
+    selectedClouds,
+    selectedResources,
+    cloudsTouched,
+    defaultClouds: DEFAULT_CLOUDS,
 })
-
-/** 组 → 单源状态(失败/耗时,来自 resp.sources;翻页后随当前页刷新) */
-const groupOutcomes = computed<Map<string, LogSourceOutcome[]>>(() => {
-    const map = new Map<string, LogSourceOutcome[]>()
-    for (const o of resp.value?.sources ?? []) {
-        const key = `${o.cloud}·${o.account_name}`
-        if (!map.has(key)) map.set(key, [])
-        map.get(key)!.push(o)
-    }
-    return map
-})
-
-/** 组头 title:该组失败源错误原因(hover 可查) */
-function groupErrorText(key: string): string {
-    return (groupOutcomes.value.get(key) ?? [])
-        .filter((o) => o.error)
-        .map((o) => o.error)
-        .join(';')
-}
-
-/** 折叠态(默认空 = 全展开);键随组稳定,翻页不重置,切类型重置 */
-const collapsedGroups = ref<Set<string>>(new Set())
-
-function toggleGroup(key: string) {
-    const next = new Set(collapsedGroups.value)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    collapsedGroups.value = next
-}
-
-const allGroupsCollapsed = computed(() =>
-    entryGroups.value.length > 0 && entryGroups.value.every((g) => collapsedGroups.value.has(g.key)),
-)
-
-function toggleAllGroups() {
-    collapsedGroups.value = allGroupsCollapsed.value ? new Set() : new Set(entryGroups.value.map((g) => g.key))
-}
 
 /**
- * 明细采样标注:表格只展示最新 limit 条/源,高流量源仅覆盖数秒~数分钟,远小于
- * 查询窗口时给出可见提示,避免被误读为「窗口内只有这么点数据」。明细已覆盖
- * 整窗或空表时不显示(allEntries 时间倒序:头=最新,尾=最旧)。
+ * 查询引擎与筛选模块互为输入(查询要用筛选组装条件,筛选下钻后要重查)。
+ * 以「先声明、后赋值」的转发引用打破构造期循环:该函数只在用户交互/查询触发时
+ * 被调用,届时引用必然就绪;这样也避免了在 useLogSearch 里引用尚未构造的 filters。
  */
-const detailSampleNote = computed(() => {
-    if (!timeRange.value || allEntries.value.length === 0) return ''
-    const newest = allEntries.value[0]?.timestamp
-    const oldest = allEntries.value[allEntries.value.length - 1]?.timestamp
-    if (typeof newest !== 'number' || typeof oldest !== 'number') return ''
-    const coveredMs = newest - oldest
-    const windowMs = timeRange.value[1].getTime() - timeRange.value[0].getTime()
-    if (coveredMs >= windowMs) return '' // 明细已覆盖整窗,无需标注
-    const span = formatSpanMs(coveredMs) || '极短'
-    return `明细为最新 ${allEntries.value.length} 条采样(每源上限 ${limit.value} 条),覆盖 ${formatLogTime(oldest)} → ${formatLogTime(newest)},约 ${span};完整窗口分布见上方统计,可点「加载更早日志」向前翻页`
+let runSearch: () => void = () => {}
+
+const {
+    fieldFilters,
+    filterableFields,
+    aggregatableFields,
+    aggregatableDictFields,
+    aggregatableRawFields,
+    nonAggregatableDictFields,
+    addFilterRow,
+    quickValuesByField,
+    fieldLabel,
+    applyQuickValue,
+    buildFilters,
+    hasDrilldown,
+    onBarDrilldown,
+    onDiagDrilldown,
+    exportDetailCsv,
+    exportStatsCsv,
+    clearDrilldown,
+    aggrDimension,
+    aggrMetric,
+    aggrLoading,
+    doAggregate,
+    resetFilters,
+} = useLogFilters({
+    activeType,
+    currentFields,
+    currentMeta,
+    allEntries,
+    aggregate,
+    timeRange,
+    keyword,
+    selectedClouds,
+    selectedResources,
+    triggerSearch: () => runSearch(),
 })
 
-// ---- 查询进行中进度态(文字化回馈:源数/已耗时;不必轮询真实进度) ----
-const searchElapsed = ref(0)
-let progressTimer: ReturnType<typeof setInterval> | null = null
-/** 联邦长查询取消控制器(查询/加载更早共用;取消后 axios 抛 ERR_CANCELED) */
-const searchAbort = ref<AbortController | null>(null)
-
-/** 取消进行中的查询/翻页:立即中止所有在飞请求,进度态随 finally 清理 */
-function cancelSearch() {
-    searchAbort.value?.abort()
-}
-
-/** 取消异常归一到「已取消」文案(axios CanceledError 的 code 即为 ERR_CANCELED) */
-function isCanceled(e: unknown): boolean {
-    return !!e && typeof e === 'object' && (e as { code?: string }).code === 'ERR_CANCELED'
-}
-
-function startProgress() {
-    stopProgress()
-    searchElapsed.value = 0
-    progressTimer = setInterval(() => {
-        searchElapsed.value += 1
-    }, 1000)
-}
-
-function stopProgress() {
-    if (progressTimer) {
-        clearInterval(progressTimer)
-        progressTimer = null
-    }
-}
-
-onBeforeUnmount(stopProgress)
-
-/** 预期查询源数:当前云/资源选择下已开启投递的源(与后端联邦范围一致的前端近似) */
-const querySourceCount = computed(() => {
-    const enabled = filteredSources.value.filter((s) => s.enabled)
-    if (!selectedResources.value.length) return enabled.length
-    const picked = new Set(selectedResources.value)
-    return enabled.filter((s) => picked.has(s.resource_id)).length
+const {
+    searching,
+    searchError,
+    resp,
+    pageLoading,
+    pageInc,
+    pageBottom,
+    oldestTs,
+    canLoadEarlier,
+    searchElapsed,
+    progressText,
+    progressAria,
+    friendlySearchError,
+    cancelSearch,
+    doSearch,
+    loadEarlier,
+    backToLatest,
+    resetSearch,
+} = useLogSearch({
+    activeType,
+    timeRange,
+    keyword,
+    selectedClouds,
+    selectedResources,
+    limit,
+    aggrDimension,
+    aggrMetric,
+    filteredSources,
+    buildFilters,
+    allEntries,
+    aggregate,
+    detailVisible,
 })
 
-const progressText = computed(() =>
-    querySourceCount.value > 0 ? `正在查询 ${querySourceCount.value} 个云账号` : '正在查询所选日志源',
-)
-const progressAria = computed(() => `查询进行中:${progressText.value},已耗时 ${searchElapsed.value} 秒`)
+// 查询引擎就绪后回填转发引用(见上方说明)
+runSearch = () => void doSearch()
 
-/** 整页失败原因映射:裸错误串转可读中文降级说明(原始串仍附在下方供排查) */
-function friendlySearchError(raw: string): string {
-    const msg = raw.toLowerCase()
-    if (msg.includes('timeout') || raw.includes('超时')) {
-        return '查询超时:云端检索耗时过长,可缩小时间范围、减少所选源或降低条数上限后重试。'
-    }
-    if (msg.includes('truncat') || raw.includes('截断')) {
-        return '结果被截断:命中数据超出单次查询上限,本次为采样视图;可缩小时间范围或加字段筛选后重试。'
-    }
-    if (msg.includes('network') || raw.includes('网络')) {
-        return '网络异常:查询服务暂不可达,请检查网络连接后重试。'
-    }
-    return '查询失败:云端检索未正常返回,可缩小时间范围或放宽筛选条件后重试。'
-}
+const {
+    entryGroups,
+    groupOutcomes,
+    groupErrorText,
+    collapsedGroups,
+    toggleGroup,
+    allGroupsCollapsed,
+    toggleAllGroups,
+    resetCollapsed,
+    detailSampleNote,
+} = useEntryGroups({ allEntries, resp, timeRange, limit })
 
-// ---- 结构化字段筛选(多条件 AND;与 keyword 叠加) ----
-const FIELD_FILTER_MAX = 4
-const fieldFilters = ref<FieldFilterRow[]>([])
-const FILTER_OPS = [
-    { value: 'eq', label: '等于' },
-    { value: 'neq', label: '不等于' },
-    { value: 'contains', label: '包含' },
-    { value: 'prefix', label: '前缀' },
-]
-/** 可筛选字段:字段字典中非固定列(剔除 meta.* / 时间) */
-const filterableFields = computed(() =>
-    currentFields.value.filter((f) => !f.key.startsWith('meta.') && f.key !== 'timestamp'),
-)
-
-// ---- 分组聚合维度白名单(后端索引探测:列必须开过 KV 分析索引才能 group by) ----
-/** 当前类型可聚合字段清单(空 = 探测失败/无账号 → 维度下拉回退全量字典,不劣化) */
-const aggregatableFields = computed(() => currentMeta.value?.aggregatable ?? [])
-const aggregatableSet = computed(() => new Set(aggregatableFields.value))
-/** 白名单内的统一字段(带中文标签,可直接选) */
-const aggregatableDictFields = computed(() =>
-    filterableFields.value.filter((f) => aggregatableSet.value.has(f.key)),
-)
-/** 白名单内的云上原始列(非统一字段,按列名展示;allow-create 亦可输) */
-const aggregatableRawFields = computed(() =>
-    aggregatableFields.value.filter((k) => !filterableFields.value.some((f) => f.key === k)),
-)
-/** 字典中不在白名单的字段(未开分析索引):禁用展示说明,不再盲选撞错 */
-const nonAggregatableDictFields = computed(() => {
-    if (!aggregatableFields.value.length) return []
-    return filterableFields.value.filter((f) => !aggregatableSet.value.has(f.key))
+const { hydrateFromUrl, copyQueryLink } = useLogUrlSync({
+    activeType,
+    timeRange,
+    selectedClouds,
+    selectedResources,
+    keyword,
+    fieldFilters,
+    aggrDimension,
+    aggrMetric,
+    limit,
+    cloudsTouched,
+    currentMeta,
+    limitOptions: LIMIT_OPTIONS,
 })
 
-function addFilterRow() {
-    if (fieldFilters.value.length >= FIELD_FILTER_MAX) return
-    fieldFilters.value.push({ field: filterableFields.value[0]?.key ?? '', op: 'eq', value: '' })
-}
-
-// ---- 字段快捷值(仅来自已返回样本 allEntries,零额外接口请求;不轮询/不预取) ----
-/**
- * {field: quickValues} 映射:对每个可筛选字段从当前样本聚合高频值(频率降序去重,
- * 上限 QUICK_VALUES_MAX)。依赖 allEntries + filterableFields,样本/类型/字段变化
- * 自动重算,不残留旧值;未加载数据或字段无可抽取值时为空 → chips 区整行隐藏。
- */
-const quickValuesByField = computed<Map<string, string[]>>(() => {
-    const map = new Map<string, string[]>()
-    if (allEntries.value.length === 0) return map
-    for (const f of filterableFields.value) {
-        map.set(f.key, quickValuesFor(allEntries.value, f.key, QUICK_VALUES_MAX))
-    }
-    return map
-})
-
-function fieldLabel(fieldKey: string): string {
-    return filterableFields.value.find((f) => f.key === fieldKey)?.label ?? fieldKey
-}
-
-/** 点选快捷值:已选中则取消(toggle 清空 value,该行退出筛选组合),随后按当前筛选组合重查 */
-function applyQuickValue(f: FieldFilter, value: string) {
-    f.value = f.value.trim() === value ? '' : value
-    void doSearch()
-}
-
-/** 组装有效筛选(字段与值齐全的行;空值行不参与,避免误过滤;下钻标记为前端态,提交时剥除) */
-function buildFilters(): FieldFilter[] | undefined {
-    const valid = fieldFilters.value.filter((f) => f.field && f.value.trim() !== '')
-    return valid.length
-        ? valid.map((f) => ({ field: f.field, op: f.op, value: f.value.trim() }))
-        : undefined
-}
-
-// ---- TopN 分组图下钻(LogStats bar-click → 字段筛选;维度映射在本组件,子组件不感知父级 state) ----
-/** 是否存在下钻条件(「清除下钻」按钮可见性) */
-const hasDrilldown = computed(() => fieldFilters.value.some((f) => f.drilldown))
-
-/**
- * 点击 TopN 条形图项:映射到当前图维度的筛选字段,同字段 eq 行更新值、否则新增下钻行,
- * 随后按新筛选重查(doSearch 并行刷新明细 + 聚合,统计图同步)。
- */
-function onBarDrilldown(payload: { name: string }) {
-    if (!filterableFields.value.length) {
-        ElMessage.warning('字段字典未加载,暂不支持图表下钻')
-        return
-    }
-    // 以「聚合 topn 是否实际生效」判定维度:聚合失败/无 topn 时图回退采样默认 TopN,
-    // 此刻即使选了自定义维度也应映射默认字段,否则筛选与图上分组对不上
-    const hasTopn = !!aggregate.value && aggregate.value.topn.length > 0
-    const field = topnDrilldownField(hasTopn, aggrDimension.value, activeType.value)
-    const next = applyDrilldown(fieldFilters.value, field, payload.name, FIELD_FILTER_MAX)
-    if (!next) {
-        ElMessage.warning(`字段筛选已达上限(${FIELD_FILTER_MAX}),请先删除一条再加下钻条件`)
-        return
-    }
-    fieldFilters.value = next
-    void doSearch()
-}
-
-/**
- * 诊断卡下钻(Top 源/URI/状态码/动作 → 字段筛选):判定→定位闭环 —— 判定为
- * 高风险后点一下攻击源即可在明细里看它的流量构成。字段映射由卡内给出
- * (client_ip/uri/status/action,都是诊断维度的统一字段 key),此处复用图表
- * 下钻同一套追加/覆盖逻辑。
- */
-function onDiagDrilldown(payload: { field: string; value: string }) {
-    const known = filterableFields.value.some((f) => f.key === payload.field)
-    if (!known) {
-        ElMessage.warning(`字段 ${payload.field} 不在字段字典内,暂不支持下钻`)
-        return
-    }
-    const next = applyDrilldown(fieldFilters.value, payload.field, payload.value, FIELD_FILTER_MAX)
-    if (!next) {
-        ElMessage.warning(`字段筛选已达上限(${FIELD_FILTER_MAX}),请先删除一条再加下钻条件`)
-        return
-    }
-    fieldFilters.value = next
-    void doSearch()
-}
-
-// ---- CSV 导出(明细/统计浏览器端生成,审计汇报用) ----
-/** 明细导出:按当前字段字典列导出 allEntries,值口径与表格一致 */
-function exportDetailCsv() {
-    if (!allEntries.value.length) return
-    const columns = currentFields.value.map((f) => ({ key: f.key, label: f.label }))
-    if (!columns.length) {
-        ElMessage.warning('字段字典未加载,暂无法导出')
-        return
-    }
-    const csv = csvSerialize(columns.map((c) => c.label), entryRows(allEntries.value, columns))
-    downloadCsv(`日志明细-${activeType.value}-${datetimeStamp()}.csv`, csv)
-    ElMessage.success(`已导出明细 ${allEntries.value.length} 条`)
-}
-
-/** 统计导出:趋势(时间,请求数)+ TopN(名称,计数)两段单文件,首列类型区分 */
-function exportStatsCsv() {
-    const agg = aggregate.value
-    if (!agg) {
-        ElMessage.warning('暂无统计结果,先查询或查分组后再导出')
-        return
-    }
-    const header = ['类型', '名称/时间', '数值']
-    const rows: string[][] = []
-    for (const b of agg.buckets ?? []) {
-        rows.push(['趋势', formatLogTime(b.timestamp), String(b.count)])
-    }
-    for (const t of agg.topn ?? []) {
-        rows.push(['TopN', t.name, String(t.count)])
-    }
-    downloadCsv(`日志统计-${activeType.value}-${datetimeStamp()}.csv`, csvSerialize(header, rows))
-    ElMessage.success('已导出统计(趋势 + TopN)')
-}
-
-/** 导出文件名时间戳(本地 yyyyMMdd-HHmm) */
-function datetimeStamp(): string {
-    const d = new Date()
-    const p = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
-}
-
-/** 清除下钻:仅移除带下钻标记的条件行(用户手动条件与 keyword 原样保留),并重查还原 */
-function clearDrilldown() {
-    const next = stripDrilldown(fieldFilters.value)
-    if (!next) return
-    fieldFilters.value = next
-    void doSearch()
-}
-
-// ---- 自定义分组聚合(维度/指标;影响 TopN 图,趋势/总数不变) ----
-const aggrDimension = ref('')
-const aggrMetric = ref('count')
-const aggrLoading = ref(false)
-/** 维度可输入任意云上原始字段名(后端校验该列已建分析索引,未索引给出可用清单) */
-const DIM_TIP =
-    '分组维度(下拉按可聚合性分组):\n' +
-    '· 统一字段:host/status/URL/耗时 等已映射,直接选;\n' +
-    '· 原始列:可输入云上字段名(如 real_client_ip / UA)按原始列聚合;\n' +
-    '· 置灰项:多列拼接/归一化字段(如后端 IP),暂不可下推聚合'
-const METRIC_OPTS = [
-    { value: 'count', label: '计数' },
-    { value: 'sum_bytes', label: '下行字节' },
-    { value: 'avg_latency', label: '平均耗时' },
-    { value: 'p99_latency', label: 'P99 耗时' },
-]
-
-async function doAggregate() {
-    if (aggrLoading.value || !timeRange.value) return
-    aggrLoading.value = true
-    try {
-        const agg = await aggregateLogsApi({
-            log_type: activeType.value,
-            start_time: timeRange.value[0].getTime(),
-            end_time: timeRange.value[1].getTime(),
-            query: keyword.value || undefined,
-            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
-            resources: selectedResources.value.length ? selectedResources.value : undefined,
-            filters: buildFilters(),
-            dimension: aggrDimension.value || undefined,
-            metric: aggrMetric.value === 'count' ? undefined : aggrMetric.value,
-        }).catch(() => null)
-        aggregate.value = agg
-        if (!agg) ElMessage.warning('分组聚合失败(可能不支持的维度/指标),TopN 已还原')
-    } finally {
-        aggrLoading.value = false
-    }
-}
-
+// ================= 详情抽屉 =================
 const drawerVisible = ref(false)
 const detailEntry = ref<LogEntry | null>(null)
+
+function openDetail(row: LogEntry) {
+    detailEntry.value = row
+    drawerVisible.value = true
+}
+
+/** 详情抽屉字段(剔除 meta.* 固定列,统一字段平铺) */
+const drawerFields = computed(() =>
+    currentFields.value
+        .filter((f) => !f.key.startsWith('meta.'))
+        .map((f) => ({ key: f.key, label: f.label })),
+)
 
 // ---- WAF 流量诊断(手动触发):诊断请求上下文 = 当前查询字段(与聚合对齐,
 // 无 dimension/metric;维度集由后端诊断编排固定)。独立于统计/明细,只读引用。 ----
@@ -931,206 +710,7 @@ const diagnoseContext = computed<LogDiagnoseContext | null>(() => {
 /** 缓存分析上下文与诊断卡同构(当前查询字段,无 dimension/metric;仅 CDN Tab 使用) */
 const cacheAnalyzeContext = diagnoseContext
 
-const currentMeta = computed(() => typeMetas.value.find((t) => t.type === activeType.value))
-const currentFields = computed(() => currentMeta.value?.fields ?? [])
-
-// ---- 日志源分组(云·账号 -> 源) ----
-const cloudOrder = ['aliyun', 'huawei', 'aws', 'tencent', 'volcano']
-
-const filteredSources = computed(() =>
-    selectedClouds.value.length
-        ? sources.value.filter((s) => selectedClouds.value.includes(s.cloud))
-        : sources.value,
-)
-
-const sourceGroups = computed(() => {
-    const map = new Map<string, LogSource[]>()
-    for (const s of filteredSources.value) {
-        const key = `${s.cloud}·${s.account_name}`
-        if (!map.has(key)) map.set(key, [])
-        map.get(key)!.push(s)
-    }
-    return Array.from(map.entries())
-        .sort((a, b) => groupRank(a[0]) - groupRank(b[0]))
-        .map(([key, list]) => ({ key, label: key, sources: list }))
-})
-
-function groupRank(groupKey: string): number {
-    const idx = cloudOrder.findIndex((c) => groupKey.startsWith(c))
-    return idx < 0 ? cloudOrder.length : idx
-}
-
-const availableClouds = computed(() => {
-    const seen = new Map<string, string>()
-    for (const s of sources.value) {
-        if (!seen.has(s.cloud)) seen.set(s.cloud, cloudLabel(s.cloud))
-    }
-    return Array.from(seen.entries())
-        .sort((a, b) => cloudOrder.indexOf(a[0]) - cloudOrder.indexOf(b[0]))
-        .map(([value, label]) => ({ value, label }))
-})
-
-const disabledSources = computed(() => filteredSources.value.filter((s) => !s.enabled))
-
-// ---- 详情抽屉字段(剔除 meta.* 固定列,统一字段平铺) ----
-const drawerFields = computed(() =>
-    currentFields.value
-        .filter((f) => !f.key.startsWith('meta.'))
-        .map((f) => ({ key: f.key, label: f.label })),
-)
-
-// ---- URL 查询条件同步(刷新还原 / 复制链接分享;history.replaceState) ----
-const urlHydrated = ref(false)
-let urlTimer: ReturnType<typeof setTimeout> | null = null
-
-/** 当前查询条件 → URL 状态(供写地址栏/复制链接) */
-function currentUrlState(): LogQueryState {
-    return {
-        t: activeType.value,
-        startMs: timeRange.value?.[0].getTime() ?? null,
-        endMs: timeRange.value?.[1].getTime() ?? null,
-        clouds: selectedClouds.value,
-        resources: selectedResources.value,
-        kw: keyword.value,
-        filters: fieldFilters.value,
-        dim: aggrDimension.value,
-        metric: aggrMetric.value,
-        limit: limit.value,
-    }
-}
-
-/** 首帧:URL 参数覆盖状态(必须在 resetTimeRange 之后调用,先落默认值再覆盖) */
-function hydrateFromUrl() {
-    const s = decodeUrlState(new URLSearchParams(window.location.search))
-    activeType.value = s.t
-    if (s.startMs != null && s.endMs != null) {
-        const now = Date.now()
-        const end = Math.min(s.endMs, now)
-        const cap = (currentMeta.value?.max_window_days ?? 7) * 24 * 3600_000
-        const start = Math.max(s.startMs, end - cap)
-        if (end - start > 1000) timeRange.value = [new Date(start), new Date(end)]
-    }
-    if (s.clouds.length) {
-        selectedClouds.value = s.clouds
-        cloudsTouched.value = true
-    }
-    selectedResources.value = s.resources
-    keyword.value = s.kw
-    fieldFilters.value = s.filters.map((f) => ({ ...f }))
-    aggrDimension.value = s.dim
-    if (METRIC_OPTS.some((m) => m.value === s.metric)) aggrMetric.value = s.metric
-    if (s.limit != null && LIMIT_OPTIONS.includes(s.limit as (typeof LIMIT_OPTIONS)[number])) limit.value = s.limit
-    urlHydrated.value = true
-}
-
-/** 状态变化 → 防抖写 URL(仅 hydrate 完成后,避免把默认态洗进地址栏) */
-function syncUrl() {
-    if (!urlHydrated.value) return
-    if (urlTimer) clearTimeout(urlTimer)
-    urlTimer = setTimeout(() => {
-        const qs = encodeUrlState(currentUrlState()).toString()
-        window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
-    }, 400)
-}
-
-watch([activeType, timeRange, selectedClouds, selectedResources, keyword, fieldFilters, aggrDimension, aggrMetric, limit], syncUrl, { deep: true })
-
-/** 复制当前查询链接(协作者打开即还原条件并自动查询) */
-async function copyQueryLink() {
-    const qs = encodeUrlState(currentUrlState()).toString()
-    const url = `${window.location.origin}${window.location.pathname}${qs ? `?${qs}` : ''}`
-    try {
-        await navigator.clipboard.writeText(url)
-        ElMessage.success('查询链接已复制,打开即可还原当前条件')
-    } catch {
-        ElMessage.error('复制失败,请手动复制地址栏')
-    }
-}
-
-// ---- 加载 ----
-onMounted(async () => {
-    resetTimeRange()
-    hydrateFromUrl()
-    const urlHasQuery = hasQueryParams(new URLSearchParams(window.location.search))
-    try {
-        typeMetas.value = await getLogTypesApi()
-    } catch {
-        // 字段字典失败:给出可见报错(不静默)。类型 Tab 与动态列不可用,但时间窗约束与手输检索仍可用
-        typeMetas.value = []
-        ElMessage.error('日志字段字典加载失败,请刷新重试')
-    }
-    await loadSources()
-    // 分享进入:URL 携带查询条件时自动跑一次,还原协作者看到的场景
-    if (urlHasQuery && timeRange.value) void doSearch()
-})
-
-async function loadSources(force = false) {
-    sourcesLoading.value = true
-    try {
-        // 源清单变动频率低(CDN/WAF 域名、S3 前缀、LTS 流):切 Tab 复用本地
-        // 缓存立即渲染,零请求;force=true(手动「刷新源列表」)强制重拉。
-        const cached = sourcesCache.value[activeType.value]
-        if (cached && cached.length > 0 && !force) {
-            sources.value = cached
-        } else {
-            const list = await getLogSourcesApi({ log_type: activeType.value })
-            sources.value = list
-            sourcesCache.value = { ...sourcesCache.value, [activeType.value]: list }
-        }
-        // 清除已失效的资源选择
-        const valid = new Set(sources.value.map((s) => s.resource_id))
-        selectedResources.value = selectedResources.value.filter((r) => valid.has(r))
-        // 首次加载:云选择收敛到实际有源的默认云(避免空选导致"全部云"联邦扫)
-        if (!cloudsTouched.value) {
-            const available = new Set(sources.value.map((s) => s.cloud))
-            selectedClouds.value = DEFAULT_CLOUDS.filter((c) => available.has(c))
-        }
-    } catch {
-        // 加载失败:清空源列表并给出可见报错;云选择保持原值不动(上方云收敛只在成功路径执行),
-        // 避免退化成全云联邦扫
-        sources.value = []
-        ElMessage.error('日志源列表加载失败,请刷新重试')
-    } finally {
-        sourcesLoading.value = false
-    }
-}
-
-/** 手动强制刷新源列表(新增域名/源时兜底;平时缓存即可) */
-function refreshSources() {
-    void loadSources(true)
-}
-
-function onTypeChange() {
-    resp.value = null
-    aggregate.value = null
-    selectedResources.value = []
-    allEntries.value = []
-    // 切类型:分组折叠态重置为全展开(组键跨类型语义不同)
-    collapsedGroups.value = new Set()
-    // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
-    fieldFilters.value = []
-    aggrDimension.value = ''
-    aggrMetric.value = 'count'
-    resetTimeRange()
-    // 切类型复用本地缓存(缓存有该类型即零请求);无缓存才拉一次
-    void loadSources()
-}
-
-function onCloudsChange() {
-    cloudsTouched.value = true
-    // 跨云残留的已选源从选中移除:源归属云,切云后原选中的 AWS/华为源
-    // 不再匹配(否则选中项残留 + 旧结果含其它云源,观感像"选阿里却有 AWS")
-    const cloudSet = new Set(selectedClouds.value)
-    selectedResources.value = selectedResources.value.filter((r) => {
-        const owner = sources.value.find((s) => s.resource_id === r)
-        return !owner || cloudSet.has(owner.cloud) // 无归属信息则保留
-    })
-    // 已有查询结果时按新云自动重查:保持"所见即所选"(doSearch 自带 searching
-    // 防并发;查询有 SWR 结果缓存,代价低)
-    if (resp.value) void doSearch()
-}
-
-// ---- 时间窗口约束与快捷窗口(默认最近 1 小时;快捷可切 2/4/6h) ----
+// ================= 时间窗口约束与快捷窗口 =================
 /** 快捷时间窗口(小时)。点击即设为最近 N 小时并重查。 */
 const QUICK_WINDOWS = [1, 2, 4, 6] as const
 /** 快捷窗口判定容差(±1 分钟):手动微调过的时间不误标激活 */
@@ -1178,129 +758,36 @@ function onTimeChange() {
     }
 }
 
-// ---- 查询 ----
-async function doSearch() {
-    // 按钮与回车共用入口:查询进行中(联邦跨多云,耗时可观)直接忽略再次触发,
-    // 否则并发叠加请求且响应乱序时后返回的旧结果会覆盖新结果
-    if (searching.value) return
-    if (!timeRange.value) {
-        // 时间范围被清空(datetimerange 默认可 clear)时给可见提示,而非静默无响应
-        ElMessage.warning('请选择查询时间范围')
-        return
-    }
-    searching.value = true
-    searchError.value = ''
-    startProgress()
-    detailVisible.value = false // 新查询收敛到统计视图
-    // 新查询重置分页游标(回到最新/首页)
-    allEntries.value = []
-    pageLoading.value = false
-    pageInc.value = null
-    pageBottom.value = false
-    const filters = buildFilters()
-    const params = {
-        log_type: activeType.value,
-        start_time: timeRange.value[0].getTime(),
-        end_time: timeRange.value[1].getTime(),
-        query: keyword.value || undefined,
-        clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
-        resources: selectedResources.value.length ? selectedResources.value : undefined,
-        filters: filters as FieldFilter[] | undefined,
-    }
-    // 取消控制器:查询按钮旁出现「取消」,中止即停(见 cancelSearch)
-    const ctrl = new AbortController()
-    searchAbort.value = ctrl
-    try {
-        // search(采样明细)+ aggregate(全窗真实统计)并行;聚合失败降级采样视图
-        const [searchRes, aggRes] = await Promise.all([
-            searchLogsApi({ ...params, limit: limit.value }, { signal: ctrl.signal }),
-            aggregateLogsApi({
-                ...params,
-                dimension: aggrDimension.value || undefined,
-                metric: aggrMetric.value === 'count' ? undefined : aggrMetric.value,
-            }, { signal: ctrl.signal }).catch(() => null),
-        ])
-        resp.value = searchRes
-        aggregate.value = aggRes
-        appendEntries(searchRes.entries)
-    } catch (e) {
-        resp.value = null
-        aggregate.value = null
-        searchError.value = isCanceled(e) ? '查询已取消' : e instanceof Error ? e.message : String(e)
-    } finally {
-        stopProgress()
-        searching.value = false
-        searchAbort.value = null
-    }
+// ================= 类型 / 云切换编排 =================
+function onTypeChange() {
+    // 清空查询结果与分页游标(游标由下一次 doSearch 彻底重置)
+    resetSearch()
+    aggregate.value = null
+    selectedResources.value = []
+    // 切类型:分组折叠态重置为全展开(组键跨类型语义不同)
+    resetCollapsed()
+    // 字段字典随类型变化,清理跨类型残留的筛选/分组条件
+    resetFilters()
+    resetTimeRange()
+    // 切类型复用本地缓存(缓存有该类型即零请求);无缓存才拉一次
+    void loadSources()
 }
 
-// ---- 时间游标翻页(明细) ----
-function appendEntries(rows: LogEntry[]) {
-    // 上游窗口严格前移(end = 上一页最旧秒 - 1s),页间无重复,直接追加
-    allEntries.value = [...allEntries.value, ...rows]
+function onCloudsChange() {
+    cloudsTouched.value = true
+    // 跨云残留的已选源从选中移除:源归属云,切云后原选中的 AWS/华为源
+    // 不再匹配(否则选中项残留 + 旧结果含其它云源,观感像"选阿里却有 AWS")
+    const cloudSet = new Set(selectedClouds.value)
+    selectedResources.value = selectedResources.value.filter((r) => {
+        const owner = sources.value.find((s) => s.resource_id === r)
+        return !owner || cloudSet.has(owner.cloud) // 无归属信息则保留
+    })
+    // 已有查询结果时按新云自动重查:保持"所见即所选"(doSearch 自带 searching
+    // 防并发;查询有 SWR 结果缓存,代价低)
+    if (resp.value) void doSearch()
 }
 
-async function loadEarlier() {
-    if (pageLoading.value || !timeRange.value) return
-    if (!resp.value) {
-        await doSearch()
-        return
-    }
-    if (!canLoadEarlier.value) {
-        ElMessage.info('已到窗口起点,没有更早的日志')
-        return
-    }
-    pageLoading.value = true
-    startProgress()
-    const ctrl = new AbortController()
-    searchAbort.value = ctrl
-    try {
-        const pageRes = await searchLogsApi({
-            log_type: activeType.value,
-            start_time: timeRange.value[0].getTime(),
-            // 窗口上界前移当前最旧一条 - 1 秒:WAF3 等秒级时间戳源整批完整
-            // 迁移(1ms 前移会把整个秒批次跳过;毫秒级源丢 1 秒无感知)
-            end_time: oldestTs.value - 1000,
-            query: keyword.value || undefined,
-            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
-            resources: selectedResources.value.length ? selectedResources.value : undefined,
-            filters: buildFilters(),
-            limit: limit.value,
-        }, { signal: ctrl.signal })
-        const before = allEntries.value.length
-        appendEntries(pageRes.entries)
-        pageInc.value = allEntries.value.length - before
-        // per-source 状态条随当前页刷新(统计图仍整窗,不受影响)
-        resp.value = pageRes
-        // 该源剩余窗口已无数据(42 条即该源真实量的末页迹象):扣一次到底
-        if (pageRes.entries.length === 0 || oldestTs.value <= timeRange.value[0].getTime()) {
-            pageBottom.value = true
-            if (pageRes.entries.length === 0) ElMessage.info('没有更早的日志,已到窗口起点')
-        }
-    } catch (e) {
-        if (!isCanceled(e)) {
-            ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
-        }
-    } finally {
-        stopProgress()
-        pageLoading.value = false
-        searchAbort.value = null
-    }
-}
-
-/** 回到窗口起点重置为最新一批 */
-function backToLatest() {
-    if (searching.value) return
-    void doSearch()
-}
-
-// ---- 详情 ----
-function openDetail(row: LogEntry) {
-    detailEntry.value = row
-    drawerVisible.value = true
-}
-
-// ---- 渲染辅助 ----
+// ================= 渲染辅助 =================
 function isMono(key: string): boolean {
     return ['client_ip', 'target_ip', 'request_id', 'edge_node', 'meta.region',
         'meta.resource_id', 'meta.account_name', 'tls_protocol', 'rule_id', 'geo'].includes(key)
@@ -1314,6 +801,23 @@ function columnWidth(key: string): number {
     if (key === 'status' || key === 'method' || key === 'action' || key === 'severity' || key === 'cache_hit') return 88
     return 130
 }
+
+// ================= 生命周期 =================
+onMounted(async () => {
+    resetTimeRange()
+    hydrateFromUrl()
+    const urlHasQuery = hasQueryParams(new URLSearchParams(window.location.search))
+    try {
+        typeMetas.value = await getLogTypesApi()
+    } catch {
+        // 字段字典失败:给出可见报错(不静默)。类型 Tab 与动态列不可用,但时间窗约束与手输检索仍可用
+        typeMetas.value = []
+        ElMessage.error('日志字段字典加载失败,请刷新重试')
+    }
+    await loadSources()
+    // 分享进入:URL 携带查询条件时自动跑一次,还原协作者看到的场景
+    if (urlHasQuery && timeRange.value) void doSearch()
+})
 </script>
 
 <style scoped>

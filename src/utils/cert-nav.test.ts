@@ -23,7 +23,7 @@ function findRoute(path: string) {
 }
 
 describe('证书管理一级菜单注册（任务 6.7 AC#4）', () => {
-    it('三项一级菜单按 prd-ui-functions 顺序：证书���账 → 到期看板 → 变更管理', () => {
+    it('三项一级菜单按 prd-ui-functions 顺序：证书台账 → 到期看板 → 变更管理', () => {
         expect(CERT_MENU_ITEMS.map((i) => i.title)).toEqual(['证书台账', '到期看板', '探测结果', '变更管理'])
     })
 
@@ -47,7 +47,7 @@ describe('证书管理一级菜单注册（任务 6.7 AC#4）', () => {
     })
 
     it('菜单图标类存在于 iconfont 样式表（图标可渲染）且互不重复', () => {
-        const css = readFileSync(resolve(here, '../../public/iconfont/iconfont.css'), 'utf8')
+        const css = readFileSync(resolve(here, '../assets/iconfont/iconfont.css'), 'utf8')
         const icons = CERT_MENU_ITEMS.map((i) => i.icon)
         for (const icon of icons) {
             expect(css, `${icon} 应在 iconfont.css 中定义`).toContain(`.${icon}`)
