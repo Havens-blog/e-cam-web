@@ -21,6 +21,9 @@ jobs:
       - name: Checkout e-cam-web
         uses: actions/checkout@v4
 
+      - name: Checkout haven-ui（@haven/ui 为 link:../haven-ui，CI 需单独拉取源码）
+        run: git clone --depth 1 https://github.com/Havens-blog/haven-ui.git ../haven-ui
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -56,6 +59,9 @@ jobs:
       - name: Checkout e-cam-web
         uses: actions/checkout@v4
 
+      - name: Checkout haven-ui（@haven/ui 为 link:../haven-ui，CI 需单独拉取源码）
+        run: git clone --depth 1 https://github.com/Havens-blog/haven-ui.git ../haven-ui
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -88,6 +94,9 @@ jobs:
       - name: Checkout e-cam-web
         uses: actions/checkout@v4
 
+      - name: Checkout haven-ui（@haven/ui 为 link:../haven-ui，CI 需单独拉取源码）
+        run: git clone --depth 1 https://github.com/Havens-blog/haven-ui.git ../haven-ui
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -117,6 +126,9 @@ jobs:
     steps:
       - name: Checkout e-cam-web
         uses: actions/checkout@v4
+
+      - name: Checkout haven-ui（@haven/ui 为 link:../haven-ui，CI 需单独拉取源码）
+        run: git clone --depth 1 https://github.com/Havens-blog/haven-ui.git ../haven-ui
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
