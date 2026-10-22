@@ -38,6 +38,9 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Install haven-ui deps（link 依赖需自己的 node_modules 供 vue-tsc 解析）
+        run: cd ../haven-ui && pnpm install --frozen-lockfile
+
       - name: Typecheck (vue-tsc)
         run: pnpm typecheck
 
@@ -76,6 +79,9 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Install haven-ui deps（link 依赖需自己的 node_modules 供 vue-tsc 解析）
+        run: cd ../haven-ui && pnpm install --frozen-lockfile
+
       - name: Vitest
         run: pnpm test
 
@@ -111,6 +117,9 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Install haven-ui deps（link 依赖需自己的 node_modules 供 vue-tsc 解析）
+        run: cd ../haven-ui && pnpm install --frozen-lockfile
+
       - name: Build + .gz 预压缩
         run: pnpm build:gz
 
@@ -143,6 +152,9 @@ jobs:
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
+
+      - name: Install haven-ui deps（link 依赖需自己的 node_modules 供 vue-tsc 解析）
+        run: cd ../haven-ui && pnpm install --frozen-lockfile
 
       - name: ESLint
         run: pnpm lint
