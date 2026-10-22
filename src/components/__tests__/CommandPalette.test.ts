@@ -315,10 +315,19 @@ describe('CommandPalette 资产快捷搜索（searchAssetsApi 契约）', () => 
             await wrapper.vm.$nextTick()
             guard++
         }
-        await input.trigger('keydown', { key: 'Enter' })
-        await flushPromises()
-        expect(router.currentRoute.value.path).toBe('/cmdb/instances')
-        wrapper.unmount()
+        // 未知资产类型跨应用外开到 e-cmdb-web 资源实例列表（避免 SPA 内 404）：
+        // 生产代码走 window.open 而非 router.push，memory router 抓不到。
+        // spy window.open 验真实意图；同时断言 SPA 路由未动。
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+        try {
+            await input.trigger('keydown', { key: 'Enter' })
+            await flushPromises()
+            expect(openSpy).toHaveBeenCalledWith('/cmdb/instances', '_blank')
+            expect(router.currentRoute.value.path).toBe('/')
+        } finally {
+            openSpy.mockRestore()
+            wrapper.unmount()
+        }
     })
 
     it('清空输入后不再展示资产结果，且不发请求', async () => {
