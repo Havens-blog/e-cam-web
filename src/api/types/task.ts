@@ -4,8 +4,14 @@
 
 /**
  * 任务类型
+ * 后端 executor 常量：cam:sync_assets / cam:discover_assets / cam:sync_billing / cam:create_ecs
+ * 历史前端误用无前缀的 sync_assets，导致类型筛选恒为 0 条。
  */
-export type TaskType = "sync_assets" | "discover_assets"
+export type TaskType =
+    | "cam:sync_assets"
+    | "cam:discover_assets"
+    | "cam:sync_billing"
+    | "cam:create_ecs"
 
 /**
  * 任务状态
@@ -25,6 +31,8 @@ export interface Task {
     started_at?: string
     completed_at?: string
     error_message?: string
+    /** 后端 TaskResp 实际字段名（error），error_message 为历史兼容 */
+    error?: string
     result?: any
 }
 

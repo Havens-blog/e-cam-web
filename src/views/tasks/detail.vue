@@ -69,13 +69,13 @@
         </el-card>
 
         <!-- 错误信息卡片 -->
-        <el-card v-if="task.error_message" class="info-card error-card">
+        <el-card v-if="task.error || task.error_message" class="info-card error-card">
           <template #header>
             <span>错误信息</span>
           </template>
           <div class="error-content">
             <el-icon class="error-icon"><WarningFilled /></el-icon>
-            <pre class="error-text">{{ task.error_message }}</pre>
+            <pre class="error-text">{{ task.error || task.error_message }}</pre>
           </div>
         </el-card>
 
@@ -119,6 +119,7 @@
 <script setup lang="ts">
 import { cancelTaskApi, deleteTaskApi, getTaskDetailApi } from '@/api'
 import type { Task } from '@/api/types/task'
+import { taskTypeLabel as formatTaskType } from './taskFilters'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
@@ -144,11 +145,7 @@ let refreshTimer: number | null = null
 // 计算属性
 const taskTypeLabel = computed(() => {
   if (!task.value) return ''
-  const labels = {
-    sync_assets: '同步资产',
-    discover_assets: '发现资产',
-  }
-  return labels[task.value.type] || task.value.type
+  return formatTaskType(task.value.type)
 })
 
 const duration = computed(() => {
