@@ -487,7 +487,7 @@ onUnmounted(() => {
       margin: 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 8px 16px;
+      gap: 8px 24px;
 
       :deep(.el-form-item) {
         margin-bottom: 0;
@@ -499,11 +499,6 @@ onUnmounted(() => {
         width: 160px;
       }
 
-      @media (max-width: 768px) {
-        :deep(.el-select) {
-          width: 140px;
-        }
-      }
     }
   }
 
