@@ -33,3 +33,16 @@ export function pendingWaitDurationText(createdAt?: string | null, now: number =
     if (!Number.isFinite(created)) return null
     return formatDurationMs(Math.max(0, now - created))
 }
+
+
+/**
+ * 等待中但存在上次开始时间：说明任务被重排/重试后回到 pending（执行态字段未清空）。
+ * 仅用于展示事实标记，不改变任何任务状态。
+ */
+export function isRequeuedPending(
+    status?: string | null,
+    startedAt?: string | null
+): boolean {
+    if (status !== 'pending' || !startedAt) return false
+    return Number.isFinite(Date.parse(startedAt))
+}

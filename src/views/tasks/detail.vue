@@ -36,6 +36,10 @@
               <span class="label">创建时间:</span>
               <span class="value">{{ formatTime(task.created_at) }}</span>
             </div>
+            <div v-if="wasRequeued" class="info-item">
+              <span class="label">上次执行:</span>
+              <span class="value">曾开始执行（当前等待重排）· {{ formatTime(task.started_at) }}</span>
+            </div>
             <div v-if="waited" class="info-item">
               <span class="label">已等待:</span>
               <span class="value">{{ waited }}</span>
@@ -127,7 +131,7 @@ import { taskTypeLabel as formatTaskType } from './taskFilters'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
-import { formatDurationMs, pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
+import { formatDurationMs, isRequeuedPending, pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -156,6 +160,8 @@ const taskTypeLabel = computed(() => {
 const showExecutionTiming = computed(() =>
   shouldUseExecutionTiming(task.value?.status)
 )
+
+const wasRequeued = computed(() => isRequeuedPending(task.value?.status, task.value?.started_at))
 
 const waited = computed(() =>
   task.value?.status === 'pending' ? pendingWaitDurationText(task.value.created_at, Date.now()) : null
