@@ -23,6 +23,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { searchAssetsApi } from '@/api/asset'
 import MainLayout from '../MainLayout.vue'
+import AppSidebar from '../components/AppSidebar.vue'
 // 源码原文（grep 断言用；vite/client 提供的 ?raw 模块声明）。
 // 大文件拆分后，布局由三个 SFC 组成（外壳 + 侧边栏 + 顶部导航栏），
 // 三者的源码合集才等价于原「单文件」的断言域。
@@ -262,5 +263,56 @@ describe('MainLayout × CommandPalette 集成', () => {
         // ecs → /compute/ecs，带 ?search=asset_id 预填（搜索数据源是 ecam_instance，不得跳 /assets/:id 那个跨集合 404）
         expect(router.currentRoute.value.path).toBe('/compute/ecs')
         expect(router.currentRoute.value.query.search).toBe('i-abc123')
+    })
+})
+
+
+/** 视口宽度控制（happy-dom 默认 1024） */
+function setViewportWidth(width: number): void {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+}
+
+describe('MainLayout 响应式折叠（cam-iteration-20261027-responsive-shell）', () => {
+    afterEach(() => setViewportWidth(1024))
+
+    it('窄屏挂载即折叠，回宽屏自动展开，再进窄屏再次折叠', async () => {
+        setViewportWidth(600)
+        const { wrapper } = await mountLayout()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(true)
+        setViewportWidth(1440)
+        window.dispatchEvent(new Event('resize'))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(false)
+        setViewportWidth(390)
+        window.dispatchEvent(new Event('resize'))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(true)
+    })
+
+    it('断点内手动展开不被 resize 覆盖，跨断点才应用默认态', async () => {
+        setViewportWidth(600)
+        const { wrapper } = await mountLayout()
+        await wrapper.find('.toggle-btn').trigger('click')
+        await wrapper.vm.$nextTick()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(false)
+        setViewportWidth(640)
+        window.dispatchEvent(new Event('resize'))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(false)
+        setViewportWidth(1440)
+        window.dispatchEvent(new Event('resize'))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.findComponent(AppSidebar).props('isCollapsed')).toBe(false)
+    })
+
+    it('卸载后移除 resize 监听', async () => {
+        setViewportWidth(600)
+        const removeSpy = vi.spyOn(window, 'removeEventListener')
+        const { wrapper } = await mountLayout()
+        const idx = wrappers.indexOf(wrapper)
+        if (idx >= 0) wrappers.splice(idx, 1)
+        wrapper.unmount()
+        expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function))
+        removeSpy.mockRestore()
     })
 })

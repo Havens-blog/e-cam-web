@@ -4,12 +4,12 @@ import { isNarrowViewport, NARROW_BREAKPOINT } from './responsive'
 describe('isNarrowViewport', () => {
     it('手机与窄平板为窄屏', () => {
         expect(isNarrowViewport(390)).toBe(true)
-        expect(isNarrowViewport(768)).toBe(true)
         expect(isNarrowViewport(NARROW_BREAKPOINT)).toBe(true)
     })
 
     it('桌面宽度不是窄屏', () => {
         expect(isNarrowViewport(NARROW_BREAKPOINT + 1)).toBe(false)
+        expect(isNarrowViewport(1024)).toBe(false)
         expect(isNarrowViewport(1440)).toBe(false)
     })
 
