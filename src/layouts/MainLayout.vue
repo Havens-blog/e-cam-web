@@ -26,19 +26,43 @@
  *   以 v-model 下发给 TopNavBar（原先是子模板直接写父数据）。
  */
 import CommandPalette from '@/components/CommandPalette/index.vue'
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { isNarrowViewport } from './responsive'
 import AppSidebar from './components/AppSidebar.vue'
 import TopNavBar from './components/TopNavBar.vue'
 
 const route = useRoute()
 
-// 侧边栏折叠状态
-const isCollapsed = ref(false)
-// 切换侧边栏（由 TopNavBar 的折叠按钮上报）
+// 首帧即按视口决定折叠态，避免窄屏先渲染 220px 再收缩
+const isNarrow = ref(
+  isNarrowViewport(typeof window !== 'undefined' ? window.innerWidth : 1440)
+)
+// 侧边栏折叠状态（窄屏初始折叠）
+const isCollapsed = ref(isNarrow.value)
+
+// 切换侧边栏（由 TopNavBar 的折叠按钮上报；断点内尊重用户手动选择）
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
+
+// 跨断点时自动折叠/展开：<=768px 折叠为 64px 图标栏，避免 390px 下内容区只剩 122px；
+// 769~1024 保持展开，保证图标态下不可达的二级菜单仍可用
+const applyViewport = () => {
+  const narrow = isNarrowViewport(window.innerWidth)
+  if (narrow === isNarrow.value) return
+  isNarrow.value = narrow
+  isCollapsed.value = narrow
+}
+
+onMounted(() => {
+  applyViewport()
+  window.addEventListener('resize', applyViewport)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', applyViewport)
+})
 
 // 平台导航面板开关
 const showPlatformNav = ref(false)
@@ -107,6 +131,13 @@ const commandPaletteVisible = ref(false)
   padding: 24px;
   background: var(--bg-base);
   transition: background-color 0.3s ease;
+}
+
+// 窄屏：收紧页面边距，把空间让给内容（配合侧边栏自动折叠）
+@media (max-width: 768px) {
+  .main-content {
+    padding: 12px;
+  }
 }
 
 </style>
