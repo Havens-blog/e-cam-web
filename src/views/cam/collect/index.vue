@@ -48,7 +48,10 @@
     <!-- 采集日志 -->
     <div class="logs-section">
       <div class="section-header">
-        <span class="section-title">采集日志</span>
+        <div class="section-title-group">
+          <span class="section-title">采集日志</span>
+          <span class="logs-total">共 {{ total }} 条</span>
+        </div>
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
           <el-button size="small" circle @click="fetchLogs()" title="刷新">
@@ -66,8 +69,46 @@
         </span>
         <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
+      <div class="logs-filters">
+        <el-select
+          v-model="filters.account_id"
+          placeholder="全部账号"
+          aria-label="按账号筛选"
+          clearable
+          filterable
+          style="width: 200px"
+          @change="handleFilterChange"
+        >
+          <el-option
+            v-for="a in accountOptions"
+            :key="a.value"
+            :label="a.label"
+            :value="a.value"
+          />
+        </el-select>
+        <el-select
+          v-model="filters.status"
+          placeholder="全部状态"
+          aria-label="按状态筛选"
+          clearable
+          style="width: 140px"
+          @change="handleFilterChange"
+        >
+          <el-option label="运行中" value="running" />
+          <el-option label="成功" value="success" />
+          <el-option label="失败" value="failed" />
+        </el-select>
+        <el-button v-if="filtersActive" link type="primary" @click="resetFilters">清空筛选</el-button>
+      </div>
       <el-table :data="logs" v-loading="logsLoading" stripe style="width: 100%">
-        <el-table-column prop="account_id" label="账号 ID" width="100" />
+        <el-table-column label="账号" min-width="140">
+          <template #default="{ row }">
+            <div class="account-cell">
+              <span class="account-name" :title="accountDisplayName(row.account_id, accountNames)">{{ accountDisplayName(row.account_id, accountNames) }}</span>
+              <span class="account-id">#{{ row.account_id }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="provider" label="云厂商" width="100">
           <template #default="{ row }">
             {{ getProviderLabel(row.provider) }}
@@ -89,19 +130,28 @@
             <span :class="{ 'elapsed-running': row.status === 'running' }">{{ formatElapsed(row, nowMs) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="error_msg" label="错误信息" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="error_msg" label="错误信息" min-width="150" show-overflow-tooltip />
         <el-table-column label="采集时间" width="180">
           <template #default="{ row }">
             {{ formatCollectStartedAt(row) }}
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty
+            :description="logsLoadFailed ? '采集日志加载失败' : filtersActive ? '没有匹配的采集记录' : '暂无采集记录'"
+            :image-size="60"
+          >
+            <el-button v-if="logsLoadFailed" size="small" @click="fetchLogs()">重试</el-button>
+            <el-button v-else-if="filtersActive" size="small" @click="resetFilters">清空筛选</el-button>
+          </el-empty>
+        </template>
       </el-table>
       <div class="pagination-wrap" v-if="total > pageSize">
         <el-pagination
           v-model:current-page="currentPage"
           :page-size="pageSize"
           :total="total"
-          layout="total, prev, pager, next"
+          layout="prev, pager, next"
           @current-change="handlePageChange"
         />
       </div>
@@ -112,13 +162,15 @@
 <script setup lang="ts">
 import { listCloudAccountsApi } from '@/api'
 import { listCollectLogsApi, triggerCollectApi } from '@/api/finops'
+import type { CollectLogStatus } from '@/api/finops'
 import type { CollectLog } from '@/api/types/finops'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
 import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
@@ -126,6 +178,7 @@ const collectDateRange = ref<[string, string] | null>(null)
 const collecting = ref(false)
 
 const accountOptions = ref<{ value: number; label: string }[]>([])
+const accountNames = ref<Record<number, string>>({})
 
 const logs = ref<CollectLog[]>([])
 const logsLoading = ref(false)
@@ -134,6 +187,12 @@ const isPolling = ref(false)
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
+/** 日志筛选：账号 / 状态（后端已支持，空值表示不过滤） */
+const filters = reactive<{ account_id?: number; status?: CollectLogStatus }>({
+  account_id: undefined,
+  status: undefined
+})
+const filtersActive = computed(() => hasActiveFilters(filters))
 /** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
 const nowMs = ref(Date.now())
 const lastLoadedAt = ref(0)
@@ -152,6 +211,8 @@ let pollDelay = 0
 let disposed = false
 /** 手动触发后的一次性补拉，需在卸载时清理 */
 let retryTimer: ReturnType<typeof setTimeout> | null = null
+/** 轮询世代：start/stop 时自增，避免 await 后旧链路再排一条 timer */
+let pollGeneration = 0
 
 const POLL_INTERVAL_MS = 5000
 const POLL_MAX_BACKOFF_MS = 60_000
@@ -241,10 +302,9 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
   const seq = ++fetchSeq
   if (!options.silent) logsLoading.value = true
   try {
-    const res = await listCollectLogsApi({
-      offset: (currentPage.value - 1) * pageSize,
-      limit: pageSize
-    })
+    const res = await listCollectLogsApi(
+      buildCollectLogQuery(filters, currentPage.value, pageSize)
+    )
     if (disposed || seq !== fetchSeq) return
     const data = (res as any).data || res
     logs.value = data.items || []
@@ -254,7 +314,14 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     logsLoadFailed.value = false
     errorNotified = false
     pollDelay = POLL_INTERVAL_MS
-    syncPolling()
+    // 总数缩小（如 running 收敛）导致当前页越界时收敛页码并重取，避免空表 + 分页消失
+    const clampedPage = clampPage(currentPage.value, total.value, pageSize)
+    if (clampedPage !== currentPage.value) {
+      currentPage.value = clampedPage
+      void fetchLogs({ silent: options.silent })
+      return
+    }
+    void syncPolling()
   } catch {
     if (disposed || seq !== fetchSeq) return
     // 轮询失败不清空已有日志，保留上一次成功结果并提示可恢复
@@ -274,8 +341,39 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
 
 const hasRunningLog = () => logs.value.some((l) => l.status === 'running')
 
-const syncPolling = () => {
-  if (hasRunningLog() || Date.now() < pollDeadline) {
+/**
+ * 后端是否仍有运行中的采集任务。
+ * 当前筛选/页码可能看不到 running 行（如筛「失败」或翻到第 2 页），
+ * 不能据此停止轮询；用 status=running&limit=1 轻探针判断。
+ * 探针失败时返回 true（宁可多轮询，也不静默停止）。
+ */
+const probeBackendRunning = async (): Promise<boolean> => {
+  try {
+    const query: { status: 'running'; offset: number; limit: number; account_id?: number } = {
+      status: 'running',
+      offset: 0,
+      limit: 1
+    }
+    if (filters.account_id) query.account_id = filters.account_id
+    const res = await listCollectLogsApi(query)
+    const data = (res as any).data || res
+    return Number(data.total || 0) > 0
+  } catch {
+    return true
+  }
+}
+
+const syncPolling = async () => {
+  if (Date.now() < pollDeadline || hasRunningLog()) {
+    startPolling()
+    return
+  }
+  if (disposed) return
+  const at = fetchSeq
+  const backendRunning = await probeBackendRunning()
+  // 探针在途期间若发生新的 fetch（切筛选/翻页），丢弃旧结论，避免误停轮询
+  if (disposed || at !== fetchSeq) return
+  if (backendRunning) {
     startPolling()
   } else {
     stopPolling()
@@ -284,10 +382,12 @@ const syncPolling = () => {
 
 const schedulePoll = () => {
   if (!polling || disposed) return
+  const generation = pollGeneration
   pollTimer = setTimeout(async () => {
     pollTimer = null
     await fetchLogs({ silent: true })
-    // fetchLogs 成功后可能已 stopPolling（无 running 且无宽限期）
+    // 等待期间 start/stop 过（筛选切换、卸载等）则不再续排，避免形成第二条 timer 链
+    if (generation !== pollGeneration) return
     schedulePoll()
   }, pollDelay || POLL_INTERVAL_MS)
 }
@@ -296,6 +396,7 @@ const startPolling = () => {
   if (polling || disposed) return
   polling = true
   isPolling.value = true
+  pollGeneration++
   if (!pollDelay) pollDelay = POLL_INTERVAL_MS
   schedulePoll()
 }
@@ -303,6 +404,7 @@ const startPolling = () => {
 const stopPolling = () => {
   polling = false
   isPolling.value = false
+  pollGeneration++
   if (pollTimer) {
     clearTimeout(pollTimer)
     pollTimer = null
@@ -313,11 +415,30 @@ const handlePageChange = () => {
   fetchLogs()
 }
 
+/** 筛选变化：回到第 1 页重新查询（轮询沿用同一筛选条件） */
+const handleFilterChange = () => {
+  currentPage.value = 1
+  fetchLogs()
+}
+
+const resetFilters = () => {
+  filters.account_id = undefined
+  filters.status = undefined
+  currentPage.value = 1
+  fetchLogs()
+}
+
+// 账号下拉最多取 100 个（当前环境 5 个）；超出部分日志行会显示「未知账号」，后续按 total 分页加载
 const fetchAccounts = async () => {
   try {
     const res = await listCloudAccountsApi({ limit: 100, offset: 0 })
     const data = (res as any).data || res
     const list = data.accounts || data.items || []
+    const names: Record<number, string> = {}
+    list.forEach((a: any) => {
+      names[a.id] = a.name
+    })
+    accountNames.value = names
     accountOptions.value = list.map((a: any) => ({
       value: a.id,
       label: `${a.name} (${getProviderLabel(a.provider)})`
@@ -374,10 +495,22 @@ onUnmounted(() => {
     align-items: center;
     margin-bottom: 12px;
 
+    .section-title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
     .section-title {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-primary);
+    }
+
+    .logs-total {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
     }
 
     .section-actions {
@@ -390,6 +523,34 @@ onUnmounted(() => {
         color: var(--text-secondary);
         font-variant-numeric: tabular-nums;
       }
+    }
+  }
+
+  .logs-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .account-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+
+    .account-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .account-id {
+      flex: none;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
     }
   }
 
@@ -407,7 +568,6 @@ onUnmounted(() => {
     color: var(--text-secondary);
     font-size: 13px;
   }
-
 }
 
 .elapsed-running {
