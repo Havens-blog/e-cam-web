@@ -485,10 +485,20 @@ onUnmounted(() => {
 
     .filters-form {
       margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
 
       :deep(.el-form-item) {
         margin-bottom: 0;
+        margin-right: 0;
       }
+
+      // el-select 默认宽度 100%，在 inline 表单里被压成 44px（只剩箭头）
+      :deep(.el-select) {
+        width: 160px;
+      }
+
     }
   }
 
