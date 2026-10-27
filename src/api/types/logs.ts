@@ -2,8 +2,9 @@
  * 多云统一日志查询 API 类型(对应 e-cam-service internal/logquery 三接口)
  */
 
-/** 日志类型(cdn / waf / slb / access) */
-export type LogType = 'cdn' | 'waf' | 'slb' | 'access'
+/** 日志类型(与后端 /types 字典一致:cdn / waf / slb / access / app;
+ * app=应用业务日志,2026-10 接入,先前联合类型漏列,页签运行时可用但静态类型失真) */
+export type LogType = 'cdn' | 'waf' | 'slb' | 'access' | 'app'
 
 /** 统一字段定义(动态列驱动:后端加字段,前端自动多列) */
 export interface LogFieldDef {

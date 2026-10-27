@@ -43,6 +43,16 @@ describe('decodeUrlState', () => {
         expect(got.limit).toBeNull()
         expect(got.filters).toEqual([])
     })
+    it('app 类型链接往返还原(encode 可写 decode 必认,漏认会静默落 cdn)', () => {
+        const p = encodeUrlState({ t: 'app', startMs: null, endMs: null, clouds: [], resources: [], kw: '', filters: [], dim: '', metric: 'count', limit: null })
+        expect(p.get('t')).toBe('app')
+        expect(decodeUrlState(p).t).toBe('app')
+    })
+    it('各类型链接往返还原', () => {
+        for (const t of ['cdn', 'waf', 'slb', 'access', 'app'] as const) {
+            expect(decodeUrlState(new URLSearchParams(`t=${t}`)).t).toBe(t)
+        }
+    })
     it('只保留合法 op 与完整段的筛选', () => {
         const got = decodeUrlState(new URLSearchParams(`f=${encodeURIComponent('a:eq:1|b:bad:x|c::v')}`))
         expect(got.filters).toEqual([{ field: 'a', op: 'eq', value: '1', drilldown: false }])
