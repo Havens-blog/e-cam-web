@@ -101,3 +101,52 @@ export function formatElapsed(
   if (typeof duration === 'number' && duration > 0) return `${(duration / 1000).toFixed(1)}s`
   return '-'
 }
+
+
+/**
+ * 长时长文案：>=1 天用「X天Y小时」，否则沿用 formatHumanDuration（分/秒）。
+ * 用于「运行中 N 条 · 最长已运行 X」这类跨天僵尸任务汇总。
+ */
+export function formatLongDuration(ms: number): string {
+  const safe = Math.max(0, Math.floor(ms))
+  const days = Math.floor(safe / 86_400_000)
+  if (days >= 1) return `${days}天${Math.floor((safe % 86_400_000) / 3_600_000)}小时`
+  return formatHumanDuration(safe)
+}
+
+export interface RunningSummary {
+  count: number
+  /** 最早一条运行中任务的开始时间（毫秒），无有效时间时为 0 */
+  oldestStartedAt: number
+  /** 最长已运行时长（毫秒） */
+  maxElapsedMs: number
+  /** 最长已运行时长文案，无数据时为空串 */
+  maxElapsedText: string
+}
+
+/**
+ * 汇总运行中的采集任务：只统计 status=running，忽略缺失/非法开始时间。
+ * 纯展示用途，不改变任何任务状态。
+ */
+export function summarizeRunningLogs(
+  logs: Array<Partial<CollectLog>> | null | undefined,
+  now: number = Date.now()
+): RunningSummary {
+  let count = 0
+  let oldestStartedAt = 0
+  let maxElapsedMs = 0
+  for (const log of logs ?? []) {
+    if (!log || log.status !== 'running') continue
+    count += 1
+    const started = collectStartedAt(log)
+    if (!started) continue
+    if (!oldestStartedAt || started < oldestStartedAt) oldestStartedAt = started
+    maxElapsedMs = Math.max(maxElapsedMs, Math.max(0, now - started))
+  }
+  return {
+    count,
+    oldestStartedAt,
+    maxElapsedMs,
+    maxElapsedText: maxElapsedMs > 0 ? formatLongDuration(maxElapsedMs) : ''
+  }
+}

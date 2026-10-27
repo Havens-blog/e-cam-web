@@ -54,7 +54,7 @@
         </div>
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
-          <el-button size="small" circle @click="fetchLogs()" title="刷新">
+          <el-button size="small" circle @click="refreshLogs" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
         </div>
@@ -69,6 +69,23 @@
         </span>
         <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
+      <div v-if="runningSummary && runningSummary.count > 0" class="running-summary" role="status">
+        <span
+          >运行中 <strong>{{ runningSummary.count }}</strong> 条<template
+            v-if="runningSummary.maxElapsedText"
+          >，最长已运行 <strong>{{ runningSummary.maxElapsedText }}</strong></template></span
+        >
+        <el-button
+          v-if="filters.status !== 'running'"
+          link
+          type="primary"
+          size="small"
+          @click="showRunningOnly"
+        >
+          只看运行中
+        </el-button>
+      </div>
+
       <div class="logs-filters">
         <el-select
           v-model="filters.account_id"
@@ -171,7 +188,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
-import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
+import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -196,6 +213,9 @@ const filtersActive = computed(() => hasActiveFilters(filters))
 /** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
 const nowMs = ref(Date.now())
 const lastLoadedAt = ref(0)
+/** 运行中任务汇总（全局口径，不随列表筛选变化） */
+const runningSummary = ref<{ count: number; maxElapsedText: string } | null>(null)
+let summaryFetchedAt = 0
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 /** 手动触发采集后的轮询宽限期：任务排队期间还没有 running 日志也不能停轮询 */
@@ -392,6 +412,35 @@ const schedulePoll = () => {
   }, pollDelay || POLL_INTERVAL_MS)
 }
 
+/** 全局运行中任务汇总：独立于列表筛选；60s 内不重复请求 */
+const fetchRunningSummary = async (force = false) => {
+  if (disposed) return
+  if (!force && Date.now() - summaryFetchedAt < 60_000) return
+  try {
+    const res = await listCollectLogsApi({ status: 'running', limit: 200 })
+    if (disposed) return
+    const data = (res as any).data || res
+    const s = summarizeRunningLogs(data.items || [])
+    runningSummary.value = { count: s.count, maxElapsedText: s.maxElapsedText }
+    summaryFetchedAt = Date.now()
+  } catch {
+    // 汇总失败保留上次值，不影响日志主流程
+  }
+}
+
+/** 手动刷新：日志 + 运行中汇总 */
+const refreshLogs = () => {
+  fetchLogs()
+  void fetchRunningSummary(true)
+}
+
+/** 只看运行中（复用既有筛选） */
+const showRunningOnly = () => {
+  filters.status = 'running'
+  currentPage.value = 1
+  void fetchLogs()
+}
+
 const startPolling = () => {
   if (polling || disposed) return
   polling = true
@@ -452,6 +501,7 @@ const fetchAccounts = async () => {
 onMounted(() => {
   fetchAccounts()
   fetchLogs()
+  void fetchRunningSummary(true)
 })
 
 onUnmounted(() => {
@@ -526,7 +576,24 @@ onUnmounted(() => {
     }
   }
 
-  .logs-filters {
+  .running-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--el-color-warning) 35%, transparent);
+  color: var(--text-secondary);
+  font-size: 13px;
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.logs-filters {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
