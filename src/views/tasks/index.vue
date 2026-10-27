@@ -27,7 +27,12 @@
           <span class="summary-label">{{ item.label }}</span>
           <span class="summary-count">{{ summary[item.key] }}</span>
         </button>
-        <span v-if="backlog" class="backlog-hint">队列积压：待执行 {{ summary.pending }} · 执行中 {{ summary.running }}</span>
+        <span v-if="backlog" class="backlog-hint">
+          队列积压：待执行 {{ summary.pending }} · 执行中 {{ summary.running }}
+          <span v-if="oldestPendingText && summary.pending > 0" class="oldest-wait"
+            >· 最老等待 {{ oldestPendingText }}</span
+          >
+        </span>
         <el-button v-if="filtersActive" link type="primary" size="small" @click="clearFilters">
           清空筛选
         </el-button>
@@ -109,6 +114,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TaskCard from './components/TaskCard.vue'
+import { oldestPendingWaitText } from './queue'
 import {
   buildTaskQuery,
   EMPTY_TASK_SUMMARY,
@@ -140,6 +146,8 @@ const pagination = reactive({
 const summary = reactive<TaskSummary>({ ...EMPTY_TASK_SUMMARY })
 const activeSummaryKey = computed(() => filters.status || 'all')
 const backlog = computed(() => hasBacklog(summary))
+/** 最老待执行任务的等待时长（全局口径，帮助判断队列饿死程度） */
+const oldestPendingText = ref('')
 const filtersActive = computed(() => Boolean(filters.type || filters.status))
 
 // 自动刷新
@@ -158,6 +166,7 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     if (disposed || seq !== listSeq) return
     tasks.value = data.tasks || []
     pagination.total = data.total || 0
+    void fetchOldestPending()
   } catch (error: any) {
     if (disposed || seq !== listSeq) return
     ElMessage.error(error.message || '获取任务列表失败')
@@ -183,9 +192,40 @@ const fetchSummary = async () => {
   })
 }
 
+let oldestFetchedAt = 0
+let oldestSeq = 0
+const fetchOldestPending = async (force = false) => {
+  if (disposed) return
+  if (!force && Date.now() - oldestFetchedAt < 60_000) return
+  const seq = ++oldestSeq
+  try {
+    // 与概览同口径：跟随类型筛选；后端固定 created_at DESC，total 超过一页时补取最后一条（即最老）
+    const first = await listTasksApi({ type: filters.type, status: 'pending', offset: 0, limit: 100 })
+    if (disposed || seq !== oldestSeq) return
+    let tasks = first.data.tasks || []
+    const total = Number(first.data.total) || 0
+    if (total > tasks.length) {
+      const last = await listTasksApi({
+        type: filters.type,
+        status: 'pending',
+        offset: Math.max(0, total - 1),
+        limit: 1
+      })
+      if (disposed || seq !== oldestSeq) return
+      tasks = [...tasks, ...(last.data.tasks || [])]
+    }
+    oldestPendingText.value = oldestPendingWaitText(tasks, Date.now()) || ''
+  } catch {
+    // 失败保留上次值，不影响列表主流程
+  } finally {
+    if (seq === oldestSeq) oldestFetchedAt = Date.now()
+  }
+}
+
 // 手动刷新：概览 + 列表
 const refreshAll = async () => {
   await Promise.all([fetchSummary(), fetchTasks()])
+  void fetchOldestPending(true)
   syncAutoRefresh()
 }
 
@@ -194,6 +234,7 @@ const handleTypeChange = () => {
   pagination.page = 1
   fetchSummary()
   fetchTasks()
+  void fetchOldestPending(true)
 }
 
 // 状态变化：只刷新列表，不重复统计
@@ -224,6 +265,7 @@ const clearFilters = () => {
   pagination.page = 1
   fetchSummary()
   fetchTasks()
+  void fetchOldestPending(true)
 }
 
 // 查看任务详情
@@ -309,7 +351,8 @@ const stopAutoRefresh = () => {
 
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
-  // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」
+  // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」；
+  // 最老等待由 fetchTasks 成功路径按 60s 节流触发，这里不再重复请求
   await Promise.all([fetchSummary(), fetchTasks()])
   syncAutoRefresh()
 })
@@ -395,6 +438,10 @@ onUnmounted(() => {
       font-variant-numeric: tabular-nums;
       color: var(--text-primary);
     }
+  }
+
+  .oldest-wait {
+    white-space: nowrap;
   }
 
   .backlog-hint {
