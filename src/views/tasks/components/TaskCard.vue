@@ -15,11 +15,12 @@
         <el-tag
           v-if="wasRequeued"
           size="small"
-          type="warning"
+          type="info"
           class="requeued-tag"
           title="等待中但存在上次开始时间，可能已被重排或重试"
+          aria-label="曾执行，待重排"
         >
-          曾执行
+          曾执行·待重排
         </el-tag>
         <span class="task-time">{{ formatTime(task.created_at) }}</span>
       </div>
@@ -164,6 +165,11 @@ const duration = computed(() => {
 </script>
 
 <style scoped lang="scss">
+.requeued-tag {
+  align-self: flex-start;
+  margin-left: 4px;
+}
+
 .task-card {
   margin-bottom: 16px;
   transition: all 200ms ease;

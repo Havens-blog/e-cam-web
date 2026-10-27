@@ -43,5 +43,6 @@ export function isRequeuedPending(
     status?: string | null,
     startedAt?: string | null
 ): boolean {
-    return status === 'pending' && Boolean(startedAt)
+    if (status !== 'pending' || !startedAt) return false
+    return Number.isFinite(Date.parse(startedAt))
 }

@@ -37,8 +37,8 @@
               <span class="value">{{ formatTime(task.created_at) }}</span>
             </div>
             <div v-if="wasRequeued" class="info-item">
-              <span class="label">执行状态:</span>
-              <span class="value">曾开始执行（当前等待重排）</span>
+              <span class="label">上次执行:</span>
+              <span class="value">曾开始执行（当前等待重排）· {{ formatTime(task.started_at) }}</span>
             </div>
             <div v-if="waited" class="info-item">
               <span class="label">已等待:</span>

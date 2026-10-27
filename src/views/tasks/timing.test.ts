@@ -53,7 +53,10 @@ describe('isRequeuedPending', () => {
 
     it('非等待中或没有开始时间不标记', () => {
         expect(isRequeuedPending('running', '2026-10-27T02:16:11Z')).toBe(false)
+        expect(isRequeuedPending('failed', '2026-10-27T02:16:11Z')).toBe(false)
+        expect(isRequeuedPending('cancelled', '2026-10-27T02:16:11Z')).toBe(false)
         expect(isRequeuedPending('pending', undefined)).toBe(false)
-        expect(isRequeuedPending('completed', '2026-10-27T02:16:11Z')).toBe(false)
+        expect(isRequeuedPending('pending', '')).toBe(false)
+        expect(isRequeuedPending('pending', 'not-a-date')).toBe(false)
     })
 })
