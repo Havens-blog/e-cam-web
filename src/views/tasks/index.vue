@@ -29,7 +29,9 @@
         </button>
         <span v-if="backlog" class="backlog-hint">
           队列积压：待执行 {{ summary.pending }} · 执行中 {{ summary.running }}
-          <template v-if="oldestPendingText">· 最老等待 {{ oldestPendingText }}</template>
+          <span v-if="oldestPendingText && summary.pending > 0" class="oldest-wait"
+            >· 最老等待 {{ oldestPendingText }}</span
+          >
         </span>
         <el-button v-if="filtersActive" link type="primary" size="small" @click="clearFilters">
           清空筛选
@@ -197,9 +199,22 @@ const fetchOldestPending = async (force = false) => {
   if (!force && Date.now() - oldestFetchedAt < 60_000) return
   const seq = ++oldestSeq
   try {
-    const { data } = await listTasksApi({ status: 'pending', offset: 0, limit: 100 })
+    // 与概览同口径：跟随类型筛选；后端固定 created_at DESC，total 超过一页时补取最后一条（即最老）
+    const first = await listTasksApi({ type: filters.type, status: 'pending', offset: 0, limit: 100 })
     if (disposed || seq !== oldestSeq) return
-    oldestPendingText.value = oldestPendingWaitText(data.tasks || [], Date.now()) || ''
+    let tasks = first.data.tasks || []
+    const total = Number(first.data.total) || 0
+    if (total > tasks.length) {
+      const last = await listTasksApi({
+        type: filters.type,
+        status: 'pending',
+        offset: Math.max(0, total - 1),
+        limit: 1
+      })
+      if (disposed || seq !== oldestSeq) return
+      tasks = [...tasks, ...(last.data.tasks || [])]
+    }
+    oldestPendingText.value = oldestPendingWaitText(tasks, Date.now()) || ''
   } catch {
     // 失败保留上次值，不影响列表主流程
   } finally {
@@ -219,6 +234,7 @@ const handleTypeChange = () => {
   pagination.page = 1
   fetchSummary()
   fetchTasks()
+  void fetchOldestPending(true)
 }
 
 // 状态变化：只刷新列表，不重复统计
@@ -249,6 +265,7 @@ const clearFilters = () => {
   pagination.page = 1
   fetchSummary()
   fetchTasks()
+  void fetchOldestPending(true)
 }
 
 // 查看任务详情
@@ -334,9 +351,9 @@ const stopAutoRefresh = () => {
 
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
-  // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」
+  // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」；
+  // 最老等待由 fetchTasks 成功路径按 60s 节流触发，这里不再重复请求
   await Promise.all([fetchSummary(), fetchTasks()])
-  void fetchOldestPending(true)
   syncAutoRefresh()
 })
 
@@ -421,6 +438,10 @@ onUnmounted(() => {
       font-variant-numeric: tabular-nums;
       color: var(--text-primary);
     }
+  }
+
+  .oldest-wait {
+    white-space: nowrap;
   }
 
   .backlog-hint {

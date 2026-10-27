@@ -17,6 +17,7 @@ describe('oldestPendingWaitText', () => {
         expect(oldestPendingWaitText([], now)).toBeNull()
         expect(oldestPendingWaitText([{ status: 'running', created_at: '2026-10-27T00:00:00Z' }], now)).toBeNull()
         expect(oldestPendingWaitText([{ status: 'pending', created_at: 'bad' }], now)).toBeNull()
+        expect(oldestPendingWaitText([{ status: 'pending' }], now)).toBeNull()
         expect(oldestPendingWaitText(null, now)).toBeNull()
     })
 
