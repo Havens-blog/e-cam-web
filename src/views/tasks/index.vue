@@ -374,6 +374,12 @@ onUnmounted(() => {
   background: var(--bg-base);
   margin: -24px; // 抵消外层 padding
   height: calc(100% + 48px);
+
+  // 窄屏外层 padding 为 12px，负 margin 同步收敛，避免 12px 横向滚动
+  @media (max-width: 768px) {
+    margin: -12px;
+    height: calc(100% + 24px);
+  }
 }
 
 // 页面顶部
@@ -381,6 +387,11 @@ onUnmounted(() => {
   padding: 16px 20px 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-subtle);
+
+  // 窄屏与内容区左右内边距对齐（内容 8px），避免头部比卡片多缩进 12px
+  @media (max-width: 768px) {
+    padding: 16px 8px 12px;
+  }
 }
 
 .page-title-row {
@@ -458,6 +469,11 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 12px 20px;
+
+  @media (max-width: 768px) {
+    // 收紧左右内边距，保证分页在 390 下仍能单容器放下
+    padding: 12px 8px;
+  }
 
   .filters-container {
     margin-bottom: 12px;
