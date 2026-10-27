@@ -27,6 +27,11 @@ export interface LogQueryState {
 
 const FILTER_OPS = new Set(['eq', 'neq', 'contains', 'prefix'])
 
+/** 合法日志类型白名单(与后端 /types 字典一致)。decode 须覆盖 encode 的
+ * 全部可写值:encode 在 app 页签会写 t=app,白名单漏 app 时分享/刷新
+ * 链接静默落到 cdn(实测踩坑)。 */
+const LOG_TYPES = new Set<string>(['cdn', 'waf', 'slb', 'access', 'app'])
+
 /** 状态 → URLSearchParams(仅写非默认值) */
 export function encodeUrlState(s: LogQueryState): URLSearchParams {
     const p = new URLSearchParams()
@@ -54,7 +59,9 @@ export function encodeUrlState(s: LogQueryState): URLSearchParams {
 /** URLSearchParams → 状态(非法/缺失项回退默认;filters 只保留合法 op) */
 export function decodeUrlState(params: URLSearchParams): LogQueryState {
     const state: LogQueryState = {
-        t: params.get('t') === 'waf' || params.get('t') === 'slb' || params.get('t') === 'access' ? (params.get('t') as LogType) : 'cdn',
+        // 白名单须与 encodeUrlState 的可写值一致:encode 会在 app 页签写入
+        // t=app,decode 若不认 app,分享/刷新链接会静默落到 cdn(实测踩坑)
+        t: LOG_TYPES.has(params.get('t') ?? '') ? (params.get('t') as LogType) : 'cdn',
         startMs: parseMs(params.get('st')),
         endMs: parseMs(params.get('et')),
         clouds: splitEncoded(params.get('c')),
