@@ -1,13 +1,17 @@
 <script setup lang="ts">
 // CAM Web 根组件
+// Element Plus 默认英文（分页 Total / Go to、日期面板等），统一为中文
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
 
 <template>
-  <div id="app">
+  <el-config-provider :locale="zhCn">
+    <div id="app">
     <router-view />
     <!-- 错误监控组件（仅开发环境） -->
-    <!-- <ErrorMonitor v-if="isDev" /> -->
-  </div>
+      <!-- <ErrorMonitor v-if="isDev" /> -->
+    </div>
+  </el-config-provider>
 </template>
 
 <style lang="scss">
