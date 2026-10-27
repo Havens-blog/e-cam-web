@@ -124,8 +124,26 @@ export interface SLBLogEntry {
     raw: LogRaw
 }
 
-/** 统一日志条目(三 schema 联合;按 timestamp 排序展示) */
-export type LogEntry = CDNLogEntry | WAFLogEntry | SLBLogEntry
+/** 应用业务日志统一模型(自采 java 业务流;service/level/message/timestamp 为 RCA 跨服务消费契约,缺失如实留空) */
+export interface AppLogEntry {
+    meta: LogMeta
+    timestamp: number
+    /** 服务名(document_type 去 -business 后缀) */
+    service: string
+    /** 归一小写: error / warn / info / debug / "" */
+    level: string
+    /** 日志正文(msg 列;空回退原始行 message 列) */
+    message: string
+    /** 异常堆栈(ERROR 行常见;可为空) */
+    exception: string
+    /** 链路 ID(业务埋点,可为空) */
+    trace_id: string
+    /** pod/线程/location 等全量原始字段 */
+    raw: LogRaw
+}
+
+/** 统一日志条目(四 schema 联合;按 timestamp 排序展示) */
+export type LogEntry = CDNLogEntry | WAFLogEntry | SLBLogEntry | AppLogEntry
 
 /** 结构化字段筛选条件(字段字典 key;AND 叠加,语义在归一化字段上) */
 export interface FieldFilter {

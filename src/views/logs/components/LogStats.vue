@@ -53,6 +53,7 @@ import {
     buildStatusSlices,
     buildTopHosts,
     buildTopRules,
+    buildTopServices,
     buildTrend,
     buildTrendFromBuckets,
 } from '../stats'
@@ -237,7 +238,7 @@ const thirdChartTitle = computed(() => {
     // 全窗下展示真实指标名(自定义分组时维度/指标可能不是默认域名/计数)
     const base = hasAggregate.value && props.aggregate!.topn.length > 0
         ? `${metricMeta.value.label} Top`
-        : (props.logType === 'waf' ? '规则 Top' : '域名 Top')
+        : (props.logType === 'waf' ? '规则 Top' : props.logType === 'app' ? '服务 Top' : '域名 Top')
     return hasAggregate.value ? base : `${base}(采样)`
 })
 
@@ -249,6 +250,8 @@ const thirdOption = computed<EChartsOption>(() => {
         )
     }
     if (props.logType === 'waf') return topBarOption(buildTopRules(props.entries))
+    // app 无聚合 TopN(SDK kindApp 无默认维度):采样图按服务分组,与下钻字段 service 对齐
+    if (props.logType === 'app') return topBarOption(buildTopServices(props.entries))
     return topBarOption(buildTopHosts(props.entries))
 })
 

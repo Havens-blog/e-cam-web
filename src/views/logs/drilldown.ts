@@ -9,9 +9,11 @@ export interface FieldFilterRow extends FieldFilter {
     drilldown?: boolean
 }
 
-/** 默认维度 → 筛选字段:非 waf(域名 Top)→ host,waf(规则 Top)→ rule_name */
+/** 默认维度 → 筛选字段:waf(规则 Top)→ rule_name,app(服务 Top)→ service,其余(域名 Top)→ host */
 function defaultTopnField(logType: LogType): string {
-    return logType === 'waf' ? 'rule_name' : 'host'
+    if (logType === 'waf') return 'rule_name'
+    if (logType === 'app') return 'service'
+    return 'host'
 }
 
 /**
