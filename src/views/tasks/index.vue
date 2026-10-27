@@ -14,7 +14,7 @@
 
     <div class="tasks-content">
       <!-- 队列概览：全部/待执行/执行中/已完成/失败，点击即筛选 -->
-      <div class="queue-summary">
+      <div class="queue-summary" role="group" aria-label="队列概览">
         <button
           v-for="item in TASK_SUMMARY_STATUSES"
           :key="item.key"
@@ -41,7 +41,7 @@
               v-model="filters.type"
               placeholder="全部类型"
               clearable
-              @change="handleFilterChange"
+              @change="handleTypeChange"
             >
               <el-option
                 v-for="opt in TASK_TYPE_OPTIONS"
@@ -56,7 +56,7 @@
               v-model="filters.status"
               placeholder="全部状态"
               clearable
-              @change="handleFilterChange"
+              @change="handleStatusChange"
             >
               <el-option
                 v-for="opt in TASK_STATUS_OPTIONS"
@@ -185,15 +185,20 @@ const fetchSummary = async () => {
 
 // 手动刷新：概览 + 列表
 const refreshAll = async () => {
-  await fetchSummary()
-  await fetchTasks()
+  await Promise.all([fetchSummary(), fetchTasks()])
   syncAutoRefresh()
 }
 
-// 筛选变化
-const handleFilterChange = () => {
+// 类型变化：概览与列表同口径刷新
+const handleTypeChange = () => {
   pagination.page = 1
   fetchSummary()
+  fetchTasks()
+}
+
+// 状态变化：只刷新列表，不重复统计
+const handleStatusChange = () => {
+  pagination.page = 1
   fetchTasks()
 }
 

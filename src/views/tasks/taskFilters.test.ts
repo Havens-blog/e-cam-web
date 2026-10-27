@@ -11,11 +11,12 @@ import {
 
 describe('TASK_TYPE_OPTIONS', () => {
     it('使用后端真实类型（cam: 前缀）', () => {
-        const values = TASK_TYPE_OPTIONS.map((o) => o.value)
-        expect(values).toContain('cam:sync_assets')
-        expect(values).toContain('cam:sync_billing')
-        expect(values.every((v) => v.startsWith('cam:'))).toBe(true)
-        expect(values).not.toContain('sync_assets')
+        expect(TASK_TYPE_OPTIONS.map((o) => o.value)).toEqual([
+            'cam:sync_assets',
+            'cam:discover_assets',
+            'cam:sync_billing',
+            'cam:create_ecs',
+        ])
     })
 
     it('覆盖同步资产/发现资产/同步账单/创建云主机', () => {
@@ -53,6 +54,10 @@ describe('labels', () => {
         expect(taskTypeLabel('cam:sync_assets')).toBe('同步资产')
         expect(taskTypeLabel('cam:sync_billing')).toBe('同步账单')
         expect(taskStatusLabel('pending')).toBe('待执行')
+    })
+
+    it('旧的无前缀类型不再被识别为已知类型', () => {
+        expect(taskTypeLabel('sync_assets')).toBe('sync_assets')
     })
 
     it('未知类型回退原始值', () => {
