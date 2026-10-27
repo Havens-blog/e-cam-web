@@ -93,8 +93,11 @@ export interface BudgetProgress {
     name: string
     amount_limit: number
     current_spend: number
-    progress_percent: number
-    remaining: number
+    /** 已使用百分比（后端字段 usage_percent，历史前端误读 progress_percent） */
+    usage_percent: number
+    /** 剩余额度（后端字段 remaining_amount，历史前端误读 remaining） */
+    remaining_amount: number
+    status?: string
 }
 
 // ==================== 成本分摊 ====================
