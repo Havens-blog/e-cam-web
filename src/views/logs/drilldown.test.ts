@@ -18,6 +18,12 @@ describe('topnDrilldownField(维度映射)', () => {
         expect(topnDrilldownField(false, 'real_client_ip', 'cdn')).toBe('host')
     })
 
+    it('采样回退 app → service(采样图按服务分组,下钻字段必须与图对齐)', () => {
+        expect(topnDrilldownField(false, '', 'app')).toBe('service')
+        // app 无 host 字段,回退 host 会让下钻明细恒空(实测踩坑)
+        expect(topnDrilldownField(false, 'host', 'app')).toBe('service')
+    })
+
     it('默认维度 waf → rule_name', () => {
         expect(topnDrilldownField(false, '', 'waf')).toBe('rule_name')
         expect(topnDrilldownField(true, '', 'waf')).toBe('rule_name')

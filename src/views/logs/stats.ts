@@ -92,9 +92,24 @@ function countBy(entries: LogEntry[], key: (e: LogEntry) => string): Record<stri
     return out
 }
 
-/** host 优先,退回资源标识(SLB 聚合流可能无 host) */
+/** host 优先,退回资源标识(SLB 聚合流可能无 host;app 无 host 字段) */
 export function entryHost(e: LogEntry): string {
-    return e.host || e.meta.resource_id || ''
+    return ('host' in e ? e.host : '') || e.meta.resource_id || ''
+}
+
+/** 有 status 字段的条目(cdn/waf/slb/access);app 无该字段 → 0(statusClass 归入"其他"桶) */
+function entryStatus(e: LogEntry): number {
+    return 'status' in e ? e.status : 0
+}
+
+/** 应用业务日志的服务名(RCA 消费契约;其他类型无此字段返回空) */
+export function entryService(e: LogEntry): string {
+    return (e as { service?: string }).service || ''
+}
+
+/** 采样 TopN:应用业务日志按服务分组(第三图回退态,与下钻字段 service 对齐) */
+export function buildTopServices(entries: LogEntry[], n = 8): NamedCount[] {
+    return topN(countBy(entries, entryService), n)
 }
 
 /** 最近邻百分位(升序样本,p∈[0,100];空数组返回 0) */
@@ -137,7 +152,7 @@ function cdnKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): 
     const cacheBuckets: Record<string, number> = {}
     let bytes = 0
     for (const e of entries) {
-        statusBuckets[statusClass(e.status)] = (statusBuckets[statusClass(e.status)] || 0) + 1
+        statusBuckets[statusClass(entryStatus(e))] = (statusBuckets[statusClass(entryStatus(e))] || 0) + 1
         const hit = (e as CDNLogEntry).cache_hit
         if (hit) cacheBuckets[hit] = (cacheBuckets[hit] || 0) + 1
         bytes += Number((e as CDNLogEntry).bytes_sent) || 0
@@ -185,7 +200,7 @@ function slbKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): 
     const statusBuckets: Record<string, number> = {}
     const latencies: number[] = []
     for (const e of entries) {
-        statusBuckets[statusClass(e.status)] = (statusBuckets[statusClass(e.status)] || 0) + 1
+        statusBuckets[statusClass(entryStatus(e))] = (statusBuckets[statusClass(entryStatus(e))] || 0) + 1
         const lat = (e as { latency_ms?: number }).latency_ms
         if (lat && lat > 0) latencies.push(lat)
     }
@@ -208,7 +223,7 @@ function slbKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): 
 // ---- 切片(donut) ----
 
 export function buildStatusSlices(entries: LogEntry[]): Slice[] {
-    const buckets = countBy(entries, (e) => statusClass(e.status))
+    const buckets = countBy(entries, (e) => statusClass(entryStatus(e)))
     return orderSlices(buckets, ['2xx', '3xx', '4xx', '5xx', '其他'], STATUS_COLORS)
 }
 
