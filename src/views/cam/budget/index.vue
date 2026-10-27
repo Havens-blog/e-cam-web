@@ -12,7 +12,7 @@
     <div class="budget-table-card">
       <el-table
         :data="budgetList"
-        v-loading="loading"
+        v-loading="loading || progressLoadingAll"
         stripe
         style="width: 100%"
         @row-click="handleRowClick"
@@ -34,7 +34,7 @@
                 :color="progressColor(progressMap[row.id]!.usage_percent)"
               />
               <div class="usage-meta">
-                <span class="usage-amount">{{ formatCost(progressMap[row.id]!.current_spend) }}</span>
+                <span class="usage-amount">{{ formatCost(currentSpend(progressMap[row.id]!)) }}</span>
                 <span
                   class="usage-percent"
                   :class="{ over: isOverBudget(progressMap[row.id]!.usage_percent) }"
@@ -48,9 +48,18 @@
                 >
                   超支
                 </el-tag>
+                <el-tag
+                  v-else-if="isAtLimit(progressMap[row.id]!.usage_percent)"
+                  type="warning"
+                  size="small"
+                >
+                  已达上限
+                </el-tag>
               </div>
             </div>
-            <span v-else-if="progressFailed[row.id]" class="usage-missing">获取失败</span>
+            <span v-else-if="progressFailed[row.id]" class="usage-missing" title="点击行可重试">
+              获取失败，点击重试
+            </span>
             <span v-else class="usage-missing">—</span>
           </template>
         </el-table-column>
@@ -103,7 +112,13 @@
     <el-drawer v-model="progressVisible" title="预算消耗进度" size="420px" direction="rtl">
       <div v-if="progressLoading" v-loading="true" style="min-height: 200px" />
       <div v-else-if="progress" class="progress-content">
-        <div class="progress-name">{{ progress.name }}</div>
+        <div class="progress-name">
+          {{ progress.name }}
+          <el-tag v-if="isOverBudget(progress.usage_percent)" type="danger" size="small">超支</el-tag>
+          <el-tag v-else-if="isAtLimit(progress.usage_percent)" type="warning" size="small">
+            已达上限
+          </el-tag>
+        </div>
         <div class="progress-bar-section">
           <el-progress
             :percentage="clampPercent(progress!.usage_percent)"
@@ -115,11 +130,11 @@
         <div class="progress-details">
           <div class="detail-row">
             <span class="detail-label">预算上限</span>
-            <span class="detail-value">{{ formatCost(progress.amount_limit) }}</span>
+            <span class="detail-value">{{ formatCost(amountLimit(progress!)) }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">已消耗</span>
-            <span class="detail-value spent">{{ formatCost(progress.current_spend) }}</span>
+            <span class="detail-value spent">{{ formatCost(currentSpend(progress!)) }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">剩余额度</span>
@@ -231,9 +246,13 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
 import {
+  amountLimit,
   clampPercent,
+  currentSpend,
   formatUsagePercent,
+  isAtLimit,
   isOverBudget,
+  normalizeProgress,
   overBudgetAmount,
   progressColor,
   remainingAmount
@@ -249,6 +268,10 @@ const budgetList = ref<BudgetRule[]>([])
 /** 预算 id -> 消耗进度（列表直接展示，避免必须点开抽屉才发现超支） */
 const progressMap = ref<Record<number, BudgetProgress>>({})
 const progressFailed = ref<Record<number, boolean>>({})
+const progressLoadingAll = ref(false)
+/** 批量进度请求令牌：刷新交错时丢弃旧结果 */
+let progressBatchSeq = 0
+const PROGRESS_CONCURRENCY = 4
 
 const fetchBudgets = async () => {
   loading.value = true
@@ -265,28 +288,41 @@ const fetchBudgets = async () => {
 
 // 批量取各预算进度：单项失败只影响该行，不阻断列表
 const fetchProgress = async (rules: BudgetRule[] = budgetList.value) => {
+  const seq = ++progressBatchSeq
   if (!rules.length) {
     progressMap.value = {}
     progressFailed.value = {}
+    progressLoadingAll.value = false
     return
   }
-  const results = await Promise.allSettled(rules.map((rule) => getBudgetProgressApi(rule.id)))
+  progressLoadingAll.value = true
   const map: Record<number, BudgetProgress> = {}
   const failed: Record<number, boolean> = {}
-  results.forEach((res, idx) => {
-    const rule = rules[idx]
-    if (!rule) return
-    const id = rule.id
-    if (res.status === 'fulfilled') {
-      const data = (res.value as any).data || res.value
-      if (data) map[id] = data as BudgetProgress
-      else failed[id] = true
-    } else {
-      failed[id] = true
+  try {
+    // 限制并发：每个进度请求后端会做一次当月聚合，预算多时避免打满
+    for (let i = 0; i < rules.length; i += PROGRESS_CONCURRENCY) {
+      const slice = rules.slice(i, i + PROGRESS_CONCURRENCY)
+      const results = await Promise.allSettled(slice.map((rule) => getBudgetProgressApi(rule.id)))
+      if (seq !== progressBatchSeq) return
+      results.forEach((res, idx) => {
+        const rule = slice[idx]
+        if (!rule) return
+        if (res.status === 'fulfilled') {
+          const raw = (res.value as any)?.data ?? res.value
+          const data = normalizeProgress(raw)
+          if (data) map[rule.id] = data
+          else failed[rule.id] = true
+        } else {
+          failed[rule.id] = true
+        }
+      })
     }
-  })
-  progressMap.value = map
-  progressFailed.value = failed
+    if (seq !== progressBatchSeq) return
+    progressMap.value = map
+    progressFailed.value = failed
+  } finally {
+    if (seq === progressBatchSeq) progressLoadingAll.value = false
+  }
 }
 
 // 列表 + 进度一起刷新
@@ -305,24 +341,37 @@ const handleRowClick = (row: BudgetRule) => {
   openProgress(row)
 }
 
-/** 打开进度抽屉：优先用列表已取的进度，缺失时按需拉取 */
+/** 抽屉请求令牌：快速切换行时丢弃旧响应 */
+let progressSeq = 0
+
+/**
+ * 打开进度抽屉：先渲染缓存（stale-while-revalidate），再后台刷新并回写，
+ * 避免编辑金额后抽屉仍显示旧上限/旧百分比。
+ */
 const openProgress = async (row: BudgetRule) => {
   progressVisible.value = true
+  const seq = ++progressSeq
   const cached = progressMap.value[row.id]
-  if (cached) {
-    progress.value = cached
-    progressLoading.value = false
-    return
-  }
-  progressLoading.value = true
-  progress.value = null
+  progress.value = cached ?? null
+  progressLoading.value = !cached
   try {
     const res = await getBudgetProgressApi(row.id)
-    progress.value = (res as any).data || res
+    if (seq !== progressSeq) return
+    const data = normalizeProgress((res as any)?.data ?? res)
+    if (!data) throw new Error('进度数据格式异常')
+    progress.value = data
+    // 回填列表并清除失败态，保证列表与抽屉一致
+    progressMap.value = { ...progressMap.value, [row.id]: data }
+    if (progressFailed.value[row.id]) {
+      const next = { ...progressFailed.value }
+      delete next[row.id]
+      progressFailed.value = next
+    }
   } catch (e: any) {
-    ElMessage.error(e.message || '获取预算进度失败')
+    if (seq !== progressSeq) return
+    if (!cached) ElMessage.error(e.message || '获取预算进度失败')
   } finally {
-    progressLoading.value = false
+    if (seq === progressSeq) progressLoading.value = false
   }
 }
 
@@ -399,7 +448,7 @@ const handleSubmit = async () => {
       ElMessage.success('创建成功')
     }
     dialogVisible.value = false
-    fetchBudgets()
+    await fetchAll()
   } catch (e: any) {
     ElMessage.error(e.message || '操作失败')
   } finally {
@@ -413,7 +462,7 @@ const handleDelete = async (id: number) => {
   try {
     await deleteBudgetApi(id)
     ElMessage.success('删除成功')
-    fetchBudgets()
+    await fetchAll()
   } catch (e: any) {
     ElMessage.error(e.message || '删除失败')
   }
