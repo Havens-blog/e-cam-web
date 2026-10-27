@@ -421,26 +421,41 @@ const schedulePoll = () => {
 const exportLogs = async () => {
   if (exporting.value) return
   exporting.value = true
+  // 快照筛选：导出期间用户改筛选不影响本次结果
+  const queryFilters = { ...filters }
   try {
     const rows: CollectLog[] = []
+    const seen = new Set<string>()
     let offset = 0
     const limit = 200
-    let totalCount = 0
+    let reportedTotal: number | null = null
     while (rows.length < EXPORT_MAX_ROWS) {
+      if (disposed) return
       const res = await listCollectLogsApi({
-        ...buildCollectLogQuery(filters, 1, limit),
+        ...buildCollectLogQuery(queryFilters, 1, limit),
         offset,
         limit
       })
       const data = (res as any).data || res
-      const items = data.items || []
-      totalCount = Number(data.total ?? items.length)
-      rows.push(...items)
-      if (items.length < limit || rows.length >= totalCount) break
+      const items: CollectLog[] = data.items || []
+      const total = Number(data.total)
+      if (Number.isFinite(total) && total >= 0) reportedTotal = total
+      for (const item of items) {
+        if (rows.length >= EXPORT_MAX_ROWS) break
+        const key = String(item.id ?? `${item.account_id}-${item.ctime}-${item.bill_start}`)
+        if (seen.has(key)) continue
+        seen.add(key)
+        rows.push(item)
+      }
+      // 以短页为权威终止条件，total 只用于提示（避免 total 缺失时静默截断）
+      if (items.length < limit) break
       offset += limit
     }
-    const capped = rows.slice(0, EXPORT_MAX_ROWS)
-    const csv = buildCollectLogCsv(capped, {
+    if (rows.length === 0) {
+      ElMessage.warning('当前筛选无数据，未生成文件')
+      return
+    }
+    const csv = buildCollectLogCsv(rows, {
       accountNames: accountNames.value,
       providerLabel: getProviderLabel
     })
@@ -452,14 +467,15 @@ const exportLogs = async () => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    if (totalCount > capped.length) {
-      ElMessage.warning(`共 ${totalCount} 条，仅导出前 ${capped.length} 条`)
+    // 延迟释放，兼容部分浏览器下载时序
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    if (reportedTotal !== null && reportedTotal > rows.length) {
+      ElMessage.warning(`共 ${reportedTotal} 条，仅导出前 ${rows.length} 条`)
     } else {
-      ElMessage.success(`已导出 ${capped.length} 条`)
+      ElMessage.success(`已导出 ${rows.length} 条`)
     }
-  } catch {
-    ElMessage.error('导出失败，请稍后重试')
+  } catch (e: any) {
+    if (!disposed) ElMessage.error(e?.message || '导出失败，请稍后重试')
   } finally {
     exporting.value = false
   }

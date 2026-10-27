@@ -1,7 +1,8 @@
 /**
  * 采集日志 CSV 导出（纯函数，便于单测）
  *
- * 规则：导出「当前筛选」下的日志（账号/状态），字段与页面表格一致；
+ * 规则：导出「当前筛选」下的日志（账号/状态），列名与页面表格一致；
+ * 值按导出快照口径（账期为原始 RFC3339、运行中耗时为「进行中」）。
  * 带 UTF-8 BOM 方便 Excel 正确识别中文。
  */
 import type { CollectLog } from '@/api/types/finops'
@@ -13,7 +14,9 @@ export const EXPORT_MAX_ROWS = 5000
 /** CSV 单元格转义：含逗号/引号/换行时加引号并双写引号 */
 export function csvCell(value: unknown): string {
     if (value === null || value === undefined) return ''
-    const text = String(value)
+    let text = String(value)
+    // 中和 Excel 公式注入：以 = + - @ 或制表符/回车开头的文本加单引号
+    if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = `'${text}`
     if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`
     return text
 }

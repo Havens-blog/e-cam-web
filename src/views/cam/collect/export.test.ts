@@ -10,8 +10,17 @@ describe('csvCell', () => {
 
     it('逗号/引号/换行时加引号并双写引号', () => {
         expect(csvCell('a,b')).toBe('"a,b"')
+        expect(csvCell('a,"b"')).toBe('"a,""b"""')
         expect(csvCell('say "hi"')).toBe('"say ""hi"""')
         expect(csvCell('line1\nline2')).toBe('"line1\nline2"')
+        expect(csvCell('line1\rline2')).toBe('"line1\rline2"')
+    })
+
+    it('中和 Excel 公式注入', () => {
+        expect(csvCell('=SUM(A1)')).toBe("'=SUM(A1)")
+        expect(csvCell('+1+1')).toBe("'+1+1")
+        expect(csvCell('@cmd')).toBe("'@cmd")
+        expect(csvCell(0)).toBe('0')
     })
 })
 
@@ -52,6 +61,7 @@ describe('buildCollectLogCsv', () => {
         expect(lines[1]).toContain('3.2s')
         expect(lines[1]).toContain('"fetch bill details: timeout, retry"')
         expect(lines[2]).toContain('进行中')
+        expect(csv.endsWith('\r\n')).toBe(true)
     })
 
     it('支持自定义厂商名与缺失账号名', () => {
