@@ -254,8 +254,16 @@ export function triggerCollectApi(data: ManualCollectRequest) {
     })
 }
 
+/** 采集日志查询参数（status 由后端 handler 支持：running/success/failed） */
+export interface CollectLogQuery {
+    account_id?: number
+    status?: string
+    offset?: number
+    limit?: number
+}
+
 /** 获取采集日志列表 */
-export function listCollectLogsApi(params?: { account_id?: number; offset?: number; limit?: number }) {
+export function listCollectLogsApi(params?: CollectLogQuery) {
     return instance.get<{ items: CollectLog[]; total: number }>({
         url: `${API_SERVICE.CAM}/cost/collect/logs`,
         params,
