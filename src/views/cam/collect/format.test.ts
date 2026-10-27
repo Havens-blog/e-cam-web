@@ -5,6 +5,8 @@ import {
     formatDateTime,
     formatElapsed,
     formatHumanDuration,
+    formatLongDuration,
+    summarizeRunningLogs,
 } from './format'
 
 describe('collectStartedAt', () => {
@@ -99,3 +101,85 @@ describe('formatHumanDuration / formatElapsed', () => {
     })
 })
 
+
+
+describe('formatLongDuration', () => {
+  it('跨天显示天与小时，未满一天沿用分/秒口径', () => {
+    expect(formatLongDuration(236 * 86_400_000)).toBe('236天0小时')
+    expect(formatLongDuration(2 * 86_400_000 + 3 * 3_600_000)).toBe('2天3小时')
+    expect(formatLongDuration(90 * 60_000)).toBe('1小时30分')
+    expect(formatLongDuration(30_000)).toBe('30秒')
+  })
+})
+
+describe('summarizeRunningLogs', () => {
+  const now = Date.parse('2026-10-27T12:00:00Z')
+
+  it('统计运行中数量与最长已运行', () => {
+    const s = summarizeRunningLogs(
+      [
+        { status: 'running', start_time: '2026-10-27T11:00:00Z' },
+        { status: 'running', start_time: '2026-10-25T12:00:00Z' },
+        { status: 'success', start_time: '2026-10-27T10:00:00Z' },
+        { status: 'running' }
+      ] as any,
+      now
+    )
+    expect(s.count).toBe(3)
+    expect(s.maxElapsedMs).toBe(2 * 86_400_000)
+    expect(s.maxElapsedText).toBe('2天0小时')
+    expect(s.oldestStartedAt).toBe(Date.parse('2026-10-25T12:00:00Z'))
+  })
+
+  it('空值与全部非运行中返回 0', () => {
+    expect(summarizeRunningLogs(null, now)).toEqual({
+      count: 0,
+      oldestStartedAt: 0,
+      maxElapsedMs: 0,
+      maxElapsedText: ''
+    })
+    expect(summarizeRunningLogs([{ status: 'success' }] as any, now).count).toBe(0)
+  })
+
+  it('回退 ctime（缺失 start_time）', () => {
+    const s = summarizeRunningLogs(
+      [{ status: 'running', ctime: Date.parse('2026-10-27T10:00:00Z') }] as any,
+      now
+    )
+    expect(s.count).toBe(1)
+    expect(s.maxElapsedText).toBe('2小时00分')
+  })
+})
+
+
+describe('summarizeRunningLogs 边界', () => {
+  const now = Date.parse('2026-10-27T12:00:00Z')
+
+  it('空数组返回 0', () => {
+    expect(summarizeRunningLogs([], now).count).toBe(0)
+  })
+
+  it('仅一条无时间运行中：计数 1、最长文案为空', () => {
+    const s = summarizeRunningLogs([{ status: 'running' }] as any, now)
+    expect(s.count).toBe(1)
+    expect(s.maxElapsedText).toBe('')
+    expect(s.oldestStartedAt).toBe(0)
+  })
+
+  it('未来 start_time 不计入时长（clamp 到 0）', () => {
+    const s = summarizeRunningLogs(
+      [{ status: 'running', start_time: '2026-10-28T12:00:00Z' }] as any,
+      now
+    )
+    expect(s.count).toBe(1)
+    expect(s.maxElapsedMs).toBe(0)
+  })
+})
+
+describe('formatLongDuration 边界', () => {
+  it('跨天边界与非法值', () => {
+    expect(formatLongDuration(86_399_999)).toBe('23小时59分')
+    expect(formatLongDuration(86_400_000)).toBe('1天0小时')
+    expect(formatLongDuration(Number.NaN)).toBe('0秒')
+  })
+})

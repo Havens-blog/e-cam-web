@@ -4,7 +4,7 @@
       title="采集管理"
       subtitle="手动触发云账单数据采集"
       :show-add-button="false"
-      @refresh="fetchLogs"
+      @refresh="refreshLogs"
     />
 
     <!-- 触发采集 -->
@@ -54,7 +54,7 @@
         </div>
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
-          <el-button size="small" circle @click="fetchLogs()" title="刷新">
+          <el-button size="small" circle @click="refreshLogs" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
         </div>
@@ -69,6 +69,23 @@
         </span>
         <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
+      <div v-if="runningSummary && runningSummary.count > 0" class="running-summary">
+        <span role="status" aria-live="polite" aria-atomic="true"
+          >运行中 <strong>{{ runningSummary.count }}</strong> 条<template
+            v-if="runningSummary.maxElapsedText"
+          >，最长已运行 <strong>{{ runningSummary.maxElapsedText }}</strong></template></span
+        >
+        <el-button
+          v-if="filters.status !== 'running'"
+          link
+          type="primary"
+          size="small"
+          @click="showRunningOnly"
+        >
+          只看运行中
+        </el-button>
+      </div>
+
       <div class="logs-filters">
         <el-select
           v-model="filters.account_id"
@@ -171,7 +188,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
-import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
+import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -196,6 +213,9 @@ const filtersActive = computed(() => hasActiveFilters(filters))
 /** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
 const nowMs = ref(Date.now())
 const lastLoadedAt = ref(0)
+/** 运行中任务汇总（全局口径，不随列表筛选变化） */
+const runningSummary = ref<{ count: number; maxElapsedText: string } | null>(null)
+let summaryFetchedAt = 0
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 /** 手动触发采集后的轮询宽限期：任务排队期间还没有 running 日志也不能停轮询 */
@@ -311,6 +331,8 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     total.value = data.total || 0
     nowMs.value = Date.now()
     lastLoadedAt.value = nowMs.value
+    // 列表刷新后顺带刷新汇总（60s 节流，不额外打请求）
+    void fetchRunningSummary()
     logsLoadFailed.value = false
     errorNotified = false
     pollDelay = POLL_INTERVAL_MS
@@ -392,6 +414,51 @@ const schedulePoll = () => {
   }, pollDelay || POLL_INTERVAL_MS)
 }
 
+/** 全局运行中任务汇总：独立于列表筛选；默认 60s 内不重复请求（手动刷新强制） */
+let summarySeq = 0
+let summaryInflight: Promise<void> | null = null
+const fetchRunningSummary = (force = false): Promise<void> => {
+  if (disposed) return Promise.resolve()
+  if (!force && Date.now() - summaryFetchedAt < 60_000) return Promise.resolve()
+  // 在途复用：挂载/刷新/筛选可能同时触发，避免重复 GET
+  if (summaryInflight) return summaryInflight
+  const seq = ++summarySeq
+  summaryInflight = (async () => {
+    try {
+      const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 200 })
+      if (disposed || seq !== summarySeq) return
+      const data = (res as any).data || res
+      const s = summarizeRunningLogs(data.items || [])
+      // 数量用后端 total（items 只是时长采样，limit=200 时可能不全）
+      const total = Number(data.total)
+      runningSummary.value = {
+        count: Number.isFinite(total) && total >= 0 ? total : s.count,
+        maxElapsedText: s.maxElapsedText
+      }
+    } catch {
+      // 失败保留上次值；finally 仍推进尝试时间，避免轮询下每 5s 重试
+    } finally {
+      if (seq === summarySeq) summaryFetchedAt = Date.now()
+      summaryInflight = null
+    }
+  })()
+  return summaryInflight
+}
+
+/** 手动刷新：日志 + 运行中汇总 */
+const refreshLogs = () => {
+  fetchLogs()
+  void fetchRunningSummary(true)
+}
+
+/** 只看运行中（复用既有筛选） */
+const showRunningOnly = () => {
+  filters.status = 'running'
+  currentPage.value = 1
+  void fetchLogs()
+  void fetchRunningSummary(true)
+}
+
 const startPolling = () => {
   if (polling || disposed) return
   polling = true
@@ -452,6 +519,7 @@ const fetchAccounts = async () => {
 onMounted(() => {
   fetchAccounts()
   fetchLogs()
+  void fetchRunningSummary(true)
 })
 
 onUnmounted(() => {
@@ -526,7 +594,25 @@ onUnmounted(() => {
     }
   }
 
-  .logs-filters {
+  .running-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--el-color-warning) 35%, transparent);
+  color: var(--text-secondary);
+  font-size: 13px;
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.logs-filters {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
