@@ -15,7 +15,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { LogType, LogTypeMeta } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
 import type { FieldFilterRow } from './drilldown'
-import { decodeUrlState, encodeUrlState } from './url-state'
+import { decodeUrlState, encodeUrlState, clampWindow } from './url-state'
 import type { LogQueryState } from './url-state'
 import { METRIC_OPTS } from './useLogFilters'
 
@@ -77,11 +77,10 @@ export function useLogUrlSync(opts: UseLogUrlSyncOptions) {
         const s = decodeUrlState(new URLSearchParams(window.location.search))
         activeType.value = s.t
         if (s.startMs != null && s.endMs != null) {
-            const now = Date.now()
-            const end = Math.min(s.endMs, now)
-            const cap = (currentMeta.value?.max_window_days ?? 7) * 24 * 3600_000
-            const start = Math.max(s.startMs, end - cap)
-            if (end - start > 1000) timeRange.value = [new Date(start), new Date(end)]
+            // 统一钳制逻辑(clampWindow):meta 未加载时按 7d 兜底,
+            // 字典到位后 index.vue 会用真实上限复钳一次
+            const [clampedStart, clampedEnd] = clampWindow(s.startMs, s.endMs, currentMeta.value?.max_window_days ?? 7)
+            timeRange.value = [new Date(clampedStart), new Date(clampedEnd)]
         }
         if (s.clouds.length) {
             selectedClouds.value = s.clouds

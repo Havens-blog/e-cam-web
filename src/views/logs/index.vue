@@ -519,7 +519,7 @@ import { DIM_TIP, FILTER_OPS, METRIC_OPTS, useLogFilters } from './useLogFilters
 import { useLogSearch } from './useLogSearch'
 import { useLogSources } from './useLogSources'
 import { useLogUrlSync } from './useLogUrlSync'
-import { hasQueryParams } from './url-state'
+import { clampWindow, hasQueryParams } from './url-state'
 
 /** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
 const DEFAULT_CLOUDS = ['aliyun']
@@ -813,6 +813,16 @@ onMounted(async () => {
         // 字段字典失败:给出可见报错(不静默)。类型 Tab 与动态列不可用,但时间窗约束与手输检索仍可用
         typeMetas.value = []
         ElMessage.error('日志字段字典加载失败,请刷新重试')
+    }
+    // 字典到位后复钳时间窗:水合时 meta 未加载按 7d 兜底,3d 类型(slb/access/app)
+    // 的分享长窗链接打开即收紧到真实上限;复钳先于自动查询,查询用收紧后的窗口
+    if (typeMetas.value.length && timeRange.value) {
+        const [clampedStart, clampedEnd] = clampWindow(
+            timeRange.value[0].getTime(),
+            timeRange.value[1].getTime(),
+            currentMeta.value?.max_window_days ?? 7,
+        )
+        timeRange.value = [new Date(clampedStart), new Date(clampedEnd)]
     }
     await loadSources()
     // 分享进入:URL 携带查询条件时自动跑一次,还原协作者看到的场景

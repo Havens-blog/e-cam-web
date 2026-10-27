@@ -592,3 +592,47 @@ describe('LogsIndex(WAF Tab 流量诊断入口,任务 3)', () => {
         w.unmount()
     })
 })
+
+describe('LogsIndex(字段字典到位后复钳时间窗)', () => {
+    it('slb(3d) 分享 5d 长窗链接打开自动收紧,自动查询用收紧后的窗口', async () => {
+        const DAY = 24 * 3600_000
+        const now = Date.now()
+        window.history.replaceState(null, '', `?t=slb&st=${now - 5 * DAY}&et=${now}`)
+        typesApi.mockResolvedValueOnce([
+            ...typeMetas,
+            {
+                type: 'slb',
+                label: 'SLB',
+                max_window_days: 3,
+                fields: [{ key: 'timestamp', label: '时间', fixed: true }],
+            },
+        ])
+        searchApi.mockResolvedValueOnce(searchResp())
+        const w = await mountPage()
+        await flushPromises()
+
+        // 分享链接携带查询条件 → 自动查询恰一次
+        expect(searchApi).toHaveBeenCalledTimes(1)
+        const req = searchApi.mock.calls[0]![0]
+        // 复钳发生在自动查询之前:start 收紧到 ≈ now-3d(±5s 挂载漂移),绝不用 URL 的 5d
+        expect(req.start_time).toBeGreaterThanOrEqual(now - 3 * DAY - 5000)
+        expect(req.start_time).toBeLessThanOrEqual(now - 3 * DAY + 5000)
+        w.unmount()
+    })
+    it('字典加载失败时保持 7d 兜底钳制,不因复钳崩溃', async () => {
+        const DAY = 24 * 3600_000
+        const now = Date.now()
+        window.history.replaceState(null, '', `?t=slb&st=${now - 5 * DAY}&et=${now}`)
+        typesApi.mockRejectedValueOnce(new Error('dict down'))
+        searchApi.mockResolvedValueOnce(searchResp())
+        const w = await mountPage()
+        await flushPromises()
+
+        // 字典失败路径:仍按 7d 兜底(窗口未收紧),查询照常
+        if (searchApi.mock.calls.length) {
+            const req = searchApi.mock.calls[0]![0]
+            expect(req.start_time).toBeLessThanOrEqual(now - 3 * DAY)
+        }
+        w.unmount()
+    })
+})

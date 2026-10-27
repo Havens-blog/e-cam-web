@@ -32,6 +32,20 @@ const FILTER_OPS = new Set(['eq', 'neq', 'contains', 'prefix'])
  * 链接静默落到 cdn(实测踩坑)。 */
 const LOG_TYPES = new Set<string>(['cdn', 'waf', 'slb', 'access', 'app'])
 
+/**
+ * 按类型上限收紧时间窗:end 超界钳到 now;start 收紧到 end-cap;
+ * 倒挂(start ≥ end,如陈旧分享的 end 早于该类型窗口下限)回退最近 1 小时。
+ * 水合时(meta 未加载按 7d 兜底)与「字段字典加载完成后的复钳」共用,
+ * 保证 3d 类型(slb/access/app)的分享长窗链接打开即收紧到真实上限。
+ */
+export function clampWindow(startMs: number, endMs: number, maxWindowDays: number, now = Date.now()): [number, number] {
+    const end = Math.min(endMs, now)
+    const cap = maxWindowDays * 24 * 3600_000
+    const start = Math.max(startMs, end - cap)
+    if (start >= end) return [now - 3600_000, now]
+    return [start, end]
+}
+
 /** 状态 → URLSearchParams(仅写非默认值) */
 export function encodeUrlState(s: LogQueryState): URLSearchParams {
     const p = new URLSearchParams()
@@ -74,7 +88,8 @@ export function decodeUrlState(params: URLSearchParams): LogQueryState {
     }
     if (params.get('n') != null) {
         const n = Number(params.get('n'))
-        state.limit = Number.isInteger(n) && n >= 100 && n <= 2000 ? n : null
+        // 解码层只做正整数校验;是否采纳交给 useLogUrlSync 的 limitOptions 白名单
+        state.limit = Number.isInteger(n) && n > 0 ? n : null
     }
     for (const seg of (params.get('f') || '').split('|')) {
         if (!seg) continue
