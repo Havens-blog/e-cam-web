@@ -489,6 +489,16 @@ onUnmounted(() => {
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+
+    // 窄屏：分页控件换行，避免 677px 的 pagination 撑破 310px 容器
+    @media (max-width: 768px) {
+      :deep(.el-pagination) {
+        flex-wrap: wrap;
+        justify-content: center;
+        row-gap: 8px;
+        width: 100%;
+      }
+    }
   }
 }
 </style>
