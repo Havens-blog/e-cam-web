@@ -5,7 +5,7 @@
       subtitle="设置预算规则，监控成本消耗进度"
       add-button-text="创建预算"
       @add="openCreateDialog"
-      @refresh="fetchBudgets"
+      @refresh="fetchAll"
     />
 
     <!-- 预算规则列表 -->
@@ -22,6 +22,36 @@
         <el-table-column label="金额上限" min-width="120">
           <template #default="{ row }">
             {{ formatCost(row.amount_limit) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="消耗进度" min-width="230">
+          <template #default="{ row }">
+            <div v-if="progressMap[row.id]" class="usage-cell">
+              <el-progress
+                :percentage="clampPercent(progressMap[row.id]!.usage_percent)"
+                :stroke-width="8"
+                :show-text="false"
+                :color="progressColor(progressMap[row.id]!.usage_percent)"
+              />
+              <div class="usage-meta">
+                <span class="usage-amount">{{ formatCost(progressMap[row.id]!.current_spend) }}</span>
+                <span
+                  class="usage-percent"
+                  :class="{ over: isOverBudget(progressMap[row.id]!.usage_percent) }"
+                >
+                  {{ formatUsagePercent(progressMap[row.id]!.usage_percent) }}
+                </span>
+                <el-tag
+                  v-if="isOverBudget(progressMap[row.id]!.usage_percent)"
+                  type="danger"
+                  size="small"
+                >
+                  超支
+                </el-tag>
+              </div>
+            </div>
+            <span v-else-if="progressFailed[row.id]" class="usage-missing">获取失败</span>
+            <span v-else class="usage-missing">—</span>
           </template>
         </el-table-column>
         <el-table-column label="周期" min-width="80">
@@ -57,6 +87,7 @@
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click.stop="openProgress(row)">进度</el-button>
             <el-button link type="primary" size="small" @click.stop="openEditDialog(row)">编辑</el-button>
             <el-popconfirm title="确定删除该预算规则？" @confirm="handleDelete(row.id)">
               <template #reference>
@@ -75,10 +106,10 @@
         <div class="progress-name">{{ progress.name }}</div>
         <div class="progress-bar-section">
           <el-progress
-            :percentage="Math.min(progress.progress_percent, 100)"
+            :percentage="clampPercent(progress!.usage_percent)"
             :stroke-width="20"
-            :color="progressColor(progress.progress_percent)"
-            :format="() => `${progress!.progress_percent.toFixed(1)}%`"
+            :color="progressColor(progress!.usage_percent)"
+            :format="() => formatUsagePercent(progress!.usage_percent)"
           />
         </div>
         <div class="progress-details">
@@ -92,7 +123,13 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">剩余额度</span>
-            <span class="detail-value remaining">{{ formatCost(progress.remaining) }}</span>
+            <span class="detail-value remaining">{{ formatCost(remainingAmount(progress!)) }}</span>
+          </div>
+          <div v-if="isOverBudget(progress!.usage_percent)" class="detail-row">
+            <span class="detail-label">超支金额</span>
+            <span class="detail-value over">
+              {{ formatCost(overBudgetAmount(progress!.current_spend, progress!.amount_limit)) }}
+            </span>
           </div>
         </div>
       </div>
@@ -193,6 +230,14 @@ import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
+import {
+  clampPercent,
+  formatUsagePercent,
+  isOverBudget,
+  overBudgetAmount,
+  progressColor,
+  remainingAmount
+} from './progress'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -201,6 +246,9 @@ import { onMounted, reactive, ref } from 'vue'
 
 const loading = ref(false)
 const budgetList = ref<BudgetRule[]>([])
+/** 预算 id -> 消耗进度（列表直接展示，避免必须点开抽屉才发现超支） */
+const progressMap = ref<Record<number, BudgetProgress>>({})
+const progressFailed = ref<Record<number, boolean>>({})
 
 const fetchBudgets = async () => {
   loading.value = true
@@ -215,14 +263,57 @@ const fetchBudgets = async () => {
   }
 }
 
+// 批量取各预算进度：单项失败只影响该行，不阻断列表
+const fetchProgress = async (rules: BudgetRule[] = budgetList.value) => {
+  if (!rules.length) {
+    progressMap.value = {}
+    progressFailed.value = {}
+    return
+  }
+  const results = await Promise.allSettled(rules.map((rule) => getBudgetProgressApi(rule.id)))
+  const map: Record<number, BudgetProgress> = {}
+  const failed: Record<number, boolean> = {}
+  results.forEach((res, idx) => {
+    const rule = rules[idx]
+    if (!rule) return
+    const id = rule.id
+    if (res.status === 'fulfilled') {
+      const data = (res.value as any).data || res.value
+      if (data) map[id] = data as BudgetProgress
+      else failed[id] = true
+    } else {
+      failed[id] = true
+    }
+  })
+  progressMap.value = map
+  progressFailed.value = failed
+}
+
+// 列表 + 进度一起刷新
+const fetchAll = async () => {
+  await fetchBudgets()
+  await fetchProgress()
+}
+
 // ==================== 进度抽屉 ====================
 
 const progressVisible = ref(false)
 const progressLoading = ref(false)
 const progress = ref<BudgetProgress | null>(null)
 
-const handleRowClick = async (row: BudgetRule) => {
+const handleRowClick = (row: BudgetRule) => {
+  openProgress(row)
+}
+
+/** 打开进度抽屉：优先用列表已取的进度，缺失时按需拉取 */
+const openProgress = async (row: BudgetRule) => {
   progressVisible.value = true
+  const cached = progressMap.value[row.id]
+  if (cached) {
+    progress.value = cached
+    progressLoading.value = false
+    return
+  }
   progressLoading.value = true
   progress.value = null
   try {
@@ -233,12 +324,6 @@ const handleRowClick = async (row: BudgetRule) => {
   } finally {
     progressLoading.value = false
   }
-}
-
-const progressColor = (pct: number) => {
-  if (pct >= 100) return '#EF4444'
-  if (pct >= 80) return '#F59E0B'
-  return '#10B981'
 }
 
 // ==================== 创建/编辑对话框 ====================
@@ -357,7 +442,7 @@ const thresholdTagType = (t: number) => {
 // ==================== 生命周期 ====================
 
 onMounted(() => {
-  fetchBudgets()
+  fetchAll()
 })
 </script>
 
@@ -372,6 +457,35 @@ onMounted(() => {
 
 .clickable-row {
   cursor: pointer;
+}
+
+.usage-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .usage-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+
+    .usage-amount {
+      color: var(--text-primary);
+    }
+
+    .usage-percent.over {
+      color: var(--el-color-danger);
+      font-weight: 600;
+    }
+  }
+}
+
+.usage-missing {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 .scope-value {
@@ -428,6 +542,10 @@ onMounted(() => {
 
         &.remaining {
           color: #10B981;
+        }
+
+        &.over {
+          color: var(--el-color-danger);
         }
       }
     }
