@@ -152,7 +152,7 @@ export interface LogSearchRequest {
     resources?: string[]
     /** 可选,结构化字段筛选(AND 叠加) */
     filters?: FieldFilter[]
-    /** 单源上限(默认 100,硬顶 500) */
+    /** 单源上限(默认 100,硬顶 2000 —— 与后端 MaxPerSourceLimit 一致) */
     limit?: number
 }
 
@@ -176,6 +176,10 @@ export interface LogSearchResponse {
     /** 时间倒序 */
     entries: LogEntry[]
     sources: LogSourceOutcome[]
+    /** 服务端窗口缓存命中(结果非实时全量计算) */
+    cached?: boolean
+    /** 缓存命中的是过期快照(后端允许降级返回) */
+    cache_stale?: boolean
 }
 
 /** 聚合请求(与查询对齐,无 limit——聚合下推云引擎不受采样约束) */
@@ -220,6 +224,8 @@ export interface AggregateSourceOutcome {
     /** 失败/不支持原因(空 = 成功) */
     error: string
     duration_ms: number
+    /** 该源不支持当前维度/指标聚合(total 仍为窗口精确总数) */
+    not_supported?: boolean
 }
 
 /** 联邦聚合响应(跨源分桶求和、TopN 归并) */
@@ -232,6 +238,12 @@ export interface LogAggregateResponse {
     sources: AggregateSourceOutcome[]
     /** 部分源维度/指标不可下推的说明(趋势/总数仍有效,仅 TopN 缺失) */
     topn_skip?: string
+    /** TopN 口径标注(如采样估算 vs 精确统计;空 = 精确) */
+    topn_note?: string
+    /** 服务端窗口缓存命中 */
+    cached?: boolean
+    /** 缓存命中的是过期快照 */
+    cache_stale?: boolean
 }
 
 // ---- WAF 流量诊断(POST /cam/logs/diagnose;对应 e-cam-service service.DiagnoseResponse) ----
