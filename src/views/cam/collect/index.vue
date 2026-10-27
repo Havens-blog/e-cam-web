@@ -50,7 +50,7 @@
       <div class="section-header">
         <span class="section-title">采集日志</span>
         <div class="section-actions">
-          <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatLocalDateTime(lastLoadedAt) }}</span>
+          <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
           <el-button size="small" circle @click="fetchLogs()" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
@@ -80,7 +80,7 @@
         </el-table-column>
         <el-table-column label="账期范围" width="220">
           <template #default="{ row }">
-            {{ formatBillRange(row.bill_start, row.bill_end) }}
+            {{ formatDate(row.bill_start) }} ~ {{ formatDate(row.bill_end) }}
           </template>
         </el-table-column>
         <el-table-column prop="record_count" label="记录数" width="100" />
@@ -119,12 +119,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
-import {
-  formatBillRange,
-  formatCollectStartedAt,
-  formatElapsed,
-  formatLocalDateTime
-} from './format'
+import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -143,14 +138,23 @@ const pageSize = 20
 const nowMs = ref(Date.now())
 const lastLoadedAt = ref(0)
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let pollTimer: ReturnType<typeof setTimeout> | null = null
 /** 手动触发采集后的轮询宽限期：任务排队期间还没有 running 日志也不能停轮询 */
 let pollDeadline = 0
 /** 请求序号：丢弃过期响应，避免翻页/刷新与轮询竞态 */
 let fetchSeq = 0
 let errorNotified = false
+/** 轮询开启状态（与具体 timer 解耦，便于退避与卸载清理） */
+let polling = false
+/** 当前轮询间隔：连续失败时指数退避，避免每 5s 一次失败请求与弹窗 */
+let pollDelay = 0
+/** 组件已卸载标记：阻止在途响应/延时回调重建 timer */
+let disposed = false
+/** 手动触发后的一次性补拉，需在卸载时清理 */
+let retryTimer: ReturnType<typeof setTimeout> | null = null
 
 const POLL_INTERVAL_MS = 5000
+const POLL_MAX_BACKOFF_MS = 60_000
 const POLL_GRACE_MS = 3 * 60 * 1000
 
 const dateShortcuts = [
@@ -189,6 +193,17 @@ const statusLabel = (s: string) => {
   return map[s] || s
 }
 
+/**
+ * 账期按后端原样日期展示（保持既有行为，不做时区换算）。
+ * bill_start/bill_end 的口径由写入方决定（定时采集为增量窗口、补采脚本为本地月边界），
+ * 统一口径属后端后续事项，前端不在展示层猜测。
+ */
+const formatDate = (v: string) => {
+  if (!v) return '-'
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? v : d.toISOString().slice(0, 10)
+}
+
 const handleCollect = async () => {
   if (!collectForm.account_id) {
     ElMessage.warning('请选择云账号')
@@ -210,7 +225,10 @@ const handleCollect = async () => {
     // 任务由队列异步执行：立即进入轮询宽限期，避免任务尚未落日志时停止轮询
     pollDeadline = Date.now() + POLL_GRACE_MS
     startPolling()
-    setTimeout(() => fetchLogs({ silent: true }), 1000)
+    retryTimer = setTimeout(() => {
+      retryTimer = null
+      if (!disposed) fetchLogs({ silent: true })
+    }, 1000)
   } catch (e: any) {
     ElMessage.error(e.message || '触发采集失败')
   } finally {
@@ -219,6 +237,7 @@ const handleCollect = async () => {
 }
 
 const fetchLogs = async (options: { silent?: boolean } = {}) => {
+  if (disposed) return
   const seq = ++fetchSeq
   if (!options.silent) logsLoading.value = true
   try {
@@ -226,7 +245,7 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
       offset: (currentPage.value - 1) * pageSize,
       limit: pageSize
     })
-    if (seq !== fetchSeq) return
+    if (disposed || seq !== fetchSeq) return
     const data = (res as any).data || res
     logs.value = data.items || []
     total.value = data.total || 0
@@ -234,11 +253,16 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     lastLoadedAt.value = nowMs.value
     logsLoadFailed.value = false
     errorNotified = false
+    pollDelay = POLL_INTERVAL_MS
     syncPolling()
   } catch {
-    if (seq !== fetchSeq) return
+    if (disposed || seq !== fetchSeq) return
     // 轮询失败不清空已有日志，保留上一次成功结果并提示可恢复
     logsLoadFailed.value = true
+    // 静默轮询失败时退避，避免持续故障下每 5s 一次的请求与弹窗
+    if (options.silent) {
+      pollDelay = Math.min(Math.max(pollDelay * 2, POLL_INTERVAL_MS * 2), POLL_MAX_BACKOFF_MS)
+    }
     if (!errorNotified) {
       ElMessage.error('获取采集日志失败')
       errorNotified = true
@@ -258,18 +282,31 @@ const syncPolling = () => {
   }
 }
 
+const schedulePoll = () => {
+  if (!polling || disposed) return
+  pollTimer = setTimeout(async () => {
+    pollTimer = null
+    await fetchLogs({ silent: true })
+    // fetchLogs 成功后可能已 stopPolling（无 running 且无宽限期）
+    schedulePoll()
+  }, pollDelay || POLL_INTERVAL_MS)
+}
+
 const startPolling = () => {
-  if (pollTimer) return
-  pollTimer = setInterval(() => fetchLogs({ silent: true }), POLL_INTERVAL_MS)
+  if (polling || disposed) return
+  polling = true
   isPolling.value = true
+  if (!pollDelay) pollDelay = POLL_INTERVAL_MS
+  schedulePoll()
 }
 
 const stopPolling = () => {
+  polling = false
+  isPolling.value = false
   if (pollTimer) {
-    clearInterval(pollTimer)
+    clearTimeout(pollTimer)
     pollTimer = null
   }
-  isPolling.value = false
 }
 
 const handlePageChange = () => {
@@ -297,7 +334,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  disposed = true
   stopPolling()
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
   // 卸载后让在途响应失效
   fetchSeq++
 })

@@ -1,27 +1,11 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import {
     collectStartedAt,
-    formatBillRange,
     formatCollectStartedAt,
+    formatDateTime,
     formatElapsed,
     formatHumanDuration,
 } from './format'
-
-const pad2 = (n: number) => String(n).padStart(2, '0')
-
-/** 用本地时区字段构造期望值，避免测试依赖运行机器的时区 */
-function expectLocalDateTime(ms: number): string {
-    const d = new Date(ms)
-    return (
-        `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ` +
-        `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
-    )
-}
-
-function expectLocalDate(ms: number): string {
-    const d = new Date(ms)
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
 
 describe('collectStartedAt', () => {
     it('优先使用 start_time（RFC3339）', () => {
@@ -45,11 +29,23 @@ describe('collectStartedAt', () => {
 })
 
 describe('formatCollectStartedAt', () => {
-    it('按本地时区展示采集时间，而不是恒为空', () => {
-        const start = '2026-10-27T03:19:19Z'
-        expect(formatCollectStartedAt({ start_time: start, ctime: 0 })).toBe(
-            expectLocalDateTime(Date.parse(start))
-        )
+    // 固定时区断言，避免在 UTC 的 CI 上出现「实现换成 UTC 也通过」的自证
+    it('Asia/Shanghai 下按 +08 展示采集时间', () => {
+        expect(
+            formatCollectStartedAt({ start_time: '2026-10-27T03:19:19Z', ctime: 0 }, 'Asia/Shanghai')
+        ).toBe('2026-10-27 11:19:19')
+    })
+
+    it('UTC 下同一时刻展示为 UTC（证明确实做了时区换算）', () => {
+        expect(
+            formatCollectStartedAt({ start_time: '2026-10-27T03:19:19Z', ctime: 0 }, 'UTC')
+        ).toBe('2026-10-27 03:19:19')
+    })
+
+    it('start_time 缺失时用 ctime 兜底并格式化', () => {
+        expect(
+            formatCollectStartedAt({ start_time: '', ctime: 1793071159246 }, 'Asia/Shanghai')
+        ).toBe('2026-10-27 11:19:19')
     })
 
     it('无有效时间返回 -', () => {
@@ -57,26 +53,11 @@ describe('formatCollectStartedAt', () => {
     })
 })
 
-describe('formatBillRange', () => {
-    it('账期按本地时区展示：UTC 零点不再截断成前一天', () => {
-        const start = '2026-05-31T16:00:00Z' // 北京时间 2026-06-01 00:00
-        const end = '2026-06-30T15:59:59Z' // 北京时间 2026-06-30 23:59:59
-        expect(formatBillRange(start, end)).toBe(
-            `${expectLocalDate(Date.parse(start))} ~ ${expectLocalDate(Date.parse(end))}`
-        )
-    })
-
-    it('北京时间下 6 月账期显示为 6 月 1 日 ~ 6 月 30 日', () => {
+describe('formatDateTime', () => {
+    it('不传时区时与系统时区一致（本地 getter 与 Intl 两条路径互证）', () => {
+        const ms = Date.parse('2026-01-02T03:04:05Z')
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-        if (tz !== 'Asia/Shanghai') return
-        expect(formatBillRange('2026-05-31T16:00:00Z', '2026-06-30T15:59:59Z')).toBe(
-            '2026-06-01 ~ 2026-06-30'
-        )
-    })
-
-    it('缺失一端时保留另一端的可读性', () => {
-        expect(formatBillRange(undefined, '2026-06-30T15:59:59Z')).toContain('~')
-        expect(formatBillRange(undefined, undefined)).toBe('-')
+        expect(formatDateTime(ms)).toBe(formatDateTime(ms, tz))
     })
 })
 
@@ -95,6 +76,17 @@ describe('formatHumanDuration / formatElapsed', () => {
         )
     })
 
+    it('运行中以 start_time 为准，不受 ctime 影响', () => {
+        const start = '2026-10-27T03:19:19Z'
+        const now = Date.parse(start) + 60_000
+        expect(
+            formatElapsed(
+                { status: 'running', start_time: start, ctime: Date.parse(start) - 86_400_000, duration_ms: 0 },
+                now
+            )
+        ).toBe('已运行 1分00秒')
+    })
+
     it('运行中但缺少开始时间时显示「进行中」', () => {
         expect(formatElapsed({ status: 'running', start_time: '', ctime: 0 }, Date.now())).toBe(
             '进行中'
@@ -106,3 +98,4 @@ describe('formatHumanDuration / formatElapsed', () => {
         expect(formatElapsed({ status: 'failed', duration_ms: 0 })).toBe('-')
     })
 })
+
