@@ -35,10 +35,10 @@ export function accountDisplayName(
 ): string {
     return names[accountId] || '未知账号'
 }
+
 /** 页码收敛：总数缩小时不越界（用于筛选/轮询后 total 变小） */
 export function clampPage(page: number, total: number, pageSize: number): number {
     const maxPage = Math.max(1, Math.ceil(total / pageSize))
     if (!Number.isFinite(page) || page < 1) return 1
     return Math.min(Math.floor(page), maxPage)
 }
-

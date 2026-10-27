@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <PageContainer>
     <ManagerHeader
       title="采集管理"
@@ -318,7 +318,7 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     const clampedPage = clampPage(currentPage.value, total.value, pageSize)
     if (clampedPage !== currentPage.value) {
       currentPage.value = clampedPage
-      void fetchLogs({ silent: true })
+      void fetchLogs({ silent: options.silent })
       return
     }
     void syncPolling()
@@ -349,7 +349,13 @@ const hasRunningLog = () => logs.value.some((l) => l.status === 'running')
  */
 const probeBackendRunning = async (): Promise<boolean> => {
   try {
-    const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 1 })
+    const query: { status: 'running'; offset: number; limit: number; account_id?: number } = {
+      status: 'running',
+      offset: 0,
+      limit: 1
+    }
+    if (filters.account_id) query.account_id = filters.account_id
+    const res = await listCollectLogsApi(query)
     const data = (res as any).data || res
     return Number(data.total || 0) > 0
   } catch {
@@ -363,8 +369,10 @@ const syncPolling = async () => {
     return
   }
   if (disposed) return
+  const at = fetchSeq
   const backendRunning = await probeBackendRunning()
-  if (disposed) return
+  // 探针在途期间若发生新的 fetch（切筛选/翻页），丢弃旧结论，避免误停轮询
+  if (disposed || at !== fetchSeq) return
   if (backendRunning) {
     startPolling()
   } else {
@@ -420,6 +428,7 @@ const resetFilters = () => {
   fetchLogs()
 }
 
+// 账号下拉最多取 100 个（当前环境 5 个）；超出部分日志行会显示「未知账号」，后续按 total 分页加载
 const fetchAccounts = async () => {
   try {
     const res = await listCloudAccountsApi({ limit: 100, offset: 0 })
@@ -572,5 +581,3 @@ onUnmounted(() => {
   margin-top: 16px;
 }
 </style>
-
-

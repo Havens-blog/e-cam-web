@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FinOps 多云成本分析 API
  */
 
@@ -272,5 +272,3 @@ export function listCollectLogsApi(params?: CollectLogQuery) {
         interceptorsToOnce: createCamApiInterceptor()
     })
 }
-
-
