@@ -49,9 +49,22 @@
     <div class="logs-section">
       <div class="section-header">
         <span class="section-title">采集日志</span>
-        <el-button size="small" circle @click="fetchLogs" title="刷新">
-          <el-icon><Refresh /></el-icon>
-        </el-button>
+        <div class="section-actions">
+          <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
+          <el-button size="small" circle @click="fetchLogs()" title="刷新">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </div>
+      </div>
+      <div v-if="logsLoadFailed" class="logs-error" role="alert">
+        <span>
+          {{
+            isPolling
+              ? '采集日志刷新失败，已保留上次数据，将自动重试。'
+              : '采集日志刷新失败，已保留上次数据，请点击「立即重试」。'
+          }}
+        </span>
+        <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
       <el-table :data="logs" v-loading="logsLoading" stripe style="width: 100%">
         <el-table-column prop="account_id" label="账号 ID" width="100" />
@@ -71,15 +84,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="record_count" label="记录数" width="100" />
-        <el-table-column prop="duration_ms" label="耗时" width="100">
+        <el-table-column label="耗时" width="150">
           <template #default="{ row }">
-            {{ row.duration_ms > 0 ? (row.duration_ms / 1000).toFixed(1) + 's' : '-' }}
+            <span :class="{ 'elapsed-running': row.status === 'running' }">{{ formatElapsed(row, nowMs) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="error_msg" label="错误信息" min-width="200" show-overflow-tooltip />
         <el-table-column label="采集时间" width="180">
           <template #default="{ row }">
-            {{ formatTimestamp(row.create_time) }}
+            {{ formatCollectStartedAt(row) }}
           </template>
         </el-table-column>
       </el-table>
@@ -89,7 +102,7 @@
           :page-size="pageSize"
           :total="total"
           layout="total, prev, pager, next"
-          @current-change="fetchLogs"
+          @current-change="handlePageChange"
         />
       </div>
     </div>
@@ -106,6 +119,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -116,10 +130,32 @@ const accountOptions = ref<{ value: number; label: string }[]>([])
 const logs = ref<CollectLog[]>([])
 const logsLoading = ref(false)
 const logsLoadFailed = ref(false)
+const isPolling = ref(false)
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
-const pollTimer = ref<ReturnType<typeof setInterval> | null>(null)
+/** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
+const nowMs = ref(Date.now())
+const lastLoadedAt = ref(0)
+
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+/** 手动触发采集后的轮询宽限期：任务排队期间还没有 running 日志也不能停轮询 */
+let pollDeadline = 0
+/** 请求序号：丢弃过期响应，避免翻页/刷新与轮询竞态 */
+let fetchSeq = 0
+let errorNotified = false
+/** 轮询开启状态（与具体 timer 解耦，便于退避与卸载清理） */
+let polling = false
+/** 当前轮询间隔：连续失败时指数退避，避免每 5s 一次失败请求与弹窗 */
+let pollDelay = 0
+/** 组件已卸载标记：阻止在途响应/延时回调重建 timer */
+let disposed = false
+/** 手动触发后的一次性补拉，需在卸载时清理 */
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+
+const POLL_INTERVAL_MS = 5000
+const POLL_MAX_BACKOFF_MS = 60_000
+const POLL_GRACE_MS = 3 * 60 * 1000
 
 const dateShortcuts = [
   {
@@ -157,17 +193,15 @@ const statusLabel = (s: string) => {
   return map[s] || s
 }
 
+/**
+ * 账期按后端原样日期展示（保持既有行为，不做时区换算）。
+ * bill_start/bill_end 的口径由写入方决定（定时采集为增量窗口、补采脚本为本地月边界），
+ * 统一口径属后端后续事项，前端不在展示层猜测。
+ */
 const formatDate = (v: string) => {
   if (!v) return '-'
   const d = new Date(v)
   return isNaN(d.getTime()) ? v : d.toISOString().slice(0, 10)
-}
-
-const formatTimestamp = (ts: number) => {
-  if (!ts) return '-'
-  const d = new Date(ts > 1e12 ? ts : ts * 1000)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 const handleCollect = async () => {
@@ -188,9 +222,13 @@ const handleCollect = async () => {
       end_date: end
     })
     ElMessage.success('采集任务已提交，后台执行中')
-    // 开始轮询采集状态
+    // 任务由队列异步执行：立即进入轮询宽限期，避免任务尚未落日志时停止轮询
+    pollDeadline = Date.now() + POLL_GRACE_MS
     startPolling()
-    setTimeout(() => fetchLogs(), 1000)
+    retryTimer = setTimeout(() => {
+      retryTimer = null
+      if (!disposed) fetchLogs({ silent: true })
+    }, 1000)
   } catch (e: any) {
     ElMessage.error(e.message || '触发采集失败')
   } finally {
@@ -198,45 +236,81 @@ const handleCollect = async () => {
   }
 }
 
-const fetchLogs = async () => {
-  logsLoading.value = true
+const fetchLogs = async (options: { silent?: boolean } = {}) => {
+  if (disposed) return
+  const seq = ++fetchSeq
+  if (!options.silent) logsLoading.value = true
   try {
     const res = await listCollectLogsApi({
       offset: (currentPage.value - 1) * pageSize,
       limit: pageSize
     })
+    if (disposed || seq !== fetchSeq) return
     const data = (res as any).data || res
     logs.value = data.items || []
     total.value = data.total || 0
+    nowMs.value = Date.now()
+    lastLoadedAt.value = nowMs.value
     logsLoadFailed.value = false
-
-    // 如果没有 running 状态的任务，停止轮询
-    const hasRunning = logs.value.some((l: CollectLog) => l.status === 'running')
-    if (!hasRunning) {
-      stopPolling()
-    }
+    errorNotified = false
+    pollDelay = POLL_INTERVAL_MS
+    syncPolling()
   } catch {
-    logs.value = []
-    // 轮询期间失败只提示一次，避免每 5 秒重复弹错
-    if (!logsLoadFailed.value) {
+    if (disposed || seq !== fetchSeq) return
+    // 轮询失败不清空已有日志，保留上一次成功结果并提示可恢复
+    logsLoadFailed.value = true
+    // 静默轮询失败时退避，避免持续故障下每 5s 一次的请求与弹窗
+    if (options.silent) {
+      pollDelay = Math.min(Math.max(pollDelay * 2, POLL_INTERVAL_MS * 2), POLL_MAX_BACKOFF_MS)
+    }
+    if (!errorNotified) {
       ElMessage.error('获取采集日志失败')
-      logsLoadFailed.value = true
+      errorNotified = true
     }
   } finally {
-    logsLoading.value = false
+    if (seq === fetchSeq) logsLoading.value = false
   }
+}
+
+const hasRunningLog = () => logs.value.some((l) => l.status === 'running')
+
+const syncPolling = () => {
+  if (hasRunningLog() || Date.now() < pollDeadline) {
+    startPolling()
+  } else {
+    stopPolling()
+  }
+}
+
+const schedulePoll = () => {
+  if (!polling || disposed) return
+  pollTimer = setTimeout(async () => {
+    pollTimer = null
+    await fetchLogs({ silent: true })
+    // fetchLogs 成功后可能已 stopPolling（无 running 且无宽限期）
+    schedulePoll()
+  }, pollDelay || POLL_INTERVAL_MS)
 }
 
 const startPolling = () => {
-  stopPolling()
-  pollTimer.value = setInterval(() => fetchLogs(), 5000)
+  if (polling || disposed) return
+  polling = true
+  isPolling.value = true
+  if (!pollDelay) pollDelay = POLL_INTERVAL_MS
+  schedulePoll()
 }
 
 const stopPolling = () => {
-  if (pollTimer.value) {
-    clearInterval(pollTimer.value)
-    pollTimer.value = null
+  polling = false
+  isPolling.value = false
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
   }
+}
+
+const handlePageChange = () => {
+  fetchLogs()
 }
 
 const fetchAccounts = async () => {
@@ -260,7 +334,14 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  disposed = true
   stopPolling()
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+  // 卸载后让在途响应失效
+  fetchSeq++
 })
 </script>
 
@@ -298,7 +379,40 @@ onUnmounted(() => {
       font-weight: 600;
       color: var(--text-primary);
     }
+
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .last-loaded {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+    }
   }
+
+  .logs-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--el-color-danger);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+}
+
+.elapsed-running {
+  color: var(--el-color-warning);
+  font-variant-numeric: tabular-nums;
 }
 
 .pagination-wrap {

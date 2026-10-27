@@ -165,12 +165,18 @@ export interface CollectLog {
     account_id: number
     provider: string
     status: string
+    /** 采集开始时间（后端 RFC3339 / UTC），如 2026-10-27T03:19:19.24Z */
     start_time: string
     end_time: string
+    /** 账期范围（后端 RFC3339 / UTC），展示时需转本地时区 */
+    bill_start: string
+    bill_end: string
     record_count: number
     duration_ms: number
     error_msg: string
-    create_time: number
+    tenant_id: number
+    /** 建日志时间（毫秒时间戳）。后端 JSON 字段名为 ctime，不是 create_time */
+    ctime: number
 }
 
 export interface ManualCollectRequest {
