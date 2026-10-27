@@ -108,6 +108,7 @@ export function formatElapsed(
  * 用于「运行中 N 条 · 最长已运行 X」这类跨天僵尸任务汇总。
  */
 export function formatLongDuration(ms: number): string {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '0秒'
   const safe = Math.max(0, Math.floor(ms))
   const days = Math.floor(safe / 86_400_000)
   if (days >= 1) return `${days}天${Math.floor((safe % 86_400_000) / 3_600_000)}小时`

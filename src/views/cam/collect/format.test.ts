@@ -150,3 +150,36 @@ describe('summarizeRunningLogs', () => {
     expect(s.maxElapsedText).toBe('2小时00分')
   })
 })
+
+
+describe('summarizeRunningLogs 边界', () => {
+  const now = Date.parse('2026-10-27T12:00:00Z')
+
+  it('空数组返回 0', () => {
+    expect(summarizeRunningLogs([], now).count).toBe(0)
+  })
+
+  it('仅一条无时间运行中：计数 1、最长文案为空', () => {
+    const s = summarizeRunningLogs([{ status: 'running' }] as any, now)
+    expect(s.count).toBe(1)
+    expect(s.maxElapsedText).toBe('')
+    expect(s.oldestStartedAt).toBe(0)
+  })
+
+  it('未来 start_time 不计入时长（clamp 到 0）', () => {
+    const s = summarizeRunningLogs(
+      [{ status: 'running', start_time: '2026-10-28T12:00:00Z' }] as any,
+      now
+    )
+    expect(s.count).toBe(1)
+    expect(s.maxElapsedMs).toBe(0)
+  })
+})
+
+describe('formatLongDuration 边界', () => {
+  it('跨天边界与非法值', () => {
+    expect(formatLongDuration(86_399_999)).toBe('23小时59分')
+    expect(formatLongDuration(86_400_000)).toBe('1天0小时')
+    expect(formatLongDuration(Number.NaN)).toBe('0秒')
+  })
+})

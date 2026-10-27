@@ -4,7 +4,7 @@
       title="采集管理"
       subtitle="手动触发云账单数据采集"
       :show-add-button="false"
-      @refresh="fetchLogs"
+      @refresh="refreshLogs"
     />
 
     <!-- 触发采集 -->
@@ -70,7 +70,7 @@
         <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
       <div v-if="runningSummary && runningSummary.count > 0" class="running-summary" role="status">
-        <span
+        <span role="status" aria-live="polite" aria-atomic="true"
           >运行中 <strong>{{ runningSummary.count }}</strong> 条<template
             v-if="runningSummary.maxElapsedText"
           >，最长已运行 <strong>{{ runningSummary.maxElapsedText }}</strong></template></span
@@ -331,6 +331,8 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     total.value = data.total || 0
     nowMs.value = Date.now()
     lastLoadedAt.value = nowMs.value
+    // 列表刷新后顺带刷新汇总（60s 节流，不额外打请求）
+    void fetchRunningSummary()
     logsLoadFailed.value = false
     errorNotified = false
     pollDelay = POLL_INTERVAL_MS
@@ -412,19 +414,27 @@ const schedulePoll = () => {
   }, pollDelay || POLL_INTERVAL_MS)
 }
 
-/** 全局运行中任务汇总：独立于列表筛选；60s 内不重复请求 */
+/** 全局运行中任务汇总：独立于列表筛选；默认 60s 内不重复请求（手动刷新强制） */
+let summarySeq = 0
 const fetchRunningSummary = async (force = false) => {
   if (disposed) return
   if (!force && Date.now() - summaryFetchedAt < 60_000) return
+  const seq = ++summarySeq
   try {
-    const res = await listCollectLogsApi({ status: 'running', limit: 200 })
-    if (disposed) return
+    const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 200 })
+    if (disposed || seq !== summarySeq) return
     const data = (res as any).data || res
     const s = summarizeRunningLogs(data.items || [])
-    runningSummary.value = { count: s.count, maxElapsedText: s.maxElapsedText }
-    summaryFetchedAt = Date.now()
+    // 数量用后端 total（items 只是时长采样，limit=200 时可能不全）
+    const total = Number(data.total)
+    runningSummary.value = {
+      count: Number.isFinite(total) && total >= 0 ? total : s.count,
+      maxElapsedText: s.maxElapsedText
+    }
   } catch {
-    // 汇总失败保留上次值，不影响日志主流程
+    // 失败保留上次值；finally 仍推进尝试时间，避免轮询下每 5s 重试
+  } finally {
+    if (seq === summarySeq) summaryFetchedAt = Date.now()
   }
 }
 
@@ -439,6 +449,7 @@ const showRunningOnly = () => {
   filters.status = 'running'
   currentPage.value = 1
   void fetchLogs()
+  void fetchRunningSummary(true)
 }
 
 const startPolling = () => {
@@ -578,6 +589,7 @@ onUnmounted(() => {
 
   .running-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin: 8px 0;
