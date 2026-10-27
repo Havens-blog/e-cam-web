@@ -490,14 +490,13 @@ onUnmounted(() => {
     border-radius: 8px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 
-    // 窄屏：分页控件换行，避免 677px 的 pagination 撑破 310px 容器
-    @media (max-width: 768px) {
-      :deep(.el-pagination) {
-        flex-wrap: wrap;
-        justify-content: center;
-        row-gap: 8px;
-        width: 100%;
-      }
+    // 分页控件允许换行：窄屏/侧栏展开但视口不足时自动折行，
+    // 宽屏（可用宽度足够）仍保持单行，视觉无变化
+    :deep(.el-pagination) {
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 8px;
+      width: 100%;
     }
   }
 }
