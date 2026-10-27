@@ -54,6 +54,7 @@
         </div>
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
+          <el-button size="small" :loading="exporting" @click="exportLogs">导出 CSV</el-button>
           <el-button size="small" circle @click="refreshLogs" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
@@ -189,10 +190,12 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
 import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
+import { buildCollectLogCsv, exportFileName, EXPORT_MAX_ROWS } from './export'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
 const collecting = ref(false)
+const exporting = ref(false)
 
 const accountOptions = ref<{ value: number; label: string }[]>([])
 const accountNames = ref<Record<number, string>>({})
@@ -412,6 +415,70 @@ const schedulePoll = () => {
     if (generation !== pollGeneration) return
     schedulePoll()
   }, pollDelay || POLL_INTERVAL_MS)
+}
+
+/** 导出当前筛选下的采集日志（上限 EXPORT_MAX_ROWS 条，带 BOM） */
+const exportLogs = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  // 快照筛选：导出期间用户改筛选不影响本次结果
+  const queryFilters = { ...filters }
+  try {
+    const rows: CollectLog[] = []
+    const seen = new Set<string>()
+    let offset = 0
+    const limit = 200
+    let reportedTotal: number | null = null
+    while (rows.length < EXPORT_MAX_ROWS) {
+      if (disposed) return
+      const res = await listCollectLogsApi({
+        ...buildCollectLogQuery(queryFilters, 1, limit),
+        offset,
+        limit
+      })
+      const data = (res as any).data || res
+      const items: CollectLog[] = data.items || []
+      const total = Number(data.total)
+      if (Number.isFinite(total) && total >= 0) reportedTotal = total
+      for (const item of items) {
+        if (rows.length >= EXPORT_MAX_ROWS) break
+        const key = String(item.id ?? `${item.account_id}-${item.ctime}-${item.bill_start}`)
+        if (seen.has(key)) continue
+        seen.add(key)
+        rows.push(item)
+      }
+      // 以短页为权威终止条件，total 只用于提示（避免 total 缺失时静默截断）
+      if (items.length < limit) break
+      offset += limit
+    }
+    if (rows.length === 0) {
+      ElMessage.warning('当前筛选无数据，未生成文件')
+      return
+    }
+    const csv = buildCollectLogCsv(rows, {
+      accountNames: accountNames.value,
+      providerLabel: getProviderLabel
+    })
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = exportFileName()
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    // 延迟释放，兼容部分浏览器下载时序
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    if (reportedTotal !== null && reportedTotal > rows.length) {
+      ElMessage.warning(`共 ${reportedTotal} 条，仅导出前 ${rows.length} 条`)
+    } else {
+      ElMessage.success(`已导出 ${rows.length} 条`)
+    }
+  } catch (e: any) {
+    if (!disposed) ElMessage.error(e?.message || '导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
 }
 
 /** 全局运行中任务汇总：独立于列表筛选；默认 60s 内不重复请求（手动刷新强制） */
