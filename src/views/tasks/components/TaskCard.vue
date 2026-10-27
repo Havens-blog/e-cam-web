@@ -12,6 +12,15 @@
       </div>
       <div class="task-meta">
         <span class="task-id">ID: {{ task.id }}</span>
+        <el-tag
+          v-if="wasRequeued"
+          size="small"
+          type="warning"
+          class="requeued-tag"
+          title="等待中但存在上次开始时间，可能已被重排或重试"
+        >
+          曾执行
+        </el-tag>
         <span class="task-time">{{ formatTime(task.created_at) }}</span>
       </div>
     </div>
@@ -87,7 +96,7 @@
 <script setup lang="ts">
 import type { Task } from '@/api/types/task'
 import { formatRelativeTime } from '@/utils/formatters'
-import { formatDurationMs, pendingWaitDurationText, shouldUseExecutionTiming } from '../timing'
+import { formatDurationMs, isRequeuedPending, pendingWaitDurationText, shouldUseExecutionTiming } from '../timing'
 import { Document, Monitor, Refresh, Search, WarningFilled } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { taskTypeLabel as formatTaskType } from '../taskFilters'
@@ -136,6 +145,8 @@ const formatTime = (time?: string) => {
 }
 
 const showExecutionTiming = computed(() => shouldUseExecutionTiming(props.task.status))
+
+const wasRequeued = computed(() => isRequeuedPending(props.task.status, props.task.started_at))
 
 const waited = computed(() =>
   props.task.status === 'pending' ? pendingWaitDurationText(props.task.created_at, Date.now()) : null

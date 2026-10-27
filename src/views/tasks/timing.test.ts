@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDurationMs, pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
+import { formatDurationMs, isRequeuedPending, pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
 
 describe('shouldUseExecutionTiming', () => {
     it('等待中不使用执行耗时口径', () => {
@@ -42,5 +42,18 @@ describe('pendingWaitDurationText', () => {
         expect(pendingWaitDurationText(undefined, now)).toBeNull()
         expect(pendingWaitDurationText('not-a-date', now)).toBeNull()
         expect(pendingWaitDurationText('2026-10-28T12:00:00Z', now)).toBe('0秒')
+    })
+})
+
+
+describe('isRequeuedPending', () => {
+    it('等待中且残留开始时间视为曾执行', () => {
+        expect(isRequeuedPending('pending', '2026-10-27T02:16:11Z')).toBe(true)
+    })
+
+    it('非等待中或没有开始时间不标记', () => {
+        expect(isRequeuedPending('running', '2026-10-27T02:16:11Z')).toBe(false)
+        expect(isRequeuedPending('pending', undefined)).toBe(false)
+        expect(isRequeuedPending('completed', '2026-10-27T02:16:11Z')).toBe(false)
     })
 })
