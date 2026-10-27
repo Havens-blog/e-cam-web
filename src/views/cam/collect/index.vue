@@ -54,6 +54,7 @@
         </div>
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
+          <el-button size="small" :loading="exporting" @click="exportLogs">导出 CSV</el-button>
           <el-button size="small" circle @click="refreshLogs" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
@@ -189,10 +190,12 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
 import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
+import { buildCollectLogCsv, exportFileName, EXPORT_MAX_ROWS } from './export'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
 const collecting = ref(false)
+const exporting = ref(false)
 
 const accountOptions = ref<{ value: number; label: string }[]>([])
 const accountNames = ref<Record<number, string>>({})
@@ -412,6 +415,54 @@ const schedulePoll = () => {
     if (generation !== pollGeneration) return
     schedulePoll()
   }, pollDelay || POLL_INTERVAL_MS)
+}
+
+/** 导出当前筛选下的采集日志（上限 EXPORT_MAX_ROWS 条，带 BOM） */
+const exportLogs = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const rows: CollectLog[] = []
+    let offset = 0
+    const limit = 200
+    let totalCount = 0
+    while (rows.length < EXPORT_MAX_ROWS) {
+      const res = await listCollectLogsApi({
+        ...buildCollectLogQuery(filters, 1, limit),
+        offset,
+        limit
+      })
+      const data = (res as any).data || res
+      const items = data.items || []
+      totalCount = Number(data.total ?? items.length)
+      rows.push(...items)
+      if (items.length < limit || rows.length >= totalCount) break
+      offset += limit
+    }
+    const capped = rows.slice(0, EXPORT_MAX_ROWS)
+    const csv = buildCollectLogCsv(capped, {
+      accountNames: accountNames.value,
+      providerLabel: getProviderLabel
+    })
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = exportFileName()
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    if (totalCount > capped.length) {
+      ElMessage.warning(`共 ${totalCount} 条，仅导出前 ${capped.length} 条`)
+    } else {
+      ElMessage.success(`已导出 ${capped.length} 条`)
+    }
+  } catch {
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
 }
 
 /** 全局运行中任务汇总：独立于列表筛选；默认 60s 内不重复请求（手动刷新强制） */
