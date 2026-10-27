@@ -49,9 +49,22 @@
     <div class="logs-section">
       <div class="section-header">
         <span class="section-title">采集日志</span>
-        <el-button size="small" circle @click="fetchLogs" title="刷新">
-          <el-icon><Refresh /></el-icon>
-        </el-button>
+        <div class="section-actions">
+          <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatLocalDateTime(lastLoadedAt) }}</span>
+          <el-button size="small" circle @click="fetchLogs()" title="刷新">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </div>
+      </div>
+      <div v-if="logsLoadFailed" class="logs-error" role="alert">
+        <span>
+          {{
+            isPolling
+              ? '采集日志刷新失败，已保留上次数据，将自动重试。'
+              : '采集日志刷新失败，已保留上次数据，请点击「立即重试」。'
+          }}
+        </span>
+        <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
       <el-table :data="logs" v-loading="logsLoading" stripe style="width: 100%">
         <el-table-column prop="account_id" label="账号 ID" width="100" />
@@ -67,19 +80,19 @@
         </el-table-column>
         <el-table-column label="账期范围" width="220">
           <template #default="{ row }">
-            {{ formatDate(row.bill_start) }} ~ {{ formatDate(row.bill_end) }}
+            {{ formatBillRange(row.bill_start, row.bill_end) }}
           </template>
         </el-table-column>
         <el-table-column prop="record_count" label="记录数" width="100" />
-        <el-table-column prop="duration_ms" label="耗时" width="100">
+        <el-table-column label="耗时" width="150">
           <template #default="{ row }">
-            {{ row.duration_ms > 0 ? (row.duration_ms / 1000).toFixed(1) + 's' : '-' }}
+            <span :class="{ 'elapsed-running': row.status === 'running' }">{{ formatElapsed(row, nowMs) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="error_msg" label="错误信息" min-width="200" show-overflow-tooltip />
         <el-table-column label="采集时间" width="180">
           <template #default="{ row }">
-            {{ formatTimestamp(row.create_time) }}
+            {{ formatCollectStartedAt(row) }}
           </template>
         </el-table-column>
       </el-table>
@@ -89,7 +102,7 @@
           :page-size="pageSize"
           :total="total"
           layout="total, prev, pager, next"
-          @current-change="fetchLogs"
+          @current-change="handlePageChange"
         />
       </div>
     </div>
@@ -106,6 +119,12 @@ import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import {
+  formatBillRange,
+  formatCollectStartedAt,
+  formatElapsed,
+  formatLocalDateTime
+} from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -116,10 +135,23 @@ const accountOptions = ref<{ value: number; label: string }[]>([])
 const logs = ref<CollectLog[]>([])
 const logsLoading = ref(false)
 const logsLoadFailed = ref(false)
+const isPolling = ref(false)
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
-const pollTimer = ref<ReturnType<typeof setInterval> | null>(null)
+/** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
+const nowMs = ref(Date.now())
+const lastLoadedAt = ref(0)
+
+let pollTimer: ReturnType<typeof setInterval> | null = null
+/** 手动触发采集后的轮询宽限期：任务排队期间还没有 running 日志也不能停轮询 */
+let pollDeadline = 0
+/** 请求序号：丢弃过期响应，避免翻页/刷新与轮询竞态 */
+let fetchSeq = 0
+let errorNotified = false
+
+const POLL_INTERVAL_MS = 5000
+const POLL_GRACE_MS = 3 * 60 * 1000
 
 const dateShortcuts = [
   {
@@ -157,19 +189,6 @@ const statusLabel = (s: string) => {
   return map[s] || s
 }
 
-const formatDate = (v: string) => {
-  if (!v) return '-'
-  const d = new Date(v)
-  return isNaN(d.getTime()) ? v : d.toISOString().slice(0, 10)
-}
-
-const formatTimestamp = (ts: number) => {
-  if (!ts) return '-'
-  const d = new Date(ts > 1e12 ? ts : ts * 1000)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
-
 const handleCollect = async () => {
   if (!collectForm.account_id) {
     ElMessage.warning('请选择云账号')
@@ -188,9 +207,10 @@ const handleCollect = async () => {
       end_date: end
     })
     ElMessage.success('采集任务已提交，后台执行中')
-    // 开始轮询采集状态
+    // 任务由队列异步执行：立即进入轮询宽限期，避免任务尚未落日志时停止轮询
+    pollDeadline = Date.now() + POLL_GRACE_MS
     startPolling()
-    setTimeout(() => fetchLogs(), 1000)
+    setTimeout(() => fetchLogs({ silent: true }), 1000)
   } catch (e: any) {
     ElMessage.error(e.message || '触发采集失败')
   } finally {
@@ -198,45 +218,62 @@ const handleCollect = async () => {
   }
 }
 
-const fetchLogs = async () => {
-  logsLoading.value = true
+const fetchLogs = async (options: { silent?: boolean } = {}) => {
+  const seq = ++fetchSeq
+  if (!options.silent) logsLoading.value = true
   try {
     const res = await listCollectLogsApi({
       offset: (currentPage.value - 1) * pageSize,
       limit: pageSize
     })
+    if (seq !== fetchSeq) return
     const data = (res as any).data || res
     logs.value = data.items || []
     total.value = data.total || 0
+    nowMs.value = Date.now()
+    lastLoadedAt.value = nowMs.value
     logsLoadFailed.value = false
-
-    // 如果没有 running 状态的任务，停止轮询
-    const hasRunning = logs.value.some((l: CollectLog) => l.status === 'running')
-    if (!hasRunning) {
-      stopPolling()
-    }
+    errorNotified = false
+    syncPolling()
   } catch {
-    logs.value = []
-    // 轮询期间失败只提示一次，避免每 5 秒重复弹错
-    if (!logsLoadFailed.value) {
+    if (seq !== fetchSeq) return
+    // 轮询失败不清空已有日志，保留上一次成功结果并提示可恢复
+    logsLoadFailed.value = true
+    if (!errorNotified) {
       ElMessage.error('获取采集日志失败')
-      logsLoadFailed.value = true
+      errorNotified = true
     }
   } finally {
-    logsLoading.value = false
+    if (seq === fetchSeq) logsLoading.value = false
+  }
+}
+
+const hasRunningLog = () => logs.value.some((l) => l.status === 'running')
+
+const syncPolling = () => {
+  if (hasRunningLog() || Date.now() < pollDeadline) {
+    startPolling()
+  } else {
+    stopPolling()
   }
 }
 
 const startPolling = () => {
-  stopPolling()
-  pollTimer.value = setInterval(() => fetchLogs(), 5000)
+  if (pollTimer) return
+  pollTimer = setInterval(() => fetchLogs({ silent: true }), POLL_INTERVAL_MS)
+  isPolling.value = true
 }
 
 const stopPolling = () => {
-  if (pollTimer.value) {
-    clearInterval(pollTimer.value)
-    pollTimer.value = null
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
   }
+  isPolling.value = false
+}
+
+const handlePageChange = () => {
+  fetchLogs()
 }
 
 const fetchAccounts = async () => {
@@ -261,6 +298,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopPolling()
+  // 卸载后让在途响应失效
+  fetchSeq++
 })
 </script>
 
@@ -298,7 +337,40 @@ onUnmounted(() => {
       font-weight: 600;
       color: var(--text-primary);
     }
+
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .last-loaded {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+    }
   }
+
+  .logs-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--el-color-danger);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+}
+
+.elapsed-running {
+  color: var(--el-color-warning);
+  font-variant-numeric: tabular-nums;
 }
 
 .pagination-wrap {
