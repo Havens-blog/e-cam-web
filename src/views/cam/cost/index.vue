@@ -52,11 +52,16 @@
               </div>
               <div class="comparison-row muted">
                 <span class="period">{{ yoyComparison.previous_period }}</span>
-                <span class="amount">¥{{ yoyComparison.previous_amount.toFixed(2) }}</span>
+                <span class="amount">{{ formatPreviousAmount(yoyComparison.previous_amount) }}</span>
               </div>
-              <div class="comparison-change" :class="changeClass(yoyComparison.change_percent)">
-                <span v-if="yoyComparison.change_percent > 0">+</span>{{ yoyComparison.change_percent.toFixed(1) }}%
+              <div
+                v-if="hasComparisonBaseline(yoyComparison.previous_amount)"
+                class="comparison-change"
+                :class="changeClass(yoyComparison.change_percent)"
+              >
+                {{ formatChangePercent(yoyComparison.change_percent, yoyComparison.previous_amount) }}
               </div>
+              <div v-else class="comparison-no-baseline">{{ comparisonHint(yoyComparison) }}</div>
             </div>
             <div v-else class="comparison-empty">
               <el-empty description="暂无数据" :image-size="60" />
@@ -85,6 +90,12 @@ import type {
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { ElMessage } from 'element-plus'
+import {
+  comparisonHint,
+  formatChangePercent,
+  formatPreviousAmount,
+  hasComparisonBaseline
+} from './comparison'
 import { onMounted, reactive, ref } from 'vue'
 import CostDistributionChart from './components/CostDistributionChart.vue'
 import type { CostFilterValues } from './components/CostFilters.vue'
@@ -300,7 +311,12 @@ onMounted(() => {
       }
     }
 
-    .comparison-change {
+    .comparison-no-baseline {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.comparison-change {
       margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid var(--border-subtle);
