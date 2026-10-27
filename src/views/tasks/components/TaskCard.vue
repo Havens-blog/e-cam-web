@@ -83,8 +83,9 @@
 <script setup lang="ts">
 import type { Task } from '@/api/types/task'
 import { formatRelativeTime } from '@/utils/formatters'
-import { Refresh, Search, WarningFilled } from '@element-plus/icons-vue'
+import { Document, Monitor, Refresh, Search, WarningFilled } from '@element-plus/icons-vue'
 import { computed } from 'vue'
+import { taskTypeLabel as formatTaskType } from '../taskFilters'
 import TaskProgress from './TaskProgress.vue'
 import TaskStatusBadge from './TaskStatusBadge.vue'
 
@@ -108,16 +109,21 @@ const isCardActioning = computed(() => !!props.actionTaskId && props.actionTaskI
 const isActionLocked = computed(() => !!props.actionTaskId)
 
 const taskTypeIcon = computed(() => {
-  return props.task.type === 'sync_assets' ? Refresh : Search
+  switch (props.task.type) {
+    case 'cam:sync_assets':
+      return Refresh
+    case 'cam:discover_assets':
+      return Search
+    case 'cam:sync_billing':
+      return Document
+    case 'cam:create_ecs':
+      return Monitor
+    default:
+      return Refresh
+  }
 })
 
-const taskTypeLabel = computed(() => {
-  const labels = {
-    sync_assets: '同步资产',
-    discover_assets: '发现资产',
-  }
-  return labels[props.task.type] || props.task.type
-})
+const taskTypeLabel = computed(() => formatTaskType(props.task.type))
 
 const formatTime = (time?: string) => {
   if (!time) return '-'

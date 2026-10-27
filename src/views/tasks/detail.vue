@@ -119,6 +119,7 @@
 <script setup lang="ts">
 import { cancelTaskApi, deleteTaskApi, getTaskDetailApi } from '@/api'
 import type { Task } from '@/api/types/task'
+import { taskTypeLabel as formatTaskType } from './taskFilters'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
@@ -144,11 +145,7 @@ let refreshTimer: number | null = null
 // 计算属性
 const taskTypeLabel = computed(() => {
   if (!task.value) return ''
-  const labels = {
-    sync_assets: '同步资产',
-    discover_assets: '发现资产',
-  }
-  return labels[task.value.type] || task.value.type
+  return formatTaskType(task.value.type)
 })
 
 const duration = computed(() => {
