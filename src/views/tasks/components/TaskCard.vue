@@ -35,7 +35,11 @@
           <span class="label">创建者:</span>
           <span class="value">{{ task.created_by }}</span>
         </div>
-        <div v-if="task.started_at" class="detail-item">
+        <div v-if="waited" class="detail-item">
+          <span class="label">已等待:</span>
+          <span class="value">{{ waited }}</span>
+        </div>
+        <div v-if="showExecutionTiming && task.started_at" class="detail-item">
           <span class="label">开始时间:</span>
           <span class="value">{{ formatTime(task.started_at) }}</span>
         </div>
@@ -83,6 +87,7 @@
 <script setup lang="ts">
 import type { Task } from '@/api/types/task'
 import { formatRelativeTime } from '@/utils/formatters'
+import { pendingWaitDurationText, shouldUseExecutionTiming } from '../timing'
 import { Document, Monitor, Refresh, Search, WarningFilled } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { taskTypeLabel as formatTaskType } from '../taskFilters'
@@ -130,8 +135,14 @@ const formatTime = (time?: string) => {
   return formatRelativeTime(time)
 }
 
+const showExecutionTiming = computed(() => shouldUseExecutionTiming(props.task.status))
+
+const waited = computed(() =>
+  props.task.status === 'pending' ? pendingWaitDurationText(props.task.created_at, Date.now()) : null
+)
+
 const duration = computed(() => {
-  if (!props.task.started_at) return null
+  if (!showExecutionTiming.value || !props.task.started_at) return null
 
   const start = new Date(props.task.started_at).getTime()
   const end = props.task.completed_at

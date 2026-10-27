@@ -36,7 +36,11 @@
               <span class="label">创建时间:</span>
               <span class="value">{{ formatTime(task.created_at) }}</span>
             </div>
-            <div v-if="task.started_at" class="info-item">
+            <div v-if="waited" class="info-item">
+              <span class="label">已等待:</span>
+              <span class="value">{{ waited }}</span>
+            </div>
+            <div v-if="showExecutionTiming && task.started_at" class="info-item">
               <span class="label">开始时间:</span>
               <span class="value">{{ formatTime(task.started_at) }}</span>
             </div>
@@ -123,6 +127,7 @@ import { taskTypeLabel as formatTaskType } from './taskFilters'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
+import { pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -148,8 +153,16 @@ const taskTypeLabel = computed(() => {
   return formatTaskType(task.value.type)
 })
 
+const showExecutionTiming = computed(() =>
+  shouldUseExecutionTiming(task.value?.status)
+)
+
+const waited = computed(() =>
+  task.value?.status === 'pending' ? pendingWaitDurationText(task.value.created_at, Date.now()) : null
+)
+
 const duration = computed(() => {
-  if (!task.value?.started_at) return null
+  if (!showExecutionTiming.value || !task.value?.started_at) return null
 
   const start = new Date(task.value.started_at).getTime()
   const end = task.value.completed_at
