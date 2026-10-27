@@ -387,6 +387,11 @@ onUnmounted(() => {
   padding: 16px 20px 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-subtle);
+
+  // 窄屏与内容区左右内边距对齐（内容 8px），避免头部比卡片多缩进 12px
+  @media (max-width: 768px) {
+    padding: 16px 8px 12px;
+  }
 }
 
 .page-title-row {
