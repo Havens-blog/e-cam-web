@@ -52,7 +52,7 @@ describe('labels', () => {
     it('已知类型/状态给出中文标签', () => {
         expect(taskTypeLabel('cam:sync_assets')).toBe('同步资产')
         expect(taskTypeLabel('cam:sync_billing')).toBe('同步账单')
-        expect(taskStatusLabel('pending')).toBe('等待中')
+        expect(taskStatusLabel('pending')).toBe('待执行')
     })
 
     it('未知类型回退原始值', () => {

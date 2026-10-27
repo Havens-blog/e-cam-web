@@ -25,9 +25,9 @@
         :show-details="true"
       />
 
-      <div v-if="task.error_message" class="error-message">
+      <div v-if="task.error || task.error_message" class="error-message">
         <el-icon class="error-icon"><WarningFilled /></el-icon>
-        <span>{{ task.error_message }}</span>
+        <span>{{ task.error || task.error_message }}</span>
       </div>
 
       <div class="task-details">

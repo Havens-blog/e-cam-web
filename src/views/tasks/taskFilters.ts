@@ -19,8 +19,8 @@ export const TASK_TYPE_OPTIONS: Array<{ value: TaskType; label: string }> = [
 ]
 
 export const TASK_STATUS_OPTIONS: Array<{ value: TaskStatus; label: string }> = [
-    { value: 'pending', label: '等待中' },
-    { value: 'running', label: '运行中' },
+    { value: 'pending', label: '待执行' },
+    { value: 'running', label: '执行中' },
     { value: 'completed', label: '已完成' },
     { value: 'failed', label: '失败' },
     { value: 'cancelled', label: '已取消' },

@@ -21,12 +21,13 @@
           type="button"
           class="summary-chip"
           :class="{ active: activeSummaryKey === item.key }"
+          :aria-pressed="activeSummaryKey === item.key"
           @click="applyStatusFilter(item.status)"
         >
           <span class="summary-label">{{ item.label }}</span>
           <span class="summary-count">{{ summary[item.key] }}</span>
         </button>
-        <span v-if="backlog" class="backlog-hint">队列积压：{{ summary.pending }} 个待执行</span>
+        <span v-if="backlog" class="backlog-hint">队列积压：待执行 {{ summary.pending }} · 执行中 {{ summary.running }}</span>
         <el-button v-if="filtersActive" link type="primary" size="small" @click="clearFilters">
           清空筛选
         </el-button>
@@ -168,19 +169,18 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
 // 获取队列概览：仅取各状态 total（limit=1，避免拉明细）
 const fetchSummary = async () => {
   const seq = ++summarySeq
-  try {
-    const results = await Promise.all(
-      TASK_SUMMARY_STATUSES.map((item) =>
-        listTasksApi({ status: item.status, offset: 0, limit: 1 })
-      )
+  // 概览跟随类型筛选：type 变化时 chip 计数与列表 total 语义一致
+  const results = await Promise.allSettled(
+    TASK_SUMMARY_STATUSES.map((item) =>
+      listTasksApi({ type: filters.type, status: item.status, offset: 0, limit: 1 })
     )
-    if (disposed || seq !== summarySeq) return
-    TASK_SUMMARY_STATUSES.forEach((item, idx) => {
-      summary[item.key] = results[idx]?.data?.total ?? 0
-    })
-  } catch {
-    // 概览失败不影响列表主流程
-  }
+  )
+  if (disposed || seq !== summarySeq) return
+  TASK_SUMMARY_STATUSES.forEach((item, idx) => {
+    const r = results[idx]
+    // 单个状态查询失败时保留上一次计数，避免概览突然归零
+    if (r && r.status === 'fulfilled') summary[item.key] = r.value?.data?.total ?? 0
+  })
 }
 
 // 手动刷新：概览 + 列表
@@ -193,6 +193,7 @@ const refreshAll = async () => {
 // 筛选变化
 const handleFilterChange = () => {
   pagination.page = 1
+  fetchSummary()
   fetchTasks()
 }
 
@@ -216,6 +217,7 @@ const clearFilters = () => {
   filters.type = undefined
   filters.status = undefined
   pagination.page = 1
+  fetchSummary()
   fetchTasks()
 }
 
@@ -277,19 +279,19 @@ const handleDelete = async (task: Task) => {
 // 自动刷新：只要队列仍有积压（待执行/执行中）就每 5s 刷新列表，每 6 次补刷概览
 const syncAutoRefresh = () => {
   if (disposed) return
-  if (!backlog.value) {
-    stopAutoRefresh()
-    return
-  }
   if (refreshTimer) return
+  // 有积压：5s 刷列表，每 6 次补刷概览；空闲：30s 低频刷新，避免新积压永远不出现
+  const delay = backlog.value ? 5000 : 30000
   refreshTimer = window.setTimeout(async () => {
     refreshTimer = null
     if (disposed) return
     await fetchTasks({ silent: true })
+    if (disposed) return
     summaryTick += 1
-    if (summaryTick % 6 === 0) await fetchSummary()
+    if (!backlog.value || summaryTick % 6 === 0) await fetchSummary()
+    if (disposed) return
     syncAutoRefresh()
-  }, 5000)
+  }, delay)
 }
 
 // 停止自动刷新
@@ -302,8 +304,8 @@ const stopAutoRefresh = () => {
 
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
-  await fetchSummary()
-  await fetchTasks()
+  // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」
+  await Promise.all([fetchSummary(), fetchTasks()])
   syncAutoRefresh()
 })
 

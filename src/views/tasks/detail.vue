@@ -69,13 +69,13 @@
         </el-card>
 
         <!-- 错误信息卡片 -->
-        <el-card v-if="task.error_message" class="info-card error-card">
+        <el-card v-if="task.error || task.error_message" class="info-card error-card">
           <template #header>
             <span>错误信息</span>
           </template>
           <div class="error-content">
             <el-icon class="error-icon"><WarningFilled /></el-icon>
-            <pre class="error-text">{{ task.error_message }}</pre>
+            <pre class="error-text">{{ task.error || task.error_message }}</pre>
           </div>
         </el-card>
 

@@ -31,6 +31,8 @@ export interface Task {
     started_at?: string
     completed_at?: string
     error_message?: string
+    /** 后端 TaskResp 实际字段名（error），error_message 为历史兼容 */
+    error?: string
     result?: any
 }
 

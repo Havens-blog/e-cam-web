@@ -29,8 +29,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const statusConfig = {
-  pending: { type: 'info', label: '等待中', icon: WarningFilled, effect: 'plain' },
-  running: { type: 'warning', label: '运行中', icon: Loading, effect: 'dark' },
+  pending: { type: 'info', label: '待执行', icon: WarningFilled, effect: 'plain' },
+  running: { type: 'warning', label: '执行中', icon: Loading, effect: 'dark' },
   completed: { type: 'success', label: '已完成', icon: SuccessFilled, effect: 'dark' },
   failed: { type: 'danger', label: '失败', icon: CircleCloseFilled, effect: 'dark' },
   cancelled: { type: 'info', label: '已取消', icon: RemoveFilled, effect: 'plain' },
