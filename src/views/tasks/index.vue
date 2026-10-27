@@ -97,7 +97,9 @@
           v-model:page-size="pagination.size"
           :total="pagination.total"
           :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="paginationUi.layout"
+          :pager-count="paginationUi.pagerCount"
+          :small="paginationUi.small"
           @size-change="handlePageSizeChange"
           @current-change="handlePageChange"
         />
@@ -115,6 +117,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TaskCard from './components/TaskCard.vue'
 import { oldestPendingWaitText } from './queue'
+import { paginationUiForWidth } from './pagination'
 import {
   buildTaskQuery,
   EMPTY_TASK_SUMMARY,
@@ -349,8 +352,16 @@ const stopAutoRefresh = () => {
   }
 }
 
+// 窄屏（<=480）分页改用紧凑形态，避免完整 layout 折成 3 行
+const viewportWidth = ref(typeof window === 'undefined' ? 1440 : window.innerWidth)
+const paginationUi = computed(() => paginationUiForWidth(viewportWidth.value))
+const handleResize = () => {
+  viewportWidth.value = window.innerWidth
+}
+
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
+  window.addEventListener('resize', handleResize)
   // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」；
   // 最老等待由 fetchTasks 成功路径按 60s 节流触发，这里不再重复请求
   await Promise.all([fetchSummary(), fetchTasks()])
@@ -359,6 +370,7 @@ onMounted(async () => {
 
 // 清理
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
   disposed = true
   stopAutoRefresh()
   listSeq++
