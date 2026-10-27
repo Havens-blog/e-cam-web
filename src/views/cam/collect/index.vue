@@ -73,6 +73,7 @@
         <el-select
           v-model="filters.account_id"
           placeholder="全部账号"
+          aria-label="按账号筛选"
           clearable
           filterable
           style="width: 200px"
@@ -88,6 +89,7 @@
         <el-select
           v-model="filters.status"
           placeholder="全部状态"
+          aria-label="按状态筛选"
           clearable
           style="width: 140px"
           @change="handleFilterChange"
@@ -102,7 +104,7 @@
         <el-table-column label="账号" min-width="140">
           <template #default="{ row }">
             <div class="account-cell">
-              <span class="account-name">{{ accountDisplayName(row.account_id, accountNames) }}</span>
+              <span class="account-name" :title="accountDisplayName(row.account_id, accountNames)">{{ accountDisplayName(row.account_id, accountNames) }}</span>
               <span class="account-id">#{{ row.account_id }}</span>
             </div>
           </template>
@@ -136,10 +138,11 @@
         </el-table-column>
         <template #empty>
           <el-empty
-            :description="filtersActive ? '没有匹配的采集记录' : '暂无采集记录'"
+            :description="logsLoadFailed ? '采集日志加载失败' : filtersActive ? '没有匹配的采集记录' : '暂无采集记录'"
             :image-size="60"
           >
-            <el-button v-if="filtersActive" size="small" @click="resetFilters">清空筛选</el-button>
+            <el-button v-if="logsLoadFailed" size="small" @click="fetchLogs()">重试</el-button>
+            <el-button v-else-if="filtersActive" size="small" @click="resetFilters">清空筛选</el-button>
           </el-empty>
         </template>
       </el-table>
@@ -148,7 +151,7 @@
           v-model:current-page="currentPage"
           :page-size="pageSize"
           :total="total"
-          layout="total, prev, pager, next"
+          layout="prev, pager, next"
           @current-change="handlePageChange"
         />
       </div>
@@ -159,6 +162,7 @@
 <script setup lang="ts">
 import { listCloudAccountsApi } from '@/api'
 import { listCollectLogsApi, triggerCollectApi } from '@/api/finops'
+import type { CollectLogStatus } from '@/api/finops'
 import type { CollectLog } from '@/api/types/finops'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
@@ -166,7 +170,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { accountDisplayName, buildCollectLogQuery, hasActiveFilters } from './filters'
+import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
 import { formatCollectStartedAt, formatDateTime, formatElapsed } from './format'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
@@ -184,9 +188,9 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
 /** 日志筛选：账号 / 状态（后端已支持，空值表示不过滤） */
-const filters = reactive<{ account_id?: number; status?: string }>({
+const filters = reactive<{ account_id?: number; status?: CollectLogStatus }>({
   account_id: undefined,
-  status: ''
+  status: undefined
 })
 const filtersActive = computed(() => hasActiveFilters(filters))
 /** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
@@ -207,6 +211,8 @@ let pollDelay = 0
 let disposed = false
 /** 手动触发后的一次性补拉，需在卸载时清理 */
 let retryTimer: ReturnType<typeof setTimeout> | null = null
+/** 轮询世代：start/stop 时自增，避免 await 后旧链路再排一条 timer */
+let pollGeneration = 0
 
 const POLL_INTERVAL_MS = 5000
 const POLL_MAX_BACKOFF_MS = 60_000
@@ -308,7 +314,14 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
     logsLoadFailed.value = false
     errorNotified = false
     pollDelay = POLL_INTERVAL_MS
-    syncPolling()
+    // 总数缩小（如 running 收敛）导致当前页越界时收敛页码并重取，避免空表 + 分页消失
+    const clampedPage = clampPage(currentPage.value, total.value, pageSize)
+    if (clampedPage !== currentPage.value) {
+      currentPage.value = clampedPage
+      void fetchLogs({ silent: true })
+      return
+    }
+    void syncPolling()
   } catch {
     if (disposed || seq !== fetchSeq) return
     // 轮询失败不清空已有日志，保留上一次成功结果并提示可恢复
@@ -328,8 +341,31 @@ const fetchLogs = async (options: { silent?: boolean } = {}) => {
 
 const hasRunningLog = () => logs.value.some((l) => l.status === 'running')
 
-const syncPolling = () => {
-  if (hasRunningLog() || Date.now() < pollDeadline) {
+/**
+ * 后端是否仍有运行中的采集任务。
+ * 当前筛选/页码可能看不到 running 行（如筛「失败」或翻到第 2 页），
+ * 不能据此停止轮询；用 status=running&limit=1 轻探针判断。
+ * 探针失败时返回 true（宁可多轮询，也不静默停止）。
+ */
+const probeBackendRunning = async (): Promise<boolean> => {
+  try {
+    const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 1 })
+    const data = (res as any).data || res
+    return Number(data.total || 0) > 0
+  } catch {
+    return true
+  }
+}
+
+const syncPolling = async () => {
+  if (Date.now() < pollDeadline || hasRunningLog()) {
+    startPolling()
+    return
+  }
+  if (disposed) return
+  const backendRunning = await probeBackendRunning()
+  if (disposed) return
+  if (backendRunning) {
     startPolling()
   } else {
     stopPolling()
@@ -338,10 +374,12 @@ const syncPolling = () => {
 
 const schedulePoll = () => {
   if (!polling || disposed) return
+  const generation = pollGeneration
   pollTimer = setTimeout(async () => {
     pollTimer = null
     await fetchLogs({ silent: true })
-    // fetchLogs 成功后可能已 stopPolling（无 running 且无宽限期）
+    // 等待期间 start/stop 过（筛选切换、卸载等）则不再续排，避免形成第二条 timer 链
+    if (generation !== pollGeneration) return
     schedulePoll()
   }, pollDelay || POLL_INTERVAL_MS)
 }
@@ -350,6 +388,7 @@ const startPolling = () => {
   if (polling || disposed) return
   polling = true
   isPolling.value = true
+  pollGeneration++
   if (!pollDelay) pollDelay = POLL_INTERVAL_MS
   schedulePoll()
 }
@@ -357,6 +396,7 @@ const startPolling = () => {
 const stopPolling = () => {
   polling = false
   isPolling.value = false
+  pollGeneration++
   if (pollTimer) {
     clearTimeout(pollTimer)
     pollTimer = null
@@ -375,7 +415,7 @@ const handleFilterChange = () => {
 
 const resetFilters = () => {
   filters.account_id = undefined
-  filters.status = ''
+  filters.status = undefined
   currentPage.value = 1
   fetchLogs()
 }

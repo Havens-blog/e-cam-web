@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FinOps 多云成本分析 API
  */
 
@@ -254,10 +254,12 @@ export function triggerCollectApi(data: ManualCollectRequest) {
     })
 }
 
-/** 采集日志查询参数（status 由后端 handler 支持：running/success/failed） */
+export type CollectLogStatus = 'running' | 'success' | 'failed'
+
+/** 采集日志查询参数（status 由后端 handler 支持） */
 export interface CollectLogQuery {
     account_id?: number
-    status?: string
+    status?: CollectLogStatus
     offset?: number
     limit?: number
 }
@@ -270,3 +272,5 @@ export function listCollectLogsApi(params?: CollectLogQuery) {
         interceptorsToOnce: createCamApiInterceptor()
     })
 }
+
+
