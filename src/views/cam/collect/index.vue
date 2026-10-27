@@ -69,7 +69,7 @@
         </span>
         <el-button link type="primary" size="small" @click="fetchLogs()">立即重试</el-button>
       </div>
-      <div v-if="runningSummary && runningSummary.count > 0" class="running-summary" role="status">
+      <div v-if="runningSummary && runningSummary.count > 0" class="running-summary">
         <span role="status" aria-live="polite" aria-atomic="true"
           >运行中 <strong>{{ runningSummary.count }}</strong> 条<template
             v-if="runningSummary.maxElapsedText"
@@ -416,26 +416,33 @@ const schedulePoll = () => {
 
 /** 全局运行中任务汇总：独立于列表筛选；默认 60s 内不重复请求（手动刷新强制） */
 let summarySeq = 0
-const fetchRunningSummary = async (force = false) => {
-  if (disposed) return
-  if (!force && Date.now() - summaryFetchedAt < 60_000) return
+let summaryInflight: Promise<void> | null = null
+const fetchRunningSummary = (force = false): Promise<void> => {
+  if (disposed) return Promise.resolve()
+  if (!force && Date.now() - summaryFetchedAt < 60_000) return Promise.resolve()
+  // 在途复用：挂载/刷新/筛选可能同时触发，避免重复 GET
+  if (summaryInflight) return summaryInflight
   const seq = ++summarySeq
-  try {
-    const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 200 })
-    if (disposed || seq !== summarySeq) return
-    const data = (res as any).data || res
-    const s = summarizeRunningLogs(data.items || [])
-    // 数量用后端 total（items 只是时长采样，limit=200 时可能不全）
-    const total = Number(data.total)
-    runningSummary.value = {
-      count: Number.isFinite(total) && total >= 0 ? total : s.count,
-      maxElapsedText: s.maxElapsedText
+  summaryInflight = (async () => {
+    try {
+      const res = await listCollectLogsApi({ status: 'running', offset: 0, limit: 200 })
+      if (disposed || seq !== summarySeq) return
+      const data = (res as any).data || res
+      const s = summarizeRunningLogs(data.items || [])
+      // 数量用后端 total（items 只是时长采样，limit=200 时可能不全）
+      const total = Number(data.total)
+      runningSummary.value = {
+        count: Number.isFinite(total) && total >= 0 ? total : s.count,
+        maxElapsedText: s.maxElapsedText
+      }
+    } catch {
+      // 失败保留上次值；finally 仍推进尝试时间，避免轮询下每 5s 重试
+    } finally {
+      if (seq === summarySeq) summaryFetchedAt = Date.now()
+      summaryInflight = null
     }
-  } catch {
-    // 失败保留上次值；finally 仍推进尝试时间，避免轮询下每 5s 重试
-  } finally {
-    if (seq === summarySeq) summaryFetchedAt = Date.now()
-  }
+  })()
+  return summaryInflight
 }
 
 /** 手动刷新：日志 + 运行中汇总 */
