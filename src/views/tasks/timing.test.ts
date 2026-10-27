@@ -25,6 +25,7 @@ describe('formatDurationMs', () => {
 
     it('非法与负值回退 0 秒', () => {
         expect(formatDurationMs(Number.NaN)).toBe('0秒')
+        expect(formatDurationMs(Number.POSITIVE_INFINITY)).toBe('0秒')
         expect(formatDurationMs(-1000)).toBe('0秒')
     })
 })
@@ -40,5 +41,6 @@ describe('pendingWaitDurationText', () => {
     it('缺失或非法 created_at 返回 null', () => {
         expect(pendingWaitDurationText(undefined, now)).toBeNull()
         expect(pendingWaitDurationText('not-a-date', now)).toBeNull()
+        expect(pendingWaitDurationText('2026-10-28T12:00:00Z', now)).toBe('0秒')
     })
 })

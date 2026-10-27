@@ -44,7 +44,7 @@
               <span class="label">开始时间:</span>
               <span class="value">{{ formatTime(task.started_at) }}</span>
             </div>
-            <div v-if="task.completed_at" class="info-item">
+            <div v-if="showExecutionTiming && task.completed_at" class="info-item">
               <span class="label">完成时间:</span>
               <span class="value">{{ formatTime(task.completed_at) }}</span>
             </div>
@@ -127,7 +127,7 @@ import { taskTypeLabel as formatTaskType } from './taskFilters'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { formatRelativeTime } from '@/utils/formatters'
-import { pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
+import { formatDurationMs, pendingWaitDurationText, shouldUseExecutionTiming } from './timing'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -163,20 +163,11 @@ const waited = computed(() =>
 
 const duration = computed(() => {
   if (!showExecutionTiming.value || !task.value?.started_at) return null
-
+  if (task.value.status !== 'running' && !task.value.completed_at) return null
   const start = new Date(task.value.started_at).getTime()
-  const end = task.value.completed_at
-    ? new Date(task.value.completed_at).getTime()
-    : Date.now()
-  const diff = end - start
-
-  const hours = Math.floor(diff / 3600000)
-  const minutes = Math.floor((diff % 3600000) / 60000)
-  const seconds = Math.floor((diff % 60000) / 1000)
-
-  if (hours > 0) return `${hours}小时${minutes}分${seconds}秒`
-  if (minutes > 0) return `${minutes}分${seconds}秒`
-  return `${seconds}秒`
+  const end = task.value.completed_at ? new Date(task.value.completed_at).getTime() : Date.now()
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null
+  return formatDurationMs(end - start)
 })
 
 // 格式化时间
