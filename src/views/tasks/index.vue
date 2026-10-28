@@ -187,12 +187,13 @@ watch(
     ) {
       return
     }
-    const filtersChanged = nextType !== filters.type || nextStatus !== filters.status
+    const typeChanged = nextType !== filters.type
     pagination.page = nextPage
     pagination.size = nextSize
     filters.type = nextType
     filters.status = nextStatus
-    if (filtersChanged) {
+    // 概览计数与最老等待只依赖类型，状态切换不必重刷
+    if (typeChanged) {
       fetchSummary()
       void fetchOldestPending(true)
     }
@@ -222,7 +223,7 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     const { data } = await listTasksApi(buildTaskQuery(filters, pagination.page, pagination.size))
     if (disposed || seq !== listSeq) return
     tasks.value = data.tasks || []
-    pagination.total = data.total || 0
+    pagination.total = Number(data.total) || 0
     // 深链页码超出范围（例如数据变少）：收敛到最后一页并重新取数
     const clamped = clampPageToTotal(pagination.page, pagination.total, pagination.size)
     if (clamped !== pagination.page) {

@@ -7,6 +7,7 @@ import {
     DESKTOP_PAGINATION_LAYOUT,
     TINY_PAGINATION_LAYOUT,
     paginationUiForContentWidth,
+    readFilterQuery,
     readPageQuery,
     readPageSizeQuery,
 } from './pagination'
@@ -75,6 +76,23 @@ describe('分页 URL 参数', () => {
             size: '50',
         })
         expect(buildPageQuery(1, 20, { tag: ['a', 'b'] })).toEqual({ tag: ['a', 'b'] })
+    })
+
+    it('筛选值走允许列表', () => {
+        const options = [{ value: 'cam:sync_assets' }, { value: 'cam:discover_assets' }] as const
+        expect(readFilterQuery('cam:sync_assets', options)).toBe('cam:sync_assets')
+        expect(readFilterQuery('bogus', options)).toBeUndefined()
+        expect(readFilterQuery(undefined, options)).toBeUndefined()
+        expect(readFilterQuery(['cam:discover_assets'], options)).toBe('cam:discover_assets')
+    })
+
+    it('传入空 filters 时移除 URL 旧筛选', () => {
+        expect(buildPageQuery(1, 20, { type: 'old', status: 'failed' }, {})).toEqual({})
+        expect(buildPageQuery(2, 20, { tag: ['a', 'b'], type: 'old' }, { type: 'new' })).toEqual({
+            tag: ['a', 'b'],
+            type: 'new',
+            page: '2',
+        })
     })
 
     it('页码超出总页数/空结果时收敛', () => {
