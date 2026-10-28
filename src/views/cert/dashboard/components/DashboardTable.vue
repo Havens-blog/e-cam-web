@@ -34,7 +34,7 @@
         <el-option label="完整托管" value="complete" />
         <el-option label="仅指纹登记" value="fingerprint_only" />
       </el-select>
-      <div class="toolbar-spacer" />
+      <div class="toolbar-actions">
       <el-tooltip
         v-if="wildcardSkippedCount > 0"
         content="通配符 SAN 无法直接拨测且未配置替代子域名，跳过计数（探测覆盖显式缺口，不参与差异告警）"
@@ -43,6 +43,7 @@
         <span class="meta-item wildcard-meta" tabindex="0">通配符跳过拨测 {{ wildcardSkippedCount }}</span>
       </el-tooltip>
       <span class="meta-item">最近巡检：{{ lastInspectionAt ? relativeTimeDash(lastInspectionAt) : '—' }}</span>
+      </div>
     </div>
 
     <!-- 孤儿隐藏横幅（同台账模式）：非静默吞行，空态下仍保留；豁免态强制开启并禁用 -->
@@ -298,12 +299,26 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   display: flex;
   align-items: center;
   gap: 12px;
+  // 容器查询参照工具栏实际可用宽度（侧栏折叠/缩放时与视口不等）
+  container-type: inline-size;
   padding: 16px 24px 0;
   flex-wrap: wrap;
 }
 
-.toolbar-spacer {
-  flex: 1;
+/* 尾部元信息成组：整体右对齐；放不下时整组换行，不与下拉拆行 */
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  min-width: 0;
+}
+
+@container (max-width: 720px) {
+  .toolbar-actions {
+    margin-left: 0;
+  }
 }
 
 .toolbar-select {

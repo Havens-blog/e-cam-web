@@ -54,7 +54,7 @@
           <el-select v-model="linkFilter" class="toolbar-select" aria-label="按链路层筛选">
             <el-option v-for="o in PROBE_LINK_FILTERS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
-          <div class="toolbar-spacer" />
+          <div class="toolbar-actions">
           <el-button
             class="scan-btn"
             :disabled="scanning"
@@ -64,6 +64,7 @@
             {{ scanning ? '探测中' : '立即探测' }}
           </el-button>
           <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
+          </div>
         </div>
 
         <!-- 筛选无匹配：保留工具栏，仅表格区切空态 -->
@@ -508,6 +509,8 @@ onUnmounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  // 容器查询参照工具栏实际可用宽度
+  container-type: inline-size;
 }
 
 .toolbar-search {
@@ -518,8 +521,21 @@ onUnmounted(() => {
   width: 140px;
 }
 
-.toolbar-spacer {
-  flex: 1;
+/* 尾部按钮成组：整体右对齐；放不下时整组换行 */
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* 搜索 280 + 两下拉 140×2 + 组 196 + 间距 ≈ 800；低于此归零右对齐，避免整组被推到行尾 */
+@container (max-width: 800px) {
+  .toolbar-actions {
+    margin-left: 0;
+  }
 }
 
 .refresh-btn {
