@@ -4,10 +4,12 @@
  */
 import { batchGetDictByCodesApi, getDictByCodeApi } from '@/api/dictionary'
 import type { DictItem } from '@/api/types/dictionary'
-import { computed, ref, type Ref } from 'vue'
+import { computed, reactive, ref, type Ref } from 'vue'
 
-// Module-level cache shared across all component instances
-const dictCache = new Map<string, DictItem[]>()
+// Module-level cache shared across all component instances。
+// 必须是响应式 Map：getDictOptions/getDictItems 以 computed 读取它，
+// 若用普通 Map，loadDict 完成后不会触发重算，下拉会永远停留在首次的空结果。
+const dictCache = reactive(new Map<string, DictItem[]>())
 // Promise dedup: prevent concurrent requests for the same code
 const pendingRequests = new Map<string, Promise<void>>()
 
