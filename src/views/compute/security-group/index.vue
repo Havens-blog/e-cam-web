@@ -528,7 +528,11 @@ onMounted(() => {
   const saved = localStorage.getItem('security-group-column-settings')
   if (saved) { try { columnSettings.value = JSON.parse(saved) } catch {} }
   const s = route.query.search
-  if (typeof s === 'string' && s) filters.keyword = s
+  if (typeof s === 'string' && s) {
+    filters.keyword = s
+    // 深链/全局搜索进入时同步回显输入框（此前只过滤数据、输入框为空）
+    searchKeyword.value = s
+  }
   fetchData()
 })
 </script>
