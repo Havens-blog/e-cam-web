@@ -120,7 +120,7 @@
         </template>
       </el-table-column>
       <el-table-column v-if="!isNarrow" prop="refCount" label="引用数" width="80" />
-      <el-table-column label="操作" width="200" fixed="right" class-name="col-actions">
+      <el-table-column label="操作" width="200" :fixed="stickyActions ? 'right' : false" class-name="col-actions">
         <template #default="{ row }">
           <button type="button" class="row-link" @click.stop="emit('view', row)">详情</button>
           <button
@@ -208,6 +208,14 @@ const syncNarrow = (event: MediaQueryList | MediaQueryListEvent) => {
     isNarrow.value = event.matches
 }
 
+// 仅宽屏启用「操作」列 sticky：窄屏 sticky 会覆盖过多可滚动内容并叠字
+const WIDE_QUERY = '(min-width: 1024px)'
+const stickyActions = ref(false)
+let wideMedia: MediaQueryList | null = null
+const syncWide = (event: MediaQueryList | MediaQueryListEvent) => {
+    stickyActions.value = event.matches
+}
+
 const emit = defineEmits<{
     (e: 'query-change', q: { search?: string; hostingStatus?: HostingStatus | ''; daysLeft?: DaysLeftTier | '' }): void
     (e: 'page-change', page: number): void
@@ -253,11 +261,16 @@ onMounted(() => {
     narrowMedia = window.matchMedia(NARROW_QUERY)
     syncNarrow(narrowMedia)
     narrowMedia.addEventListener('change', syncNarrow)
+    wideMedia = window.matchMedia(WIDE_QUERY)
+    syncWide(wideMedia)
+    wideMedia.addEventListener('change', syncWide)
 })
 
 onUnmounted(() => {
     narrowMedia?.removeEventListener('change', syncNarrow)
     narrowMedia = null
+    wideMedia?.removeEventListener('change', syncWide)
+    wideMedia = null
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))
@@ -532,6 +545,8 @@ function onRowClick(row: CertListItem) {
   color: var(--text-secondary);
 }
 
-@media (max-width: 1023px) {
+// 固定列需要不透明背景，否则横向滚动时下层文字透出（叠字）
+:deep(.el-table__cell.el-table-fixed-column--right) {
+  background-color: var(--bg-base);
 }
 </style>
