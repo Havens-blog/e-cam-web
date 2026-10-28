@@ -47,29 +47,40 @@ describe('paginationUiForContentWidth', () => {
 
 
 describe('分页 URL 参数', () => {
-    it('读取页码/每页条数并回退非法值', () => {
+    it('读取页码：仅纯数字且 <= 1e6', () => {
         expect(readPageQuery(undefined)).toBe(1)
         expect(readPageQuery('3')).toBe(3)
         expect(readPageQuery('0')).toBe(1)
         expect(readPageQuery('-2')).toBe(1)
         expect(readPageQuery('abc')).toBe(1)
+        expect(readPageQuery('1e3')).toBe(1)
+        expect(readPageQuery('0x10')).toBe(1)
+        expect(readPageQuery('3.0')).toBe(1)
+        expect(readPageQuery('1000001')).toBe(1)
+        expect(readPageQuery(['4'])).toBe(4)
+    })
+
+    it('读取每页条数：仅允许列表内取值', () => {
         expect(readPageSizeQuery('50')).toBe(50)
         expect(readPageSizeQuery('7')).toBe(20)
         expect(readPageSizeQuery(undefined)).toBe(20)
     })
 
-    it('默认值不写入 query，保留其它参数', () => {
+    it('默认值不写入 query，保留其它参数与数组', () => {
         expect(buildPageQuery(1, 20, { type: 'cam:sync_assets' })).toEqual({ type: 'cam:sync_assets' })
-        expect(buildPageQuery(2, 50, { type: 'cam:sync_assets', page: '1' })).toEqual({
+        expect(buildPageQuery(2, 50, { type: 'old', status: 'failed', page: '1' }, { type: 'cam:sync_assets', status: 'pending' })).toEqual({
             type: 'cam:sync_assets',
+            status: 'pending',
             page: '2',
             size: '50',
         })
+        expect(buildPageQuery(1, 20, { tag: ['a', 'b'] })).toEqual({ tag: ['a', 'b'] })
     })
 
-    it('页码超出总页数时收敛', () => {
+    it('页码超出总页数/空结果时收敛', () => {
         expect(clampPageToTotal(9999, 7053, 20)).toBe(353)
         expect(clampPageToTotal(2, 7053, 20)).toBe(2)
-        expect(clampPageToTotal(2, 0, 20)).toBe(2)
+        expect(clampPageToTotal(5, 0, 20)).toBe(1)
+        expect(clampPageToTotal(1, 0, 20)).toBe(1)
     })
 })

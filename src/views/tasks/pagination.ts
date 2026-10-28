@@ -7,6 +7,8 @@
  * 完整 layout（total+sizes+pager+jumper）约需 646px；容器不足时降级为
  * small + 5 页码 + total/prev/pager/next，保持单行。
  */
+import type { LocationQueryRaw } from 'vue-router'
+
 export interface PaginationUi {
     small: boolean
     pagerCount: number
@@ -46,10 +48,14 @@ export function paginationUiForContentWidth(availableWidth: number): PaginationU
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 export const DEFAULT_PAGE_SIZE = 20
 
-/** 从路由 query 读取页码：非法/<=0 回退 1 */
+const MAX_PAGE_QUERY = 1_000_000
+
+/** 从路由 query 读取页码：仅接受纯数字且 <= 1e6，其余回退 1 */
 export function readPageQuery(value: unknown): number {
-    const parsed = Number(Array.isArray(value) ? value[0] : value)
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+    const raw = String(Array.isArray(value) ? value[0] : value ?? '')
+    if (!/^\d+$/.test(raw)) return 1
+    const parsed = Number(raw)
+    return parsed > 0 && parsed <= MAX_PAGE_QUERY ? parsed : 1
 }
 
 /** 从路由 query 读取每页条数：不在允许列表内回退默认值 */
@@ -58,16 +64,35 @@ export function readPageSizeQuery(value: unknown): number {
     return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE
 }
 
-/** 构造新的 query：默认值不写入 URL，其余参数原样保留 */
+/** 读取筛选 query：不在可选项内则视为未筛选 */
+export function readFilterQuery<T extends string>(
+    value: unknown,
+    options: readonly { value: T }[]
+): T | undefined {
+    const raw = String(Array.isArray(value) ? value[0] : value ?? '')
+    return options.some((option) => option.value === raw) ? (raw as T) : undefined
+}
+
+export interface PageQueryFilters {
+    type?: string
+    status?: string
+}
+
+/** 构造新的 query：默认值不写入 URL；其它参数（含数组）原样保留 */
 export function buildPageQuery(
     page: number,
     size: number,
-    currentQuery: Record<string, unknown> = {}
-): Record<string, string> {
-    const next: Record<string, string> = {}
-    for (const [key, value] of Object.entries(currentQuery)) {
-        if (key === 'page' || key === 'size' || value === undefined || value === null) continue
-        next[key] = String(value)
+    currentQuery: LocationQueryRaw = {},
+    filters?: PageQueryFilters
+): LocationQueryRaw {
+    const next: LocationQueryRaw = { ...currentQuery }
+    delete next.page
+    delete next.size
+    if (filters) {
+        delete next.type
+        delete next.status
+        if (filters.type) next.type = filters.type
+        if (filters.status) next.status = filters.status
     }
     if (page > 1) next.page = String(page)
     if (size !== DEFAULT_PAGE_SIZE) next.size = String(size)
@@ -76,7 +101,9 @@ export function buildPageQuery(
 
 /** 页码超出总页数时收敛到最后一页 */
 export function clampPageToTotal(page: number, total: number, size: number): number {
-    if (!Number.isFinite(total) || total <= 0 || size <= 0) return page
+    // 空结果且不在第一页：回第 1 页，避免分页控件被隐藏后 URL 卡在越界页码
+    if (Number.isFinite(total) && total <= 0) return page > 1 ? 1 : page
+    if (!Number.isFinite(total) || size <= 0) return page
     const lastPage = Math.max(1, Math.ceil(total / size))
     return page > lastPage ? lastPage : page
 }

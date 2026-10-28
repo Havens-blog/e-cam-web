@@ -96,7 +96,7 @@
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
           :total="pagination.total"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="PAGE_SIZE_OPTIONS"
           :layout="paginationUi.layout"
           :pager-count="paginationUi.pagerCount"
           :size="paginationUi.small ? 'small' : 'default'"
@@ -120,7 +120,9 @@ import { oldestPendingWaitText } from './queue'
 import {
   buildPageQuery,
   clampPageToTotal,
+  PAGE_SIZE_OPTIONS,
   paginationUiForContentWidth,
+  readFilterQuery,
   readPageQuery,
   readPageSizeQuery,
 } from './pagination'
@@ -156,9 +158,14 @@ const pagination = reactive({
 // 分页写入 URL：刷新/分享/前进后退都能回到同一页
 pagination.page = readPageQuery(route.query.page)
 pagination.size = readPageSizeQuery(route.query.size)
+filters.type = readFilterQuery(route.query.type, TASK_TYPE_OPTIONS)
+filters.status = readFilterQuery(route.query.status, TASK_STATUS_OPTIONS)
 
 const syncPaginationQuery = () => {
-  const query = buildPageQuery(pagination.page, pagination.size, route.query)
+  const query = buildPageQuery(pagination.page, pagination.size, route.query, {
+    type: filters.type,
+    status: filters.status,
+  })
   const current = JSON.stringify(route.query)
   if (JSON.stringify(query) === current) return
   router.replace({ query })
@@ -166,13 +173,29 @@ const syncPaginationQuery = () => {
 
 // 浏览器前进/后退或外部改 query：同步分页状态并重新取数
 watch(
-  () => [route.query.page, route.query.size],
+  () => [route.query.page, route.query.size, route.query.type, route.query.status],
   () => {
     const nextPage = readPageQuery(route.query.page)
     const nextSize = readPageSizeQuery(route.query.size)
-    if (nextPage === pagination.page && nextSize === pagination.size) return
+    const nextType = readFilterQuery(route.query.type, TASK_TYPE_OPTIONS)
+    const nextStatus = readFilterQuery(route.query.status, TASK_STATUS_OPTIONS)
+    if (
+      nextPage === pagination.page &&
+      nextSize === pagination.size &&
+      nextType === filters.type &&
+      nextStatus === filters.status
+    ) {
+      return
+    }
+    const filtersChanged = nextType !== filters.type || nextStatus !== filters.status
     pagination.page = nextPage
     pagination.size = nextSize
+    filters.type = nextType
+    filters.status = nextStatus
+    if (filtersChanged) {
+      fetchSummary()
+      void fetchOldestPending(true)
+    }
     fetchTasks()
   }
 )
@@ -205,7 +228,8 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     if (clamped !== pagination.page) {
       pagination.page = clamped
       syncPaginationQuery()
-      void fetchTasks()
+      // 收敛只重取一次：页码严格递减，且 watcher 会因 state 相等而早退
+      void fetchTasks({ silent: options.silent })
       return
     }
     void fetchOldestPending()
@@ -302,6 +326,7 @@ const handlePageSizeChange = () => {
 const applyStatusFilter = (status?: TaskFilters['status']) => {
   filters.status = status
   pagination.page = 1
+  syncPaginationQuery()
   fetchTasks()
 }
 
