@@ -13,8 +13,8 @@
     <!-- 图表区:三个并列 + 时间趋势全宽 -->
     <div class="chart-grid">
       <div class="chart-cell">
-        <div class="chart-title">状态码分布(采样)</div>
-        <ChartCard title="状态码分布" :option="statusOption" height="240px" />
+        <div class="chart-title">{{ statusChartTitle }}</div>
+        <ChartCard :title="statusChartTitle.replace('(采样)', '')" :option="statusOption" height="240px" />
       </div>
       <div class="chart-cell">
         <div class="chart-title">{{ secondChartTitle }}</div>
@@ -50,8 +50,10 @@ import {
     buildCacheSlices,
     buildKpis,
     buildLatencyBuckets,
+    buildLevelSlices,
     buildStatusSlices,
     buildTopHosts,
+    buildTopReasons,
     buildTopRules,
     buildTopServices,
     buildTrend,
@@ -219,16 +221,39 @@ function trendChartOption(points: { name: string; value: number }[]): EChartsOpt
 // ---- 按类型定制三张图(状态码固定第一张,趋势固定全宽) ----
 // 占比图用采样估算(占比对采样不敏感);趋势/TopN 优先服务端聚合(全窗真实)。
 
-const statusOption = computed(() => donutOption(buildStatusSlices(props.entries)))
+// 图一/图二按类型定口径:cdn/waf/slb/access 用状态码+缓存/动作/延迟;
+// app 与 k8s-event 无状态码/延迟量纲(实测 K8s 页曾显示"状态码分布"仅剩
+// "其他"、"延迟分布"整块空白),图表改为级别分布 + 类型内在维度。
+const statusChartTitle = computed(() =>
+    props.logType === 'app' || props.logType === 'k8s-event' ? '级别分布(采样)' : '状态码分布(采样)',
+)
+
+const statusOption = computed(() => {
+    if (props.logType === 'app' || props.logType === 'k8s-event') {
+        return donutOption(buildLevelSlices(props.entries))
+    }
+    return donutOption(buildStatusSlices(props.entries))
+})
 
 const secondChartTitle = computed(() => {
-    const base = props.logType === 'cdn' ? '缓存命中分布' : props.logType === 'waf' ? '动作分布' : '延迟分布'
+    const base =
+        props.logType === 'cdn'
+            ? '缓存命中分布'
+            : props.logType === 'waf'
+              ? '动作分布'
+              : props.logType === 'app'
+                ? '服务分布'
+                : props.logType === 'k8s-event'
+                  ? '原因分布'
+                  : '延迟分布'
     return `${base}(采样)`
 })
 
 const secondOption = computed<EChartsOption>(() => {
     if (props.logType === 'cdn') return donutOption(buildCacheSlices(props.entries))
     if (props.logType === 'waf') return donutOption(buildActionSlices(props.entries))
+    if (props.logType === 'app') return topBarOption(buildTopServices(props.entries))
+    if (props.logType === 'k8s-event') return topBarOption(buildTopReasons(props.entries))
     return topBarOption(buildLatencyBuckets(props.entries))
 })
 
@@ -236,9 +261,15 @@ const hasAggregate = computed(() => !!props.aggregate && (props.aggregate.bucket
 
 const thirdChartTitle = computed(() => {
     // 全窗下展示真实指标名(自定义分组时维度/指标可能不是默认域名/计数)
-    const base = hasAggregate.value && props.aggregate!.topn.length > 0
-        ? `${metricMeta.value.label} Top`
-        : (props.logType === 'waf' ? '规则 Top' : props.logType === 'app' ? '服务 Top' : '域名 Top')
+    const fallback =
+        props.logType === 'waf'
+            ? '规则 Top'
+            : props.logType === 'app'
+              ? '服务 Top'
+              : props.logType === 'k8s-event'
+                ? '原因 Top'
+                : '域名 Top'
+    const base = hasAggregate.value && props.aggregate!.topn.length > 0 ? `${metricMeta.value.label} Top` : fallback
     return hasAggregate.value ? base : `${base}(采样)`
 })
 
@@ -252,6 +283,8 @@ const thirdOption = computed<EChartsOption>(() => {
     if (props.logType === 'waf') return topBarOption(buildTopRules(props.entries))
     // app 无聚合 TopN(SDK kindApp 无默认维度):采样图按服务分组,与下钻字段 service 对齐
     if (props.logType === 'app') return topBarOption(buildTopServices(props.entries))
+    // k8s-event 采样回退按 reason(事件内在维度;域名/host 对事件无意义)
+    if (props.logType === 'k8s-event') return topBarOption(buildTopReasons(props.entries))
     return topBarOption(buildTopHosts(props.entries))
 })
 

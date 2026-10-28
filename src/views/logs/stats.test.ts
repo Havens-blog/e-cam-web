@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { buildKpis, buildTopHosts, buildTopServices, entryService } from './stats'
+import { buildKpis, buildLevelSlices, buildTopHosts, buildTopReasons, buildTopServices, entryService } from './stats'
 import type { AppLogEntry, LogEntry } from '@/api/types/logs'
 
 function appEntry(service: string, overrides?: Partial<AppLogEntry>): AppLogEntry {
@@ -113,6 +113,36 @@ function k8sEntry(overrides: Record<string, unknown>): LogEntry {
         ...overrides,
     } as unknown as LogEntry
 }
+
+describe('buildLevelSlices / buildTopReasons(app 与 k8s 事件图表口径)', () => {
+    it('级别分布:固定语义顺序(错误→告警→信息)+ 语义色,0 值不显示', () => {
+        const slices = buildLevelSlices([
+            k8sEntry({ level: 'warning' }),
+            k8sEntry({ level: 'warning' }),
+            k8sEntry({ level: 'info' }),
+        ])
+        expect(slices.map((s) => s.name)).toEqual(['warning', 'info'])
+        expect(slices.map((s) => s.value)).toEqual([2, 1])
+        expect(slices[0]!.color).toBe('#fab219')
+        expect(slices[1]!.color).toBe('#0ca30c')
+    })
+    it('级别缺失归入"其他"(不计入语义色)', () => {
+        const slices = buildLevelSlices([k8sEntry({})])
+        expect(slices.map((s) => s.name)).toEqual(['其他'])
+    })
+    it('原因 Top:按计数降序、截断 10、空原因不计入', () => {
+        const entries = [
+            k8sEntry({ reason: 'Unhealthy' }),
+            k8sEntry({ reason: 'Unhealthy' }),
+            k8sEntry({ reason: 'BackOff' }),
+            k8sEntry({}),
+        ]
+        expect(buildTopReasons(entries)).toEqual([
+            { name: 'Unhealthy', value: 2 },
+            { name: 'BackOff', value: 1 },
+        ])
+    })
+})
 
 describe("buildKpis('k8s-event')(事件语义 KPI,浏览器实测口径)", () => {
     it('四指标:事件条数/Warning 占比/受影响对象/累计重复次数;k8s 不再误用 CDN 缓存命中率', () => {
