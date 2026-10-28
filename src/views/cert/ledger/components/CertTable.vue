@@ -89,8 +89,8 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="issuer" label="签发者" min-width="120" show-overflow-tooltip class-name="hide-sm" />
-      <el-table-column label="有效期至" width="110" class-name="hide-sm">
+      <el-table-column v-if="!isNarrow" prop="issuer" label="签发者" min-width="120" show-overflow-tooltip />
+      <el-table-column v-if="!isNarrow" label="有效期至" width="110">
         <template #default="{ row }">{{ formatDate(row.notAfter) }}</template>
       </el-table-column>
       <el-table-column label="剩余" width="120">
@@ -119,8 +119,8 @@
           <span v-else class="cell-dash" aria-label="不在保护期">—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="refCount" label="引用数" width="80" class-name="hide-sm" />
-      <el-table-column label="操作" width="200" fixed="right" class-name="col-actions">
+      <el-table-column v-if="!isNarrow" prop="refCount" label="引用数" width="80" />
+      <el-table-column label="操作" width="200" :fixed="stickyActions ? 'right' : false" class-name="col-actions">
         <template #default="{ row }">
           <button type="button" class="row-link" @click.stop="emit('view', row)">详情</button>
           <button
@@ -172,7 +172,7 @@ import type { CertListItem, DaysLeftTier, HostingStatus } from '@/api/cert'
 import { CopyDocument, MoreFilled, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
     HIDDEN_EXPANDED_BANNER_TEXT,
     copyText,
@@ -199,6 +199,22 @@ const props = defineProps<{
     /** 切换态是否展开（查看全部；daysLeft=expired 时挂起） */
     hiddenExpanded?: boolean
 }>()
+
+// 窄屏真正移除次要列（CSS 隐藏仍占 colgroup 宽，会导致末段空白与 sticky 操作列异常）
+const NARROW_QUERY = '(max-width: 768px)'
+const isNarrow = ref(false)
+let narrowMedia: MediaQueryList | null = null
+const syncNarrow = (event: MediaQueryList | MediaQueryListEvent) => {
+    isNarrow.value = event.matches
+}
+
+// 仅宽屏启用「操作」列 sticky：窄屏 sticky 会覆盖过多可滚动内容并叠字
+const WIDE_QUERY = '(min-width: 1024px)'
+const stickyActions = ref(false)
+let wideMedia: MediaQueryList | null = null
+const syncWide = (event: MediaQueryList | MediaQueryListEvent) => {
+    stickyActions.value = event.matches
+}
 
 const emit = defineEmits<{
     (e: 'query-change', q: { search?: string; hostingStatus?: HostingStatus | ''; daysLeft?: DaysLeftTier | '' }): void
@@ -239,6 +255,23 @@ function emitFilters() {
         daysLeft: daysFilter.value,
     })
 }
+
+onMounted(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    narrowMedia = window.matchMedia(NARROW_QUERY)
+    syncNarrow(narrowMedia)
+    narrowMedia.addEventListener('change', syncNarrow)
+    wideMedia = window.matchMedia(WIDE_QUERY)
+    syncWide(wideMedia)
+    wideMedia.addEventListener('change', syncWide)
+})
+
+onUnmounted(() => {
+    narrowMedia?.removeEventListener('change', syncNarrow)
+    narrowMedia = null
+    wideMedia?.removeEventListener('change', syncWide)
+    wideMedia = null
+})
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))
 
@@ -512,9 +545,14 @@ function onRowClick(row: CertListItem) {
   color: var(--text-secondary);
 }
 
-@media (max-width: 1023px) {
-  :deep(.hide-sm) {
-    display: none;
-  }
+// 固定列需要不透明背景，否则横向滚动时下层文字透出（叠字）；
+// 用行底色 --bg-surface 与其它列一致，避免出现更深竖带
+:deep(.el-table__cell.el-table-fixed-column--right) {
+  background-color: var(--bg-surface);
+}
+
+// 行 hover 会把背景改成半透明白，这里补不透明等价色，避免悬停时重新透字
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #212223;
 }
 </style>
