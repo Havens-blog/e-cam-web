@@ -198,6 +198,10 @@ const props = defineProps<{
     hiddenCount?: number
     /** 切换态是否展开（查看全部；daysLeft=expired 时挂起） */
     hiddenExpanded?: boolean
+    /** 初始筛选（来自 URL query，用于深链回显；之后由用户操作接管） */
+    initialHostingStatus?: HostingStatus | ''
+    initialDaysLeft?: DaysLeftTier | ''
+    initialSearch?: string
 }>()
 
 // 窄屏真正移除次要列（CSS 隐藏仍占 colgroup 宽，会导致末段空白与 sticky 操作列异常）
@@ -236,9 +240,9 @@ const hiddenView = computed(() =>
     }),
 )
 
-const searchText = ref('')
-const hostingFilter = ref<HostingStatus | ''>('')
-const daysFilter = ref<DaysLeftTier | ''>('')
+const searchText = ref(props.initialSearch ?? '')
+const hostingFilter = ref<HostingStatus | ''>(props.initialHostingStatus ?? '')
+const daysFilter = ref<DaysLeftTier | ''>(props.initialDaysLeft ?? '')
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
