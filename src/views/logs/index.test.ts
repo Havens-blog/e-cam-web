@@ -44,11 +44,11 @@ const typeMetas: LogTypeMeta[] = [
     },
 ]
 
-function src(resourceId: string, enabled: boolean): LogSource {
+function src(resourceId: string, enabled: boolean, accountId = '1', accountName = '阿里A'): LogSource {
     return {
         cloud: 'aliyun',
-        account_id: 'acc-1',
-        account_name: '阿里A',
+        account_id: accountId,
+        account_name: accountName,
         region: 'cn-hangzhou',
         log_type: 'cdn',
         resource_id: resourceId,
@@ -195,8 +195,7 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         w.unmount()
     })
 
-    it('翻页加载更早期间显示文字进度', async () => {
-        searchApi.mockResolvedValueOnce(searchResp())
+    it('翻页加载更早期间显示文字进度', async () => {        searchApi.mockResolvedValueOnce(searchResp())
         const w = await mountPage()
         await findSearchBtn(w)!.trigger('click')
         await flushPromises()
@@ -633,6 +632,95 @@ describe('LogsIndex(字段字典到位后复钳时间窗)', () => {
             const req = searchApi.mock.calls[0]![0]
             expect(req.start_time).toBeLessThanOrEqual(now - 3 * DAY)
         }
+        w.unmount()
+    })
+})
+
+describe('LogsIndex(账号级筛选,2026-10-28 口径确认)', () => {
+    /** happy-dom 下 el-select 通过组件级 update:modelValue 事件驱动(点开下拉渲染在 body,不可靠) */
+    function emitSelect(wrapper: VueWrapper, selector: string, value: unknown): void {
+        const c = wrapper.findComponent(selector) as unknown as { vm: { $emit: (n: string, v: unknown) => void } }
+        c.vm.$emit('update:modelValue', value)
+    }
+
+    it('选择云账号后,search/aggregate 请求均携带 account_ids(平台内 number ID)', async () => {
+        sourcesApi.mockResolvedValue([src('d1', true), src('d2', true, '2', '阿里B')])
+        const w = await mountPage()
+        expect(w.findComponent('.filter-accounts').exists()).toBe(true)
+        emitSelect(w, '.filter-accounts', [2])
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(searchApi).toHaveBeenCalled()
+        expect(searchApi.mock.calls[0]![0]).toMatchObject({ account_ids: [2] })
+        expect(aggregateApi.mock.calls[0]![0]).toMatchObject({ account_ids: [2] })
+        w.unmount()
+    })
+
+    it('未选账号时请求不带 account_ids 字段(不发送空数组)', async () => {
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(searchApi.mock.calls[0]![0].account_ids).toBeUndefined()
+        w.unmount()
+    })
+
+    it('多账号(2+)选择原样下发 account_ids 数组,顺序保持', async () => {
+        sourcesApi.mockResolvedValue([
+            src('d1', true, '1', '阿里A'),
+            src('d2', true, '2', '阿里B'),
+            src('d3', true, '3', '阿里C'),
+        ])
+        const w = await mountPage()
+        emitSelect(w, '.filter-accounts', [1, 3])
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(searchApi.mock.calls[0]![0]).toMatchObject({ account_ids: [1, 3] })
+        expect(aggregateApi.mock.calls[0]![0]).toMatchObject({ account_ids: [1, 3] })
+        w.unmount()
+    })
+
+    it('翻页请求同样携带 account_ids(窗口一致性:页间筛选口径不得漂移)', async () => {
+        searchApi.mockResolvedValueOnce(searchResp())
+        sourcesApi.mockResolvedValue([src('d1', true, '1', '阿里A')])
+        const w = await mountPage()
+        emitSelect(w, '.filter-accounts', [1])
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        // 展开明细并加载更早
+        const toggle = w.find('.detail-toggle')
+        if (toggle.exists()) {
+            await toggle.trigger('click')
+            const more = w.findAll('button').find((b) => /加载更早|更早/.test(b.text()))
+            if (more) {
+                searchApi.mockResolvedValueOnce(searchResp())
+                await more.trigger('click')
+                await flushPromises()
+                const last = searchApi.mock.calls[searchApi.mock.calls.length - 1]![0]
+                expect(last.account_ids).toEqual([1])
+            }
+        }
+        w.unmount()
+    })
+
+    it('云选择变化导致账号选项失效时,失效账号被清理(不静默收窄查询范围)', async () => {
+        // 全部源都是阿里云:切到 volcengine 后账号选项清空,已选账号应被清掉
+        sourcesApi.mockResolvedValue([src('d1', true, '1', '阿里A')])
+        const w = await mountPage()
+        emitSelect(w, '.filter-accounts', [1])
+        await flushPromises()
+        const acctSelect = w.findComponent('.filter-accounts') as unknown as { props: (n: string) => unknown }
+        expect((acctSelect.props('modelValue') as number[]).length).toBe(1)
+
+        emitSelect(w, '.filter-clouds', ['volcano'])
+        await flushPromises()
+        expect((acctSelect.props('modelValue') as number[]).length).toBe(0)
         w.unmount()
     })
 })

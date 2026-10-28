@@ -207,6 +207,8 @@ export interface LogAggregateRequest {
     end_time: number
     query?: string
     clouds?: string[]
+    /** 可选,限定云账号(平台内 ID;后端 aggregateRequest 已支持,2026-10-28 前端未暴露) */
+    account_ids?: number[]
     resources?: string[]
     /** 可选,结构化字段筛选(可下推的源生效,否则显式标注) */
     filters?: FieldFilter[]
@@ -274,6 +276,8 @@ export interface LogDiagnoseRequest {
     /** 可选,原生检索式透传 */
     query?: string
     clouds?: string[]
+    /** 可选,限定云账号(平台内 ID;后端 diagnoseRequest 已支持) */
+    account_ids?: number[]
     resources?: string[]
     /** 可选,结构化字段筛选(AND 叠加) */
     filters?: FieldFilter[]
