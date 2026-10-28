@@ -39,6 +39,7 @@
           v-if="wildcardSkippedCount > 0"
           content="通配符 SAN 无法直接拨测且未配置替代子域名，跳过计数（探测覆盖显式缺口，不参与差异告警）"
           placement="top"
+          :trigger="['hover', 'focus']"
         >
           <span class="meta-item wildcard-meta" tabindex="0">通配符跳过拨测 {{ wildcardSkippedCount }}</span>
         </el-tooltip>
