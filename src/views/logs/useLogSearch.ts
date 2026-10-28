@@ -27,6 +27,7 @@ import type {
     LogType,
 } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
+import { errorMessage } from './format'
 
 export interface UseLogSearchOptions {
     activeType: Ref<LogType>
@@ -204,7 +205,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         } catch (e) {
             resp.value = null
             aggregate.value = null
-            searchError.value = isCanceled(e) ? '查询已取消' : e instanceof Error ? e.message : String(e)
+            searchError.value = isCanceled(e) ? '查询已取消' : errorMessage(e)
         } finally {
             stopProgress()
             searching.value = false
@@ -252,7 +253,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
             }
         } catch (e) {
             if (!isCanceled(e)) {
-                ElMessage.error(e instanceof Error ? `加载更早失败: ${e.message}` : '加载更早失败')
+                ElMessage.error(`加载更早失败: ${errorMessage(e)}`)
             }
         } finally {
             stopProgress()
