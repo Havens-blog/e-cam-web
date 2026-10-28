@@ -455,6 +455,9 @@ onUnmounted(() => {
 .page-actions {
   display: flex;
   gap: 8px;
+  // 窄屏按钮自身换行，避免三个导入按钮把内容区撑出横向溢出
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .table-block {
