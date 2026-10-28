@@ -52,7 +52,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="错误信息" min-width="200" class-name="hide-sm">
+        <el-table-column label="错误信息" min-width="200" v-if="!isNarrow">
           <template #default="{ row }">
             <span :class="row.error ? 'error-text' : 'text-secondary'">{{ row.error || '—' }}</span>
           </template>
@@ -92,6 +92,7 @@
 import type { ChangeDetailItem, ChangeStatus } from '@/api/cert'
 import { getChangeProgressApi } from '@/api/cert'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import RollbackModal from '../../components/RollbackModal.vue'
 import {
     hasFailedItem,
@@ -104,6 +105,8 @@ import {
     type ExecProgress,
     type RollbackScopeRow,
 } from '../../format'
+
+const isNarrow = useMediaQuery('(max-width: 1023px)')
 
 const props = defineProps<{
     orderId: string
@@ -423,11 +426,6 @@ onUnmounted(stopPolling)
   font-size: 12px;
 }
 
-@media (max-width: 1023px) {
-  :deep(.hide-sm) {
-    display: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .spinner {

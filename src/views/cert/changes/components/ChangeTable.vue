@@ -45,7 +45,7 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="进度" min-width="150" class-name="hide-sm">
+      <el-table-column label="进度" min-width="150" v-if="!isNarrow">
         <template #default="{ row }">
           <span class="cell-progress">
             <template v-if="progressMap[row.id]">{{ progressText(progressMap[row.id]!) }}</template>
@@ -53,10 +53,10 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="发起人" width="130" class-name="hide-sm">
+      <el-table-column label="发起人" width="130" v-if="!isNarrow">
         <template #default="{ row }">{{ row.creator }}</template>
       </el-table-column>
-      <el-table-column label="时间" width="150" class-name="hide-sm">
+      <el-table-column label="时间" width="150" v-if="!isNarrow">
         <template #default="{ row }">
           <span class="cell-time">{{ formatDateTime(row.createdAt) }}</span>
         </template>
@@ -88,6 +88,9 @@ import type { ChangeOrder } from '@/api/cert'
 import type { ExecProgress } from '../format'
 import { batchText, isEditableRow, progressText, rowProtectDaysLeft, truncateMiddle } from '../format'
 import { changeStatusMeta, relativeTime } from '../../detail/format'
+import { useMediaQuery } from '@/composables/useMediaQuery'
+
+const isNarrow = useMediaQuery('(max-width: 1023px)')
 
 defineProps<{
     rows: ChangeOrder[]
@@ -261,11 +264,6 @@ function formatDateTime(iso: string): string {
   }
 }
 
-@media (max-width: 1023px) {
-  :deep(.hide-sm) {
-    display: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .spinner {
