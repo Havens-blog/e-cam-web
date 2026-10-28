@@ -545,8 +545,14 @@ function onRowClick(row: CertListItem) {
   color: var(--text-secondary);
 }
 
-// 固定列需要不透明背景，否则横向滚动时下层文字透出（叠字）
+// 固定列需要不透明背景，否则横向滚动时下层文字透出（叠字）；
+// 用行底色 --bg-surface 与其它列一致，避免出现更深竖带
 :deep(.el-table__cell.el-table-fixed-column--right) {
-  background-color: var(--bg-base);
+  background-color: var(--bg-surface);
+}
+
+// 行 hover 会把背景改成半透明白，这里补不透明等价色，避免悬停时重新透字
+:deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
+  background-color: #212223;
 }
 </style>
