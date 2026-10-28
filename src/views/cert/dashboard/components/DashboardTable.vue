@@ -76,6 +76,7 @@
                 v-if="row.sans.length > 1"
                 :content="`共 ${row.sans.length} 个 SAN：${row.sans.join('、')}`"
                 placement="top"
+                :trigger="['hover', 'focus']"
               >
                 <span class="sans-chip" tabindex="0">SAN ×{{ row.sans.length }}</span>
               </el-tooltip>
@@ -83,7 +84,8 @@
                 v-if="row.hidden"
                 content="服务端隐藏谓词命中（已过期且未发现引用），当前处于豁免/查看全部视图"
                 placement="top"
-              >
+                :trigger="['hover', 'focus']"
+                >
                 <span class="sans-chip hidden-chip" tabindex="0">无引用过期</span>
               </el-tooltip>
             </div>
@@ -114,7 +116,7 @@
       </el-table-column>
       <el-table-column label="线上探测" min-width="150">
         <template #default="{ row }">
-          <el-tooltip :content="probeTooltip(row)" placement="top">
+          <el-tooltip :content="probeTooltip(row)" placement="top" :trigger="['hover', 'focus']">
             <span
               class="dash-badge"
               :class="`tone-${probeBadge(row.probeStatus).tone}`"
@@ -467,4 +469,10 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   padding: 8px 0 16px;
 }
 
+.sans-chip:focus-visible,
+.hidden-chip:focus-visible,
+.dash-badge:focus-visible {
+  outline: 2px solid var(--cert-accent, #0070f3);
+  outline-offset: 2px;
+}
 </style>
