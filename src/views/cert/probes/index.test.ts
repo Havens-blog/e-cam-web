@@ -182,3 +182,19 @@ describe('ProbesIndex（渲染量防御回归）', () => {
         }
     })
 })
+
+describe('工具栏成组结构（防回落 spacer）', () => {
+    it('按钮簇位于 .toolbar-actions 内，且不再有 .toolbar-spacer', async () => {
+        // 本用例不继承前序 mock：单独跑（-t / shuffle / it.only）也必须绿
+        probesApi.mockResolvedValue([
+            { domain: 'a.jlcerp.com', status: 'consistent', probeAt: '2026-09-02T08:00:00Z' },
+            { domain: 'b.jlcerp.com', status: 'miss', probeAt: '2026-09-02T08:00:00Z' },
+        ] as never)
+        const wrapper = mountPage()
+        await flushPromises()
+        const groups = wrapper.findAll('.toolbar-actions')
+        expect(groups).toHaveLength(1)
+        expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
+        expect(groups[0]?.findAll('button').length).toBeGreaterThanOrEqual(2)
+    })
+})
