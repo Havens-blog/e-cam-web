@@ -38,6 +38,7 @@
         <el-option label=">30 天" value="gt30" />
         <el-option label="已过期" value="expired" />
       </el-select>
+      <el-button v-if="filterActive" class="toolbar-reset" text type="primary" @click="resetFilters">清除筛选</el-button>
       <!-- 无引用过期证书隐藏提示（非静默吞行；daysLeft=expired 挂起由状态机判定） -->
       <button
         v-if="hiddenView.showBanner"
@@ -253,6 +254,18 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
     if (searchTimer) clearTimeout(searchTimer)
     searchTimer = setTimeout(emitFilters, 300)
+}
+
+/** 一次性清空三个筛选（避免逐个选回「全部」），并取消未触发的搜索防抖 */
+function resetFilters() {
+    if (searchTimer) {
+        clearTimeout(searchTimer)
+        searchTimer = null
+    }
+    searchText.value = ''
+    hostingFilter.value = ''
+    daysFilter.value = ''
+    emitFilters()
 }
 
 function emitFilters() {
