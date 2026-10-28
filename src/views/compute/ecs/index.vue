@@ -580,7 +580,11 @@ onMounted(() => {
   }
   // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填关键词（uid 精确 / keyword 模糊不同维度，共存无害）
   const s = route.query.search
-  if (typeof s === 'string' && s) filters.keyword = s
+  if (typeof s === 'string' && s) {
+    filters.keyword = s
+    // 搜索框在子组件内（独立缓冲），通过 conditions 注入 chip 才能看到关键字
+    searchConditions.value.push({ field: 'asset_name', value: s, displayValue: s })
+  }
   fetchModels()
   fetchInstances()
   loadAvailableTagKeys()
