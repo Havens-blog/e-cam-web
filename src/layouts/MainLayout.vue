@@ -94,8 +94,7 @@ const commandPaletteVisible = ref(false)
 
       <!-- 页面内容 -->
       <main class="main-content">
-        <!-- query 变化（分页/筛选写 URL）不应销毁页面；params 变化仍会换 key -->
-      <router-view :key="route.path" />
+        <router-view :key="route.fullPath" />
       </main>
     </div>
   </div>
