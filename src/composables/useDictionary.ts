@@ -4,7 +4,7 @@
  */
 import { batchGetDictByCodesApi, getDictByCodeApi } from '@/api/dictionary'
 import type { DictItem } from '@/api/types/dictionary'
-import { computed, reactive, ref, type Ref } from 'vue'
+import { computed, reactive, ref, type ComputedRef, type Ref } from 'vue'
 
 // Module-level cache shared across all component instances。
 // 必须是响应式 Map：getDictOptions/getDictItems 以 computed 读取它，
@@ -12,6 +12,10 @@ import { computed, reactive, ref, type Ref } from 'vue'
 const dictCache = reactive(new Map<string, DictItem[]>())
 // Promise dedup: prevent concurrent requests for the same code
 const pendingRequests = new Map<string, Promise<void>>()
+
+// 按 code 记忆化 computed：避免每次组件挂载都新建一个永久挂在缓存 dep 上的 computed
+const optionMemo = new Map<string, ComputedRef<{ value: string; label: string }[]>>()
+const itemMemo = new Map<string, ComputedRef<DictItem[]>>()
 
 export function useDictionary() {
     const loading = ref(false)
@@ -74,7 +78,11 @@ export function useDictionary() {
     }
 
     function getDictItems(code: string): Ref<DictItem[]> {
-        return computed(() => dictCache.get(code) || [])
+        const cached = itemMemo.get(code)
+        if (cached) return cached
+        const ref_ = computed(() => dictCache.get(code) || [])
+        itemMemo.set(code, ref_)
+        return ref_
     }
 
     function getDictLabel(code: string, value: string): string {
@@ -84,10 +92,14 @@ export function useDictionary() {
     }
 
     function getDictOptions(code: string): Ref<{ value: string; label: string }[]> {
-        return computed(() => {
+        const cached = optionMemo.get(code)
+        if (cached) return cached
+        const ref_ = computed(() => {
             const items = dictCache.get(code) || []
             return items.map(i => ({ value: i.value, label: i.label }))
         })
+        optionMemo.set(code, ref_)
+        return ref_
     }
 
     function getDictExtra(code: string, value: string): Record<string, any> | undefined {
