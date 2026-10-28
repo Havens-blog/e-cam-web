@@ -23,6 +23,7 @@ import {
     scanStale,
     splitScopedResourceId,
     validityConsumedPercent,
+    isCertNotFoundCode,
 } from './format'
 
 // ==================== AC1：要素���展示逻辑 ====================
@@ -479,5 +480,19 @@ describe('managedRefLabel（托管标注展示名）', () => {
 
     it('未知托管方原样返回', () => {
         expect(managedRefLabel('some-operator')).toBe('some-operator')
+    })
+})
+
+
+describe('isCertNotFoundCode', () => {
+    it('识别无效/不存在', () => {
+        expect(isCertNotFoundCode('CERT_INVALID_ID')).toBe(true)
+        expect(isCertNotFoundCode('CERT_NOT_FOUND')).toBe(true)
+    })
+    it('其它错误码/空值不识别', () => {
+        expect(isCertNotFoundCode('CERT_HAS_REFS')).toBe(false)
+        expect(isCertNotFoundCode('ERR_NETWORK')).toBe(false)
+        expect(isCertNotFoundCode(undefined)).toBe(false)
+        expect(isCertNotFoundCode(null)).toBe(false)
     })
 })

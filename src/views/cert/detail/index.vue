@@ -27,8 +27,12 @@
         <div class="error-state">
           <div class="state-icon state-icon-error" aria-hidden="true">🔍</div>
           <div class="state-title">证书不存在</div>
-          <div class="state-desc">链接中的证书 ID 无效或证书已被删除，请返回台账重新选择。</div>
-          <el-button class="state-cta" type="primary" @click="goLedger">返回证书台账</el-button>
+          <div class="state-desc">
+            {{ readonly ? '链接中的证书 ID 无效或证书已被删除，请返回到期看板。' : '链接中的证书 ID 无效或证书已被删除，请返回台账重新选择。' }}
+          </div>
+          <el-button class="state-cta" type="primary" @click="goLedger">
+            {{ readonly ? '返回到期看板' : '返回证书台账' }}
+          </el-button>
         </div>
       </div>
 
@@ -81,7 +85,7 @@ import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import { getCertApi } from '@/api/cert'
 import { hostingStatusMeta } from '../ledger/format'
-import { filterChangeOrders } from './format'
+import { filterChangeOrders, isCertNotFoundCode } from './format'
 import ElementCard from './components/ElementCard.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 
@@ -109,32 +113,31 @@ const SKELETON_DELAY_MS = 800
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null
 const skeletonVisible = ref(false)
 
-let detailInflight = false
+let detailRequestSeq = 0
 
 async function loadDetail() {
     if (!certId.value) return
-    // 首次挂载与路由 watch 可能同帧触发，避免重复请求
-    if (detailInflight) return
-    detailInflight = true
+    // 令牌守卫：允许 /certs/a → /certs/b 切换（旧响应丢弃），同帧重复触发只保留最后一次
+    const requested = certId.value
+    const seq = ++detailRequestSeq
     detailLoading.value = !detail.value
     detailError.value = false
     detailNotFound.value = false
     beginSkeletonTimer()
     try {
-        detail.value = await getCertApi(certId.value)
+        const data = await getCertApi(requested)
+        if (seq !== detailRequestSeq) return
+        detail.value = data
     } catch (error) {
-        if (detail.value) {
-            // 路由参数切换后的加载失败保留旧证书渲染不塌陷（同页复用场景）
-            detailLoading.value = false
-            return
-        }
+        if (seq !== detailRequestSeq) return
         const code = (error as { code?: string } | null)?.code
-        detailNotFound.value = code === 'CERT_INVALID_ID' || code === 'CERT_NOT_FOUND'
+        detailNotFound.value = isCertNotFoundCode(code)
         detailError.value = !detailNotFound.value
     } finally {
-        detailInflight = false
-        detailLoading.value = false
-        endSkeletonTimer()
+        if (seq === detailRequestSeq) {
+            detailLoading.value = false
+            endSkeletonTimer()
+        }
     }
 }
 
@@ -154,7 +157,8 @@ async function loadChanges() {
 }
 
 function goLedger() {
-    router.push('/certs')
+    // 只读角色无权进台账，回看板
+    void router.push(readonly.value ? '/certs/dashboard' : '/certs')
 }
 
 function refresh() {

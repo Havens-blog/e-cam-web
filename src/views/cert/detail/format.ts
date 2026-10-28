@@ -478,3 +478,9 @@ export function managedRefLabel(managedBy?: string): string {
     if (managedBy === 'alb-ingress') return 'CRD 托管'
     return managedBy
 }
+
+
+/** 无效/不存在的证书 id：详情页展示「证书不存在」而非「加载失败」 */
+export function isCertNotFoundCode(code: unknown): boolean {
+    return code === 'CERT_INVALID_ID' || code === 'CERT_NOT_FOUND'
+}
