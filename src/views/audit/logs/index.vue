@@ -54,7 +54,7 @@
     <div class="table-card">
       <el-table :data="logList" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable>
-          <template #default="{ row }"><span class="cell-time">{{ formatTs(row.ctime) }}</span></template>
+          <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
         </el-table-column>
         <el-table-column prop="operator_name" label="操作人" width="100">
           <template #default="{ row }">
@@ -105,7 +105,7 @@
     <el-drawer v-model="drawerVisible" title="审计日志详情" size="520px" :close-on-click-modal="true">
       <div v-if="currentLog" class="detail-content">
         <div class="detail-row"><span class="detail-label">请求ID</span><span class="detail-value"><code>{{ currentLog.request_id }}</code></span></div>
-        <div class="detail-row"><span class="detail-label">时间</span><span class="detail-value">{{ formatTs(currentLog.ctime) }}</span></div>
+        <div class="detail-row"><span class="detail-label">时间</span><span class="detail-value">{{ formatAuditTime(currentLog.ctime) }}</span></div>
         <div class="detail-row"><span class="detail-label">操作人</span><span class="detail-value">{{ currentLog.operator_name }} ({{ currentLog.operator_id }})</span></div>
         <div class="detail-row"><span class="detail-label">操作类型</span><span class="detail-value">{{ opTypeLabel(currentLog.operation_type) }}</span></div>
         <div class="detail-row"><span class="detail-label">请求</span><span class="detail-value"><code>{{ currentLog.http_method }} {{ currentLog.api_path }}</code></span></div>
@@ -127,6 +127,7 @@
 import type { AuditLog, AuditLogParams } from '@/api/audit'
 import { exportAuditLogsApi, listAuditLogsApi } from '@/api/audit'
 import { useDictionary } from '@/composables/useDictionary'
+import { formatAuditTime } from './format'
 import { CircleCheck, CircleClose, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -239,13 +240,6 @@ function handleRowClick(row: AuditLog) {
 
 function rowClassName({ row }: { row: AuditLog }) {
   return row.status_code >= 400 ? 'row-error' : ''
-}
-
-function formatTs(ts: number) {
-  if (!ts) return '-'
-  const d = new Date(ts * 1000)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function formatDuration(ms: number) {
