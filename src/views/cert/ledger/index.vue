@@ -302,6 +302,14 @@ function onQueryChange(q: { search?: string; hostingStatus?: HostingStatus | '';
     search.value = q.search ?? ''
     hostingStatus.value = q.hostingStatus ?? ''
     daysLeft.value = q.daysLeft ?? ''
+    // 清空筛选时同步移除 URL 上的旧条件：否则刷新、或「进详情→返回」会按旧 query 复活筛选
+    const cleared = !search.value && !hostingStatus.value && !daysLeft.value
+    const current = route.query
+    const hasQuery = Boolean(current.search || current.hostingStatus || current.daysLeft)
+    if (cleared && hasQuery) {
+        void router.replace({ path: '/certs' })
+        return // replace 会按 fullPath 重挂载本页，由 onMounted 重新取数
+    }
     page.value = 1
     void fetchList()
 }
