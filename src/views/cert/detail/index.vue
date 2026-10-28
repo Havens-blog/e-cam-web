@@ -2,7 +2,8 @@
   <div class="cert-detail-page" aria-labelledby="cert-detail-title">
     <nav class="breadcrumb" aria-label="面包屑">
       <!-- 只读角色台账路由被拦截：面包屑父级渲染纯文本 -->
-      <router-link v-if="!readonly" to="/certs">证书台账</router-link>
+      <!-- 点击时优先回退一步，保留台账筛选；中键/新标签仍走 /certs -->
+      <router-link v-if="!readonly" to="/certs" @click.prevent="goLedger">证书台账</router-link>
       <span v-else class="crumb-plain">证书台账</span>
       <span class="crumb-sep" aria-hidden="true">/</span>
       <span class="crumb-current">{{ detail?.commonName ?? '证书详情' }}</span>
@@ -85,7 +86,7 @@ import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import { getCertApi } from '@/api/cert'
 import { hostingStatusMeta } from '../ledger/format'
-import { filterChangeOrders, isCertNotFoundCode } from './format'
+import { filterChangeOrders, isCertListBackTarget, isCertNotFoundCode } from './format'
 import ElementCard from './components/ElementCard.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 
@@ -157,6 +158,12 @@ async function loadChanges() {
 }
 
 function goLedger() {
+    // 从台账/看板进入时回退一步，保留筛选 query；直接打开详情则回落固定路径
+    const back = (window.history.state as { back?: string } | null)?.back
+    if (isCertListBackTarget(back)) {
+        router.back()
+        return
+    }
     // 只读角色无权进台账，回看板
     void router.push(readonly.value ? '/certs/dashboard' : '/certs')
 }
