@@ -294,6 +294,25 @@ onMounted(() => {
   height: calc(100% + 48px);
 }
 
+/* 移动端外层 padding 为 12px：-24px 会横向溢出；筛选行也要能收缩（实测 360 下 -12 + 收缩后归零） */
+@media (max-width: 768px) {
+  .audit-page {
+    margin: -12px;
+    height: calc(100% + 24px);
+  }
+
+  .filter-left,
+  .filter-right {
+    min-width: 0;
+  }
+
+  .filter-left :deep(.el-select) {
+    flex: 1 1 130px;
+    min-width: 0;
+  }
+}
+
+
 // 页面顶部
 .page-top {
   padding: 16px 20px 12px;
@@ -318,6 +337,15 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* 小屏（≤480）：统计徽章右对齐会把整行撑出容器，改为换行并左对齐 */
+@media (max-width: 480px) {
+  .stats-badges {
+    margin-left: 0;
+    gap: 8px;
+  }
 }
 
 .stat-badge {
