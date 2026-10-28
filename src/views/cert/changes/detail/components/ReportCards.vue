@@ -18,7 +18,7 @@
             <span v-else class="text-secondary">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="原证书 ID" min-width="140" class-name="hide-sm">
+        <el-table-column label="原证书 ID" min-width="140" v-if="!isNarrow">
           <template #default>
             <span class="text-secondary">—</span>
           </template>
@@ -95,12 +95,12 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="错误信息" min-width="200" class-name="hide-sm">
+        <el-table-column label="错误信息" min-width="200" v-if="!isNarrow">
           <template #default="{ row }">
             <span :class="row.error ? 'error-text' : 'text-secondary'">{{ row.error || '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="批次" width="90" class-name="hide-sm">
+        <el-table-column label="批次" width="90" v-if="!isNarrow">
           <template #default="{ row }">{{ row.batchNo > 0 ? row.batchNo : '—' }}</template>
         </el-table-column>
       </el-table>
@@ -222,6 +222,7 @@
  */
 import type { ChangeDetailItem, ChangeReport, OrphanCleanupResult } from '@/api/cert'
 import { computed, ref } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { cloudLabel } from '../../../detail/format'
 import {
     RESULT_FILTER_OPTIONS,
@@ -237,6 +238,8 @@ import {
     verifyConclusion,
     type ResultFilter,
 } from '../../format'
+
+const isNarrow = useMediaQuery('(max-width: 1023px)')
 
 const props = defineProps<{
     items: ChangeDetailItem[]
@@ -497,11 +500,6 @@ function verifyActualText(row: ChangeDetailItem): string {
   font-size: 12px;
 }
 
-@media (max-width: 1023px) {
-  :deep(.hide-sm) {
-    display: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .spinner {

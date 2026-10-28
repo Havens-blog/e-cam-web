@@ -104,10 +104,10 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="托管类型" width="110" class-name="hide-sm">
+      <el-table-column label="托管类型" width="110" v-if="!isNarrow">
         <template #default="{ row }">{{ hostingStatusMeta(row.hostingType).label }}</template>
       </el-table-column>
-      <el-table-column label="签发者" min-width="140" class-name="hide-sm" show-overflow-tooltip>
+      <el-table-column label="签发者" min-width="140" v-if="!isNarrow" show-overflow-tooltip>
         <template #default="{ row }">{{ row.issuer || '—' }}</template>
       </el-table-column>
       <el-table-column label="线上探测" min-width="150">
@@ -126,7 +126,7 @@
           <div v-if="probeSubline(row)" class="probe-subline">{{ probeSubline(row) }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="豁免" width="70" class-name="hide-sm">
+      <el-table-column label="豁免" width="70" v-if="!isNarrow">
         <template #default="{ row }">
           <span v-if="isExemptRow(row)" class="exempt-check" aria-label="探测豁免">✓</span>
           <span v-else class="cell-dash" aria-label="未豁免">—</span>
@@ -159,6 +159,7 @@
  */
 import type { DashboardItem, DaysLeftTier, HostingStatus } from '@/api/cert'
 import { computed, ref, watch } from 'vue'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { cloudLabel } from '../../detail/format'
 import { HIDDEN_EXPANDED_BANNER_TEXT, daysLeftBadge, hiddenBannerText, hostingStatusMeta } from '../../ledger/format'
 import {
@@ -173,6 +174,8 @@ import {
     saveHiddenExpanded,
     type DashboardFilter,
 } from '../format'
+
+const isNarrow = useMediaQuery('(max-width: 1023px)')
 
 const props = defineProps<{
     /** 展示行（父级客户端过滤后的可见行集） */
@@ -446,9 +449,4 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   padding: 8px 0 16px;
 }
 
-@media (max-width: 1023px) {
-  :deep(.hide-sm) {
-    display: none;
-  }
-}
 </style>
