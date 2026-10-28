@@ -118,6 +118,16 @@ describe('台账页「从云端导入」双入口（AC1）', () => {
         expect(openSpy).toHaveBeenCalledTimes(1)
     })
 
+    it('筛选下拉成组：两个 select 同属 .toolbar-actions，且不再有 toolbar-spacer', async () => {
+        const wrapper = await mountLedgerWith({ items: [certRow('a', 'a.example.com')], total: 1, hiddenCount: 0 })
+
+        const groups = wrapper.findAll('.toolbar-actions')
+        expect(groups).toHaveLength(1)
+        expect(groups[0]?.findAll('.toolbar-select')).toHaveLength(2)
+        // 成组后不再依赖 spacer 推右；回归时这条会先红
+        expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
+    })
+
     it('空态 CTA：从云端导入存量证书为主入口，批量上传为兜底，点击云端 CTA 打开 Modal', async () => {
         const wrapper = await mountEmptyLedger()
         // 空态可见（台账 0 条）

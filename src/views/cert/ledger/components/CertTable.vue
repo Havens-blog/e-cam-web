@@ -14,30 +14,31 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-      <div class="toolbar-spacer" />
-      <el-select
-        v-model="hostingFilter"
-        class="toolbar-select"
-        aria-label="筛选托管状态"
-        @change="emitFilters"
-      >
-        <el-option label="托管状态：全部" value="" />
-        <el-option label="完整托管" value="complete" />
-        <el-option label="仅指纹登记" value="fingerprint_only" />
-      </el-select>
-      <el-select
-        v-model="daysFilter"
-        class="toolbar-select"
-        aria-label="筛选剩余天数"
-        @change="emitFilters"
-      >
-        <el-option label="剩余天数：全部" value="" />
-        <el-option label="≤7 天" value="le7" />
-        <el-option label="≤14 天" value="le14" />
-        <el-option label="≤30 天" value="le30" />
-        <el-option label=">30 天" value="gt30" />
-        <el-option label="已过期" value="expired" />
-      </el-select>
+      <div class="toolbar-actions" role="group" aria-label="筛选条件">
+        <el-select
+          v-model="hostingFilter"
+          class="toolbar-select"
+          aria-label="筛选托管状态"
+          @change="emitFilters"
+        >
+          <el-option label="托管状态：全部" value="" />
+          <el-option label="完整托管" value="complete" />
+          <el-option label="仅指纹登记" value="fingerprint_only" />
+        </el-select>
+        <el-select
+          v-model="daysFilter"
+          class="toolbar-select"
+          aria-label="筛选剩余天数"
+          @change="emitFilters"
+        >
+          <el-option label="剩余天数：全部" value="" />
+          <el-option label="≤7 天" value="le7" />
+          <el-option label="≤14 天" value="le14" />
+          <el-option label="≤30 天" value="le30" />
+          <el-option label=">30 天" value="gt30" />
+          <el-option label="已过期" value="expired" />
+        </el-select>
+      </div>
       <el-button
         v-if="filterActive"
         class="toolbar-reset"
@@ -388,7 +389,8 @@ function onRowClick(row: CertListItem) {
   gap: 12px;
   padding: 16px 24px 0;
   flex-wrap: wrap;
-  // 让 spacer 的显隐取决于「工具栏实际可用宽度」而非视口（侧栏折叠/缩放下二者不等）
+  // 容器查询参照「工具栏实际可用宽度」而非视口（侧栏折叠/缩放下二者不等），
+  // 供 .toolbar-actions 在放不下时归零 auto margin
   container-type: inline-size;
 }
 
@@ -397,16 +399,19 @@ function onRowClick(row: CertListItem) {
   max-width: 100%;
 }
 
-.toolbar-spacer {
-  flex: 1;
+/* 两个下拉成组：整体右对齐；放不下时整组换行，不与搜索框拆成两行 */
+.toolbar-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  min-width: 0;
 }
 
-/* 一行放不下（320+170+170+36=696）时隐藏 spacer：否则 spacer 吃掉首行余量，
-   把「托管状态」推到行尾、「剩余天数」挤到下一行，形成「组被撕裂」的错位。
-   用容器查询而非视口断点：侧栏折叠或页面缩放时工具栏实际宽度与视口并不相等。 */
+/* 窄容器（放不下 320 搜索框 + 352 组）归零 auto margin，避免整组被推到行尾右对齐 */
 @container (max-width: 720px) {
-  .toolbar-spacer {
-    display: none;
+  .toolbar-actions {
+    margin-left: 0;
   }
 }
 
