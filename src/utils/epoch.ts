@@ -25,9 +25,9 @@ export function formatEpochDateTime(value: number | string | null | undefined): 
     if (ms == null) return '-'
     const d = new Date(ms)
     if (Number.isNaN(d.getTime())) return '-'
-    // 用 UTC 年份判断越界：本地时区在 9999-12-31 附近会把年份推到 10000
-    const year = d.getUTCFullYear()
-    if (year > 9999) {
+    // 年份取本地值（与后面输出的月/日/时分秒保持一致，避免跨年窗口错一年）
+    const year = d.getFullYear()
+    if (year < 1970 || year > 9999) {
         if (import.meta.env.DEV) console.warn('[epoch] 时间戳超出可显示范围（疑似单位错误）', value)
         return '-'
     }

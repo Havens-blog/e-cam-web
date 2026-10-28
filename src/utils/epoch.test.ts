@@ -13,6 +13,7 @@ describe('normalizeEpochMs', () => {
     it('阈值两侧', () => {
         expect(normalizeEpochMs(EPOCH_MS_THRESHOLD)).toBe(EPOCH_MS_THRESHOLD)
         expect(normalizeEpochMs(EPOCH_MS_THRESHOLD - 1)).toBe((EPOCH_MS_THRESHOLD - 1) * 1000)
+        expect(normalizeEpochMs(EPOCH_MS_THRESHOLD + 1)).toBe(EPOCH_MS_THRESHOLD + 1)
     })
 
     it('空值/非正/非法返回 null', () => {
@@ -33,6 +34,10 @@ describe('formatEpochDateTime', () => {
 
     it('秒与等价毫秒结果一致', () => {
         expect(formatEpochDateTime(1793216245)).toBe(formatEpochDateTime(1793216245000))
+    })
+
+    it('超出 9999 年返回占位符', () => {
+        expect(formatEpochDateTime(1e15)).toBe('-')
     })
 
     it('非法值返回占位符', () => {
