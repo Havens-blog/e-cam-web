@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+    buildPageQuery,
+    clampPageToTotal,
     COMPACT_PAGINATION_LAYOUT,
     COMPACT_PAGINATION_MAX_CONTENT_WIDTH,
     DESKTOP_PAGINATION_LAYOUT,
     TINY_PAGINATION_LAYOUT,
     paginationUiForContentWidth,
+    readPageQuery,
+    readPageSizeQuery,
 } from './pagination'
 
 describe('paginationUiForContentWidth', () => {
@@ -38,5 +42,34 @@ describe('paginationUiForContentWidth', () => {
         expect(paginationUiForContentWidth(-1).small).toBe(false)
         expect(paginationUiForContentWidth(Number.NaN).small).toBe(false)
         expect(paginationUiForContentWidth(Number.POSITIVE_INFINITY).small).toBe(false)
+    })
+})
+
+
+describe('分页 URL 参数', () => {
+    it('读取页码/每页条数并回退非法值', () => {
+        expect(readPageQuery(undefined)).toBe(1)
+        expect(readPageQuery('3')).toBe(3)
+        expect(readPageQuery('0')).toBe(1)
+        expect(readPageQuery('-2')).toBe(1)
+        expect(readPageQuery('abc')).toBe(1)
+        expect(readPageSizeQuery('50')).toBe(50)
+        expect(readPageSizeQuery('7')).toBe(20)
+        expect(readPageSizeQuery(undefined)).toBe(20)
+    })
+
+    it('默认值不写入 query，保留其它参数', () => {
+        expect(buildPageQuery(1, 20, { type: 'cam:sync_assets' })).toEqual({ type: 'cam:sync_assets' })
+        expect(buildPageQuery(2, 50, { type: 'cam:sync_assets', page: '1' })).toEqual({
+            type: 'cam:sync_assets',
+            page: '2',
+            size: '50',
+        })
+    })
+
+    it('页码超出总页数时收敛', () => {
+        expect(clampPageToTotal(9999, 7053, 20)).toBe(353)
+        expect(clampPageToTotal(2, 7053, 20)).toBe(2)
+        expect(clampPageToTotal(2, 0, 20)).toBe(2)
     })
 })

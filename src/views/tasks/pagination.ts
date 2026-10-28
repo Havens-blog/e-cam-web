@@ -40,3 +40,43 @@ export function paginationUiForContentWidth(availableWidth: number): PaginationU
     }
     return { small: false, pagerCount: 7, layout: DESKTOP_PAGINATION_LAYOUT }
 }
+
+
+/** 分页每页条数可选项（与 el-pagination page-sizes 一致） */
+export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+export const DEFAULT_PAGE_SIZE = 20
+
+/** 从路由 query 读取页码：非法/<=0 回退 1 */
+export function readPageQuery(value: unknown): number {
+    const parsed = Number(Array.isArray(value) ? value[0] : value)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+}
+
+/** 从路由 query 读取每页条数：不在允许列表内回退默认值 */
+export function readPageSizeQuery(value: unknown): number {
+    const parsed = Number(Array.isArray(value) ? value[0] : value)
+    return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PAGE_SIZE
+}
+
+/** 构造新的 query：默认值不写入 URL，其余参数原样保留 */
+export function buildPageQuery(
+    page: number,
+    size: number,
+    currentQuery: Record<string, unknown> = {}
+): Record<string, string> {
+    const next: Record<string, string> = {}
+    for (const [key, value] of Object.entries(currentQuery)) {
+        if (key === 'page' || key === 'size' || value === undefined || value === null) continue
+        next[key] = String(value)
+    }
+    if (page > 1) next.page = String(page)
+    if (size !== DEFAULT_PAGE_SIZE) next.size = String(size)
+    return next
+}
+
+/** 页码超出总页数时收敛到最后一页 */
+export function clampPageToTotal(page: number, total: number, size: number): number {
+    if (!Number.isFinite(total) || total <= 0 || size <= 0) return page
+    const lastPage = Math.max(1, Math.ceil(total / size))
+    return page > lastPage ? lastPage : page
+}
