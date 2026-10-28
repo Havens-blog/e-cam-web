@@ -16,8 +16,10 @@ export interface PaginationUi {
 export const DESKTOP_PAGINATION_LAYOUT = 'total, sizes, prev, pager, next, jumper'
 export const COMPACT_PAGINATION_LAYOUT = 'total, prev, pager, next'
 
-/** 容器可用宽度低于该值即降级（完整 layout 约 646px + 余量） */
-export const COMPACT_PAGINATION_MAX_CONTENT_WIDTH = 700
+/** 完整 layout 在深页（两处省略号 + 三位页码）约需 740px，低于该值降级 */
+export const COMPACT_PAGINATION_MAX_CONTENT_WIDTH = 740
+/** 极窄容器再用 3 页码，避免两处省略号把「下一页」挤到第二行 */
+export const COMPACT_TINY_MAX_CONTENT_WIDTH = 300
 
 export function paginationUiForContentWidth(availableWidth: number): PaginationUi {
     const compact =
@@ -27,7 +29,8 @@ export function paginationUiForContentWidth(availableWidth: number): PaginationU
         availableWidth < COMPACT_PAGINATION_MAX_CONTENT_WIDTH
 
     if (compact) {
-        return { small: true, pagerCount: 5, layout: COMPACT_PAGINATION_LAYOUT }
+        const tiny = availableWidth < COMPACT_TINY_MAX_CONTENT_WIDTH
+        return { small: true, pagerCount: tiny ? 3 : 5, layout: COMPACT_PAGINATION_LAYOUT }
     }
     return { small: false, pagerCount: 7, layout: DESKTOP_PAGINATION_LAYOUT }
 }

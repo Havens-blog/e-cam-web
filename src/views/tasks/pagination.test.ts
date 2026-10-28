@@ -8,15 +8,23 @@ import {
 
 describe('paginationUiForContentWidth', () => {
     it('容器宽度不足时使用紧凑布局', () => {
+        expect(paginationUiForContentWidth(276)).toEqual({
+            small: true,
+            pagerCount: 3,
+            layout: COMPACT_PAGINATION_LAYOUT,
+        })
+        expect(paginationUiForContentWidth(280).pagerCount).toBe(3)
         expect(paginationUiForContentWidth(390)).toEqual({
             small: true,
             pagerCount: 5,
             layout: COMPACT_PAGINATION_LAYOUT,
         })
+        expect(paginationUiForContentWidth(600).pagerCount).toBe(5)
         expect(paginationUiForContentWidth(COMPACT_PAGINATION_MAX_CONTENT_WIDTH - 1).small).toBe(true)
     })
 
     it('容器宽度足够时使用桌面完整布局', () => {
+        expect(paginationUiForContentWidth(1024).small).toBe(false)
         expect(paginationUiForContentWidth(COMPACT_PAGINATION_MAX_CONTENT_WIDTH)).toEqual({
             small: false,
             pagerCount: 7,
