@@ -247,7 +247,7 @@ import {
     riskLevelLabel,
     riskLevelTagType,
 } from '../diagnose'
-import { cloudLabel, formatLogTime } from '../format'
+import { cloudLabel, errorMessage, formatLogTime } from '../format'
 
 const props = defineProps<{
     /** 诊断上下文(父组件按当前查询组装;null = 时间窗未就绪) */
@@ -310,7 +310,7 @@ async function runDiagnose() {
         resp.value = await diagnoseLogsApi({ log_type: 'waf', ...props.context })
     } catch (e) {
         resp.value = null
-        error.value = e instanceof Error ? e.message : String(e)
+        error.value = errorMessage(e)
     } finally {
         stopTimer()
         loading.value = false

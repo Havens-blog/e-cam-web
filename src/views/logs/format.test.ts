@@ -7,6 +7,7 @@ import {
     cellValue,
     cloudLabel,
     dashIfEmpty,
+    errorMessage,
     formatBytes,
     formatLogTime,
     formatSpanMs,
@@ -187,5 +188,33 @@ describe('cellValue', () => {
     })
     it('resolves top-level keys', () => {
         expect(cellValue(row, 'rule_name')).toBe('恶意爬虫2')
+    })
+})
+
+describe('errorMessage(异常对象 → 可读文案)', () => {
+    it('Error 实例取 message', () => {
+        expect(errorMessage(new Error('boom'))).toBe('boom')
+    })
+
+    it('响应体普通对象取 msg(请求层 reject(error.response.data) 的真实形态)', () => {
+        expect(errorMessage({ code: 400, data: null, msg: 'cache-analyze is disabled' })).toBe(
+            'cache-analyze is disabled',
+        )
+        expect(errorMessage({ code: 500, message: 'server error' })).toBe('server error')
+    })
+
+    it('AxiosError 形态:优先 message,缺失时回退 response.data.msg', () => {
+        expect(errorMessage({ message: 'Request failed with status code 400', response: { data: { msg: '服务端原因' } } })).toBe(
+            'Request failed with status code 400',
+        )
+        expect(errorMessage({ response: { data: { msg: '服务端原因' } } })).toBe('服务端原因')
+    })
+
+    it('字符串/null/未知对象:给出可读兜底,绝不产出 [object Object]', () => {
+        expect(errorMessage('plain string')).toBe('plain string')
+        expect(errorMessage(null)).toBe('')
+        expect(errorMessage(undefined)).toBe('')
+        expect(errorMessage({ code: 400 })).toBe('请求失败(服务端未返回可读原因)')
+        expect(errorMessage({})).not.toContain('[object Object]')
     })
 })

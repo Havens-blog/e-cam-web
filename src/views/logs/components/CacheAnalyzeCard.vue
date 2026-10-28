@@ -321,7 +321,7 @@ import {
     splitOptimizations,
 } from '../cachecard'
 import { formatCount } from '../diagnose'
-import { cloudLabel, formatLogTime } from '../format'
+import { cloudLabel, errorMessage, formatLogTime } from '../format'
 
 const props = defineProps<{
     /** 分析上下文(父组件按当前查询组装;null = 时间窗未就绪) */
@@ -420,7 +420,7 @@ async function runAnalyze(confirm = false) {
         resp.value = await cacheAnalyzeApi({ log_type: 'cdn', ...props.context, ...(confirm ? { confirm: true } : {}) })
     } catch (e) {
         resp.value = null
-        error.value = e instanceof Error ? e.message : String(e)
+        error.value = errorMessage(e)
     } finally {
         stopTimer()
         loading.value = false

@@ -196,6 +196,44 @@ describe('CacheAnalyzeCard(触发与请求)', () => {
         expect(btn.attributes('disabled')).toBeDefined()
         w.unmount()
     })
+
+    // 请求层对非 2xx 直接 reject 响应体(send: reject(error.response.data)),
+    // 故真实形态是 {code,msg,data} 普通对象而非 Error —— 用真实形态做回归,
+    // 修复前会渲染成 [object Object] 且 isScanConfirmError 永不命中(逃生通道失效)。
+    it('真实形态:服务端以响应体对象 reject 时展示其 msg(而非 [object Object])', async () => {
+        cacheApi.mockRejectedValueOnce({
+            code: 400,
+            data: null,
+            msg: 'cache-analyze is disabled: feature flag LOGQUERY_CACHE_ANALYZE_ENABLED is not enabled',
+        })
+        const w = await mountCard()
+        await runOnce(w)
+
+        const errBox = w.find('.cache-error')
+        expect(errBox.exists()).toBe(true)
+        expect(errBox.text()).toContain('feature flag LOGQUERY_CACHE_ANALYZE_ENABLED is not enabled')
+        expect(errBox.text()).not.toContain('[object Object]')
+        w.unmount()
+    })
+
+    it('真实形态:预估扫描量拦截(响应体对象)也能出现"确认并继续分析"', async () => {
+        cacheApi.mockRejectedValueOnce({
+            code: 400,
+            data: null,
+            msg: 'estimated scan volume is high: window 7h0m0s × 2 frames × 5 dimension groups, blocked by default; confirm with confirm=true to proceed',
+        })
+        const w = await mountCard()
+        await runOnce(w)
+
+        expect(w.find('.cache-error').text()).toContain('estimated scan volume is high')
+        const confirmBtn = w.findAll('button').find((b) => b.text().includes('确认并继续分析'))
+        expect(confirmBtn).toBeTruthy()
+
+        await confirmBtn!.trigger('click')
+        await flushPromises()
+        expect(cacheApi.mock.calls[1]![0]).toEqual({ log_type: 'cdn', ...context, confirm: true })
+        w.unmount()
+    })
 })
 
 describe('CacheAnalyzeCard(双命中率总览/域名排行/URI/状态码)', () => {

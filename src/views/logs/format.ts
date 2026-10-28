@@ -45,6 +45,39 @@ export function dashIfEmpty(v: string | number | undefined | null): string {
     return String(v)
 }
 
+/**
+ * 异常对象 → 可读文案(纯函数,单测覆盖)。
+ *
+ * 必要性:请求层对非 2xx **直接 reject 响应体**(`src/api/request/index.ts`:
+ * `reject(error.response ? error.response.data : error)`),故调用方拿到的常常是
+ * `{code,msg,data}` **普通对象而非 Error** —— 若按 `e instanceof Error ? e.message
+ * : String(e)` 提取,会把 `[object Object]` 直接渲染给用户(缓存分析卡实测),
+ * 并连带使基于文案的判断失效(如 `isScanConfirmError` 的"确认并继续"逃生通道)。
+ *
+ * 取值顺序:Error.message → msg → message → response.data.msg/message → 兜底。
+ */
+export function errorMessage(e: unknown): string {
+    if (e === undefined || e === null) return ''
+    if (typeof e === 'string') return e
+    if (e instanceof Error) return e.message || e.name || '未知错误'
+    if (typeof e === 'object') {
+        const o = e as {
+            msg?: unknown
+            message?: unknown
+            response?: { data?: { msg?: unknown; message?: unknown } }
+        }
+        const pick = (v: unknown) => (typeof v === 'string' && v.trim() ? v : '')
+        return (
+            pick(o.msg) ||
+            pick(o.message) ||
+            pick(o.response?.data?.msg) ||
+            pick(o.response?.data?.message) ||
+            '请求失败(服务端未返回可读原因)'
+        )
+    }
+    return String(e)
+}
+
 /** WAF 动作徽章语义(el-tag type) */
 export function actionTagType(action: string): 'danger' | 'warning' | 'success' | 'info' {
     switch (action) {
