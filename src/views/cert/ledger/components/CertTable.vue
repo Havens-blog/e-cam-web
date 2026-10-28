@@ -388,6 +388,8 @@ function onRowClick(row: CertListItem) {
   gap: 12px;
   padding: 16px 24px 0;
   flex-wrap: wrap;
+  // 让 spacer 的显隐取决于「工具栏实际可用宽度」而非视口（侧栏折叠/缩放下二者不等）
+  container-type: inline-size;
 }
 
 .table-search {
@@ -397,6 +399,15 @@ function onRowClick(row: CertListItem) {
 
 .toolbar-spacer {
   flex: 1;
+}
+
+/* 一行放不下（320+170+170+36=696）时隐藏 spacer：否则 spacer 吃掉首行余量，
+   把「托管状态」推到行尾、「剩余天数」挤到下一行，形成「组被撕裂」的错位。
+   用容器查询而非视口断点：侧栏折叠或页面缩放时工具栏实际宽度与视口并不相等。 */
+@container (max-width: 720px) {
+  .toolbar-spacer {
+    display: none;
+  }
 }
 
 .toolbar-select {
@@ -615,11 +626,4 @@ function onRowClick(row: CertListItem) {
 // 行 hover 会把背景改成半透明白，这里补不透明等价色，避免悬停时重新透字
 :deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
   background-color: #212223;
-}
-// 窄屏工具栏换行时 spacer 会吃掉首行剩余空间，使「托管状态」比其它控件右移（QA 实测 x 159 vs 125）
-@media (max-width: 1023px) {
-  .toolbar-spacer {
-    display: none;
-  }
-}
-</style>
+}</style>
