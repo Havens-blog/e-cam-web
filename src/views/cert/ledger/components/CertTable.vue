@@ -616,4 +616,10 @@ function onRowClick(row: CertListItem) {
 :deep(.el-table__body tr:hover > td.el-table-fixed-column--right) {
   background-color: #212223;
 }
+// 窄屏工具栏换行时 spacer 会吃掉首行剩余空间，使「托管状态」比其它控件右移（QA 实测 x 159 vs 125）
+@media (max-width: 1023px) {
+  .toolbar-spacer {
+    display: none;
+  }
+}
 </style>
