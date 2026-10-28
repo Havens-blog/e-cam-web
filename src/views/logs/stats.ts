@@ -144,7 +144,40 @@ export function buildKpis(logType: LogType, entries: LogEntry[], totalOverride?:
     if (logType === 'waf') return wafKpis(entries, displayTotal, rateTotal)
     // access(源站 nginx/gateway 访问日志)复用 SLB schema,同套 KPI(延迟/5xx)
     if (logType === 'slb' || logType === 'access') return slbKpis(entries, displayTotal, rateTotal)
+    // app 业务日志与 CDN 指标无关(无状态码/缓存),按 RCA 语义定制(2026-10-28 口径确认)
+    if (logType === 'app') return appKpis(entries, displayTotal, rateTotal)
     return cdnKpis(entries, displayTotal, rateTotal)
+}
+
+/**
+ * appKpis 应用业务日志 KPI(2026-10-28 口径确认):条数(全窗精确) +
+ * 错误占比(level=error,采样估算) + 涉及服务数(去重,采样估算) +
+ * exception 条数(非空堆栈,采样估算)。错误占比 ≥5% 标红,与 CDN 5xx 同阈值。
+ */
+function appKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
+    let errCount = 0
+    let exceptionCount = 0
+    const services = new Set<string>()
+    for (const e of entries) {
+        const svc = entryService(e)
+        if (svc) services.add(svc)
+        const level = (e as { level?: string }).level
+        if (level === 'error') errCount++
+        const exception = (e as { exception?: string }).exception
+        if (exception) exceptionCount++
+    }
+    const errRate = ratio(errCount, rateTotal)
+    return [
+        { label: '日志条数', value: displayTotal.toLocaleString(), hint: displayTotal === rateTotal ? undefined : '窗口精确总数(服务端聚合)' },
+        {
+            label: '错误占比',
+            value: pctText(errRate),
+            tone: errRate !== null && errRate >= 5 ? 'danger' : undefined,
+            hint: '采样估算:level=error 占比',
+        },
+        { label: '涉及服务数', value: String(services.size), hint: '采样估算:去重 service' },
+        { label: 'exception 条数', value: exceptionCount.toLocaleString(), hint: '采样估算:非空异常堆栈' },
+    ]
 }
 
 function cdnKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
