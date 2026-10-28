@@ -14,30 +14,30 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-      <div class="toolbar-actions">
-      <el-select
-        v-model="hostingFilter"
-        class="toolbar-select"
-        aria-label="筛选托管状态"
-        @change="emitFilters"
-      >
-        <el-option label="托管状态：全部" value="" />
-        <el-option label="完整托管" value="complete" />
-        <el-option label="仅指纹登记" value="fingerprint_only" />
-      </el-select>
-      <el-select
-        v-model="daysFilter"
-        class="toolbar-select"
-        aria-label="筛选剩余天数"
-        @change="emitFilters"
-      >
-        <el-option label="剩余天数：全部" value="" />
-        <el-option label="≤7 天" value="le7" />
-        <el-option label="≤14 天" value="le14" />
-        <el-option label="≤30 天" value="le30" />
-        <el-option label=">30 天" value="gt30" />
-        <el-option label="已过期" value="expired" />
-      </el-select>
+      <div class="toolbar-actions" role="group" aria-label="筛选条件">
+        <el-select
+          v-model="hostingFilter"
+          class="toolbar-select"
+          aria-label="筛选托管状态"
+          @change="emitFilters"
+        >
+          <el-option label="托管状态：全部" value="" />
+          <el-option label="完整托管" value="complete" />
+          <el-option label="仅指纹登记" value="fingerprint_only" />
+        </el-select>
+        <el-select
+          v-model="daysFilter"
+          class="toolbar-select"
+          aria-label="筛选剩余天数"
+          @change="emitFilters"
+        >
+          <el-option label="剩余天数：全部" value="" />
+          <el-option label="≤7 天" value="le7" />
+          <el-option label="≤14 天" value="le14" />
+          <el-option label="≤30 天" value="le30" />
+          <el-option label=">30 天" value="gt30" />
+          <el-option label="已过期" value="expired" />
+        </el-select>
       </div>
       <el-button
         v-if="filterActive"
@@ -389,7 +389,8 @@ function onRowClick(row: CertListItem) {
   gap: 12px;
   padding: 16px 24px 0;
   flex-wrap: wrap;
-  // 让 spacer 的显隐取决于「工具栏实际可用宽度」而非视口（侧栏折叠/缩放下二者不等）
+  // 容器查询参照「工具栏实际可用宽度」而非视口（侧栏折叠/缩放下二者不等），
+  // 供 .toolbar-actions 在放不下时归零 auto margin
   container-type: inline-size;
 }
 
