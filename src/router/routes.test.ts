@@ -91,9 +91,13 @@ describe('Page Composition 全页落地（任务 6.7 AC#1）', () => {
     })
 
     it('不注册 Page Composition 表之外的证书页面（Hard Rule：无表外路由）', () => {
-        const certPaths = (routes.find((r) => r.path === '/')?.children ?? [])
-            .map((c) => c.path)
-            .filter((p) => p === '/certs' || p.startsWith('/certs/'))
+        const certChildren = (routes.find((r) => r.path === '/')?.children ?? []).filter(
+            (c) => c.path === '/certs' || c.path.startsWith('/certs/')
+        )
+        // 兼容重定向不是页面，不计入「表外路由」
+        const certPaths = certChildren.filter((c) => !c.redirect).map((c) => c.path)
+        const legacyLedger = certChildren.find((c) => c.path === '/certs/ledger')
+        expect(legacyLedger?.redirect, '旧链接 /certs/ledger 应重定向到 /certs').toBe('/certs')
         expect(certPaths.sort()).toEqual(
             [
                 '/certs',

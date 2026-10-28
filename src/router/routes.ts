@@ -600,6 +600,12 @@ const routes: RouteRecordRaw[] = [
                 },
             },
             {
+                // 兼容旧链接/并行菜单中的 /certs/ledger：真实台账路由是 /certs，
+                // 否则会被 /certs/:id 当成详情（id=ledger）并请求 /certs/ledger 返回 400
+                path: '/certs/ledger',
+                redirect: '/certs',
+            },
+            {
                 path: '/certs/:id',
                 name: 'CertDetail',
                 component: () => import('@/views/cert/detail/index.vue'),
