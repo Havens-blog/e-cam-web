@@ -146,7 +146,48 @@ export function buildKpis(logType: LogType, entries: LogEntry[], totalOverride?:
     if (logType === 'slb' || logType === 'access') return slbKpis(entries, displayTotal, rateTotal)
     // app 业务日志与 CDN 指标无关(无状态码/缓存),按 RCA 语义定制(2026-10-28 口径确认)
     if (logType === 'app') return appKpis(entries, displayTotal, rateTotal)
+    // k8s-event 同理:事件模型无状态码/缓存/字节量纲,套 CDN 会显示
+    // 「缓存命中率 0% / 5xx 0% / 总流量 0 B」(实测于页面)
+    if (logType === 'k8s-event') return k8sKpis(entries, displayTotal, rateTotal)
     return cdnKpis(entries, displayTotal, rateTotal)
+}
+
+/**
+ * k8sKpis K8s 事件 KPI(浏览器实测口径):事件条数(全窗精确) +
+ * Warning 占比(level=warning/error,采样估算) + 受影响对象数(去重,采样估算) +
+ * 累计重复次数(事件 count 求和,采样估算)。事件模型无状态码/缓存/字节。
+ */
+function k8sKpis(entries: LogEntry[], displayTotal: number, rateTotal: number): StatKpi[] {
+    let warn = 0
+    let countSum = 0
+    const objects = new Set<string>()
+    for (const e of entries) {
+        const level = (e as { level?: string }).level
+        if (level === 'warning' || level === 'error') warn++
+        countSum += Number((e as { count?: number }).count) || 0
+        const object = (e as { object?: string }).object
+        if (object) objects.add(object)
+    }
+    const warnRate = ratio(warn, rateTotal)
+    return [
+        {
+            label: '事件条数',
+            value: displayTotal.toLocaleString(),
+            hint: displayTotal === rateTotal ? undefined : '窗口精确总数(服务端聚合)',
+        },
+        {
+            label: 'Warning 占比',
+            value: pctText(warnRate),
+            tone: warnRate !== null && warnRate >= 50 ? 'warning' : undefined,
+            hint: '采样估算:level=warning/error 占比',
+        },
+        { label: '受影响对象', value: objects.size.toLocaleString(), hint: '采样估算:对象去重数' },
+        {
+            label: '累计重复次数',
+            value: countSum.toLocaleString(),
+            hint: '采样估算:事件 count(集群累计发生次数)求和',
+        },
+    ]
 }
 
 /**

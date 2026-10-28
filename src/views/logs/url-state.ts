@@ -29,8 +29,8 @@ const FILTER_OPS = new Set(['eq', 'neq', 'contains', 'prefix'])
 
 /** 合法日志类型白名单(与后端 /types 字典一致)。decode 须覆盖 encode 的
  * 全部可写值:encode 在 app 页签会写 t=app,白名单漏 app 时分享/刷新
- * 链接静默落到 cdn(实测踩坑)。 */
-const LOG_TYPES = new Set<string>(['cdn', 'waf', 'slb', 'access', 'app'])
+ * 链接静默落到 cdn(实测踩坑)。k8s-event 同理(K8s 事件页签,2026-10 接入)。 */
+const LOG_TYPES = new Set<string>(['cdn', 'waf', 'slb', 'access', 'app', 'k8s-event'])
 
 /**
  * 按类型上限收紧时间窗:end 超界钳到 now;start 收紧到 end-cap;

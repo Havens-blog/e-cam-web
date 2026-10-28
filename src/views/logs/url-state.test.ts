@@ -61,6 +61,14 @@ describe('decodeUrlState', () => {
         const got = decodeUrlState(new URLSearchParams(`f=${encodeURIComponent('a:eq:1|b:bad:x|c::v')}`))
         expect(got.filters).toEqual([{ field: 'a', op: 'eq', value: '1', drilldown: false }])
     })
+    it('app / k8s-event 分享链接不再降级为 cdn(回归)', () => {
+        // 早期白名单只有 waf/slb/access,t=app 与 t=k8s-event 的分享链接
+        // /刷新会静默落到 CDN Tab(实测:打开 K8s 链接看到 CDN 明细列)
+        expect(decodeUrlState(new URLSearchParams('t=app')).t).toBe('app')
+        expect(decodeUrlState(new URLSearchParams('t=k8s-event')).t).toBe('k8s-event')
+        // 白名单外的未知类型仍回退 cdn
+        expect(decodeUrlState(new URLSearchParams('t=nope')).t).toBe('cdn')
+    })
 })
 
 describe('clampWindow(按类型上限收紧时间窗)', () => {

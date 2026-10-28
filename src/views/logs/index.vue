@@ -2,7 +2,7 @@
   <div class="logs-page" aria-labelledby="logs-title">
     <div class="page-header">
       <h1 id="logs-title" class="page-title">日志查询</h1>
-      <span class="page-sub">多云 CDN / WAF / 负载均衡统一视图 · 联邦实时查询</span>
+      <span class="page-sub">多云日志统一视图(CDN / WAF / 负载均衡 / 源站 / 应用 / K8s 事件) · 联邦实时查询</span>
     </div>
 
     <!-- 日志类型 + 筛选区 -->
@@ -179,7 +179,7 @@
           <!-- 清除下钻:仅移除 TopN 图下钻产生的条件行,用户手动条件与关键词保留 -->
           <el-button v-if="hasDrilldown" size="small" text type="warning" @click="clearDrilldown">清除下钻</el-button>
           <el-button v-if="fieldFilters.length" size="small" text @click="fieldFilters = []">清空</el-button>
-          <span class="fields-hint">多条件叠加;作用于 域名/状态码/IP/规则 等字段,与关键词 AND 生效</span>
+          <span class="fields-hint">多条件叠加;字段取自当前类型的字段字典(域名/状态码/命名空间/原因等),与关键词 AND 生效</span>
         </div>
       </div>
 
