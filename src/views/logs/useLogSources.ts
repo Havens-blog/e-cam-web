@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 日志源清单：加载 / 按类型缓存 / 云·账号分组 / 可用云推导。
  *
  * 拆分来源：原 `src/views/logs/index.vue` 的「日志源」相关状态与逻辑。
@@ -49,17 +49,30 @@ export function useLogSources(opts: UseLogSourcesOptions) {
             : sources.value,
     )
 
-    /** 云·账号分组（供「日志源」下拉的 option-group 使用），组序按 CLOUD_ORDER */
+    /**
+     * 云·账号分组（供「日志源」下拉的 option-group 使用），组序按云序表。
+     * 组键保持原始云 id（身份/去重口径不变），**标签用云展示名** —— 与「明细」折叠
+     * 分组（useEntryGroups）及账号下拉一致；修复前标签直接用原始键，火山账号会显示
+     * 内部 id `volcengine·集团-火山云`，与同屏其它「云·账号」文案不一致。
+     */
     const sourceGroups = computed(() => {
-        const map = new Map<string, LogSource[]>()
+        const map = new Map<string, { cloud: string; accountName: string; sources: LogSource[] }>()
         for (const s of filteredSources.value) {
             const key = `${s.cloud}·${s.account_name}`
-            if (!map.has(key)) map.set(key, [])
-            map.get(key)!.push(s)
+            let group = map.get(key)
+            if (!group) {
+                group = { cloud: s.cloud, accountName: s.account_name, sources: [] }
+                map.set(key, group)
+            }
+            group.sources.push(s)
         }
         return Array.from(map.entries())
             .sort((a, b) => groupRank(a[0]) - groupRank(b[0]))
-            .map(([key, list]) => ({ key, label: key, sources: list }))
+            .map(([key, g]) => ({
+                key,
+                label: `${cloudLabel(g.cloud)}·${g.accountName}`,
+                sources: g.sources,
+            }))
     })
 
     /** 实际有源的云（云筛选下拉选项；顺序同云序表，变体归一后未知云排最后） */
