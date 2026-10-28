@@ -684,6 +684,35 @@ describe('LogsIndex(账号级筛选,2026-10-28 口径确认)', () => {
         w.unmount()
     })
 
+    it('进度文案的源数按账号收窄(选中账号后只计该账号的已投递源)', async () => {
+        sourcesApi.mockResolvedValue([
+            src('d1', true, '1', '阿里A'),
+            src('d2', true, '1', '阿里A'),
+            src('d3', true, '2', '阿里B'),
+        ])
+        let resolveSearch!: (v: LogSearchResponse) => void
+        searchApi.mockImplementationOnce(
+            () =>
+                new Promise<LogSearchResponse>((r) => {
+                    resolveSearch = r
+                }),
+        )
+        const w = await mountPage()
+        emitSelect(w, '.filter-accounts', [2])
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        // 账号 2 仅 1 个已投递源 → 进度文案按账号收窄(默认全选时为 3)
+        const progress = w.find('.search-progress')
+        expect(progress.exists()).toBe(true)
+        expect(progress.text()).toContain('1 个云账号')
+
+        resolveSearch(searchResp())
+        await flushPromises()
+        w.unmount()
+    })
+
     it('翻页请求同样携带 account_ids(窗口一致性:页间筛选口径不得漂移)', async () => {
         searchApi.mockResolvedValueOnce(searchResp())
         sourcesApi.mockResolvedValue([src('d1', true, '1', '阿里A')])
