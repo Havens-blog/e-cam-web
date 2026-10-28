@@ -35,6 +35,14 @@ export const SEVERITY_COLORS: Record<string, string> = {
     low: '#0ca30c',
     '-': '#c0c4cc',
 }
+/** 级别色板(app/k8s 事件:error 红、warning 黄、info 绿、其余灰) */
+export const LEVEL_COLORS: Record<string, string> = {
+    error: '#d03b3b',
+    warning: '#fab219',
+    info: '#0ca30c',
+    debug: '#2a78d6',
+    其他: '#c0c4cc',
+}
 /** 排名/趋势单一色(dataviz:同一量纲不用多色) */
 export const SERIES_COLOR = '#2a78d6'
 
@@ -314,6 +322,28 @@ export function buildActionSlices(entries: LogEntry[]): Slice[] {
 export function buildSeveritySlices(entries: LogEntry[]): Slice[] {
     const buckets = countBy(entries, (e) => (e as { severity?: string }).severity || '-')
     return orderSlices(buckets, ['high', 'medium', 'low', '-'], SEVERITY_COLORS)
+}
+
+/**
+ * 级别分布(app 业务日志 / k8s-event):这两类无状态码/延迟量纲,图一按 level
+ * 出环形图(warning/error 红黄、info 绿、其余灰),与 KPI 行口径一致。
+ */
+export function buildLevelSlices(entries: LogEntry[]): Slice[] {
+    const buckets = countBy(entries, (e) => (e as { level?: string }).level || '其他')
+    return orderSlices(buckets, ['error', 'warning', 'info', 'debug', '其他'], LEVEL_COLORS)
+}
+
+/**
+ * 原因 Top(k8s-event 图二):事件 reason 计数降序(k8s/火山的 reason 即事件
+ * 语义,如 FailedGetScale/BackOff/OOMKilled)。空 reason 不计入。
+ */
+export function buildTopReasons(entries: LogEntry[]): NamedCount[] {
+    const buckets = countBy(entries, (e) => (e as { reason?: string }).reason || '')
+    return Object.entries(buckets)
+        .filter(([name]) => name !== '')
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
 }
 
 /** 固定语义顺序输出(0 值不显示;计数里出现顺序外键归入"其他"色) */
