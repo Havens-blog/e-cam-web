@@ -14,7 +14,7 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-      <div class="toolbar-spacer" />
+      <div class="toolbar-actions">
       <el-select
         v-model="hostingFilter"
         class="toolbar-select"
@@ -38,6 +38,7 @@
         <el-option label=">30 天" value="gt30" />
         <el-option label="已过期" value="expired" />
       </el-select>
+      </div>
       <el-button
         v-if="filterActive"
         class="toolbar-reset"
@@ -397,16 +398,19 @@ function onRowClick(row: CertListItem) {
   max-width: 100%;
 }
 
-.toolbar-spacer {
-  flex: 1;
+/* 两个下拉成组：整体右对齐；放不下时整组换行，不与搜索框拆成两行 */
+.toolbar-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  min-width: 0;
 }
 
-/* 一行放不下（320+170+170+36=696）时隐藏 spacer：否则 spacer 吃掉首行余量，
-   把「托管状态」推到行尾、「剩余天数」挤到下一行，形成「组被撕裂」的错位。
-   用容器查询而非视口断点：侧栏折叠或页面缩放时工具栏实际宽度与视口并不相等。 */
+/* 窄容器（放不下 320 搜索框 + 352 组）归零 auto margin，避免整组被推到行尾右对齐 */
 @container (max-width: 720px) {
-  .toolbar-spacer {
-    display: none;
+  .toolbar-actions {
+    margin-left: 0;
   }
 }
 
