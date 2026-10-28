@@ -96,7 +96,7 @@
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
           :total="pagination.total"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="PAGE_SIZE_OPTIONS"
           :layout="paginationUi.layout"
           :pager-count="paginationUi.pagerCount"
           :size="paginationUi.small ? 'small' : 'default'"
@@ -114,10 +114,18 @@ import type { Task } from '@/api/types/task'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import TaskCard from './components/TaskCard.vue'
 import { oldestPendingWaitText } from './queue'
-import { paginationUiForContentWidth } from './pagination'
+import {
+  buildPageQuery,
+  clampPageToTotal,
+  PAGE_SIZE_OPTIONS,
+  paginationUiForContentWidth,
+  readFilterQuery,
+  readPageQuery,
+  readPageSizeQuery,
+} from './pagination'
 import {
   buildTaskQuery,
   EMPTY_TASK_SUMMARY,
@@ -130,6 +138,7 @@ import {
 } from './taskFilters'
 
 const router = useRouter()
+const route = useRoute()
 
 // 状态
 const loading = ref(false)
@@ -145,6 +154,52 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 分页写入 URL：刷新/分享/前进后退都能回到同一页
+pagination.page = readPageQuery(route.query.page)
+pagination.size = readPageSizeQuery(route.query.size)
+filters.type = readFilterQuery(route.query.type, TASK_TYPE_OPTIONS)
+filters.status = readFilterQuery(route.query.status, TASK_STATUS_OPTIONS)
+
+const syncPaginationQuery = () => {
+  const query = buildPageQuery(pagination.page, pagination.size, route.query, {
+    type: filters.type,
+    status: filters.status,
+  })
+  const current = JSON.stringify(route.query)
+  if (JSON.stringify(query) === current) return
+  router.replace({ query })
+}
+
+// 浏览器前进/后退或外部改 query：同步分页状态并重新取数
+watch(
+  () => [route.query.page, route.query.size, route.query.type, route.query.status],
+  () => {
+    const nextPage = readPageQuery(route.query.page)
+    const nextSize = readPageSizeQuery(route.query.size)
+    const nextType = readFilterQuery(route.query.type, TASK_TYPE_OPTIONS)
+    const nextStatus = readFilterQuery(route.query.status, TASK_STATUS_OPTIONS)
+    if (
+      nextPage === pagination.page &&
+      nextSize === pagination.size &&
+      nextType === filters.type &&
+      nextStatus === filters.status
+    ) {
+      return
+    }
+    const typeChanged = nextType !== filters.type
+    pagination.page = nextPage
+    pagination.size = nextSize
+    filters.type = nextType
+    filters.status = nextStatus
+    // 概览计数与最老等待只依赖类型，状态切换不必重刷
+    if (typeChanged) {
+      fetchSummary()
+      void fetchOldestPending(true)
+    }
+    fetchTasks()
+  }
+)
 /** 队列概览（全部/待执行/执行中/已完成/失败） */
 const summary = reactive<TaskSummary>({ ...EMPTY_TASK_SUMMARY })
 const activeSummaryKey = computed(() => filters.status || 'all')
@@ -168,7 +223,16 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     const { data } = await listTasksApi(buildTaskQuery(filters, pagination.page, pagination.size))
     if (disposed || seq !== listSeq) return
     tasks.value = data.tasks || []
-    pagination.total = data.total || 0
+    pagination.total = Number(data.total) || 0
+    // 深链页码超出范围（例如数据变少）：收敛到最后一页并重新取数
+    const clamped = clampPageToTotal(pagination.page, pagination.total, pagination.size)
+    if (clamped !== pagination.page) {
+      pagination.page = clamped
+      syncPaginationQuery()
+      // 收敛只重取一次：页码严格递减，且 watcher 会因 state 相等而早退
+      void fetchTasks({ silent: options.silent })
+      return
+    }
     void fetchOldestPending()
   } catch (error: any) {
     if (disposed || seq !== listSeq) return
@@ -235,6 +299,7 @@ const refreshAll = async () => {
 // 类型变化：概览与列表同口径刷新
 const handleTypeChange = () => {
   pagination.page = 1
+  syncPaginationQuery()
   fetchSummary()
   fetchTasks()
   void fetchOldestPending(true)
@@ -243,15 +308,18 @@ const handleTypeChange = () => {
 // 状态变化：只刷新列表，不重复统计
 const handleStatusChange = () => {
   pagination.page = 1
+  syncPaginationQuery()
   fetchTasks()
 }
 
 const handlePageChange = () => {
+  syncPaginationQuery()
   fetchTasks()
 }
 
 const handlePageSizeChange = () => {
   pagination.page = 1
+  syncPaginationQuery()
   fetchTasks()
 }
 
@@ -259,6 +327,7 @@ const handlePageSizeChange = () => {
 const applyStatusFilter = (status?: TaskFilters['status']) => {
   filters.status = status
   pagination.page = 1
+  syncPaginationQuery()
   fetchTasks()
 }
 
@@ -266,6 +335,7 @@ const clearFilters = () => {
   filters.type = undefined
   filters.status = undefined
   pagination.page = 1
+  syncPaginationQuery()
   fetchSummary()
   fetchTasks()
   void fetchOldestPending(true)
@@ -372,6 +442,8 @@ watch(paginationContainer, (el) => {
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
   // 分页宽度由 ResizeObserver 监听容器，见 paginationObserver
+  // 规范化 URL：非法/默认分页参数不留在地址栏
+  syncPaginationQuery()
   // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」；
   // 最老等待由 fetchTasks 成功路径按 60s 节流触发，这里不再重复请求
   await Promise.all([fetchSummary(), fetchTasks()])
