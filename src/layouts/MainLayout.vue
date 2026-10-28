@@ -94,7 +94,8 @@ const commandPaletteVisible = ref(false)
 
       <!-- 页面内容 -->
       <main class="main-content">
-        <router-view :key="route.fullPath" />
+        <!-- key 必须包含 query：任务页等依赖「URL 变化 → 重挂载」从 URL 取数，改为 path 会静默不刷新 -->
+      <router-view :key="route.fullPath" />
       </main>
     </div>
   </div>

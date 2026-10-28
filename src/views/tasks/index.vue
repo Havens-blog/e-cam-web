@@ -166,9 +166,12 @@ const syncPaginationQuery = () => {
     type: filters.type,
     status: filters.status,
   })
-  const current = JSON.stringify(route.query)
-  if (JSON.stringify(query) === current) return
+  // 用 resolve 后的 fullPath 判等：既是 router 的真实比较方式，也避免参数顺序敏感
+  if (router.resolve({ query }).fullPath === route.fullPath) return false
+  // URL 变更会触发 router-view 重挂载（key=fullPath，见 MainLayout.vue），
+  // 新实例从 URL 取数；调用方据此避免重复请求
   router.replace({ query })
+  return true
 }
 
 // 浏览器前进/后退或外部改 query：同步分页状态并重新取数
@@ -228,9 +231,8 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     const clamped = clampPageToTotal(pagination.page, pagination.total, pagination.size)
     if (clamped !== pagination.page) {
       pagination.page = clamped
-      syncPaginationQuery()
-      // 收敛只重取一次：页码严格递减，且 watcher 会因 state 相等而早退
-      void fetchTasks({ silent: options.silent })
+      // URL 变化会重挂载并重新取数；仅当 URL 未变时才本地重取
+      if (!syncPaginationQuery()) void fetchTasks({ silent: options.silent })
       return
     }
     void fetchOldestPending()
@@ -299,7 +301,7 @@ const refreshAll = async () => {
 // 类型变化：概览与列表同口径刷新
 const handleTypeChange = () => {
   pagination.page = 1
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchSummary()
   fetchTasks()
   void fetchOldestPending(true)
@@ -308,18 +310,18 @@ const handleTypeChange = () => {
 // 状态变化：只刷新列表，不重复统计
 const handleStatusChange = () => {
   pagination.page = 1
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchTasks()
 }
 
 const handlePageChange = () => {
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchTasks()
 }
 
 const handlePageSizeChange = () => {
   pagination.page = 1
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchTasks()
 }
 
@@ -327,7 +329,7 @@ const handlePageSizeChange = () => {
 const applyStatusFilter = (status?: TaskFilters['status']) => {
   filters.status = status
   pagination.page = 1
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchTasks()
 }
 
@@ -335,7 +337,7 @@ const clearFilters = () => {
   filters.type = undefined
   filters.status = undefined
   pagination.page = 1
-  syncPaginationQuery()
+  if (syncPaginationQuery()) return
   fetchSummary()
   fetchTasks()
   void fetchOldestPending(true)
