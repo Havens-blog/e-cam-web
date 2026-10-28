@@ -128,7 +128,8 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="错误信息" min-width="220">
+          <!-- 回滚失败时错误信息是唯一线索，窄屏保留（与上方「逐项执行结果」的隐藏策略不同） -->
+            <el-table-column label="错误信息" min-width="220">
             <template #default="{ row }">
               <span :class="row.error ? 'error-text' : 'text-secondary'">
                 {{ row.error || (row.status === 'rollback_failed' ? '回滚目标无效或云侧失败，已转人工' : '已恢复旧证书引用') }}

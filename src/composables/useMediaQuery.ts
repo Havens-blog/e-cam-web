@@ -7,23 +7,28 @@ import { onMounted, onUnmounted, readonly, ref, type Ref } from 'vue'
  * 只有 v-if 才能真正释放。跨断点才触发，无需 debounce。
  */
 export function useMediaQuery(query: string): Readonly<Ref<boolean>> {
-    const matches = ref(false)
+    // 同步取初值：避免首帧按宽屏建列、挂载后再删（多一次全量布局）
+    const supported = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    const matches = ref(supported ? window.matchMedia(query).matches : false)
     let media: MediaQueryList | null = null
 
-    const apply = (value: boolean) => {
-        matches.value = value
+    const onChange = (event: MediaQueryListEvent) => {
+        matches.value = event.matches
     }
-    const onChange = (event: MediaQueryListEvent) => apply(event.matches)
 
     onMounted(() => {
-        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+        if (!supported) return
         media = window.matchMedia(query)
-        apply(media.matches)
-        media.addEventListener('change', onChange)
+        matches.value = media.matches
+        // Safari <= 13 只有旧的 addListener
+        if (typeof media.addEventListener === 'function') media.addEventListener('change', onChange)
+        else media.addListener(onChange)
     })
 
     onUnmounted(() => {
-        media?.removeEventListener('change', onChange)
+        if (!media) return
+        if (typeof media.removeEventListener === 'function') media.removeEventListener('change', onChange)
+        else media.removeListener(onChange)
         media = null
     })
 
