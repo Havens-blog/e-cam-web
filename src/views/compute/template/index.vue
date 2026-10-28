@@ -229,6 +229,7 @@ import { Loading, Monitor, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { normalizeEpochMs } from '@/utils/epoch'
 import ProvisionDialog from './components/ProvisionDialog.vue'
 import TemplateForm from './components/TemplateForm.vue'
 
@@ -322,8 +323,10 @@ function formatDisk(tpl: VMTemplate | null): string {
 }
 
 function formatTime(ts: number): string {
-  if (!ts) return ''
-  const d = new Date(ts * 1000)
+  // 接口 created_at 是毫秒：历史实现又乘了 1000，导致「-29562457753 分钟前」
+  const ms = normalizeEpochMs(ts)
+  if (ms == null) return ''
+  const d = new Date(ms)
   const now = Date.now()
   const diff = now - d.getTime()
   if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
