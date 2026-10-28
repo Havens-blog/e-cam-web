@@ -34,15 +34,15 @@
         <el-option label="完整托管" value="complete" />
         <el-option label="仅指纹登记" value="fingerprint_only" />
       </el-select>
-      <div class="toolbar-actions">
-      <el-tooltip
-        v-if="wildcardSkippedCount > 0"
-        content="通配符 SAN 无法直接拨测且未配置替代子域名，跳过计数（探测覆盖显式缺口，不参与差异告警）"
-        placement="top"
-      >
-        <span class="meta-item wildcard-meta" tabindex="0">通配符跳过拨测 {{ wildcardSkippedCount }}</span>
-      </el-tooltip>
-      <span class="meta-item">最近巡检：{{ lastInspectionAt ? relativeTimeDash(lastInspectionAt) : '—' }}</span>
+      <div class="toolbar-actions" role="group" aria-label="巡检信息">
+        <el-tooltip
+          v-if="wildcardSkippedCount > 0"
+          content="通配符 SAN 无法直接拨测且未配置替代子域名，跳过计数（探测覆盖显式缺口，不参与差异告警）"
+          placement="top"
+        >
+          <span class="meta-item wildcard-meta" tabindex="0">通配符跳过拨测 {{ wildcardSkippedCount }}</span>
+        </el-tooltip>
+        <span class="meta-item">最近巡检：{{ lastInspectionAt ? relativeTimeDash(lastInspectionAt) : '—' }}</span>
       </div>
     </div>
 
@@ -315,7 +315,9 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   min-width: 0;
 }
 
-@container (max-width: 720px) {
+/* 单行所需 ≈775（下拉 170+200+170 + 2×12 间隙 564 + 尾部组 ≈211）；
+   低于 820 归零右对齐，避免元信息组孤悬第二行最右 */
+@container (max-width: 820px) {
   .toolbar-actions {
     margin-left: 0;
   }

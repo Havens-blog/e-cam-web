@@ -54,16 +54,16 @@
           <el-select v-model="linkFilter" class="toolbar-select" aria-label="按链路层筛选">
             <el-option v-for="o in PROBE_LINK_FILTERS" :key="o.value" :label="o.label" :value="o.value" />
           </el-select>
-          <div class="toolbar-actions">
-          <el-button
-            class="scan-btn"
-            :disabled="scanning"
-            @click="triggerScan"
-          >
-            <span v-if="scanning" class="spinner" aria-hidden="true" />
-            {{ scanning ? '探测中' : '立即探测' }}
-          </el-button>
-          <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
+          <div class="toolbar-actions" role="group" aria-label="探针操作">
+            <el-button
+              class="scan-btn"
+              :disabled="scanning"
+              @click="triggerScan"
+            >
+              <span v-if="scanning" class="spinner" aria-hidden="true" />
+              {{ scanning ? '探测中' : '立即探测' }}
+            </el-button>
+            <el-button :loading="loading" class="refresh-btn" @click="load">刷新</el-button>
           </div>
         </div>
 
