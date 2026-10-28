@@ -93,3 +93,28 @@ describe('useLogSources.accountOptions(账号选项推导)', () => {
         expect(u2.accountOptions.value.map((a) => a.value)).toEqual([5])
     })
 })
+
+describe('useLogSources.sourceGroups(云·账号分组标签)', () => {
+    it('标签用云展示名,组键保持原始云 id(身份/去重口径不变)', () => {
+        const u = setup([
+            s('volcengine', '5', '集团-火山云', 'v1'),
+            s('volcengine', '5', '集团-火山云', 'v2'),
+            s('aliyun', '1', '集团-阿里云', 'd1'),
+        ])
+        const groups = u.sourceGroups.value
+        expect(groups.map((g) => g.label)).toEqual(['阿里云·集团-阿里云', '火山云·集团-火山云'])
+        // 键仍是原始 id(volcengine 不归一),且同账号同云源合为一组
+        expect(groups.map((g) => g.key)).toEqual(['aliyun·集团-阿里云', 'volcengine·集团-火山云'])
+        expect(groups[1]!.sources.map((x) => x.resource_id)).toEqual(['v1', 'v2'])
+    })
+
+    it('与账号下拉标签同口径(同屏两组「云·账号」文案一致)', () => {
+        const u = setup([
+            s('volcengine', '5', '集团-火山云', 'v1'),
+            s('aliyun', '1', '集团-阿里云', 'd1'),
+        ])
+        expect(u.sourceGroups.value.map((g) => g.label)).toEqual(
+            u.accountOptions.value.map((a) => a.label),
+        )
+    })
+})
