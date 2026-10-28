@@ -505,6 +505,9 @@ describe('isCertListBackTarget', () => {
         expect(isCertListBackTarget('/certs?daysLeft=le30')).toBe(true)
         expect(isCertListBackTarget('/certs/dashboard')).toBe(true)
         expect(isCertListBackTarget('/certs/dashboard?tier=le30')).toBe(true)
+        expect(isCertListBackTarget('/certs/')).toBe(true)
+        expect(isCertListBackTarget('/certs/?daysLeft=le30')).toBe(true)
+        expect(isCertListBackTarget('/certs#top')).toBe(true)
     })
     it('详情/变更/外站/空值不视为列表目标', () => {
         expect(isCertListBackTarget('/certs/6a8e819685f946c3aca27605')).toBe(false)
@@ -512,5 +515,7 @@ describe('isCertListBackTarget', () => {
         expect(isCertListBackTarget('/compute/ecs')).toBe(false)
         expect(isCertListBackTarget(undefined)).toBe(false)
         expect(isCertListBackTarget(null)).toBe(false)
+        expect(isCertListBackTarget('/certs/changes/new')).toBe(false)
+        expect(isCertListBackTarget('/certs/probes')).toBe(false)
     })
 })

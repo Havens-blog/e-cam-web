@@ -492,7 +492,7 @@ export function isCertNotFoundCode(code: unknown): boolean {
  */
 export function isCertListBackTarget(back: unknown): boolean {
     if (typeof back !== 'string') return false
-    if (back === '/certs' || back.startsWith('/certs?')) return true
-    if (back === '/certs/dashboard' || back.startsWith('/certs/dashboard?')) return true
-    return false
+    // state.back 是 fullPath（不含 base）；容忍尾斜杠与 hash/query
+    const path = (back.split('#')[0] ?? '').split('?')[0]?.replace(/\/+$/, '') ?? ''
+    return path === '/certs' || path === '/certs/dashboard'
 }
