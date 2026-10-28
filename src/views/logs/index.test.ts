@@ -723,4 +723,33 @@ describe('LogsIndex(账号级筛选,2026-10-28 口径确认)', () => {
         expect((acctSelect.props('modelValue') as number[]).length).toBe(0)
         w.unmount()
     })
+
+    it('WAF Tab:账号筛选同步下发到诊断请求(诊断上下文与查询同源)', async () => {
+        const diagnoseApi = vi.mocked(diagnoseLogsApi)
+        const wafMeta: LogTypeMeta = {
+            type: 'waf',
+            label: 'WAF',
+            max_window_days: 7,
+            fields: [{ key: 'timestamp', label: '时间', fixed: true }],
+        }
+        typesApi.mockResolvedValue([...typeMetas, wafMeta])
+        sourcesApi.mockResolvedValue([src('w1', true, '1', '阿里A')])
+        // 本用例只断言"请求载荷携带 account_ids";响应走失败态即可(结果渲染另有覆盖),
+        // 避免伪造半成品响应触发渲染期未处理异常
+        diagnoseApi.mockRejectedValueOnce(new Error('payload-only:响应不参与本断言'))
+
+        const w = await mountPage()
+        const wafTab = w.findAll('.el-tabs__item').find((t) => t.text().includes('WAF'))
+        await wafTab!.trigger('click')
+        await flushPromises()
+
+        emitSelect(w, '.filter-accounts', [1])
+        await flushPromises()
+        await w.find('.diagnose-actions button').trigger('click')
+        await flushPromises()
+
+        expect(diagnoseApi).toHaveBeenCalledTimes(1)
+        expect(diagnoseApi.mock.calls[0]![0]).toMatchObject({ log_type: 'waf', account_ids: [1] })
+        w.unmount()
+    })
 })
