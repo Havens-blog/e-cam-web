@@ -73,6 +73,23 @@ export function useLogSources(opts: UseLogSourcesOptions) {
             .map(([value, label]) => ({ value, label }))
     })
 
+    /**
+     * 云账号选项（账号级筛选下拉；2026-10-28 口径确认:聚合/诊断请求补 account_ids）。
+     * 由源清单推导（去重 account_id），组序按 CLOUD_ORDER;值为平台内账号 ID(number,
+     * 与请求契约一致 —— LogSource.account_id 为展示用 string,此处转 number)。
+     */
+    const accountOptions = computed(() => {
+        const seen = new Map<number, { value: number; label: string; cloud: string }>()
+        for (const s of filteredSources.value) {
+            const id = Number(s.account_id)
+            if (!id || seen.has(id)) continue
+            seen.set(id, { value: id, label: `${cloudLabel(s.cloud)}·${s.account_name}`, cloud: s.cloud })
+        }
+        return Array.from(seen.values()).sort(
+            (a, b) => CLOUD_ORDER.indexOf(a.cloud) - CLOUD_ORDER.indexOf(b.cloud),
+        )
+    })
+
     /** 未开启投递的源（模板用于引导文案提示） */
     const disabledSources = computed(() => filteredSources.value.filter((s) => !s.enabled))
 
@@ -124,6 +141,7 @@ export function useLogSources(opts: UseLogSourcesOptions) {
         filteredSources,
         sourceGroups,
         availableClouds,
+        accountOptions,
         disabledSources,
         loadSources,
         refreshSources,

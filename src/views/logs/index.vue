@@ -50,6 +50,18 @@
           <el-option v-for="c in availableClouds" :key="c.value" :label="c.label" :value="c.value" />
         </el-select>
         <el-select
+          v-model="selectedAccounts"
+          class="filter-accounts"
+          multiple
+          filterable
+          collapse-tags
+          clearable
+          placeholder="全部云账号"
+          aria-label="按云账号筛选"
+        >
+          <el-option v-for="a in accountOptions" :key="a.value" :label="a.label" :value="a.value" />
+        </el-select>
+        <el-select
           v-model="selectedResources"
           class="filter-resources"
           multiple
@@ -496,7 +508,7 @@ import { ArrowDown, ArrowRight, Delete, Refresh } from '@element-plus/icons-vue'
 import { getLogTypesApi } from '@/api/logs'
 import type { LogAggregateResponse, LogDiagnoseContext, LogEntry, LogType, LogTypeMeta } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import CacheAnalyzeCard from './components/CacheAnalyzeCard.vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
 import LogDiagnoseCard from './components/LogDiagnoseCard.vue'
@@ -533,6 +545,8 @@ const timeRange = ref<[Date, Date] | null>(null)
 const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
 /** 用户是否手动改过云选择(改过后不再自动收敛到默认) */
 const cloudsTouched = ref(false)
+/** 账号级筛选(平台内 ID;空 = 全部账号;随 search/aggregate/翻页/诊断/缓存请求下发) */
+const selectedAccounts = ref<number[]>([])
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
 const limit = ref(1000)
@@ -559,6 +573,7 @@ const {
     filteredSources,
     sourceGroups,
     availableClouds,
+    accountOptions,
     disabledSources,
     loadSources,
     refreshSources,
@@ -637,6 +652,7 @@ const {
     keyword,
     selectedClouds,
     selectedResources,
+    selectedAccounts,
     limit,
     aggrDimension,
     aggrMetric,
@@ -702,6 +718,7 @@ const diagnoseContext = computed<LogDiagnoseContext | null>(() => {
         end_time: timeRange.value[1].getTime(),
         query: keyword.value || undefined,
         clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+        account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
         resources: selectedResources.value.length ? selectedResources.value : undefined,
         filters: buildFilters(),
     }
@@ -709,6 +726,17 @@ const diagnoseContext = computed<LogDiagnoseContext | null>(() => {
 
 /** 缓存分析上下文与诊断卡同构(当前查询字段,无 dimension/metric;仅 CDN Tab 使用) */
 const cacheAnalyzeContext = diagnoseContext
+
+/**
+ * 账号选项随 源清单/云选择/类型 变化(源按类型缓存,账号集逐类型不同):
+ * 失效的账号选择就地清理,避免查询范围被静默收窄("所见即所选"不变式)。
+ */
+watch(accountOptions, (opts) => {
+    const valid = new Set(opts.map((a) => a.value))
+    if (selectedAccounts.value.some((id) => !valid.has(id))) {
+        selectedAccounts.value = selectedAccounts.value.filter((id) => valid.has(id))
+    }
+})
 
 // ================= 时间窗口约束与快捷窗口 =================
 /** 快捷时间窗口(小时)。点击即设为最近 N 小时并重查。 */
@@ -782,6 +810,10 @@ function onCloudsChange() {
         const owner = sources.value.find((s) => s.resource_id === r)
         return !owner || cloudSet.has(owner.cloud) // 无归属信息则保留
     })
+    // 同理清理跨云残留的账号选择(账号归属云;不清理会让查询静默变窄)
+    selectedAccounts.value = selectedAccounts.value.filter((id) =>
+        accountOptions.value.some((a) => a.value === id),
+    )
     // 已有查询结果时按新云自动重查:保持"所见即所选"(doSearch 自带 searching
     // 防并发;查询有 SWR 结果缓存,代价低)
     if (resp.value) void doSearch()
@@ -895,6 +927,9 @@ onMounted(async () => {
 }
 .filter-clouds {
     width: 180px;
+}
+.filter-accounts {
+    width: 200px;
 }
 .filter-resources {
     width: 280px;

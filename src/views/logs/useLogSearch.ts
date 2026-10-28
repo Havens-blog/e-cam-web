@@ -34,6 +34,8 @@ export interface UseLogSearchOptions {
     keyword: Ref<string>
     selectedClouds: Ref<string[]>
     selectedResources: Ref<string[]>
+    /** 账号级筛选(平台内 ID;空 = 全部;search/aggregate 请求均携带,2026-10-28 口径确认) */
+    selectedAccounts: Ref<number[]>
     limit: Ref<number>
     aggrDimension: Ref<string>
     aggrMetric: Ref<string>
@@ -59,6 +61,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         keyword,
         selectedClouds,
         selectedResources,
+        selectedAccounts,
         limit,
         aggrDimension,
         aggrMetric,
@@ -117,12 +120,14 @@ export function useLogSearch(opts: UseLogSearchOptions) {
 
     onBeforeUnmount(stopProgress)
 
-    /** 预期查询源数：当前云/资源选择下已开启投递的源（与后端联邦范围一致的前端近似） */
+    /** 预期查询源数：当前云/账号/资源选择下已开启投递的源（与后端联邦范围一致的前端近似） */
     const querySourceCount = computed(() => {
         const enabled = filteredSources.value.filter((s) => s.enabled)
-        if (!selectedResources.value.length) return enabled.length
+        const accounts = selectedAccounts.value
+        const accountOk = (s: LogSource) => !accounts.length || accounts.includes(Number(s.account_id))
+        if (!selectedResources.value.length) return enabled.filter(accountOk).length
         const picked = new Set(selectedResources.value)
-        return enabled.filter((s) => picked.has(s.resource_id)).length
+        return enabled.filter((s) => accountOk(s) && picked.has(s.resource_id)).length
     })
 
     const progressText = computed(() =>
@@ -176,6 +181,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
             end_time: timeRange.value[1].getTime(),
             query: keyword.value || undefined,
             clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+            account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
             resources: selectedResources.value.length ? selectedResources.value : undefined,
             filters: filters as FieldFilter[] | undefined,
         }
@@ -229,6 +235,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
                 end_time: oldestTs.value - 1000,
                 query: keyword.value || undefined,
                 clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+                account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
                 resources: selectedResources.value.length ? selectedResources.value : undefined,
                 filters: buildFilters(),
                 limit: limit.value,
