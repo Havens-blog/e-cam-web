@@ -182,3 +182,14 @@ describe('ProbesIndex（渲染量防御回归）', () => {
         }
     })
 })
+
+describe('工具栏成组结构（防回落 spacer）', () => {
+    it('按钮簇位于 .toolbar-actions 内，且不再有 .toolbar-spacer', async () => {
+        const wrapper = mountPage()
+        await flushPromises()
+        const groups = wrapper.findAll('.toolbar-actions')
+        expect(groups).toHaveLength(1)
+        expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
+        expect(groups[0]?.findAll('button').length).toBeGreaterThanOrEqual(2)
+    })
+})

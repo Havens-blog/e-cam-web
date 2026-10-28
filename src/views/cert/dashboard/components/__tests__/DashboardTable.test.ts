@@ -186,3 +186,14 @@ describe('DashboardTable（空态「查看全部」入口保留，非静默吞�
         expect(wrapper.find('.show-all-cta').exists()).toBe(false)
     })
 })
+
+describe('工具栏成组结构（防回落 spacer）', () => {
+    it('尾部簇位于 .toolbar-actions 内，且不再有 .toolbar-spacer', async () => {
+        const wrapper = await mountTable({ rows: [cert({})] })
+        const groups = wrapper.findAll('.toolbar-actions')
+        expect(groups).toHaveLength(1)
+        expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
+        // 三个筛选下拉仍在工具栏内
+        expect(wrapper.findAll('.toolbar-select').length).toBe(3)
+    })
+})
