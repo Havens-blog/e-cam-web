@@ -172,7 +172,7 @@ import type { CertListItem, DaysLeftTier, HostingStatus } from '@/api/cert'
 import { CopyDocument, MoreFilled, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
     HIDDEN_EXPANDED_BANNER_TEXT,
     copyText,
@@ -198,7 +198,10 @@ const props = defineProps<{
     hiddenCount?: number
     /** 切换态是否展开（查看全部；daysLeft=expired 时挂起） */
     hiddenExpanded?: boolean
-    /** 初始筛选（来自 URL query，用于深链回显；之后由用户操作接管） */
+    /**
+     * 父级当前筛选值（页面从 URL query 派生）：用作初始值，并在父级值变化时单向同步。
+     * 用户操作仍以本组件为源，避免 prop→emit→prop 回环。
+     */
     initialHostingStatus?: HostingStatus | ''
     initialDaysLeft?: DaysLeftTier | ''
     initialSearch?: string
@@ -260,6 +263,28 @@ function emitFilters() {
     })
 }
 
+watch(
+    () => props.initialDaysLeft,
+    (value) => {
+        const next = value ?? ''
+        if (next !== daysFilter.value) daysFilter.value = next
+    },
+)
+watch(
+    () => props.initialHostingStatus,
+    (value) => {
+        const next = value ?? ''
+        if (next !== hostingFilter.value) hostingFilter.value = next
+    },
+)
+watch(
+    () => props.initialSearch,
+    (value) => {
+        const next = value ?? ''
+        if (next !== searchText.value) searchText.value = next
+    },
+)
+
 onMounted(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
     narrowMedia = window.matchMedia(NARROW_QUERY)
@@ -275,6 +300,8 @@ onUnmounted(() => {
     narrowMedia = null
     wideMedia?.removeEventListener('change', syncWide)
     wideMedia = null
+    // 防抖未触发就卸载时清理，避免卸载后仍 emit query-change
+    if (searchTimer) clearTimeout(searchTimer)
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))

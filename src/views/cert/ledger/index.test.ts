@@ -10,6 +10,7 @@ import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getCertStatsApi, listCertsApi } from '@/api/cert'
 import type { CertListItem } from '@/api/cert'
+import CertTable from './components/CertTable.vue'
 import LedgerIndex from './index.vue'
 
 vi.mock('@/api/cert', async (importOriginal) => {
@@ -264,6 +265,8 @@ describe('台账默认隐藏 + 行内提示切换（任务 2 AC1/AC2/AC3）', ()
         })
 
         expect(wrapper.find('.hidden-toggle').exists()).toBe(false)
+        // 深链档位要透传给表格（否则表格内「剩余天数」显示占位，与已过滤的数据不符）
+        expect(wrapper.findComponent(CertTable).props('initialDaysLeft')).toBe('expired')
     })
 
     it('AC5 空态视图保留「已隐藏 N 张…」提示条与「查看全部」入口（提示不随表格主体消失）', async () => {
