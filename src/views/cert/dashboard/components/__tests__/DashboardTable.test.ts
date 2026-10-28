@@ -193,7 +193,10 @@ describe('工具栏成组结构（防回落 spacer）', () => {
         const groups = wrapper.findAll('.toolbar-actions')
         expect(groups).toHaveLength(1)
         expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
-        // 三个筛选下拉仍在工具栏内
+        // 三个筛选下拉仍在工具栏内（本页分组包的是尾部元信息，不是下拉；与台账不同）
         expect(wrapper.findAll('.toolbar-select').length).toBe(3)
+        // 尾部元信息必须真的在组内（否则「组内留空壳 + 簇挪出组」仍会绿）
+        expect(groups[0]?.findAll('.meta-item').length).toBeGreaterThanOrEqual(1)
+        expect(groups[0]?.text()).toContain('最近巡检')
     })
 })
