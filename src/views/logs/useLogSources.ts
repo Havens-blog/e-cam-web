@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 日志源清单：加载 / 按类型缓存 / 云·账号分组 / 可用云推导。
  *
  * 拆分来源：原 `src/views/logs/index.vue` 的「日志源」相关状态与逻辑。
@@ -14,7 +14,7 @@ import type { Ref } from 'vue'
 import { getLogSourcesApi } from '@/api/logs'
 import type { LogSource, LogType } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
-import { CLOUD_ORDER, groupRank } from './cloud-order'
+import { cloudRank, groupRank } from './cloud-order'
 import { cloudLabel } from './format'
 
 export interface UseLogSourcesOptions {
@@ -62,21 +62,22 @@ export function useLogSources(opts: UseLogSourcesOptions) {
             .map(([key, list]) => ({ key, label: key, sources: list }))
     })
 
-    /** 实际有源的云（云筛选下拉选项；顺序同 CLOUD_ORDER，未知云按 indexOf=-1 排前） */
+    /** 实际有源的云（云筛选下拉选项；顺序同云序表，变体归一后未知云排最后） */
     const availableClouds = computed(() => {
         const seen = new Map<string, string>()
         for (const s of sources.value) {
             if (!seen.has(s.cloud)) seen.set(s.cloud, cloudLabel(s.cloud))
         }
         return Array.from(seen.entries())
-            .sort((a, b) => CLOUD_ORDER.indexOf(a[0]) - CLOUD_ORDER.indexOf(b[0]))
+            .sort((a, b) => cloudRank(a[0]) - cloudRank(b[0]))
             .map(([value, label]) => ({ value, label }))
     })
 
     /**
      * 云账号选项（账号级筛选下拉；2026-10-28 口径确认:聚合/诊断请求补 account_ids）。
-     * 由源清单推导（去重 account_id），组序按 CLOUD_ORDER;值为平台内账号 ID(number,
-     * 与请求契约一致 —— LogSource.account_id 为展示用 string,此处转 number)。
+     * 由源清单推导（去重 account_id），组序按云序表（变体归一，与源分组/明细分组同序）;
+     * 值为平台内账号 ID(number, 与请求契约一致 —— LogSource.account_id 为展示用 string,
+     * 此处转 number)。
      */
     const accountOptions = computed(() => {
         const seen = new Map<number, { value: number; label: string; cloud: string }>()
@@ -85,9 +86,7 @@ export function useLogSources(opts: UseLogSourcesOptions) {
             if (!id || seen.has(id)) continue
             seen.set(id, { value: id, label: `${cloudLabel(s.cloud)}·${s.account_name}`, cloud: s.cloud })
         }
-        return Array.from(seen.values()).sort(
-            (a, b) => CLOUD_ORDER.indexOf(a.cloud) - CLOUD_ORDER.indexOf(b.cloud),
-        )
+        return Array.from(seen.values()).sort((a, b) => cloudRank(a.cloud) - cloudRank(b.cloud))
     })
 
     /** 未开启投递的源（模板用于引导文案提示） */
