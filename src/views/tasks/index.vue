@@ -166,10 +166,10 @@ const syncPaginationQuery = () => {
     type: filters.type,
     status: filters.status,
   })
-  const current = JSON.stringify(route.query)
-  if (JSON.stringify(query) === current) return false
-  // URL 变更会触发 router-view 重挂载（key=fullPath），新实例从 URL 取数；
-  // 调用方据此避免重复请求
+  // 用 resolve 后的 fullPath 判等：既是 router 的真实比较方式，也避免参数顺序敏感
+  if (router.resolve({ query }).fullPath === route.fullPath) return false
+  // URL 变更会触发 router-view 重挂载（key=fullPath，见 MainLayout.vue），
+  // 新实例从 URL 取数；调用方据此避免重复请求
   router.replace({ query })
   return true
 }
