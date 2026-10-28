@@ -484,3 +484,15 @@ export function managedRefLabel(managedBy?: string): string {
 export function isCertNotFoundCode(code: unknown): boolean {
     return code === 'CERT_INVALID_ID' || code === 'CERT_NOT_FOUND'
 }
+
+
+/**
+ * 判断上一个历史项是否是「证书列表类」页面（台账或到期看板）。
+ * 是则从详情返回时用 history.back()，以保留台账的筛选 query。
+ */
+export function isCertListBackTarget(back: unknown): boolean {
+    if (typeof back !== 'string') return false
+    // state.back 是 fullPath（不含 base）；容忍尾斜杠与 hash/query
+    const path = (back.split('#')[0] ?? '').split('?')[0]?.replace(/\/+$/, '') ?? ''
+    return path === '/certs' || path === '/certs/dashboard'
+}

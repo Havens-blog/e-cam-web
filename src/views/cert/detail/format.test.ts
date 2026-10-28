@@ -24,6 +24,7 @@ import {
     splitScopedResourceId,
     validityConsumedPercent,
     isCertNotFoundCode,
+    isCertListBackTarget,
 } from './format'
 
 // ==================== AC1：要素���展示逻辑 ====================
@@ -494,5 +495,27 @@ describe('isCertNotFoundCode', () => {
         expect(isCertNotFoundCode('ERR_NETWORK')).toBe(false)
         expect(isCertNotFoundCode(undefined)).toBe(false)
         expect(isCertNotFoundCode(null)).toBe(false)
+    })
+})
+
+
+describe('isCertListBackTarget', () => {
+    it('台账/看板（含筛选 query）视为可回退目标', () => {
+        expect(isCertListBackTarget('/certs')).toBe(true)
+        expect(isCertListBackTarget('/certs?daysLeft=le30')).toBe(true)
+        expect(isCertListBackTarget('/certs/dashboard')).toBe(true)
+        expect(isCertListBackTarget('/certs/dashboard?tier=le30')).toBe(true)
+        expect(isCertListBackTarget('/certs/')).toBe(true)
+        expect(isCertListBackTarget('/certs/?daysLeft=le30')).toBe(true)
+        expect(isCertListBackTarget('/certs#top')).toBe(true)
+    })
+    it('详情/变更/外站/空值不视为列表目标', () => {
+        expect(isCertListBackTarget('/certs/6a8e819685f946c3aca27605')).toBe(false)
+        expect(isCertListBackTarget('/certs/changes')).toBe(false)
+        expect(isCertListBackTarget('/compute/ecs')).toBe(false)
+        expect(isCertListBackTarget(undefined)).toBe(false)
+        expect(isCertListBackTarget(null)).toBe(false)
+        expect(isCertListBackTarget('/certs/changes/new')).toBe(false)
+        expect(isCertListBackTarget('/certs/probes')).toBe(false)
     })
 })
