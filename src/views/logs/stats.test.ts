@@ -104,3 +104,42 @@ describe("buildKpis('app')(RCA 语义 KPI,口径确认 2026-10-28)", () => {
         expect(kpis[1]!.value).toBe('100%')
     })
 })
+
+/** K8s 事件条目(与后端 K8sEventLogEntry 同构;union 未收该类型,按结构取用) */
+function k8sEntry(overrides: Record<string, unknown>): LogEntry {
+    return {
+        meta: { cloud: 'aliyun', account_id: 'acc-1', account_name: '阿里A', region: 'cn-shenzhen', resource_id: 'c1', source: 'k8s-log-c1/k8s-event' },
+        timestamp: 1_800_000_000_000,
+        ...overrides,
+    } as unknown as LogEntry
+}
+
+describe("buildKpis('k8s-event')(事件语义 KPI,浏览器实测口径)", () => {
+    it('四指标:事件条数/Warning 占比/受影响对象/累计重复次数;k8s 不再误用 CDN 缓存命中率', () => {
+        const entries = [
+            k8sEntry({ level: 'warning', reason: 'Unhealthy', object: 'pod-a', namespace: 'prod', count: 10 }),
+            k8sEntry({ level: 'warning', reason: 'BackOff', object: 'pod-a', namespace: 'prod', count: 5 }),
+            k8sEntry({ level: 'info', reason: 'Started', object: 'pod-b', namespace: 'dev', count: 1 }),
+        ]
+        const kpis = buildKpis('k8s-event', entries)
+        expect(kpis.map((k) => k.label)).toEqual(['事件条数', 'Warning 占比', '受影响对象', '累计重复次数'])
+        expect(kpis.map((k) => k.label)).not.toContain('缓存命中率')
+        expect(kpis.map((k) => k.label)).not.toContain('总流量')
+        expect(kpis[1]!.value).toBe('66.7%')
+        expect(kpis[2]!.value).toBe('2') // pod-a 去重
+        expect(kpis[3]!.value).toBe('16') // 10+5+1
+    })
+    it('Warning 占比 ≥50% 标 warning 色', () => {
+        expect(buildKpis('k8s-event', [k8sEntry({ level: 'warning', count: 1 })])[1]!.tone).toBe('warning')
+    })
+    it('空数据:占比显示 -,对象数/次数 0,无 tone', () => {
+        const kpis = buildKpis('k8s-event', [])
+        expect(kpis.map((k) => k.value)).toEqual(['0', '-', '0', '0'])
+        expect(kpis[1]!.tone).toBeUndefined()
+    })
+    it('聚合精确总数覆盖事件条数', () => {
+        const kpis = buildKpis('k8s-event', [k8sEntry({ level: 'info', count: 1 })], 54021)
+        expect(kpis[0]!.value).toBe('54,021')
+        expect(kpis[0]!.hint).toBe('窗口精确总数(服务端聚合)')
+    })
+})

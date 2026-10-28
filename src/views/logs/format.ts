@@ -2,19 +2,32 @@
  * 日志查询页格式化辅助(纯函数,单测覆盖)
  */
 
+import { getProviderLabel } from '@/utils/constants'
 import type { LogEntry, LogSourceOutcome } from '@/api/types/logs'
 
-/** 字典序固定的云展示名 */
+/** 字典序固定的云展示名(日志页精简口径;别名见下方 cloudLabel 兜底) */
 export const CLOUD_LABELS: Record<string, string> = {
     aliyun: '阿里云',
     huawei: '华为云',
     aws: 'AWS',
     tencent: '腾讯云',
     volcano: '火山云',
+    // 日志接口的 cloud 直接取账号 provider:火山账号返回 volcengine(中心字典
+    // 的别名之一),缺此键时页面会显示原始 key `volcengine`
+    volcengine: '火山云',
+    volc: '火山云',
 }
 
+/**
+ * 云展示名:先查日志页精简字典(保持 AWS 等既有文案不变),未命中再走平台
+ * 中心字典(@haven/ui provider,覆盖 bytedance/alibabacloud/qcloud 等历史变体),
+ * 仍未命中则原样返回。
+ */
 export function cloudLabel(cloud: string): string {
-    return CLOUD_LABELS[cloud] ?? cloud
+    const local = CLOUD_LABELS[cloud]
+    if (local) return local
+    const central = getProviderLabel(cloud)
+    return central && central !== cloud ? central : cloud
 }
 
 /** Unix ms -> "MM-dd HH:mm:ss"(日志列表密度优先,年份罕见变化) */

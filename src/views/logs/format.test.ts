@@ -23,6 +23,12 @@ describe('cloudLabel', () => {
         expect(cloudLabel('huawei')).toBe('华为云')
         expect(cloudLabel('aws')).toBe('AWS')
     })
+    it('火山 provider 别名(volcengine/volcano)归一为同一中文名', () => {
+        // 日志接口的 cloud 来自账号 provider,火山账号返回 volcengine;
+        // 早期本地字典键为 volcano → 页面显示原始 key
+        expect(cloudLabel('volcengine')).toBe('火山云')
+        expect(cloudLabel('volcengine')).toBe(cloudLabel('volcano'))
+    })
     it('passes through unknown clouds', () => {
         expect(cloudLabel('mystery')).toBe('mystery')
     })
