@@ -31,6 +31,9 @@ const context: LogDiagnoseContext = {
     end_time: 1758003600000,
     query: 'status:404',
     clouds: ['aliyun'],
+    // 账号级筛选(2026-10-28 #30):诊断请求必须原样透传 account_ids ——
+    // 下方 toEqual({ log_type: 'waf', ...context }) 的全量相等断言即覆盖此字段
+    account_ids: [1, 5],
     resources: ['d1'],
     filters: [{ field: 'host', op: 'eq', value: 'a.com' }],
 }
