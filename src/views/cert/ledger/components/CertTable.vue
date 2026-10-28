@@ -38,7 +38,16 @@
         <el-option label=">30 天" value="gt30" />
         <el-option label="已过期" value="expired" />
       </el-select>
-      <el-button v-if="filterActive" class="toolbar-reset" text type="primary" @click="resetFilters">清除筛选</el-button>
+      <el-button
+        v-if="filterActive"
+        class="toolbar-reset"
+        text
+        type="primary"
+        aria-label="清除全部筛选条件"
+        @click="resetFilters"
+      >
+        清除筛选
+      </el-button>
       <!-- 无引用过期证书隐藏提示（非静默吞行；daysLeft=expired 挂起由状态机判定） -->
       <button
         v-if="hiddenView.showBanner"
@@ -252,16 +261,24 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 搜索 300ms 防抖（输入即查的体感 + 避免逐键打服务端） */
 function onSearchInput() {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(emitFilters, 300)
+    clearSearchTimer()
+    searchTimer = setTimeout(() => {
+        searchTimer = null
+        emitFilters()
+    }, 300)
+}
+
+function clearSearchTimer() {
+    if (!searchTimer) return
+    clearTimeout(searchTimer)
+    searchTimer = null
 }
 
 /** 一次性清空三个筛选（避免逐个选回「全部」），并取消未触发的搜索防抖 */
 function resetFilters() {
-    if (searchTimer) {
-        clearTimeout(searchTimer)
-        searchTimer = null
-    }
+    // 无筛选时按钮本不渲染；守卫同时挡住双击造成的重复 emit
+    if (!filterActive.value) return
+    clearSearchTimer()
     searchText.value = ''
     hostingFilter.value = ''
     daysFilter.value = ''
@@ -314,7 +331,7 @@ onUnmounted(() => {
     wideMedia?.removeEventListener('change', syncWide)
     wideMedia = null
     // 防抖未触发就卸载时清理，避免卸载后仍 emit query-change
-    if (searchTimer) clearTimeout(searchTimer)
+    clearSearchTimer()
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)))
