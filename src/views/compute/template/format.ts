@@ -20,5 +20,7 @@ export function formatTemplateTime(value: number | null | undefined, now: number
     if (diff < HOUR) return `${Math.floor(diff / MINUTE)} 分钟前`
     if (diff < DAY) return `${Math.floor(diff / HOUR)} 小时前`
     if (diff < MONTH_30) return `${Math.floor(diff / DAY)} 天前`
-    return new Date(ms).toLocaleDateString()
+    // 不用 toLocaleDateString：CI/不同 locale 会输出 M/D/YYYY，UI 与测试都不稳定
+    const d = new Date(ms)
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
 }

@@ -14,9 +14,9 @@ describe('formatTemplateTime', () => {
         expect(formatTemplateTime(NOW - 3 * 86_400_000, NOW)).toBe('3 天前')
     })
 
-    it('超过 30 天走本地日期', () => {
-        const out = formatTemplateTime(NOW - 31 * 86_400_000, NOW)
-        expect(out).toMatch(/^\d{4}\/\d{1,2}\/\d{1,2}$/)
+    it('超过 30 天走固定格式本地日期（不依赖 locale）', () => {
+        expect(formatTemplateTime(NOW - 31 * 86_400_000, NOW)).toBe('2026/9/28')
+        expect(formatTemplateTime(Date.UTC(2026, 0, 5), NOW)).toMatch(/^2026\/1\/[45]$/)
     })
 
     it('未来时间戳（时钟偏移）不为负', () => {
