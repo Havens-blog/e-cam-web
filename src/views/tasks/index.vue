@@ -91,13 +91,15 @@
       </div>
 
       <!-- 分页 -->
-      <div v-if="pagination.total > 0" class="pagination-container">
+      <div v-if="pagination.total > 0" ref="paginationContainer" class="pagination-container">
         <el-pagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
           :total="pagination.total"
           :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="paginationUi.layout"
+          :pager-count="paginationUi.pagerCount"
+          :size="paginationUi.small ? 'small' : 'default'"
           @size-change="handlePageSizeChange"
           @current-change="handlePageChange"
         />
@@ -111,10 +113,11 @@ import { cancelTaskApi, deleteTaskApi, listTasksApi } from '@/api'
 import type { Task } from '@/api/types/task'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import TaskCard from './components/TaskCard.vue'
 import { oldestPendingWaitText } from './queue'
+import { paginationUiForContentWidth } from './pagination'
 import {
   buildTaskQuery,
   EMPTY_TASK_SUMMARY,
@@ -349,8 +352,26 @@ const stopAutoRefresh = () => {
   }
 }
 
+// 窄屏（<=480）分页改用紧凑形态，避免完整 layout 折成 3 行
+// 用容器实际宽度判断（769 起侧栏展开，视口变宽但内容区反而变窄）
+const paginationContainer = ref<HTMLElement | null>(null)
+const paginationContentWidth = ref(0)
+const paginationUi = computed(() => paginationUiForContentWidth(paginationContentWidth.value))
+let paginationObserver: ResizeObserver | null = null
+
+watch(paginationContainer, (el) => {
+  paginationObserver?.disconnect()
+  if (!el || typeof ResizeObserver === 'undefined') return
+  paginationObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width ?? 0
+    if (width > 0) paginationContentWidth.value = width
+  })
+  paginationObserver.observe(el)
+})
+
 // 初始化：先取概览再取列表，按积压状态决定是否轮询
 onMounted(async () => {
+  // 分页宽度由 ResizeObserver 监听容器，见 paginationObserver
   // 概览与列表并行，避免统计请求期间列表区长时间显示「暂无任务」；
   // 最老等待由 fetchTasks 成功路径按 60s 节流触发，这里不再重复请求
   await Promise.all([fetchSummary(), fetchTasks()])
@@ -359,6 +380,7 @@ onMounted(async () => {
 
 // 清理
 onUnmounted(() => {
+  paginationObserver?.disconnect()
   disposed = true
   stopAutoRefresh()
   listSeq++
@@ -515,6 +537,11 @@ onUnmounted(() => {
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+
+    // 紧凑形态页码宽度以 Element 的 24px 为准，避免主题 32px 规则按加载顺序覆盖
+    :deep(.el-pagination--small .el-pager li) {
+      min-width: 24px;
+    }
 
     // 分页控件允许换行：窄屏/侧栏展开但视口不足时自动折行，
     // 宽屏（可用宽度足够）仍保持单行，视觉无变化
