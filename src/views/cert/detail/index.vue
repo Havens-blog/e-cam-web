@@ -22,6 +22,20 @@
         <div v-else class="loading-placeholder" aria-label="加载中" />
       </template>
 
+      <!-- 证书不存在：无效 id/已删除，给出返回台账的出口 -->
+      <div v-else-if="detailNotFound" class="state-card">
+        <div class="error-state">
+          <div class="state-icon state-icon-error" aria-hidden="true">🔍</div>
+          <div class="state-title">证书不存在</div>
+          <div class="state-desc">
+            {{ readonly ? '链接中的证书 ID 无效或证书已被删除，请返回到期看板。' : '链接中的证书 ID 无效或证书已被删除，请返回台账重新选择。' }}
+          </div>
+          <el-button class="state-cta" type="primary" @click="goLedger">
+            {{ readonly ? '返回到期看板' : '返回证书台账' }}
+          </el-button>
+        </div>
+      </div>
+
       <!-- Error：详情加载失败（整页错误 + 重试） -->
       <div v-else-if="detailError" class="state-card">
         <div class="error-state">
@@ -66,16 +80,17 @@
 import type { CertDetail, ChangeOrder } from '@/api/cert'
 import { listChangesApi } from '@/api/cert'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { hasCertManageAccess } from '@/utils/cert-permission'
 import { getCertApi } from '@/api/cert'
 import { hostingStatusMeta } from '../ledger/format'
-import { filterChangeOrders } from './format'
+import { filterChangeOrders, isCertNotFoundCode } from './format'
 import ElementCard from './components/ElementCard.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 /** 只读模式：未持有 cert:manage 授权码的非管理员按只读查看者处理（deny-by-default） */
@@ -88,6 +103,8 @@ const certId = computed(() => String(route.params.id ?? ''))
 const detail = ref<CertDetail | null>(null)
 const detailLoading = ref(true)
 const detailError = ref(false)
+// 无效/不存在的证书 id：与「服务不可用」区分，给出可返回的明确态
+const detailNotFound = ref(false)
 const changes = ref<ChangeOrder[]>([])
 const changesError = ref(false)
 
@@ -96,23 +113,31 @@ const SKELETON_DELAY_MS = 800
 let skeletonTimer: ReturnType<typeof setTimeout> | null = null
 const skeletonVisible = ref(false)
 
+let detailRequestSeq = 0
+
 async function loadDetail() {
     if (!certId.value) return
+    // 令牌守卫：允许 /certs/a → /certs/b 切换（旧响应丢弃），同帧重复触发只保留最后一次
+    const requested = certId.value
+    const seq = ++detailRequestSeq
     detailLoading.value = !detail.value
     detailError.value = false
+    detailNotFound.value = false
     beginSkeletonTimer()
     try {
-        detail.value = await getCertApi(certId.value)
-    } catch {
-        if (detail.value) {
-            // 路由参数切换后的加载失败保留旧证书渲染不塌陷（同页复用场景）
-            detailLoading.value = false
-            return
-        }
-        detailError.value = true
+        const data = await getCertApi(requested)
+        if (seq !== detailRequestSeq) return
+        detail.value = data
+    } catch (error) {
+        if (seq !== detailRequestSeq) return
+        const code = (error as { code?: string } | null)?.code
+        detailNotFound.value = isCertNotFoundCode(code)
+        detailError.value = !detailNotFound.value
     } finally {
-        detailLoading.value = false
-        endSkeletonTimer()
+        if (seq === detailRequestSeq) {
+            detailLoading.value = false
+            endSkeletonTimer()
+        }
     }
 }
 
@@ -129,6 +154,11 @@ async function loadChanges() {
     } catch {
         changesError.value = true
     }
+}
+
+function goLedger() {
+    // 只读角色无权进台账，回看板
+    void router.push(readonly.value ? '/certs/dashboard' : '/certs')
 }
 
 function refresh() {
