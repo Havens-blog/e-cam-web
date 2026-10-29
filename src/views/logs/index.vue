@@ -783,6 +783,7 @@ const { savedQueries, saveCurrent, applyQuery, removeQuery } = useSavedQueries({
     timeRange,
     selectedClouds,
     selectedAccounts,
+    selectedRegions,
     selectedResources,
     keyword,
     fieldFilters,
