@@ -263,7 +263,7 @@ const formatDateTime = (time: string | undefined) => {
 
     .user-email {
       font-size: 13px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       margin: 0;
     }
   }
@@ -380,7 +380,7 @@ const formatDateTime = (time: string | undefined) => {
 
     .info-label {
       font-size: 12px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -447,7 +447,7 @@ const formatDateTime = (time: string | undefined) => {
 
     .group-meta {
       font-size: 12px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
     }
   }
 
@@ -474,7 +474,7 @@ const formatDateTime = (time: string | undefined) => {
 
   .policy-more {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     padding: 3px 0;
   }
 }

@@ -138,7 +138,7 @@ defineProps<{
 
     .stat-label {
       font-size: 13px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
     }
   }
 }

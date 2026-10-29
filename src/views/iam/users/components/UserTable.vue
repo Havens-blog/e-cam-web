@@ -205,7 +205,7 @@ const isSelected = (user: CloudUser) => props.selectedUsers.some((u) => u.id ===
   border-bottom: 1px solid var(--border-subtle);
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 
@@ -289,7 +289,7 @@ const isSelected = (user: CloudUser) => props.selectedUsers.some((u) => u.id ===
 
     .user-email {
       font-size: 12px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -397,12 +397,13 @@ const isSelected = (user: CloudUser) => props.selectedUsers.some((u) => u.id ===
 
   .group-more {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
   }
 
   .no-groups {
     font-size: 13px;
-    color: var(--text-muted);
+    /* 原 --text-muted 仅 2.25:1（AA 需 4.5）→ 次文字色 */
+    color: var(--text-secondary);
   }
 }
 
@@ -410,7 +411,7 @@ const isSelected = (user: CloudUser) => props.selectedUsers.some((u) => u.id ===
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .col-actions {
@@ -457,7 +458,7 @@ const isSelected = (user: CloudUser) => props.selectedUsers.some((u) => u.id ===
 
   .empty-desc {
     font-size: 14px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     margin-bottom: 20px;
   }
 

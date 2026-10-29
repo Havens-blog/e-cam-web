@@ -221,7 +221,7 @@ const onClearKeyword = () => {
 
   .filter-label {
     font-size: 13px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
@@ -253,5 +253,11 @@ const onClearKeyword = () => {
     min-width: 0;
     width: 100%;
   }
+}
+
+/* 下拉筛选的占位文字（「全部」）取 EP 占位色，在深底上仅 1.9:1（AA 需 4.5）→ 次文字色。
+   需连 .is-transparent 一起写：EP 自身规则同优先级且后加载。 */
+:deep(.el-select .el-select__placeholder.is-transparent) {
+  color: var(--text-secondary);
 }
 </style>

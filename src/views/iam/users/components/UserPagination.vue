@@ -105,7 +105,7 @@ const emit = defineEmits<{
 
   .pagination-info {
     font-size: 14px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     /* 801–889 区间分页条是 flex row + space-between：控件固定 490px 时 info 会被压成 24px 竖排（5 行），
        整条卡片高度涨到 139px。禁止压缩与换行，让它保持单行，必要时由分页条自己换行。 */
     flex-shrink: 0;
@@ -171,13 +171,15 @@ const emit = defineEmits<{
     }
 
     &.active {
-      background: var(--accent-blue);
+      /* 白字压原 --accent-blue 仅 3.84:1（AA 需 4.5）→ 压暗 18% 至约 5.5:1，保留品牌色相 */
+      background: color-mix(in srgb, var(--accent-blue) 82%, #000);
       color: white;
     }
 
     &.ellipsis {
       cursor: default;
-      color: var(--text-muted);
+      /* 原 --text-muted 在卡片底上仅 2.25:1 → 次文字色 */
+      color: var(--text-secondary);
     }
   }
 
