@@ -10,9 +10,11 @@
  */
 import type { LogQueryState } from './url-state'
 
-/** 保存的查询条件 = URL 状态 + 云账号筛选(账号当前不进 URL,但属查询条件) */
+/** 保存的查询条件 = URL 状态 + 云账号/区域筛选(二者当前不进 URL,但属查询条件) */
 export interface SavedQueryState extends LogQueryState {
     accounts: number[]
+    /** 区域筛选(#70 新增);早期已保存条目无此字段,归一为 [] */
+    regions: string[]
 }
 
 export interface SavedQuery {
@@ -83,6 +85,8 @@ function sanitizeState(s: SavedQueryState): SavedQueryState {
         endMs: typeof s.endMs === 'number' && s.endMs > 0 ? s.endMs : null,
         clouds: pickStrings(s.clouds),
         accounts: pickNumbers(s.accounts),
+        // 早期保存条目无 regions 字段 → pickStrings(undefined) = []（向后兼容）
+        regions: pickStrings(s.regions),
         resources: pickStrings(s.resources),
         kw: typeof s.kw === 'string' ? s.kw : '',
         filters: pickFilters(s.filters),

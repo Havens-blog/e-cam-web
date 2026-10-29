@@ -17,6 +17,7 @@ export interface UseSavedQueriesOptions {
     timeRange: Ref<[Date, Date] | null>
     selectedClouds: Ref<string[]>
     selectedAccounts: Ref<number[]>
+    selectedRegions: Ref<string[]>
     selectedResources: Ref<string[]>
     keyword: Ref<string>
     fieldFilters: Ref<FieldFilterRow[]>
@@ -34,6 +35,7 @@ export function useSavedQueries(opts: UseSavedQueriesOptions) {
         timeRange,
         selectedClouds,
         selectedAccounts,
+        selectedRegions,
         selectedResources,
         keyword,
         fieldFilters,
@@ -55,6 +57,7 @@ export function useSavedQueries(opts: UseSavedQueriesOptions) {
             endMs: timeRange.value?.[1].getTime() ?? null,
             clouds: selectedClouds.value,
             accounts: selectedAccounts.value,
+            regions: selectedRegions.value,
             resources: selectedResources.value,
             kw: keyword.value,
             filters: fieldFilters.value.map((f) => ({ field: f.field, op: f.op, value: f.value })),
@@ -92,6 +95,7 @@ export function useSavedQueries(opts: UseSavedQueriesOptions) {
         selectedClouds.value = [...state.clouds]
         cloudsTouched.value = true
         selectedAccounts.value = [...state.accounts]
+        selectedRegions.value = [...state.regions]
         selectedResources.value = [...state.resources]
         keyword.value = state.kw
         fieldFilters.value = state.filters.map((f) => ({ ...f }))
