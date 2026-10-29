@@ -268,7 +268,7 @@ const emit = defineEmits<{
 
   .meta-label {
     font-size: 10px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -297,11 +297,11 @@ const emit = defineEmits<{
   padding: 2px 7px;
   border-radius: 4px;
   background: var(--bg-hover);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-subtle);
 
   &.more {
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 }
 

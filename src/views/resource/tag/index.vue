@@ -538,7 +538,7 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
 }
 
 .cell-link {
-  color: var(--el-color-primary);
+  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   cursor: pointer;
   text-decoration: none;
 

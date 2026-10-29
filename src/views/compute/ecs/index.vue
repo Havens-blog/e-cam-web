@@ -665,7 +665,7 @@ watch(
 
   .resource-info {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 }
 </style>

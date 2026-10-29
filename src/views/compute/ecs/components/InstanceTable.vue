@@ -330,7 +330,7 @@ const emit = defineEmits<{
   font-size: 10px;
   background: var(--bg-hover);
   border-radius: 2px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .os-icon {
