@@ -67,3 +67,59 @@ describe('logout（登出路径）', () => {
         expect(document.cookie).not.toContain('ecmdb-token-key=')
     })
 })
+
+/**
+ * profile 单飞去重：实测每个页面加载 `GET /api/iam/user/profile` 被请求 2 次
+ * （main.ts 的 initUserState 与路由守卫的 fetchUserInfo 在同一次导航内并发触发）。
+ */
+describe('fetchUserInfo 单飞（并发共享同一在途请求）', () => {
+    it('并发两次调用只发一次请求，且两处拿到同一结果', async () => {
+        vi.mocked(eiamAxios.get).mockClear()
+        let resolveOnce!: (v: unknown) => void
+        vi.mocked(eiamAxios.get).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    resolveOnce = resolve
+                }),
+        )
+        const store = useUserStore()
+        const p1 = store.fetchUserInfo()
+        const p2 = store.fetchUserInfo()
+
+        // 关键断言：在途期间不应发起第二个请求
+        expect(vi.mocked(eiamAxios.get)).toHaveBeenCalledTimes(1)
+
+        resolveOnce({ data: { code: 1, msg: 'unauthenticated' } })
+        await expect(p1).resolves.toBe(false)
+        await expect(p2).resolves.toBe(false)
+        expect(vi.mocked(eiamAxios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('请求结束后再次调用会真实重取（不做结果缓存）', async () => {
+        vi.mocked(eiamAxios.get).mockClear()
+        vi.mocked(eiamAxios.get).mockResolvedValue({ data: { code: 1, msg: 'unauthenticated' } })
+        const store = useUserStore()
+        await store.fetchUserInfo()
+        await store.fetchUserInfo()
+        expect(vi.mocked(eiamAxios.get)).toHaveBeenCalledTimes(2)
+    })
+
+    it('失败路径同样只发一次请求（单飞不因失败而重复）', async () => {
+        vi.mocked(eiamAxios.get).mockClear()
+        let rejectOnce!: (e: unknown) => void
+        vi.mocked(eiamAxios.get).mockImplementationOnce(
+            () =>
+                new Promise((_resolve, reject) => {
+                    rejectOnce = reject
+                }),
+        )
+        const store = useUserStore()
+        const p1 = store.fetchUserInfo()
+        const p2 = store.fetchUserInfo()
+        expect(vi.mocked(eiamAxios.get)).toHaveBeenCalledTimes(1)
+        rejectOnce(new Error('network down'))
+        await expect(p1).resolves.toBe(false)
+        await expect(p2).resolves.toBe(false)
+        expect(vi.mocked(eiamAxios.get)).toHaveBeenCalledTimes(1)
+    })
+})
