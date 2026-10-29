@@ -11,7 +11,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { resolveLoginTarget } from './index'
+import { resolveLoginTarget, normalizeRequestError } from './index'
 import { restoreLocation, stubLocation } from '@/test-utils/stub-location'
 
 const realLocation = window.location
@@ -93,8 +93,7 @@ describe('redirectToLogin（401/会话过期路径）', () => {
     })
 })
 
-describe('变量拆分契约（Hard Rule：机制 = build 期 env 注入，不得散落硬编码）', () => {
-    const repoRoot = resolve(__dirname, '..', '..', '..')
+describe('变量拆分契约（Hard Rule：机制 = build 期 env 注入，不得散落硬编码）', () => {    const repoRoot = resolve(__dirname, '..', '..', '..')
 
     /** 递归收集 src 下所有源码文件（排除测试文件自身——断言里会出现旧变量名字面量） */
     function collectSourceFiles(dir: string, acc: string[] = []): string[] {
@@ -144,5 +143,46 @@ describe('变量拆分契约（Hard Rule：机制 = build 期 env 注入，不�
         // 故断言改指新属地——两条断言的语义、门槛与检查对象数量均不变。
         expect(read('src/layouts/components/TopNavBar.vue')).toContain('VITE_ECMDB_WEB_BASE')
         expect(read('src/layouts/components/TopNavBar.vue')).not.toContain('import.meta.env.VITE_LOGIN_TARGET')
+    })
+})
+
+describe('normalizeRequestError（请求失败归一，Option A）', () => {
+    it('响应体普通对象 → Error(取 msg),并保留 payload/status/response', () => {
+        const e = normalizeRequestError({
+            message: 'Request failed with status code 400',
+            response: { status: 400, data: { code: 400, msg: 'cache-analyze is disabled', data: null } },
+        }) as Error & { payload?: unknown; status?: number; response?: { data?: { msg?: string } } }
+
+        expect(e).toBeInstanceOf(Error)
+        expect(e.message).toBe('cache-analyze is disabled')
+        expect(e.status).toBe(400)
+        // 兼容按 AxiosError 取值的调用点
+        expect(e.response?.data?.msg).toBe('cache-analyze is disabled')
+        // 原貌保留
+        expect((e.payload as { code?: number }).code).toBe(400)
+    })
+
+    it('信封用 message 字段时同样可取（兼容旧后端）', () => {
+        const e = normalizeRequestError({ response: { status: 500, data: { code: 500, message: '内部错误' } } }) as Error
+        expect(e.message).toBe('内部错误')
+    })
+
+    it('取消（ERR_CANCELED）原样透传 —— 调用方依赖该 code 判定「查询已取消」', () => {
+        const canceled = Object.assign(new Error('canceled'), { code: 'ERR_CANCELED', response: { status: 0, data: {} } })
+        expect(normalizeRequestError(canceled)).toBe(canceled)
+    })
+
+    it('无响应（网络/超时）与既有 Error 原样透传,不改语义', () => {
+        const netErr = Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK' })
+        expect(normalizeRequestError(netErr)).toBe(netErr)
+        const bizErr = new Error('业务错误') // 拦截器对 200+code!=0 已转 Error（无 response）
+        expect(normalizeRequestError(bizErr)).toBe(bizErr)
+    })
+
+    it('响应体无可读原因时回退 err.message,再回退通用文案', () => {
+        const withMsg = normalizeRequestError({ message: 'timeout of 30000ms exceeded', response: { status: 408, data: { code: 408 } } }) as Error
+        expect(withMsg.message).toBe('timeout of 30000ms exceeded')
+        const bare = normalizeRequestError({ response: { status: 400, data: { code: 400 } } }) as Error
+        expect(bare.message).toBe('请求失败')
     })
 })
