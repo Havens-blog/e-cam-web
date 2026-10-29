@@ -28,6 +28,7 @@ import type {
 } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
 import { errorMessage } from './format'
+import { canLoadEarlierTs, earlierEndMs } from './pagination'
 import { failedAccountIds, mergeRetryResult } from './retry'
 
 export interface UseLogSearchOptions {
@@ -86,7 +87,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
     const oldestTs = computed(() => (allEntries.value.length ? allEntries.value[allEntries.value.length - 1]!.timestamp : 0))
     const canLoadEarlier = computed(() => {
         if (!resp.value || !timeRange.value || allEntries.value.length === 0) return false
-        return oldestTs.value > timeRange.value[0].getTime() && !pageBottom.value
+        return canLoadEarlierTs(oldestTs.value, timeRange.value[0].getTime(), pageBottom.value)
     })
 
     // ---- 查询进行中进度态（文字化回馈：源数/已耗时；不必轮询真实进度） ----
@@ -220,6 +221,14 @@ export function useLogSearch(opts: UseLogSearchOptions) {
             await doSearch()
             return
         }
+        // 翻页上界 = 最旧一条 - 1 秒;若已越过窗口起点则直接判「到底」,
+        // 避免把上界推到 start 之前触发后端 end<=start 拒绝(游标边界)。
+        const endTime = earlierEndMs(oldestTs.value, timeRange.value[0].getTime())
+        if (endTime == null) {
+            pageBottom.value = true
+            ElMessage.info('已到窗口起点,没有更早的日志')
+            return
+        }
         if (!canLoadEarlier.value) {
             ElMessage.info('已到窗口起点,没有更早的日志')
             return
@@ -234,7 +243,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
                 start_time: timeRange.value[0].getTime(),
                 // 窗口上界前移当前最旧一条 - 1 秒：WAF3 等秒级时间戳源整批完整
                 // 迁移（1ms 前移会把整个秒批次跳过；毫秒级源丢 1 秒无感知）
-                end_time: oldestTs.value - 1000,
+                end_time: endTime,
                 query: keyword.value || undefined,
                 clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
                 account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
