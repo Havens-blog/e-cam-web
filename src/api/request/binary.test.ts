@@ -91,6 +91,24 @@ describe('assertBinaryPayload（二进制下载的业务信封嗅探）', () => 
         expect(await (out.data as Blob).text()).toBe('[{"id":9}]')
     })
 
+    it('前导空白超过头部窗口（600 空格）的信封仍被拦下', async () => {
+        const body = ' '.repeat(600) + JSON.stringify({ code: 500, msg: '空白绕过' })
+        const res = response(new Blob([body], { type: 'application/json' }))
+        await expect(assertBinaryPayload(res)).rejects.toThrow('空白绕过')
+    })
+
+    it('顶层 code 非数字的合法导出不被误判（如 {"code":"CN","rows":[...]}）', async () => {
+        const res = response(jsonBlob({ code: 'CN', rows: [{ id: 1 }] }))
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+    })
+
+    it('大体积对象文件（>64KB、非 JSON 类型）按头部放行', async () => {
+        const body = JSON.stringify({ rows: Array.from({ length: 8000 }, (_, i) => ({ id: i, name: 'r' + i })) })
+        const res = response(new Blob([body], { type: 'text/plain' }))
+        expect((res.data as Blob).size).toBeGreaterThan(64 * 1024)
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+    })
+
     it('大体积顶层数组（>64KB）走头部预判，不解析全文', async () => {
         const rows = Array.from({ length: 12000 }, (_, i) => ({ id: i, name: 'row-' + i }))
         const blob = new Blob([JSON.stringify(rows)], { type: 'application/json' })

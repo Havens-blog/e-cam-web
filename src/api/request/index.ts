@@ -115,6 +115,11 @@ export function redirectToLogin(redirectTo?: string) {
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 
+/** 头部嗅探窗口：只用来判断"是不是以 { 开头" */
+const HEAD_BYTES = 512
+/** 超过这个体积的信封不合常理，只按头部判定 */
+const ENVELOPE_MAX_BYTES = 64 * 1024
+
 /**
  * 二进制下载接口在 HTTP 200 时也可能返回**业务信封**（如 { code: 500, msg: '无权限' }），
  * 若直接落盘会得到一个内容为错误 JSON 的 .csv 并提示「导出成功」。
@@ -127,19 +132,25 @@ export async function assertBinaryPayload(response: AxiosResponse) {
     // 老浏览器没有 Blob.text()（构建 target=es2015 且无 polyfill），无法嗅探时按文件放行
     if (typeof data.text !== 'function') return response
 
-    // 只读头部：合法导出多为 CSV 或 JSON 数组，信封必然很小。
-    // 先看前 512 字节的首字符即可判定，避免对 4MB 级导出做全量 parse（实测 37ms → 0.2ms）。
-    const head = await data.slice(0, 512).text().catch(() => '')
-    const first = head.trimStart()[0]
-    if (first !== '{') return response
-
     const headerType = String(response.headers?.['content-type'] ?? '')
     const type = (data.type || headerType).toLowerCase()
-    // 头部像对象但既不是 JSON 类型、又明显是二进制/文本大文件（信封不会这么大）时放行
-    const ENVELOPE_MAX_BYTES = 64 * 1024
-    if (data.size > ENVELOPE_MAX_BYTES && !type.includes('json')) return response
+    const isJsonType = type.includes('json')
 
-    const text = data.size > head.length ? await data.text().catch(() => head) : head
+    // 信封必然很小；小文件整份解析（能覆盖「前导空白超过头部窗口」的情况），
+    // 大文件只看前 512 字节，避免对 4MB 级导出全量 text()+JSON.parse（实测 37ms → 0.2ms）。
+    const whole = data.size <= ENVELOPE_MAX_BYTES
+    let text: string
+    if (whole) {
+        text = await data.text().catch(() => '')
+    } else {
+        const head = await data.slice(0, HEAD_BYTES).text().catch(() => '')
+        // 头部里没有对象起始符：CSV / JSON 数组 / 二进制，直接放行
+        if (head.trimStart()[0] !== '{') return response
+        // 头部像对象的大文件：只有声明 JSON 才值得整份解析
+        if (!isJsonType) return response
+        text = await data.text().catch(() => head)
+    }
+
     let payload: unknown
     try {
         payload = JSON.parse(text)
@@ -147,23 +158,30 @@ export async function assertBinaryPayload(response: AxiosResponse) {
         return response
     }
 
-    // 顶层数组 / 无 code 字段：当作正常数据文件
+    // 顶层数组 / 非对象：正常数据文件
     if (Array.isArray(payload) || payload === null || typeof payload !== 'object') return response
-    if (!('code' in (payload as Record<string, unknown>))) return response
+    const record = payload as Record<string, unknown>
+    if (!('code' in record)) return response
 
-    const envelope = payload as { code?: unknown; msg?: string; message?: string; data?: unknown }
-    const code = envelope.code
-    const isSuccessCode = code === 0 || code === 200 || code === '0' || code === '200'
-    if (isSuccessCode) {
-        // 成功信封但带真实数据（如 { code:0, data:[...] }）：用 data 重建文件，别把可用数据判死
+    // code 必须是数字（或纯数字字符串）：像 {"code":"CN","rows":[...]} 这类合法导出不能被误判
+    const rawCode = record.code
+    const numericCode =
+        typeof rawCode === 'number'
+            ? rawCode
+            : typeof rawCode === 'string' && /^\d+$/.test(rawCode.trim())
+              ? Number(rawCode.trim())
+              : null
+    if (numericCode === null) return response
+
+    const envelope = record as { code: number | string; msg?: string; message?: string; data?: unknown }
+    if (numericCode === 0 || numericCode === 200) {
         const inner = envelope.data
-        // 只接受「非空数组 / 非空对象」：标量（0/false/""）与空对象重建出来就是坏文件
+        // 只接受「非空数组 / 非空对象」：标量与空容器重建出来就是坏文件
         const hasData = Array.isArray(inner)
             ? inner.length > 0
             : inner !== null && typeof inner === 'object' && Object.keys(inner as object).length > 0
         if (hasData) {
-            const rebuilt = JSON.stringify(inner)
-            response.data = new Blob([rebuilt], { type: 'application/json' })
+            response.data = new Blob([JSON.stringify(inner)], { type: 'application/json' })
             return response
         }
         throw new Error('接口未返回文件，请稍后重试')
