@@ -135,6 +135,7 @@ import { useDictionary } from '@/composables/useDictionary'
 import { formatAuditTime } from './format'
 import { CircleCheck, CircleClose, Download, Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { showApiError } from '@/api/request'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resultLabel as presentResultLabel } from './presenters'
 
@@ -195,7 +196,7 @@ async function fetchLogs() {
     logList.value = data.items || []
     total.value = data.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '加载审计日志失败')
+    showApiError(e, '加载审计日志失败')
   } finally {
     loading.value = false
   }
@@ -246,7 +247,7 @@ async function handleExport() {
     URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (e: any) {
-    ElMessage.error(e.message || '导出失败')
+    showApiError(e, '导出失败')
   }
 }
 

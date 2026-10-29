@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import { getEcmdbToken } from '@/utils/cookie'
+import { markErrorNotified } from './index'
 import { normalizeRequestError, redirectToLogin } from './index'
 
 /**
@@ -27,7 +28,9 @@ eiamAxios.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            redirectToLogin()
+            // 与主实例一致：只有真正弹过「登录状态已失效」才标记为已提示
+            const notified = redirectToLogin()
+            if (notified) markErrorNotified(error)
         }
         // 失败归一同主实例（Option A）：eiam 侧消费方（如 switchTenant）此前拿到的是
         // axios 泛化文案（"Request failed with status code 4xx"），归一后为服务端原因。

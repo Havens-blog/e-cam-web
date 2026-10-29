@@ -46,6 +46,18 @@ export function isErrorNotified(error: unknown): boolean {
     return !!(error && typeof error === 'object' && (error as Record<string, unknown>)[NOTIFIED])
 }
 
+/**
+ * 统一的请求失败提示入口（供各页面/对话框 catch 使用）。
+ *
+ * 约定：请求层弹过的提示（403/401/业务错误/兜底）会给错误打标记，
+ * 这里仅在**没有**被提示过时才补一条，避免两条完全重叠的 toast 把中文盖住。
+ */
+export function showApiError(error: unknown, fallback = '操作失败') {
+    if (isErrorNotified(error)) return
+    const message = error instanceof Error && error.message ? error.message : fallback
+    ElMessage.error(message || fallback)
+}
+
 export function normalizeRequestError(error: unknown): unknown {
     if (!error || typeof error !== 'object') return error
     const err = error as {
@@ -117,8 +129,9 @@ export function setPendingRedirectTarget(url?: string) {
  *   路由守卫应传「要去的目标页」：SPA 内 push 尚未生效时 window.location.href 仍是旧页，
  *   直接用它会令用户登录后回到错误页面。
  */
-export function redirectToLogin(redirectTo?: string) {
-    if (isRedirectingToLogin) return
+export function redirectToLogin(redirectTo?: string): boolean {
+    // 返回「本次是否真的弹出了提示」：早退说明是并发/重复调用，提示已由先到者弹出
+    if (isRedirectingToLogin) return false
     isRedirectingToLogin = true
     // 注意：这里不清除 ecmdb-token-key。
     // 该 cookie 是 ecmdb / eiam / e-cam-service 共用的平台凭证，注销它是 eiam
@@ -129,6 +142,7 @@ export function redirectToLogin(redirectTo?: string) {
     const currentUrl = redirectTo || pendingRedirectTarget || window.location.href
     pendingRedirectTarget = undefined
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
+    return true
 }
 
 /** 头部嗅探窗口：只用来判断"是不是以 { 开头" */
@@ -286,7 +300,7 @@ class HttpRequest {
                 if (code === undefined) {
                     logWarn('Invalid API response format', { requestId, response: apiData }, 'API')
                     ElMessage.error('接口响应格式错误')
-                    return Promise.reject(new Error('接口响应格式错误'))
+                    return Promise.reject(markErrorNotified(new Error('接口响应格式错误')))
                 }
 
                 // code为0或200都视为成功
@@ -319,8 +333,9 @@ class HttpRequest {
                 // 401 未认证：session 过期或未登录，跳转到控制台登录页（/console/login）
                 if (error.response?.status === 401) {
                     logWarn('Session expired, redirecting to console login', {}, 'AUTH')
-                    redirectToLogin()
-                    return Promise.reject(error)
+                    // 只有本次真的弹出了「登录状态已失效」提示才打标记，避免并发/早退时把提示完全吞掉
+                    const notified = redirectToLogin()
+                    return Promise.reject(notified ? markErrorNotified(error) : error)
                 }
 
                 // 403 无权限

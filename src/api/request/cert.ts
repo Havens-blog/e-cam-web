@@ -1,5 +1,6 @@
 import { getEcmdbToken } from '@/utils/cookie'
 import axios, { type AxiosInstance } from 'axios'
+import { markErrorNotified } from './index'
 import { normalizeRequestError, redirectToLogin } from './index'
 
 /**
@@ -35,7 +36,9 @@ certAxios.interceptors.response.use(
     (error) => {
         // 401 未认证与会话过期：与主实例一致跳转 ecmdb 登录页（不清共享 cookie）
         if (error.response?.status === 401) {
-            redirectToLogin()
+            // 与主实例一致：只有真正弹过「登录状态已失效」才标记为已提示
+            const notified = redirectToLogin()
+            if (notified) markErrorNotified(error)
         }
         // 失败归一同主实例（Option A）：Error(服务端原因) + payload/status/response{data,status}。
         // 保留 response.data 是因为 src/api/cert.ts 的 unwrapCertEnvelope 仍按

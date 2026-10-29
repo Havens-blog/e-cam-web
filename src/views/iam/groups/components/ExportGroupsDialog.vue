@@ -57,6 +57,7 @@
 import { getGroupMembersApi } from '@/api'
 import type { CloudUser, PermissionGroup } from '@/api/types/iam'
 import { ElMessage } from 'element-plus'
+import { isErrorNotified, showApiError } from '@/api/request'
 import { computed, reactive, ref } from 'vue'
 
 interface Props {
@@ -115,9 +116,12 @@ const fetchGroupMembers = async (
     return Array.isArray(response.data) ? response.data : []
   } catch (error) {
     console.error(`获取用户组 ${groupName || groupId} 成员失败:`, error)
-    ElMessage.error(
-      `获取用户组「${groupName || groupId}」成员失败，导出内容中的成员信息可能不完整`
-    )
+    // 请求层已弹过（403/401 等）时不再叠加；保留本页特有的自定义文案
+    if (!isErrorNotified(error)) {
+      ElMessage.error(
+        `获取用户组「${groupName || groupId}」成员失败，导出内容中的成员信息可能不完整`
+      )
+    }
     return []
   }
 }
@@ -142,7 +146,7 @@ const handleExport = async () => {
         dataToExport = await props.fetchAllRows((fetched, total) => { fetchedCount.value = fetched; progressTotal.value = total })
       } catch (error: any) {
         console.error('获取全量用户组失败:', error)
-        ElMessage.error('全量数据获取失败，请重试')
+        if (!isErrorNotified(error)) ElMessage.error('全量数据获取失败，请重试')
         return
       } finally {
         fetchingAll.value = false
@@ -179,7 +183,7 @@ const handleExport = async () => {
     dialogVisible.value = false
   } catch (error: any) {
     console.error('导出失败:', error)
-    ElMessage.error(error.message || '导出失败')
+    showApiError(error, '导出失败')
   } finally {
     exporting.value = false
   }
