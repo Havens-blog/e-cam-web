@@ -54,7 +54,13 @@
         <div v-if="treeData.length > 0" class="allocation-chart-card">
           <div class="chart-header">
             <span class="chart-title">成本分布图</span>
-            <el-radio-group v-model="chartType" size="small" @change="renderAllocationChart">
+            <!-- aria-label：EP 的 radio-group 在未提供时兜底输出英文 "radio-group"，中文界面下无意义 -->
+            <el-radio-group
+              v-model="chartType"
+              size="small"
+              aria-label="成本分布图类型"
+              @change="renderAllocationChart"
+            >
               <el-radio-button value="bar">柱形图</el-radio-button>
               <el-radio-button value="pie">饼形图</el-radio-button>
             </el-radio-group>

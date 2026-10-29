@@ -376,3 +376,11 @@
 .el-button.is-text.is-text:hover {
   color: color-mix(in srgb, var(--el-color-primary) 55%, #fff);
 }
+
+// EP 的 plain 变体同理：文字用语义色、背景是语义色的浅底，
+// 语义色原值当文字色在深色底上不达标（实测 primary plain 3.65:1）。
+// 仅提亮「文字」，不动背景与边框（那两处是浅底/描边，不承载正文对比度）。
+.el-button--primary.is-plain.is-plain {
+  --el-button-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+}

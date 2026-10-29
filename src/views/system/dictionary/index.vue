@@ -325,7 +325,7 @@ async function handleItemStatusChange(item: DictItem, status: string) {
 
 .empty-desc {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
 }
 </style>
