@@ -55,14 +55,15 @@ describe('toBackendDateTime（后端查询参数）', () => {
         expect(toBackendDateTime(Date.UTC(2026, 9, 29, 23, 59, 59))).toBe('2026-10-29 23:59:59')
     })
 
-    it('与运行时时区无关（同一瞬间恒等）', () => {
-        const ms = 1793262575436
-        expect(toBackendDateTime(ms)).toBe(toBackendDateTime(new Date(ms)))
-        expect(toBackendDateTime(ms)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    it('毫秒输入得到固定的 UTC 墙钟（与时区无关的硬编码期望）', () => {
+        // 1793262575436 = 2026-10-29T08:29:35.436Z
+        expect(toBackendDateTime(1793262575436)).toBe('2026-10-29 08:29:35')
     })
 
-    it('非法值返回空串（不会把 - 发给后端）', () => {
+    it('非法值与越界值返回空串（不会抛 RangeError，也不会把 - 发给后端）', () => {
         expect(toBackendDateTime(new Date('invalid'))).toBe('')
         expect(toBackendDateTime(Number.NaN)).toBe('')
+        expect(toBackendDateTime(1e17)).toBe('')
+        expect(toBackendDateTime(-1e17)).toBe('')
     })
 })

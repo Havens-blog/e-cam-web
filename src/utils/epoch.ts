@@ -46,5 +46,8 @@ export function formatEpochDateTime(value: number | string | null | undefined): 
 export function toBackendDateTime(value: Date | number): string {
     const ms = value instanceof Date ? value.getTime() : value
     if (!Number.isFinite(ms)) return ''
-    return new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
+    const d = new Date(ms)
+    // new Date(NaN) / 越界值（如 ±1e17）不能直接 toISOString，会抛 RangeError
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 19).replace('T', ' ')
 }
