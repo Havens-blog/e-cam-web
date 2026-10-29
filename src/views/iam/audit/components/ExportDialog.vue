@@ -169,8 +169,13 @@ const handleExport = async () => {
     const response = await exportAuditLogsApi(exportParams)
 
     // 下载文件：blob 响应本身就是 Blob（旧代码取 response.data 拿到 undefined，导出的文件内容为 "undefined"）
-    const payload = response instanceof Blob ? response : new Blob([response as unknown as BlobPart])
-    const blob = new Blob([payload], {
+    // fail-loud：拿不到非空文件就不要产出一个「成功」的坏文件
+    if (!(response instanceof Blob) || response.size === 0) {
+      ElMessage.error('导出失败：接口未返回文件内容')
+      exporting.value = false
+      return
+    }
+    const blob = new Blob([response], {
       type: formData.format === 'csv' ? 'text/csv' : 'application/json'
     })
     const url = window.URL.createObjectURL(blob)
