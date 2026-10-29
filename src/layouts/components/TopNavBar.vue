@@ -340,19 +340,21 @@ $navbar-height: 56px;
     
     .el-breadcrumb__item {
       .el-breadcrumb__inner {
-        color: var(--text-muted);
+        /* 原用 --text-muted，在导航底上仅 2.46:1（AA 需 4.5）→ 改次文字色，实测 5.86:1 */
+        color: var(--text-secondary);
         font-weight: 400;
         font-size: 13px;
         
         &:hover {
-          color: var(--text-secondary);
+          color: var(--text-primary);
         }
 
         &.is-link {
-          color: var(--text-tertiary);
+          /* 原用 --text-tertiary，仅 3.30:1 → 改次文字色，实测 5.86:1 */
+          color: var(--text-secondary);
           
           &:hover {
-            color: var(--text-secondary);
+            color: var(--text-primary);
           }
         }
       }
@@ -388,7 +390,7 @@ $navbar-height: 56px;
   background: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: 8px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 150ms ease;
@@ -396,7 +398,7 @@ $navbar-height: 56px;
   flex-shrink: 0;
 
   &:hover {
-    color: var(--text-secondary);
+    color: var(--text-primary);
     border-color: var(--border-strong);
     background: var(--bg-hover);
   }
@@ -408,7 +410,8 @@ $navbar-height: 56px;
     border-radius: 4px;
     font-size: 11px;
     line-height: 1.4;
-    color: var(--text-tertiary);
+    /* --text-tertiary 仅 3.30:1（AA 需 4.5）→ 次文字色 */
+    color: var(--text-secondary);
     font-family: inherit;
   }
 }

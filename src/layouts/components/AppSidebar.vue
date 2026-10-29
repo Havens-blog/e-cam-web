@@ -471,7 +471,8 @@ $sidebar-collapsed-width: 64px;
     padding: 8px 20px 8px;
     font-size: 11px;
     font-weight: 600;
-    color: var(--text-tertiary);
+    /* 原用 --text-tertiary，在侧栏底上仅 3.30:1（AA 需 4.5）→ 改次文字色，实测 5.86:1 */
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -543,7 +544,8 @@ $sidebar-collapsed-width: 64px;
     }
 
     .menu-title {
-      color: var(--accent-blue);
+      /* 激活项文字取 --accent-blue，在侧栏底上仅 4.31:1（AA 需 4.5）→ 与白混 70% 提亮至约 6.7:1，保留品牌色相 */
+      color: color-mix(in srgb, var(--accent-blue) 70%, #fff);
       font-weight: 600;
     }
   }
