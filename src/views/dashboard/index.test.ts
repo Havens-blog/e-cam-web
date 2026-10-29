@@ -294,7 +294,8 @@ describe('AC1 四图表区（旧页路径 6-9）', () => {
         const d = new Date()
         d.setMonth(d.getMonth() - 1)
         const costMonth = `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月`
-        const headings = wrapper.findAll('.panel-card__header h3').map((node) => node.text())
+        // 分区标题为 h2（页面主标题 h1 → 分区 h2，避免标题跳级）
+        const headings = wrapper.findAll('.panel-card__header h2').map((node) => node.text())
         expect(headings[0]).toBe('云厂商分布')
         expect(headings[1]).toBe('资产类型分布')
         expect(headings[2]).toBe('地域分布 TOP10')
