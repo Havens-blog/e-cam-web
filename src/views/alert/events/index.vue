@@ -2,7 +2,7 @@
   <PageContainer class="events-page">
     <template #header>
       <div class="page-header">
-        <h2 class="page-title">告警事件</h2>
+        <h1 class="page-title">告警事件</h1>
         <div class="stat-badge">
           <span class="stat-label">总数</span>
           <span class="stat-num">{{ total }}</span>
