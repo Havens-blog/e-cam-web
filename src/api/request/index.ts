@@ -177,10 +177,11 @@ class HttpRequest {
                     code: apiData.code,
                 }, 'API')
 
-                // 二进制数据直接返回
-                const responseType = response.request?.responseType
+                // 二进制数据：保留 AxiosResponse 形状返回（调用方统一取 res.data），
+                // 直接返回 apiData 会让后续单次拦截器收到 Blob 而读到 undefined.code（曾致导出报 TypeError）
+                const responseType = response.request?.responseType ?? response.config?.responseType
                 if (responseType === 'blob' || responseType === 'arraybuffer') {
-                    return apiData
+                    return response
                 }
 
                 const code = apiData.code
