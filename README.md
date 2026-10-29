@@ -234,6 +234,13 @@ pnpm dev
 > ```
 >
 > 启动：`npx vite --config vite.verify.config.ts`
+>
+> **不要覆盖 `server.fs.allow`**（实测踩坑，2026-10-29）：曾按"允许工作树路径"写成
+> `fs: { allow: [process.cwd(), ...] }`，但 `process.cwd()` 在 `npx` 启动链路下**不一定等于
+> 项目根**，于是 Vite 认为项目文件不在白名单内：轻则**直接回原文件**（浏览器报
+> `Failed to resolve module specifier "vue"`，因 TS 未被转换、裸导入未被重写），重则页面
+> 直接 **403 Forbidden**。默认（不写 `fs.allow`）已允许项目根与工作区根，够用；确需放开
+> 其它目录时请写**绝对字面路径**，不要依赖 `process.cwd()`。
 
 **注意**: 所有页面路由都使用 `/cam` 前缀，例如：
 
