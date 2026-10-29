@@ -1,4 +1,4 @@
-import { redirectToLogin } from '@/api/request/index'
+import { appUrlForPath, redirectToLogin, setPendingRedirectTarget } from '@/api/request/index'
 import { useUserStore } from '@/stores/user'
 import { getEcmdbToken } from '@/utils/cookie'
 import {
@@ -47,9 +47,12 @@ export async function authGuard(to: RouteLocationNormalized) {
 
     // 检查 cookie 中是否有 ecmdb session token
     const hasToken = !!getEcmdbToken()
+    // 先登记目标页：token 存在但已失效时，fetchUserInfo 的 401 会先触发跳转
+    setPendingRedirectTarget(appUrlForPath(to.fullPath))
 
     if (!hasToken) {
-        redirectToLogin()
+        // 传目标页而不是当前页：push 尚未生效时 window.location.href 还是旧地址
+        redirectToLogin(appUrlForPath(to.fullPath))
         // 用返回值而非 next()：vue-router 依据守卫形参个数（Function.length）决定走返回值还是 next，
     // 若把 next 加回形参（length>=3）却又不调用，会退回 "Invalid navigation guard" 的旧坑。
     // async 守卫若不调用 next 也不返回，vue-router 会报
@@ -61,7 +64,7 @@ export async function authGuard(to: RouteLocationNormalized) {
     if (!userStore.isLoggedIn) {
         const success = await userStore.fetchUserInfo()
         if (!success) {
-            redirectToLogin()
+            redirectToLogin(appUrlForPath(to.fullPath))
             return false
         }
     }
@@ -87,6 +90,8 @@ router.beforeEach(authGuard)
  * 在路由跳转后执行
  */
 router.afterEach((_to: RouteLocationNormalized) => {
+    // 导航已落地：清掉守卫登记的回跳目标，避免「导航取消 + 后续无关 401」回跳到用户没打开过的页面
+    setPendingRedirectTarget(undefined)
     // 可以在这里添加页面访问统计等逻辑
 })
 

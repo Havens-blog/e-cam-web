@@ -1,22 +1,33 @@
 // @vitest-environment happy-dom
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getEcmdbToken = vi.fn()
 const redirectToLogin = vi.fn()
 const fetchUserInfo = vi.fn()
 const hasCertManageAccess = vi.fn()
+const storeState = { isLoggedIn: true, isAdmin: false, permissions: [] as string[] }
 
 vi.mock('@/utils/cookie', () => ({ getEcmdbToken: () => getEcmdbToken() }))
-vi.mock('@/api/request', () => ({ redirectToLogin: () => redirectToLogin() }))
+vi.mock('@/api/request', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/api/request')>()
+    return {
+        ...actual,
+        redirectToLogin: (url?: string) => redirectToLogin(url),
+    }
+})
 vi.mock('@/utils/cert-permission', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/utils/cert-permission')>()
     return { ...actual, hasCertManageAccess: () => hasCertManageAccess() }
 })
 vi.mock('@/stores/user', () => ({
     useUserStore: () => ({
-        isLoggedIn: true,
-        isAdmin: false,
-        permissions: [],
+        get isLoggedIn() {
+            return storeState.isLoggedIn
+        },
+        get isAdmin() {
+            return storeState.isAdmin
+        },
+        permissions: storeState.permissions,
         fetchUserInfo,
     }),
 }))
@@ -24,7 +35,7 @@ vi.mock('@/stores/user', () => ({
 type Guard = (to: never) => Promise<unknown>
 let guard: Guard
 
-const to = (path: string, meta: Record<string, unknown> = {}) => ({ path, meta, hash: '' }) as never
+const to = (path: string, meta: Record<string, unknown> = {}) => ({ path, fullPath: path, meta, hash: '' }) as never
 
 beforeAll(async () => {
     // 首次 import 会构造 router 并触发路由懒加载探测，给足超时
@@ -32,6 +43,12 @@ beforeAll(async () => {
 }, 30000)
 
 describe('authGuard', () => {
+    beforeEach(() => {
+        storeState.isLoggedIn = true
+        storeState.isAdmin = false
+        storeState.permissions = []
+    })
+
     it('形参个数必须 <= 2（>=3 且不调用 next 会触发 Invalid navigation guard）', () => {
         expect(guard.length).toBeLessThanOrEqual(2)
     })

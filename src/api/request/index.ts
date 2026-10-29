@@ -8,6 +8,9 @@ import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
 
 // 防止多个并发 401 请求重复跳转登录页
 let isRedirectingToLogin = false
+// 路由守卫在发起 fetchUserInfo 之前登记目标页：401 拦截器往往先于守卫的回调触发跳转，
+// 若不预先登记，拦截器会用「导航前的旧 URL」拼登录地址，登录后回到错误页面。
+let pendingRedirectTarget: string | undefined
 
 /**
  * 请求失败归一（Option A，2026-10-29 维护者确认）。
@@ -77,9 +80,27 @@ export function resolveLoginTarget(): string {
 }
 
 /**
- * 统一跳转登录页（防重复）
+ * 把应用内路径（不含 base，如 /audit/logs）转成可回跳的绝对地址。
+ * 微服务部署在 base=/cam/ 下，router 的 fullPath 不含该前缀，故这里补 base。
  */
-export function redirectToLogin() {
+export function appUrlForPath(fullPath: string): string {
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+    const path = fullPath.startsWith('/') ? fullPath : `/${fullPath}`
+    return `${window.location.origin}${base}${path}`
+}
+
+/** 登记「登录成功后应回跳的目标页」；守卫在导航被拦截前调用 */
+export function setPendingRedirectTarget(url?: string) {
+    pendingRedirectTarget = url
+}
+
+/**
+ * 统一跳转登录页（防重复）
+ * @param redirectTo 回跳地址。优先级：显式参数 > 守卫登记的目标页 > 当前 URL。
+ *   路由守卫应传「要去的目标页」：SPA 内 push 尚未生效时 window.location.href 仍是旧页，
+ *   直接用它会令用户登录后回到错误页面。
+ */
+export function redirectToLogin(redirectTo?: string) {
     if (isRedirectingToLogin) return
     isRedirectingToLogin = true
     // 注意：这里不清除 ecmdb-token-key。
@@ -88,7 +109,8 @@ export function redirectToLogin() {
     // 拉取用户信息失败）全都只是本应用的局部判断；若在此删除 cookie，会把其他
     // 服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
     ElMessage.warning('登录状态已失效，请重新登录')
-    const currentUrl = window.location.href
+    const currentUrl = redirectTo || pendingRedirectTarget || window.location.href
+    pendingRedirectTarget = undefined
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 
