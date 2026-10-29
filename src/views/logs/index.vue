@@ -649,6 +649,7 @@ const {
     timeRange,
     keyword,
     selectedClouds,
+    selectedAccounts,
     selectedResources,
     triggerSearch: () => runSearch(),
 })
