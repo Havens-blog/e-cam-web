@@ -57,4 +57,51 @@ describe('assertBinaryPayload（二进制下载的业务信封嗅探）', () => 
         const res = response(new Blob(['not-json'], { type: 'application/json' }))
         await expect(assertBinaryPayload(res)).resolves.toBe(res)
     })
+
+    it('content-type 错配（text/plain）的信封同样被拦下', async () => {
+        const blob = new Blob([JSON.stringify({ code: 500, msg: '网关错误' })], { type: 'text/plain' })
+        await expect(assertBinaryPayload(response(blob))).rejects.toThrow('网关错误')
+    })
+
+    it('text/html 错误页不是 JSON，按文件放行（避免误报）', async () => {
+        const res = response(new Blob(['<html>502 Bad Gateway</html>'], { type: 'text/html' }))
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+    })
+
+    it('成功信封带真实数据时重建文件而不是判死', async () => {
+        const res = response(jsonBlob({ code: 0, data: [{ id: 1 }, { id: 2 }] }))
+        const out = await assertBinaryPayload(res)
+        expect(out.data).toBeInstanceOf(Blob)
+        expect(await (out.data as Blob).text()).toBe('[{"id":1},{"id":2}]')
+    })
+
+    it('标量或空对象的 data 不重建文件（避免产出坏文件）', async () => {
+        for (const data of [0, false, '', {}, []]) {
+            const res = response(jsonBlob({ code: 0, data }))
+            await expect(assertBinaryPayload(res)).rejects.toThrow('接口未返回文件')
+        }
+    })
+
+    it('字符串 code "0"/"200" 视为成功码', async () => {
+        const emptyRes = response(jsonBlob({ code: '200', data: null }))
+        await expect(assertBinaryPayload(emptyRes)).rejects.toThrow('接口未返回文件')
+
+        const withData = response(jsonBlob({ code: '0', data: [{ id: 9 }] }))
+        const out = await assertBinaryPayload(withData)
+        expect(await (out.data as Blob).text()).toBe('[{"id":9}]')
+    })
+
+    it('大体积顶层数组（>64KB）走头部预判，不解析全文', async () => {
+        const rows = Array.from({ length: 12000 }, (_, i) => ({ id: i, name: 'row-' + i }))
+        const blob = new Blob([JSON.stringify(rows)], { type: 'application/json' })
+        const res = response(blob)
+        expect(blob.size).toBeGreaterThan(64 * 1024)
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+    })
+
+    it('大体积 CSV 不受影响', async () => {
+        const blob = new Blob(['ID,name\n' + '1,admin\n'.repeat(20000)], { type: 'text/csv' })
+        const res = response(blob)
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+    })
 })
