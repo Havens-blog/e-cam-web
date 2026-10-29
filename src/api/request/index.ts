@@ -21,9 +21,21 @@ export function resolveLoginTarget(): string {
 }
 
 /**
- * 统一跳转登录页（防重复）
+ * 把应用内路径（不含 base，如 /audit/logs）转成可回跳的绝对地址。
+ * 微服务部署在 base=/cam/ 下，router 的 fullPath 不含该前缀，故这里补 base。
  */
-export function redirectToLogin() {
+export function appUrlForPath(fullPath: string): string {
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+    const path = fullPath.startsWith('/') ? fullPath : `/${fullPath}`
+    return `${window.location.origin}${base}${path}`
+}
+
+/**
+ * 统一跳转登录页（防重复）
+ * @param redirectTo 回跳地址；路由守卫应传「要去的目标页」绝对地址，
+ *   否则 window.location.href 在 push 生效前仍是「当前页」，登录后会回到错误页面。
+ */
+export function redirectToLogin(redirectTo?: string) {
     if (isRedirectingToLogin) return
     isRedirectingToLogin = true
     // 注意：这里不清除 ecmdb-token-key。
@@ -32,7 +44,7 @@ export function redirectToLogin() {
     // 拉取用户信息失败）全都只是本应用的局部判断；若在此删除 cookie，会把其他
     // 服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
     ElMessage.warning('登录状态已失效，请重新登录')
-    const currentUrl = window.location.href
+    const currentUrl = redirectTo || window.location.href
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 

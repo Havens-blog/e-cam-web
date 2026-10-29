@@ -1,4 +1,4 @@
-import { redirectToLogin } from '@/api/request/index'
+import { appUrlForPath, redirectToLogin } from '@/api/request/index'
 import { useUserStore } from '@/stores/user'
 import { getEcmdbToken } from '@/utils/cookie'
 import {
@@ -49,7 +49,8 @@ export async function authGuard(to: RouteLocationNormalized) {
     const hasToken = !!getEcmdbToken()
 
     if (!hasToken) {
-        redirectToLogin()
+        // 传目标页而不是当前页：push 尚未生效时 window.location.href 还是旧地址
+        redirectToLogin(appUrlForPath(to.fullPath))
         // 用返回值而非 next()：vue-router 依据守卫形参个数（Function.length）决定走返回值还是 next，
     // 若把 next 加回形参（length>=3）却又不调用，会退回 "Invalid navigation guard" 的旧坑。
     // async 守卫若不调用 next 也不返回，vue-router 会报
@@ -61,7 +62,7 @@ export async function authGuard(to: RouteLocationNormalized) {
     if (!userStore.isLoggedIn) {
         const success = await userStore.fetchUserInfo()
         if (!success) {
-            redirectToLogin()
+            redirectToLogin(appUrlForPath(to.fullPath))
             return false
         }
     }
