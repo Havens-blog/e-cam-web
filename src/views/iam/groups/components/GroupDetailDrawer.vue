@@ -14,7 +14,7 @@
             <el-icon :size="24"><Folder /></el-icon>
           </div>
           <div class="group-basic">
-            <h3 class="group-name">{{ group?.name || '-' }}</h3>
+            <h2 class="group-name">{{ group?.name || '-' }}</h2>
             <p class="group-desc">{{ group?.description || '暂无描述' }}</p>
           </div>
         </div>

@@ -867,7 +867,7 @@ onMounted(() => {
       margin-left: 6px;
       font-size: 10px;
       background: rgba(113, 112, 255, 0.12);
-      color: var(--accent-blue);
+      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
       padding: 1px 6px;
       border-radius: 8px;
       font-weight: 600;
@@ -1211,7 +1211,7 @@ onMounted(() => {
 }
 
 .cell-muted {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .domain-count {

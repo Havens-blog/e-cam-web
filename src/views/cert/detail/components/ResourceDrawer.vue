@@ -9,7 +9,7 @@
   >
     <div v-if="item && group" class="drawer-inner" role="dialog" aria-label="引用资源详情">
       <div class="drawer-header">
-        <h3 class="drawer-title mono">{{ item.resourceId }}</h3>
+        <h2 class="drawer-title mono">{{ item.resourceId }}</h2>
         <button type="button" class="drawer-close" aria-label="关闭抽屉" @click="close">×</button>
       </div>
       <div class="drawer-body">
