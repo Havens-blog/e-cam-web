@@ -359,19 +359,14 @@
 
 // 分页
 .el-pagination {
-  /* 窄屏可用性：默认 nowrap 且挂 justify-content:flex-end 的容器里，
-     整组控件会向左溢出到容器外（审计日志页 360 下 left=-344，控件不可达），
-     而 scrollWidth 不计负向溢出，靠「页面无横滚」发现不了。允许换行并居中。 */
+  // 窄屏可用性：默认 nowrap 且挂 justify-content:flex-end 的容器里，整组控件会向左溢出到容器外
+  // （审计日志页 360 下 left=-344，控件不可达），而 scrollWidth 不计负向溢出，靠「页面无横滚」发现不了。
   flex-wrap: wrap;
   row-gap: 8px;
-  /* 极窄（<360）时换行后仍可能超出容器：让控件条自身可横向滚动，
-     保证所有控件可达，而不是被容器裁掉 */
+  // 极窄时换行后仍可能超出容器：让控件条自身可横向滚动，保证所有控件可达而不是被裁掉。
+  // 契约：容器内不要再放 teleported:false 的浮层，否则会被这里的 overflow 裁切。
   max-width: 100%;
   overflow-x: auto;
-
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
 
   --el-pagination-bg-color: transparent;
   --el-pagination-text-color: var(--text-secondary);
@@ -443,6 +438,13 @@
 
   .el-pagination__total {
     color: var(--text-secondary);
+  }
+}
+
+@media (max-width: 768px) {
+  .el-pagination {
+    // safe center：内容仍溢出时回退到 start，避免左侧控件既不可见也滚不到
+    justify-content: safe center;
   }
 }
 
