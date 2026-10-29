@@ -179,6 +179,19 @@ describe('normalizeRequestError（请求失败归一，Option A）', () => {
         expect(normalizeRequestError(bizErr)).toBe(bizErr)
     })
 
+
+    it('证书域信封 {success,data,error,meta}:文案取 data.error.message', () => {
+        const e = normalizeRequestError({
+            message: 'Request failed with status code 409',
+            response: {
+                status: 409,
+                data: { success: false, error: { code: 'CERT_HAS_REFS', message: 'has refs' }, meta: { request_id: 'r1' } },
+            },
+        }) as Error
+        expect(e.message).toBe('has refs')
+        expect((e as unknown as { status?: number }).status).toBe(409)
+    })
+
     it('响应体无可读原因时回退 err.message,再回退通用文案', () => {
         const withMsg = normalizeRequestError({ message: 'timeout of 30000ms exceeded', response: { status: 408, data: { code: 408 } } }) as Error
         expect(withMsg.message).toBe('timeout of 30000ms exceeded')

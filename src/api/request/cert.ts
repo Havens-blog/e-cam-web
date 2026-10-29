@@ -1,6 +1,6 @@
 import { getEcmdbToken } from '@/utils/cookie'
 import axios, { type AxiosInstance } from 'axios'
-import { redirectToLogin } from './index'
+import { normalizeRequestError, redirectToLogin } from './index'
 
 /**
  * 证书域（e-cam-service internal/cert，/api/v1/certs）专用 axios 实例。
@@ -37,6 +37,10 @@ certAxios.interceptors.response.use(
         if (error.response?.status === 401) {
             redirectToLogin()
         }
-        return Promise.reject(error)
+        // 失败归一同主实例（Option A）：Error(服务端原因) + payload/status/response{data,status}。
+        // 保留 response.data 是因为 src/api/cert.ts 的 unwrapCertEnvelope 仍按
+        // {success,data,error,meta} 信封解包（信封内的业务错误照旧转 CertRequestError）；
+        // 非信封响应（网关错误/非证书域载荷）此前会原样抛出 axios 泛化文案，现可取到服务端原因。
+        return Promise.reject(normalizeRequestError(error))
     }
 )

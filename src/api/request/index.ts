@@ -18,7 +18,8 @@ let isRedirectingToLogin = false
  *   - 基于文案的分支静默失效（如 `isScanConfirmError` 的「确认并继续分析」通道）；
  *   - `err.response?.data?.msg` 取值点恒不可达（4 处）。
  *
- * 归一为 `Error`（message = 服务端 msg/message），并附带：
+ * 归一为 `Error`（message 取值链：`msg` → `message` → `error.msg`/`error.message`（证书域
+ * 信封 `{success,data,error,meta}` 的文案位置）→ 原始 `err.message` → 通用文案），并附带：
  *   - `payload`：原始响应体（保留 code 等原貌，供需要时读取）；
  *   - `status`：HTTP 状态码；
  *   - `response`：`{ data, status }` 形态，兼容既有的 AxiosError 取值写法。
@@ -43,9 +44,15 @@ export function normalizeRequestError(error: unknown): unknown {
     const status = err.response.status
     const pick = (v: unknown) => (typeof v === 'string' && v.trim() ? v : '')
     const asRecord = (v: unknown) => (v && typeof v === 'object' ? (v as Record<string, unknown>) : {})
+    const bodyRec = asRecord(body)
+    const envelopeError = asRecord(bodyRec.error)
     const msg =
-        pick(asRecord(body).msg) ||
-        pick(asRecord(body).message) ||
+        // 主实例信封 {code,data,msg}
+        pick(bodyRec.msg) ||
+        pick(bodyRec.message) ||
+        // 证书域信封 {success,data,error,meta}：文案在 data.error.message（api-handbook 契约）
+        pick(envelopeError.msg) ||
+        pick(envelopeError.message) ||
         pick(err.message) ||
         '请求失败'
 
