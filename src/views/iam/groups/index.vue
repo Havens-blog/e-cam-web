@@ -1157,4 +1157,19 @@ onMounted(async () => {
     border-top: 1px solid var(--border-subtle);
   }
 }
+
+/* IAM_MOBILE_NO_OVERFLOW：头部按钮组与搜索框在 360 下溢出（实测 72px） */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    width: 100%;
+  }
+
+  .search-box {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+}
 </style>
