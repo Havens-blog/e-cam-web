@@ -625,7 +625,7 @@ onMounted(() => {
     }
 
     &.active {
-      color: var(--accent-blue);
+      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
       background: rgba(113, 112, 255, 0.1);
     }
   }
@@ -955,7 +955,7 @@ onMounted(() => {
 
 .cell-sub {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   white-space: nowrap;
   overflow: hidden;
