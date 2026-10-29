@@ -293,3 +293,24 @@
 .el-tag.el-tag--primary {
   --el-tag-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
 }
+
+// ==================== 白字压品牌色的对比度（WCAG 1.4.3）====================
+// 品牌蓝 #7170ff（--accent-blue）上放白字只有 3.84:1；危险红 #ef4444 上白字 3.76:1。
+// 这类「白字 + 实色填充」的组合不能用调 token 解决：--accent-blue 同时被当作**文字/链接色**使用
+// （需要够亮），若整体压暗会让链接文字反而变差。因此只对「实色填充」的具体用法压暗背景。
+// 压暗 18% → 白字约 5.4:1，色相不变，视觉上仍是同一个品牌色。
+//
+// 分页当前页：规则来自 element-theme.scss 的 `.el-pagination .el-pager li.is-active`（0,3,0）。
+// 该文件在主站漂移锁定清单内不能直接改，故在此用同等特异性 + 更晚引入覆盖。
+.el-pagination .el-pager li.is-active {
+  background: color-mix(in srgb, var(--accent-blue) 82%, #000);
+  border-color: color-mix(in srgb, var(--accent-blue) 82%, #000);
+  color: #fff;
+}
+
+// 危险按钮（实底）：EP 用 `background-color: var(--el-color-danger)` + 白字。
+// 只覆盖实底按钮，不影响 danger 色的**文字**用法（那些需要保持够亮）。
+.el-button--danger:not(.is-text):not(.is-link):not(.is-plain) {
+  background-color: color-mix(in srgb, var(--el-color-danger) 82%, #000);
+  border-color: color-mix(in srgb, var(--el-color-danger) 82%, #000);
+}

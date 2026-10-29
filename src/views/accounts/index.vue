@@ -1167,9 +1167,10 @@ onMounted(() => {
     }
 
     &.active {
-      background: var(--accent-blue);
+      /* 白字压原 #7170ff 仅 3.84:1（AA 需 4.5）→ 压暗 18% 至约 5.4:1，色相不变 */
+      background: color-mix(in srgb, var(--accent-blue) 82%, #000);
       color: white;
-      border-color: var(--accent-blue);
+      border-color: color-mix(in srgb, var(--accent-blue) 82%, #000);
     }
 
     &:disabled {
