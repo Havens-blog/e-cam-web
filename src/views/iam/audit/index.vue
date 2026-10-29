@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { listAuditLogsApi } from '@/api/iam'
+import { formatEpochDateTime } from '@/utils/epoch'
 import { normalizeAuditLogs } from './normalize'
 import type { AuditLog } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
@@ -286,8 +287,10 @@ const handleReset = () => {
 // 日期范围变化
 const handleDateRangeChange = (value: [Date, Date] | null) => {
   if (value) {
-    filters.start_time = value[0].toISOString()
-    filters.end_time = value[1].toISOString()
+    // 后端按 "2006-01-02 15:04:05" 解析（audit_handler.go），toISOString() 的 T/Z 会直接 400。
+    // 统一用本地时间字符串，与 @@/utils/epoch 的展示口径一致。
+    filters.start_time = formatEpochDateTime(value[0].getTime())
+    filters.end_time = formatEpochDateTime(value[1].getTime())
   } else {
     filters.start_time = ''
     filters.end_time = ''
