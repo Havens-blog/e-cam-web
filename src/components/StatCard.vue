@@ -117,7 +117,8 @@ const handleClick = () => {
 
         .stat-title {
             font-size: 13px;
-            color: var(--text-tertiary);
+            /* 原用 --text-tertiary 仅 3.29:1（AA 需 4.5）→ 次文字色，实测 5.86:1 */
+            color: var(--text-secondary);
             margin-bottom: 4px;
             font-weight: 500;
         }
@@ -132,14 +133,15 @@ const handleClick = () => {
             .stat-suffix {
                 font-size: 14px;
                 font-weight: 400;
-                color: var(--text-tertiary);
+                /* 同上：tertiary 3.29:1 不达标 → 次文字色 */
+                color: var(--text-secondary);
                 margin-left: 4px;
             }
         }
 
         .stat-subtitle {
             font-size: 12px;
-            color: var(--text-tertiary);
+            color: var(--text-secondary);
             margin-top: 5px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -152,7 +154,8 @@ const handleClick = () => {
 
             &.up { color: var(--el-color-success); }
             &.down { color: var(--el-color-danger); }
-            &.neutral { color: var(--text-tertiary); }
+            /* 同上：tertiary 3.29:1 不达标 → 次文字色 */
+            &.neutral { color: var(--text-secondary); }
         }
     }
 }

@@ -493,7 +493,8 @@ $navbar-height: 56px;
       min-width: 16px;
       height: 16px;
       padding: 0 4px;
-      background: var(--accent-red);
+      /* 白字压原 --accent-red 仅 3.76:1（AA 需 4.5）→ 压暗 18% 至约 5.5:1，保留红色语义 */
+      background: color-mix(in srgb, var(--accent-red) 82%, #000);
       border-radius: 8px;
       font-size: 10px;
       font-weight: 600;
