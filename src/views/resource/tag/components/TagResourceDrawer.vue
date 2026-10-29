@@ -8,7 +8,7 @@
   >
     <template #header>
       <div>
-        <h3 style="font-size: 18px; font-weight: 600; margin: 0">关联资源</h3>
+        <h2 style="font-size: 18px; font-weight: 600; margin: 0">关联资源</h2>
         <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px">
           标签：<el-tag size="small" type="primary" style="margin: 0 4px">{{ tagKey }} = {{ tagValue }}</el-tag>
           共 {{ total }} 个资源

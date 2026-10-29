@@ -9,7 +9,7 @@
   >
     <div v-if="item" class="drawer-inner" role="dialog" aria-label="证书探测详情">
       <div class="drawer-header">
-        <h3 class="drawer-title">{{ item.commonName }}</h3>
+        <h2 class="drawer-title">{{ item.commonName }}</h2>
         <button type="button" class="drawer-close" aria-label="关闭抽屉" @click="close">×</button>
       </div>
       <div class="drawer-body">

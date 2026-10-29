@@ -294,7 +294,7 @@ onMounted(() => loadTypes())
 
 .card-code {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;

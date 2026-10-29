@@ -14,7 +14,7 @@
             {{ getAvatarText(user) }}
           </div>
           <div class="user-basic">
-            <h3 class="user-name">{{ user?.username || '-' }}</h3>
+            <h2 class="user-name">{{ user?.username || '-' }}</h2>
             <p class="user-email">{{ user?.email || user?.display_name || '-' }}</p>
           </div>
         </div>

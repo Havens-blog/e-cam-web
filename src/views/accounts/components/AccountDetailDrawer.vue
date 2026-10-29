@@ -14,7 +14,7 @@
             <ProviderIcon v-if="account?.provider" :provider="account.provider" size="small" />
           </div>
           <div class="account-basic">
-            <h3 class="account-name">{{ account?.name || '-' }}</h3>
+            <h2 class="account-name">{{ account?.name || '-' }}</h2>
             <p class="account-provider">{{ getProviderName(account?.provider || '') }}</p>
           </div>
         </div>

@@ -1340,15 +1340,17 @@ onMounted(async () => {
 .card-header-extra { font-size: 12px; color: var(--text-tertiary); }
 .auto-fill-hint { font-size: 11px; color: var(--text-muted); font-weight: 400; }
 
-.selected-account-banner { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; background: #ecf5ff; border: 1px solid #d9ecff; margin-bottom: 16px; }
+/* 原为浅色模式色值 #ecf5ff/#d9ecff —— 深色主题下是浅蓝块，上面的 --text-primary 文字仅 1.03:1（几乎不可见）。
+   改用已适配深色的品牌浅底 token（primary-light-9 已在 pages-dark.scss 覆盖为深色 tint）。 */
+.selected-account-banner { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); margin-bottom: 16px; }
 .account-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .account-info { flex: 1; }
 .account-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
 .account-meta { font-size: 12px; color: var(--text-tertiary); }
 .account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .account-card { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-surface); cursor: pointer; transition: all 0.2s; }
-.account-card:hover { border-color: var(--el-color-primary); background: #ecf5ff; }
-.account-card.active { border-color: var(--el-color-primary); background: #ecf5ff; box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15); border-width: 2px; }
+.account-card:hover { border-color: var(--el-color-primary); background: var(--bg-hover); }
+.account-card.active { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); box-shadow: 0 2px 12px rgba(94, 106, 210, 0.25); border-width: 2px; }
 .account-card-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .account-card-info { flex: 1; min-width: 0; }
 .account-card-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1390,7 +1392,7 @@ onMounted(async () => {
 .sg-panel-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #f0f0f0; }
 .sg-panel-item:last-child { border-bottom: none; }
 .sg-panel-item:hover { background: var(--bg-surface); }
-.sg-panel-item.selected { background: #ecf5ff; }
+.sg-panel-item.selected { background: var(--el-color-primary-light-9); }
 .sg-panel-check { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; }
 .sg-panel-item.selected .sg-panel-check { background: var(--el-color-primary); border-color: var(--el-color-primary); color: #fff; }
 .sg-panel-info { flex: 1; min-width: 0; }
