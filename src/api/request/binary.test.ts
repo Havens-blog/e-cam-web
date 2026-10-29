@@ -109,6 +109,18 @@ describe('assertBinaryPayload（二进制下载的业务信封嗅探）', () => 
         await expect(assertBinaryPayload(res)).resolves.toBe(res)
     })
 
+    it('大体积 JSON 对象（>PARSE_MAX_BYTES）直接放行，不做整份解析', async () => {
+        const body = JSON.stringify({ rows: Array.from({ length: 30000 }, (_, i) => ({ id: i, name: 'r' + i })) })
+        const blob = new Blob([body], { type: 'application/json' })
+        expect(blob.size).toBeGreaterThan(256 * 1024)
+        const spy = vi.spyOn(Blob.prototype, 'text')
+        const res = response(blob)
+        await expect(assertBinaryPayload(res)).resolves.toBe(res)
+        // 只允许读头部窗口，不允许整份读取
+        expect(spy.mock.instances.every((b) => (b as Blob).size <= 512)).toBe(true)
+        spy.mockRestore()
+    })
+
     it('大体积顶层数组（>64KB）走头部预判，不解析全文', async () => {
         const rows = Array.from({ length: 12000 }, (_, i) => ({ id: i, name: 'row-' + i }))
         const blob = new Blob([JSON.stringify(rows)], { type: 'application/json' })

@@ -119,6 +119,8 @@ export function redirectToLogin(redirectTo?: string) {
 const HEAD_BYTES = 512
 /** 超过这个体积的信封不合常理，只按头部判定 */
 const ENVELOPE_MAX_BYTES = 64 * 1024
+/** 超过此体积的 JSON 文件不再整份解析判信封：解析成本（50MB ≈ 0.5–1s 冻结）远大于漏判风险 */
+const PARSE_MAX_BYTES = 256 * 1024
 
 /**
  * 二进制下载接口在 HTTP 200 时也可能返回**业务信封**（如 { code: 500, msg: '无权限' }），
@@ -146,8 +148,9 @@ export async function assertBinaryPayload(response: AxiosResponse) {
         const head = await data.slice(0, HEAD_BYTES).text().catch(() => '')
         // 头部里没有对象起始符：CSV / JSON 数组 / 二进制，直接放行
         if (head.trimStart()[0] !== '{') return response
-        // 头部像对象的大文件：只有声明 JSON 才值得整份解析
+        // 头部像对象的大文件：只有声明 JSON 才值得整份解析，且体积超出上限就放弃（信封不可能这么大）
         if (!isJsonType) return response
+        if (data.size > PARSE_MAX_BYTES) return response
         text = await data.text().catch(() => head)
     }
 
