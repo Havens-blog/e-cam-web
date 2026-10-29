@@ -185,7 +185,7 @@ const handleExport = async () => {
     link.click()
     window.URL.revokeObjectURL(url)
 
-    ElMessage.success('导出成功')
+    // 成功提示统一由父页面（@success 回调）负责，避免同一事件弹两条
     emit('success')
     handleClose()
   } catch (error: any) {
