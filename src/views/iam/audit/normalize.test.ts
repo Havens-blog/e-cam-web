@@ -40,6 +40,27 @@ describe('normalizeAuditLog', () => {
         expect(log.operation_time).toBe('-')
     })
 
+    it('云平台：后端 cloud_platform 回填 provider（否则列恒为 -）', () => {
+        const log = normalizeAuditLog({ ...(RAW as Record<string, unknown>), cloud_platform: 'aliyun' } as never)
+        expect(log.provider).toBe('aliyun')
+        expect(log.cloud_platform).toBe('aliyun')
+    })
+
+    it('秒级 ctime 也能正确渲染（后端 IAM 写入方用 Unix()）', () => {
+        const log = normalizeAuditLog({ ...(RAW as Record<string, unknown>), ctime: 1793256138 } as never)
+        expect(log.operation_time).toMatch(/^20\d{2}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    })
+
+    it('空串/空白 operation_time 视为无效，回落 ctime', () => {
+        const log = normalizeAuditLog({ ...(RAW as Record<string, unknown>), operation_time: '   ' } as never)
+        expect(log.operation_time).toMatch(/^20\d{2}-/)
+    })
+
+    it('有 id 无名字时显示 #id 而不是裸数字', () => {
+        const log = normalizeAuditLog({ id: 1, operator_id: '42' } as never)
+        expect(log.operator).toBe('#42')
+    })
+
     it('normalizeAuditLogs 处理空值', () => {
         expect(normalizeAuditLogs(null)).toEqual([])
         expect(normalizeAuditLogs([RAW])).toHaveLength(1)

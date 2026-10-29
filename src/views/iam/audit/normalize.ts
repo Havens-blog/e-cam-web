@@ -16,18 +16,31 @@ type RawAuditLog = Partial<AuditLog> & {
     ctime?: number | string
     create_time?: string
     result?: string
+    cloud_platform?: string
 }
 
-const isZeroTime = (value?: string) => !value || value.startsWith('0001-01-01')
+/** 后端零值 / 空串 / 纯空白都视为「没有时间」，数字等非字符串一律不解析 */
+function isValidTime(value: unknown): value is string | number {
+    if (typeof value === 'number') return Number.isFinite(value) && value > 0
+    if (typeof value !== 'string') return false
+    const trimmed = value.trim()
+    return trimmed !== '' && !trimmed.startsWith('0001-01-01')
+}
 
 export function normalizeAuditLog(raw: RawAuditLog): AuditLog {
-    const time =
-        !isZeroTime(raw.operation_time) ? String(raw.operation_time) : formatEpochDateTime(raw.ctime ?? null)
+    const time = isValidTime(raw.operation_time)
+        ? String(raw.operation_time)
+        : formatEpochDateTime(raw.ctime ?? null)
 
     return {
         ...(raw as AuditLog),
-        operator: raw.operator || raw.operator_name || raw.operator_id || '-',
-        operation_time: time === '-' ? '-' : time,
+        // 审计场景下「有 id 无名字」不能直接显示成 1，用 #id 明确这是标识而非人名
+        operator: raw.operator || raw.operator_name || (raw.operator_id ? `#${raw.operator_id}` : '-'),
+        operation_time: time,
+        // 云平台：后端只给 cloud_platform，页面模板读 provider（同根因，一并归一）
+        provider: (raw.provider || raw.cloud_platform) as AuditLog['provider'],
+        cloud_platform: (raw.cloud_platform || raw.provider) as AuditLog['cloud_platform'],
+        // 表格与详情都读 result；operation_result 保留同值以兼容旧绑定
         operation_result: (raw.operation_result || raw.result || '') as AuditLog['operation_result'],
     }
 }
