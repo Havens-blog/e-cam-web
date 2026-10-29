@@ -1161,15 +1161,23 @@ onMounted(async () => {
 /* IAM_MOBILE_NO_OVERFLOW：头部按钮组与搜索框在 360 下溢出（实测 72px） */
 @media (max-width: 768px) {
   .header-actions {
+    /* flex-shrink 由 .page-header .header-actions 的 flex-shrink:0 决定（特异性更高），此处只控制换行与宽度 */
     flex-wrap: wrap;
-    flex-shrink: 1;
     width: 100%;
   }
 
   .search-box {
     min-width: 0;
     width: 100%;
-    max-width: none;
+  }
+}
+
+/* 分页控件在 360 下最宽约 490px（7 页），内容区仅 272px：允许换行避免整页横滚 */
+@media (max-width: 640px) {
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
   }
 }
 </style>
