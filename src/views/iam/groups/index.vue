@@ -610,7 +610,7 @@ onMounted(async () => {
 
     .page-subtitle {
       font-size: 14px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       margin: 0;
     }
   }
@@ -639,13 +639,14 @@ onMounted(async () => {
       }
 
       &.primary {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
+        /* 白字压原 --accent-blue 仅 3.84:1（AA 需 4.5）→ 压暗 18%，保留品牌色相 */
+        background: color-mix(in srgb, var(--accent-blue) 82%, #000);
+        border-color: color-mix(in srgb, var(--accent-blue) 82%, #000);
         color: white;
 
         &:hover {
-          background: #828fff;
-          border-color: #828fff;
+          background: var(--accent-blue);
+          border-color: var(--accent-blue);
         }
       }
     }
@@ -706,7 +707,7 @@ onMounted(async () => {
 
     .stat-label {
       font-size: 13px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
     }
   }
 }
@@ -760,7 +761,7 @@ onMounted(async () => {
     color: var(--text-primary);
     transition: all 200ms ease;
 
-    &::placeholder { color: var(--text-muted); }
+    &::placeholder { color: var(--text-secondary); }
 
     &:focus {
       outline: none;
@@ -801,7 +802,7 @@ onMounted(async () => {
 
   .filter-label {
     font-size: 13px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
@@ -843,7 +844,7 @@ onMounted(async () => {
   border-bottom: 1px solid var(--border-subtle);
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 
@@ -905,7 +906,7 @@ onMounted(async () => {
 
     .group-desc {
       font-size: 12px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -926,7 +927,7 @@ onMounted(async () => {
 
   .platform-more {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
   }
 }
 
@@ -963,7 +964,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .col-actions {
@@ -1010,7 +1011,7 @@ onMounted(async () => {
 
   .empty-desc {
     font-size: 14px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
     margin-bottom: 20px;
   }
 
@@ -1038,7 +1039,7 @@ onMounted(async () => {
 
   .pagination-info {
     font-size: 14px;
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
 
     strong {
       color: var(--text-primary);
@@ -1106,7 +1107,7 @@ onMounted(async () => {
 
     &.ellipsis {
       cursor: default;
-      color: var(--text-muted);
+      color: var(--text-secondary);
     }
   }
 
@@ -1179,5 +1180,11 @@ onMounted(async () => {
     justify-content: center;
     row-gap: 8px;
   }
+}
+
+/* 下拉筛选的占位文字（「全部」）取 EP 占位色，在深底上仅 1.9:1（AA 需 4.5）→ 次文字色。
+   需连 .is-transparent 一起写：EP 自身规则同优先级且后加载。 */
+:deep(.el-select .el-select__placeholder.is-transparent) {
+  color: var(--text-secondary);
 }
 </style>
