@@ -441,7 +441,8 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   }
 
   &.tone-error {
-    color: var(--cert-error);
+    /* --cert-error(#ee0000) 在深色底上作文字仅 3.85:1（AA 需 4.5）→ 与白混 28% 提亮，色相不变 */
+    color: color-mix(in srgb, var(--cert-error) 72%, #fff);
     border-color: color-mix(in srgb, var(--cert-error) 40%, transparent);
   }
 

@@ -69,8 +69,9 @@ const displayLabel = computed(() => {
   }
 
   &.inactive {
+    /* 圆点作装饰可保持 muted；文字承载「无状态/未知」信息，需满足 AA（muted 仅 2.46:1） */
     .status-dot { background: var(--text-muted); }
-    .status-text { color: var(--text-muted); }
+    .status-text { color: var(--text-secondary); }
   }
 
   &.pending {
