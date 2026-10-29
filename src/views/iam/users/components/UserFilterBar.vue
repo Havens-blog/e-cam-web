@@ -246,4 +246,12 @@ const onClearKeyword = () => {
     color: var(--accent-blue);
   }
 }
+
+/* IAM_USERS_MOBILE_NO_OVERFLOW：搜索框 min-width 280px 在 360 下超出可用宽度（约 230px） */
+@media (max-width: 768px) {
+  .search-box {
+    min-width: 0;
+    width: 100%;
+  }
+}
 </style>
