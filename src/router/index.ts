@@ -35,7 +35,7 @@ const router = createRouter({
  * 全局前置守卫
  * 在路由跳转前执行
  */
-router.beforeEach(async (to: RouteLocationNormalized) => {
+export async function authGuard(to: RouteLocationNormalized) {
     // 设置页面标题
     if (to.meta.title) {
         document.title = `${to.meta.title} - CAM 多云资产管理`
@@ -50,7 +50,9 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
 
     if (!hasToken) {
         redirectToLogin()
-        // 用返回值而非 next()：async 守卫若不调用 next 也不返回，vue-router 会报
+        // 用返回值而非 next()：vue-router 依据守卫形参个数（Function.length）决定走返回值还是 next，
+    // 若把 next 加回形参（length>=3）却又不调用，会退回 "Invalid navigation guard" 的旧坑。
+    // async 守卫若不调用 next 也不返回，vue-router 会报
         // "Invalid navigation guard"（DEV 下 console.error）。返回 false 表示中止本次导航。
         return false
     }
@@ -76,8 +78,9 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
     }
 
     return true
-    }
-)
+}
+
+router.beforeEach(authGuard)
 
 /**
  * 全局后置钩子
