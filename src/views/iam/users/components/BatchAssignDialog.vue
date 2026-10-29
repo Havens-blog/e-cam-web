@@ -296,7 +296,7 @@ onMounted(() => {
       
       .group-description {
         font-size: 12px;
-        color: var(--text-tertiary);
+        color: var(--text-secondary);
         margin-top: 4px;
       }
     }
@@ -304,7 +304,7 @@ onMounted(() => {
     .form-tip {
       margin-top: 8px;
       font-size: 12px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       line-height: 1.5;
     }
   }

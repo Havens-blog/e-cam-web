@@ -66,7 +66,7 @@ const emit = defineEmits<{
 
     .page-subtitle {
       font-size: 14px;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       margin: 0;
     }
   }
@@ -95,13 +95,14 @@ const emit = defineEmits<{
       }
 
       &.primary {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
+        /* 白字压原 --accent-blue 仅 3.84:1（AA 需 4.5）→ 压暗 18%，保留品牌色相 */
+        background: color-mix(in srgb, var(--accent-blue) 82%, #000);
+        border-color: color-mix(in srgb, var(--accent-blue) 82%, #000);
         color: white;
 
         &:hover {
-          background: #828fff;
-          border-color: #828fff;
+          background: var(--accent-blue);
+          border-color: var(--accent-blue);
         }
       }
     }
