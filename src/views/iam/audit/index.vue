@@ -94,7 +94,7 @@
               range-separator="至"
               start-placeholder="开始时间"
               end-placeholder="结束时间"
-              style="width: 380px"
+              class="time-range-picker"
               @change="handleDateRangeChange"
             />
           </el-form-item>
@@ -418,6 +418,34 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+}
+
+/* 时间范围控件原为内联 380px，窄屏会超出视口（390 下右界 499，溢出 109px）；
+   改为由 class 控制：宽屏 380、窄屏铺满，且内部区间输入可收缩 */
+@media (max-width: 768px) {
+  /* inline 表单的 form-item 由内容撑宽（380/200/150…），窄屏会把卡片撑出视口；
+     改为每项占满一行、内容区可收缩 */
+  .filter-card :deep(.el-form-item) {
+    display: flex;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .filter-card :deep(.el-form-item__content) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .time-range-picker {
+    flex: 1 1 auto;
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  :deep(.time-range-picker .el-range-input) {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 </style>
