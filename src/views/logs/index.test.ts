@@ -44,12 +44,18 @@ const typeMetas: LogTypeMeta[] = [
     },
 ]
 
-function src(resourceId: string, enabled: boolean, accountId = '1', accountName = '阿里A'): LogSource {
+function src(
+    resourceId: string,
+    enabled: boolean,
+    accountId = '1',
+    accountName = '阿里A',
+    region = 'cn-hangzhou',
+): LogSource {
     return {
         cloud: 'aliyun',
         account_id: accountId,
         account_name: accountName,
-        region: 'cn-hangzhou',
+        region,
         log_type: 'cdn',
         resource_id: resourceId,
         name: `域名 ${resourceId}`,
@@ -704,6 +710,35 @@ describe('LogsIndex(账号级筛选,2026-10-28 口径确认)', () => {
         await flushPromises()
 
         // 账号 2 仅 1 个已投递源 → 进度文案按账号收窄(默认全选时为 3)
+        const progress = w.find('.search-progress')
+        expect(progress.exists()).toBe(true)
+        expect(progress.text()).toContain('1 个云账号')
+
+        resolveSearch(searchResp())
+        await flushPromises()
+        w.unmount()
+    })
+
+    it('进度文案的源数按区域收窄(区域随请求下发,计数须同步排除区域外源)', async () => {
+        sourcesApi.mockResolvedValue([
+            src('d1', true, '1', '阿里A', 'cn-hangzhou'),
+            src('d2', true, '1', '阿里A', 'cn-hangzhou'),
+            src('d3', true, '1', '阿里A', 'cn-shanghai'),
+        ])
+        let resolveSearch!: (v: LogSearchResponse) => void
+        searchApi.mockImplementationOnce(
+            () =>
+                new Promise<LogSearchResponse>((r) => {
+                    resolveSearch = r
+                }),
+        )
+        const w = await mountPage()
+        emitSelect(w, '.filter-regions', ['cn-shanghai'])
+        await flushPromises()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        // 仅 cn-shanghai 的 1 个已投递源(不选区域时为 3) → 计数不得虚高
         const progress = w.find('.search-progress')
         expect(progress.exists()).toBe(true)
         expect(progress.text()).toContain('1 个云账号')

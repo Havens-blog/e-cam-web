@@ -126,14 +126,20 @@ export function useLogSearch(opts: UseLogSearchOptions) {
 
     onBeforeUnmount(stopProgress)
 
-    /** 预期查询源数：当前云/账号/资源选择下已开启投递的源（与后端联邦范围一致的前端近似） */
+    /**
+     * 预期查询源数：当前云、账号、区域、资源选择下已开启投递的源（与后端联邦范围一致的前端近似）。
+     * 区域筛选（#70）会随请求下发给后端缩小联邦范围，故计数必须同步排除区域外的源，
+     * 否则进度文案会虚高（与实际查询范围不符）。
+     */
     const querySourceCount = computed(() => {
         const enabled = filteredSources.value.filter((s) => s.enabled)
         const accounts = selectedAccounts.value
+        const regions = selectedRegions.value
         const accountOk = (s: LogSource) => !accounts.length || accounts.includes(Number(s.account_id))
-        if (!selectedResources.value.length) return enabled.filter(accountOk).length
+        const regionOk = (s: LogSource) => !regions.length || regions.includes(s.region)
+        if (!selectedResources.value.length) return enabled.filter((s) => accountOk(s) && regionOk(s)).length
         const picked = new Set(selectedResources.value)
-        return enabled.filter((s) => accountOk(s) && picked.has(s.resource_id)).length
+        return enabled.filter((s) => accountOk(s) && regionOk(s) && picked.has(s.resource_id)).length
     })
 
     const progressText = computed(() =>
