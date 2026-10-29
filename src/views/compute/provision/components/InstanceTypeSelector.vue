@@ -437,7 +437,7 @@ function toggleGroup(key: string) {
 .empty-placeholder {
   text-align: center;
   padding: 32px 0;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -492,10 +492,13 @@ function toggleGroup(key: string) {
   border-radius: 8px;
   font-size: 11px;
   background: rgba(0, 0, 0, 0.06);
+  /* 数量徽标承载信息，不继承父级的弱化色（实测继承后仅 2.32:1） */
+  color: var(--text-secondary);
 }
 
 .category-tab.active .tab-count {
   background: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 /* ==================== 推荐规格 ==================== */

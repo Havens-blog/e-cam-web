@@ -1378,7 +1378,7 @@ onMounted(async () => {
 
 .sg-selector { display: flex; flex-direction: column; gap: 10px; }
 .sg-selected-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: var(--el-color-primary); }
+.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); }
 .sg-tag-icon { font-size: 12px; color: #a0cfff; }
 .sg-tag-name { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sg-tag-remove { font-size: 12px; cursor: pointer; color: #a0cfff; transition: color 0.2s; }
@@ -1429,7 +1429,7 @@ onMounted(async () => {
 .summary-label { color: var(--text-tertiary); }
 .summary-value { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .summary-item.highlight { padding: 10px 0; }
-.summary-item.highlight .summary-value { font-size: 18px; font-weight: 700; color: var(--el-color-primary); }
+.summary-item.highlight .summary-value { font-size: 18px; font-weight: 700; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); }
 .summary-actions { display: flex; gap: 12px; margin-top: 16px; }
 .summary-actions :deep(.el-button) { height: 44px; border-radius: 10px; font-size: 14px; font-weight: 600; }
 
@@ -1438,7 +1438,7 @@ onMounted(async () => {
 .btn-create:active { transform: translateY(0); }
 .btn-create:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.loading-placeholder, .empty-placeholder { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.loading-placeholder, .empty-placeholder { padding: 20px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 .loading-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; }
 
 @media (max-width: 1200px) {

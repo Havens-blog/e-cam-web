@@ -1178,7 +1178,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: var(--text-muted);
+  /* 空态文案承载「当前没有数据」的信息，需满足 AA（muted 仅 2.46:1） */
+  color: var(--text-secondary);
 
   p {
     margin-top: 12px;

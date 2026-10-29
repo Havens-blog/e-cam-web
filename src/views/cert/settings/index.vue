@@ -344,7 +344,8 @@ onUnmounted(() => {
   --cert-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   // Element Plus 主题对齐（仅本页作用域，含子卡组件）
-  --el-color-primary: var(--cert-accent);
+  /* 与 cert-accent 解耦：accent 已提亮供文字使用，实底按钮需保持深色以让白字达标 */
+  --el-color-primary: #0070f3;
   --el-color-primary-light-3: #3291ff;
   --el-color-primary-light-5: #66aaff;
   --el-color-primary-light-7: #99c8ff;
