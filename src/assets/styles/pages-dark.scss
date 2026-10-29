@@ -263,3 +263,33 @@
 :root:root {
   --text-tertiary: color-mix(in srgb, var(--text-secondary) 92%, #000);
 }
+
+// ==================== 语义色浅底（light-9/8）深色主题适配 ====================
+// 问题：Element Plus 自带的 --el-color-{success,warning,danger,info}-light-9/8 是**亮色模式**色值
+// （实测 warning = rgb(253,246,236)、success = rgb(240,249,235)），CAM 从未适配深色主题。
+// 后果不只是对比度不达标：深色界面里会出现「浅色药丸」——视觉上直接是错的。
+// 且 CAM 在 element-theme.scss 里给 .el-tag--warning 设的 rgba(245,158,11,.15) 因
+// 优先级低于 EP 自带的 .el-tag.el-tag--warning（0,2,0 > 0,1,0）而完全没生效。
+//
+// 解法：不去打优先级战争，而是覆盖 EP 的底层 light-9/8 token 为「该语义色 15%/25% 叠在页面底上」的
+// 深色 tint。EP 组件自身的 var(--el-color-*-light-9) 引用会自然解析到新值。
+// 实测文字对比度（15% tint 上）：success 5.32 / warning 7.48 / danger 4.66 / info 5.19，均过 AA。
+:root:root {
+  --el-color-success-light-9: color-mix(in srgb, var(--color-success) 15%, var(--bg-base));
+  --el-color-warning-light-9: color-mix(in srgb, var(--color-warning) 15%, var(--bg-base));
+  --el-color-danger-light-9: color-mix(in srgb, var(--color-danger) 15%, var(--bg-base));
+  --el-color-info-light-9: color-mix(in srgb, var(--color-info, var(--text-secondary)) 12%, var(--bg-base));
+
+  --el-color-success-light-8: color-mix(in srgb, var(--color-success) 25%, var(--bg-base));
+  --el-color-warning-light-8: color-mix(in srgb, var(--color-warning) 25%, var(--bg-base));
+  --el-color-danger-light-8: color-mix(in srgb, var(--color-danger) 25%, var(--bg-base));
+  --el-color-info-light-8: color-mix(in srgb, var(--color-info, var(--text-secondary)) 25%, var(--bg-base));
+}
+
+// 标签文字：primary 变体用的是 --el-color-primary(#5e6ad2)，在深色 tint 上仅 3.65:1。
+// 只对标签内部提亮（与白混 30% → 6.41:1），不动全局 --el-color-primary，避免影响主按钮等。
+// 特异性取到 (0,3,0)：EP 自带的 .el-tag.el-tag--primary 是 (0,2,0) 且后加载，需高一级才能胜出。
+.el-tag.el-tag--primary.el-tag--light,
+.el-tag.el-tag--primary {
+  --el-tag-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+}
