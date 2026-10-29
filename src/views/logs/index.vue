@@ -359,11 +359,24 @@
       </template>
       <div v-else-if="searchError" class="state-card">
         <div class="error-state">
-          <div class="state-icon state-icon-error" aria-hidden="true">⚠</div>
-          <div class="state-title">查询失败</div>
+          <div
+            class="state-icon"
+            :class="isCanceledState ? 'state-icon-canceled' : 'state-icon-error'"
+            aria-hidden="true"
+          >
+            {{ isCanceledState ? '⏹' : '⚠' }}
+          </div>
+          <div class="state-title">{{ isCanceledState ? '查询已取消' : '查询失败' }}</div>
           <div class="state-desc">{{ friendlySearchError(searchError) }}</div>
-          <div class="state-raw">原始错误:{{ searchError }}</div>
-          <el-button class="state-cta" type="primary" aria-label="重试查询" @click="doSearch">重试</el-button>
+          <div v-if="!isCanceledState" class="state-raw">原始错误:{{ searchError }}</div>
+          <el-button
+            class="state-cta"
+            type="primary"
+            :aria-label="isCanceledState ? '重新查询' : '重试查询'"
+            @click="doSearch"
+          >
+            {{ isCanceledState ? '重新查询' : '重试' }}
+          </el-button>
         </div>
       </div>
       <div v-else class="state-card">
@@ -721,6 +734,7 @@ const {
     progressText,
     progressAria,
     friendlySearchError,
+    isCanceledState,
     cancelSearch,
     doSearch,
     loadEarlier,
@@ -1373,6 +1387,11 @@ onMounted(async () => {
 }
 .state-icon-error {
     color: var(--el-color-danger);
+}
+
+/* 取消不是失败：用中性色，避免红图标暗示故障 */
+.state-icon-canceled {
+    color: var(--text-secondary);
 }
 .state-title {
     font-weight: 600;
