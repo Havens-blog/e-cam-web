@@ -168,8 +168,9 @@ const handleExport = async () => {
     // 调用导出 API
     const response = await exportAuditLogsApi(exportParams)
 
-    // 下载文件
-    const blob = new Blob([response.data], {
+    // 下载文件：blob 响应本身就是 Blob（旧代码取 response.data 拿到 undefined，导出的文件内容为 "undefined"）
+    const payload = response instanceof Blob ? response : new Blob([response as unknown as BlobPart])
+    const blob = new Blob([payload], {
       type: formData.format === 'csv' ? 'text/csv' : 'application/json'
     })
     const url = window.URL.createObjectURL(blob)

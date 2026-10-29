@@ -11,6 +11,9 @@ import type * as iam from './types/iam'
 function createIamApiInterceptor() {
     return {
         responseInterceptor: (response: AxiosResponse) => {
+            // 文件下载（blob）不是 JSON 包装，直接原样返回，交给调用方从 res.data 取 Blob
+            if (response.config?.responseType === 'blob') return response
+
             const data = response.data
 
             // IAM API 使用 code: 200 表示成功，需要转换为系统标准的 code: 0
@@ -271,12 +274,13 @@ export function listAuditLogsApi(params: iam.ListAuditLogsParams) {
 
 /** 导出审计日志 */
 export function exportAuditLogsApi(params: iam.ExportAuditLogsParams) {
+    // 注意：blob 响应经请求层后直接是 Blob（res.data 即 Blob），不是 { code, data } 包装
     return instance.get<Blob>({
         url: `${API_SERVICE.CAM}/iam/audit/logs/export`,
         params,
         responseType: 'blob',
         interceptorsToOnce: createIamApiInterceptor()
-    })
+    }) as unknown as Promise<Blob>
 }
 
 /** 生成审计报告 */
