@@ -282,7 +282,8 @@
         </div>
         <div class="sync-options">
           <span class="sync-label">同步范围</span>
-          <el-radio-group v-model="syncForm.syncType">
+          <!-- 视觉标签是 span 而非 el-form-item label，EP 在无 aria-label 时会兜底输出英文 "radio-group" -->
+          <el-radio-group v-model="syncForm.syncType" aria-label="同步范围">
             <el-radio value="all">全部资产</el-radio>
             <el-radio value="custom">自定义</el-radio>
           </el-radio-group>
