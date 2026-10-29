@@ -180,6 +180,35 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         w.unmount()
     })
 
+    it('取消查询渲染中性「查询已取消」态：无原始错误行、按钮为重新查询', async () => {
+        searchApi.mockRejectedValueOnce(Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' }))
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(w.find('.error-state').exists()).toBe(true)
+        expect(w.find('.state-title').text()).toBe('查询已取消')
+        expect(w.find('.state-desc').text()).toContain('已停止本次查询')
+        // 取消不是故障：不暴露「原始错误」行，也不提示去缩小时间范围
+        expect(w.find('.state-raw').exists()).toBe(false)
+        expect(w.find('.state-desc').text()).not.toContain('缩小时间范围')
+        expect(w.findAll('button').some((b) => b.text().includes('重新查询'))).toBe(true)
+        expect(w.findAll('button').some((b) => b.text() === '重试')).toBe(false)
+        w.unmount()
+    })
+
+    it('真失败仍渲染「查询失败」+ 原始错误行（取消态改动不影响失败态）', async () => {
+        searchApi.mockRejectedValueOnce(new Error('network error'))
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        expect(w.find('.state-title').text()).toBe('查询失败')
+        expect(w.find('.state-raw').exists()).toBe(true)
+        expect(w.findAll('button').some((b) => b.text() === '重试')).toBe(true)
+        w.unmount()
+    })
+
     it('部分源失败保持 per-source 标签,整页不进入失败态', async () => {
         searchApi.mockResolvedValueOnce(
             searchResp({
