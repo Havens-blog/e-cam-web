@@ -689,6 +689,14 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 20px;
 }
+
+/* 卡片最小 360px：390 视口内容区仅约 302px，会撑出容器（实测溢出 78px），
+   并把「使用模板」按钮裁到视口外。窄屏退化为单列满宽。 */
+@media (max-width: 768px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .template-card {
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-lighter);
@@ -953,5 +961,24 @@ html.dark .btn-secondary {
 html.dark .btn-secondary:hover {
   background: rgba(30, 41, 59, 1);
   color: #e2e8f0;
+}
+
+/* TEMPLATE_MOBILE_NO_OVERFLOW：窄屏下模板页三处溢出（390 卡片撑出 78px、360 搜索框 280px、规格项 102px） */
+@media (max-width: 768px) {
+  /* 统计卡四列在 320 下被挤到 42px，图标溢出（实测 16px） */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .search-box {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .template-specs {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 </style>
