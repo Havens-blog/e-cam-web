@@ -14,6 +14,10 @@
             <span class="stat-num green">{{ successCount }}</span>
           </div>
           <div class="stat-badge">
+            <span class="stat-label">部分成功</span>
+            <span class="stat-num orange">{{ partialCount }}</span>
+          </div>
+          <div class="stat-badge">
             <span class="stat-label">失败</span>
             <span class="stat-num red">{{ failCount }}</span>
           </div>
@@ -33,7 +37,7 @@
           <el-option v-for="m in methods" :key="m" :label="m" :value="m" />
         </el-select>
         <el-select v-model="filters.operation_type" placeholder="操作类型" clearable size="default" style="width: 130px" @change="handleFilterChange">
-          <el-option v-for="op in opTypes" :key="op.value" :label="op.label" :value="op.value" />
+          <el-option v-for="op in opTypeOptions" :key="op.value" :label="op.label" :value="op.value" />
         </el-select>
         <el-select v-model="resultFilter" placeholder="结果" clearable size="default" style="width: 100px" @change="handleFilterChange">
           <el-option label="成功" value="success" />
@@ -90,6 +94,7 @@
         <el-table-column prop="result" label="结果" width="70" align="center">
           <template #default="{ row }">
             <el-icon v-if="row.result === 'success'" class="result-icon success"><CircleCheck /></el-icon>
+            <el-icon v-else-if="row.result === 'partial'" class="result-icon partial"><WarningFilled /></el-icon>
             <el-icon v-else class="result-icon fail"><CircleClose /></el-icon>
           </template>
         </el-table-column>
@@ -111,7 +116,7 @@
         <div class="detail-row"><span class="detail-label">请求</span><span class="detail-value"><code>{{ currentLog.http_method }} {{ currentLog.api_path }}</code></span></div>
         <div class="detail-row"><span class="detail-label">状态码</span><span class="detail-value"><code>{{ currentLog.status_code }}</code></span></div>
         <div class="detail-row"><span class="detail-label">耗时</span><span class="detail-value">{{ formatDuration(currentLog.duration_ms) }}</span></div>
-        <div class="detail-row"><span class="detail-label">结果</span><span class="detail-value">{{ currentLog.result === 'success' ? '成功' : '失败' }}</span></div>
+        <div class="detail-row"><span class="detail-label">结果</span><span class="detail-value">{{ resultLabel(currentLog.result) }}</span></div>
         <div class="detail-row"><span class="detail-label">来源IP</span><span class="detail-value"><code>{{ currentLog.client_ip }}</code></span></div>
         <div class="detail-row"><span class="detail-label">User-Agent</span><span class="detail-value ua">{{ currentLog.user_agent }}</span></div>
         <template v-if="currentLog.request_body">
@@ -128,9 +133,10 @@ import type { AuditLog, AuditLogParams } from '@/api/audit'
 import { exportAuditLogsApi, listAuditLogsApi } from '@/api/audit'
 import { useDictionary } from '@/composables/useDictionary'
 import { formatAuditTime } from './format'
-import { CircleCheck, CircleClose, Download, Refresh } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Download, Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resultLabel as presentResultLabel } from './presenters'
 
 const { loadDict, getDictOptions } = useDictionary()
 
@@ -153,8 +159,19 @@ const filters = reactive<AuditLogParams>({
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 const opTypes = getDictOptions('operation_type')
 
+// 日志检索审计是 logquery 域写入的结构化类型,尚未进 operation_type 字典,
+// 这里补一个可选项,保证审计页可按「日志查询」过滤。
+const opTypeOptions = computed(() => {
+  const list = [...opTypes.value]
+  if (!list.some(o => o.value === 'log_search')) {
+    list.push({ value: 'log_search', label: '日志查询' })
+  }
+  return list
+})
+
 const successCount = computed(() => logList.value.filter(l => l.result === 'success').length)
-const failCount = computed(() => logList.value.filter(l => l.result !== 'success').length)
+const partialCount = computed(() => logList.value.filter(l => l.result === 'partial').length)
+const failCount = computed(() => logList.value.filter(l => l.result === 'failed').length)
 const slowCount = computed(() => logList.value.filter(l => l.duration_ms > 1000).length)
 
 async function fetchLogs() {
@@ -256,13 +273,15 @@ function durationLevel(ms: number) {
 }
 
 function opTypeTag(type: string): 'success' | 'primary' | 'warning' | 'danger' | 'info' | '' {
-  const map: Record<string, 'success' | 'primary' | 'warning' | 'danger' | 'info'> = { create: 'success', update: 'warning', delete: 'danger', sync: 'info', import: 'info', export: 'info' }
-  return map[type] || ''
+  return presentOpTypeTag(type)
 }
 
 function opTypeLabel(type: string) {
-  const found = opTypes.value.find(o => o.value === type)
-  return found ? found.label : type
+  return presentOpTypeLabel(type, opTypes.value)
+}
+
+function resultLabel(result: string) {
+  return presentResultLabel(result)
 }
 
 function formatJson(str: string) {
@@ -435,7 +454,7 @@ onMounted(() => {
   &.slow { color: var(--accent-red); font-weight: 600; }
   &.warn { color: var(--accent-yellow); }
 }
-.result-icon { font-size: 18px; &.success { color: var(--accent-green); } &.fail { color: var(--accent-red); } }
+.result-icon { font-size: 18px; &.success { color: var(--accent-green); } &.partial { color: var(--accent-yellow); } &.fail { color: var(--accent-red); } }
 
 // 分页
 .pagination-bar {
