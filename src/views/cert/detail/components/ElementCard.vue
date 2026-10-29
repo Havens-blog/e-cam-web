@@ -293,23 +293,26 @@ async function onCopyFingerprint() {
     font-size: 11px;
   }
 
+  /* 改用证书模块 token，不再硬编码色值：
+     token 侧已把 --cert-error 提亮到 #f45959（深色底 AA 达标）；
+     硬编码 #ee0000 只有 3.85:1，且绕过了 token 统一维护。 */
   &.tone-success {
-    color: #50e3c2;
-    border-color: color-mix(in srgb, #50e3c2 40%, transparent);
+    color: var(--cert-success, #50e3c2);
+    border-color: color-mix(in srgb, var(--cert-success, #50e3c2) 40%, transparent);
   }
 
   &.tone-warning {
-    color: #f5a623;
-    border-color: color-mix(in srgb, #f5a623 40%, transparent);
+    color: var(--cert-warning, #f5a623);
+    border-color: color-mix(in srgb, var(--cert-warning, #f5a623) 40%, transparent);
 
     &.tone-deep {
-      color: #d98c0a;
+      color: var(--cert-warning-deep, #d98c0a);
     }
   }
 
   &.tone-error {
-    color: #ee0000;
-    border-color: color-mix(in srgb, #ee0000 40%, transparent);
+    color: var(--cert-error, #f45959);
+    border-color: color-mix(in srgb, var(--cert-error, #f45959) 40%, transparent);
   }
 
   &.tone-accent {
