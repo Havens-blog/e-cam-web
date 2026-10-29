@@ -321,6 +321,13 @@ class HttpRequest {
             (error) => {
                 const requestId = error.config?.headers?.['X-Request-ID']
 
+                // 取消的请求不是错误：调用方用 AbortController 做「输入防抖/切换取消」，
+                // 既不该弹提示（会被当成网络故障），也不该以 error 级别记日志。判定要放在 logError 之前。
+                if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError' || error.name === 'AbortError') {
+                    logInfo('Request canceled', { requestId, url: error.config?.url }, 'API')
+                    return Promise.reject(error)
+                }
+
                 // 记录错误日志
                 logError('API Error', {
                     requestId,

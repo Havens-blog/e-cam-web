@@ -116,6 +116,19 @@ describe('失败请求的提示契约（装配级）', () => {
         expect(isErrorNotified(err)).toBe(true)
     })
 
+    it('取消的请求（ERR_CANCELED）：不弹任何提示，错误原样透传', async () => {
+        const cancelAdapter: AxiosAdapter = async (config) => {
+            const err = Object.assign(new Error('canceled'), { code: 'ERR_CANCELED', name: 'CanceledError', config })
+            throw err
+        }
+        const c = client(cancelAdapter)
+        const err = await c.get({ url: '/x' }).catch((e) => e)
+        expect(totalToasts()).toBe(0)
+        expect(err.code).toBe('ERR_CANCELED')
+        // 取消不是「已提示」，调用方仍可自行处理
+        expect(isErrorNotified(err)).toBe(false)
+    })
+
     it('成功响应：不弹任何提示；无 once 拦截器时 resolve 得到的是响应体（含信封）', async () => {
         // 记录既有行为：request() 末尾是 resolve(res.data)，没有 once 拦截器时调用方拿到的是整个响应体，
         // 而不是 ResponseData<T> 声明的 data 字段（类型声明与实际不符，属既有问题，此处仅钉住现状）。
