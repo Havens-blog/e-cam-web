@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { exportAuditLogsApi } from '@/api/iam'
+import { toBackendDateTime } from '@/utils/epoch'
 import type { ExportAuditLogsParams } from '@/api/types/iam'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -153,8 +154,8 @@ const handleExport = async () => {
     // 构建导出参数
     const exportParams: ExportAuditLogsParams = {
       format: formData.format === 'excel' ? 'csv' : formData.format,
-      start_time: formData.dateRange?.[0].toISOString(),
-      end_time: formData.dateRange?.[1].toISOString(),
+      start_time: formData.dateRange?.[0] ? toBackendDateTime(formData.dateRange[0]) : undefined,
+      end_time: formData.dateRange?.[1] ? toBackendDateTime(formData.dateRange[1]) : undefined,
     }
 
     // 应用筛选条件

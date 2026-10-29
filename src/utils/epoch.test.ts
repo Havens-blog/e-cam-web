@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EPOCH_MS_THRESHOLD, formatEpochDateTime, normalizeEpochMs } from './epoch'
+import { EPOCH_MS_THRESHOLD, formatEpochDateTime, normalizeEpochMs, toBackendDateTime } from './epoch'
 
 describe('normalizeEpochMs', () => {
     it('毫秒不被放大（回归：曾把 2026 放大成 58794 年）', () => {
@@ -44,5 +44,26 @@ describe('formatEpochDateTime', () => {
         expect(formatEpochDateTime(0)).toBe('-')
         expect(formatEpochDateTime(null)).toBe('-')
         expect(formatEpochDateTime(undefined)).toBe('-')
+    })
+})
+
+
+describe('toBackendDateTime（后端查询参数）', () => {
+    it('输出 UTC 墙钟、秒精度、无 T/Z', () => {
+        // 2026-10-29T00:00:00Z
+        expect(toBackendDateTime(Date.UTC(2026, 9, 29, 0, 0, 0))).toBe('2026-10-29 00:00:00')
+        expect(toBackendDateTime(Date.UTC(2026, 9, 29, 23, 59, 59))).toBe('2026-10-29 23:59:59')
+    })
+
+    it('毫秒输入得到固定的 UTC 墙钟（与时区无关的硬编码期望）', () => {
+        // 1793262575436 = 2026-10-29T08:29:35.436Z
+        expect(toBackendDateTime(1793262575436)).toBe('2026-10-29 08:29:35')
+    })
+
+    it('非法值与越界值返回空串（不会抛 RangeError，也不会把 - 发给后端）', () => {
+        expect(toBackendDateTime(new Date('invalid'))).toBe('')
+        expect(toBackendDateTime(Number.NaN)).toBe('')
+        expect(toBackendDateTime(1e17)).toBe('')
+        expect(toBackendDateTime(-1e17)).toBe('')
     })
 })

@@ -87,6 +87,7 @@
 
 <script setup lang="ts">
 import { generateAuditReportApi } from '@/api/iam'
+import { toBackendDateTime } from '@/utils/epoch'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
@@ -161,8 +162,8 @@ const handleGenerate = async () => {
     // 构建报告参数
     const reportParams = {
       name: formData.name,
-      start_time: formData.dateRange![0].toISOString(),
-      end_time: formData.dateRange![1].toISOString(),
+      start_time: toBackendDateTime(formData.dateRange![0]),
+      end_time: toBackendDateTime(formData.dateRange![1]),
       report_type: formData.reportType,
       format: formData.format,
       sections: formData.sections
