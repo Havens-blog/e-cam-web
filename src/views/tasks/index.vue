@@ -535,7 +535,9 @@ onUnmounted(() => {
     }
 
     &.active {
-      color: var(--el-color-primary);
+      /* 原用 --el-color-primary(#5e6ad2)，叠在品牌色 12% 浅底(合成 rgb(18,21,34))上仅 3.87:1，
+         AA 需 4.5 → 与白混 30% 提亮到约 5.3:1，色相不变 */
+      color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
       border-color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
     }
@@ -556,7 +558,9 @@ onUnmounted(() => {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
-    color: var(--el-color-warning);
+    /* 原用 --el-color-warning(#f59e0b) 叠在 warning 浅底上实测仅 2.00:1（AA 需 4.5）；
+       与白混 55% 提亮到约 6:1，仍是橙色语义 */
+    color: color-mix(in srgb, var(--el-color-warning) 45%, #fff);
     background: var(--el-color-warning-light-9);
   }
 }
