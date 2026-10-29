@@ -195,6 +195,15 @@ const emit = defineEmits<{
   }
 }
 
+/* 分页条换行后 space-between 在「行内只有 1 个子项」时退化为 flex-start，
+   控件会从最右跳到最左（跳变约 400px）。auto 外边距让它始终贴右，视觉连续。
+   注意：≤640 是 column 方向，margin-left:auto 会顶掉水平居中，故限定 ≥641。 */
+@media (min-width: 641px) {
+  .pagination-bar .pagination-controls {
+    margin-left: auto;
+  }
+}
+
 /* IAM_USERS_MOBILE_NO_OVERFLOW：分页控件 7 页时约 490px，而 360 下可用宽度仅约 230px。
    ≤800 而非 ≤768：769 起侧栏展开为 220px，内容宽骤降，490px 的分页条会溢出约 10px。
    - 控件与页码序列都可换行
