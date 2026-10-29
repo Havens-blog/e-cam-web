@@ -1,15 +1,21 @@
 // @vitest-environment happy-dom
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getEcmdbToken = vi.fn()
 const redirectToLogin = vi.fn()
 const fetchUserInfo = vi.fn()
 const hasCertManageAccess = vi.fn()
+const setPendingRedirectTarget = vi.fn()
+const storeState = { isLoggedIn: true, isAdmin: false, permissions: [] as string[] }
 
 vi.mock('@/utils/cookie', () => ({ getEcmdbToken: () => getEcmdbToken() }))
 vi.mock('@/api/request', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/api/request')>()
-    return { ...actual, redirectToLogin: (url?: string) => redirectToLogin(url) }
+    return {
+        ...actual,
+        redirectToLogin: (url?: string) => redirectToLogin(url),
+        setPendingRedirectTarget: (url?: string) => setPendingRedirectTarget(url),
+    }
 })
 vi.mock('@/utils/cert-permission', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@/utils/cert-permission')>()
@@ -17,9 +23,13 @@ vi.mock('@/utils/cert-permission', async (importOriginal) => {
 })
 vi.mock('@/stores/user', () => ({
     useUserStore: () => ({
-        isLoggedIn: true,
-        isAdmin: false,
-        permissions: [],
+        get isLoggedIn() {
+            return storeState.isLoggedIn
+        },
+        get isAdmin() {
+            return storeState.isAdmin
+        },
+        permissions: storeState.permissions,
         fetchUserInfo,
     }),
 }))
@@ -35,6 +45,12 @@ beforeAll(async () => {
 }, 30000)
 
 describe('authGuard', () => {
+    beforeEach(() => {
+        storeState.isLoggedIn = true
+        storeState.isAdmin = false
+        storeState.permissions = []
+    })
+
     it('形参个数必须 <= 2（>=3 且不调用 next 会触发 Invalid navigation guard）', () => {
         expect(guard.length).toBeLessThanOrEqual(2)
     })

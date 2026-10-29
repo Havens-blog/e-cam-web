@@ -8,6 +8,9 @@ import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
 
 // 防止多个并发 401 请求重复跳转登录页
 let isRedirectingToLogin = false
+// 路由守卫在发起 fetchUserInfo 之前登记目标页：401 拦截器往往先于守卫的回调触发跳转，
+// 若不预先登记，拦截器会用「导航前的旧 URL」拼登录地址，登录后回到错误页面。
+let pendingRedirectTarget: string | undefined
 
 /**
  * 登录目标唯一取值处（RC#2，platform-console 任务 2.13）：
@@ -35,6 +38,11 @@ export function appUrlForPath(fullPath: string): string {
  * @param redirectTo 回跳地址；路由守卫应传「要去的目标页」绝对地址，
  *   否则 window.location.href 在 push 生效前仍是「当前页」，登录后会回到错误页面。
  */
+/** 登记「登录成功后应回跳的目标页」；守卫在导航被拦截前调用 */
+export function setPendingRedirectTarget(url?: string) {
+    pendingRedirectTarget = url
+}
+
 export function redirectToLogin(redirectTo?: string) {
     if (isRedirectingToLogin) return
     isRedirectingToLogin = true
@@ -44,7 +52,8 @@ export function redirectToLogin(redirectTo?: string) {
     // 拉取用户信息失败）全都只是本应用的局部判断；若在此删除 cookie，会把其他
     // 服务（尤其 ecmdb）的登录态一并清掉，使局部故障扩散为全平台掉线。
     ElMessage.warning('登录状态已失效，请重新登录')
-    const currentUrl = redirectTo || window.location.href
+    const currentUrl = redirectTo || pendingRedirectTarget || window.location.href
+    pendingRedirectTarget = undefined
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 

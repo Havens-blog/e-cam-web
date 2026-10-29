@@ -1,4 +1,4 @@
-import { appUrlForPath, redirectToLogin } from '@/api/request/index'
+import { appUrlForPath, redirectToLogin, setPendingRedirectTarget } from '@/api/request/index'
 import { useUserStore } from '@/stores/user'
 import { getEcmdbToken } from '@/utils/cookie'
 import {
@@ -47,6 +47,8 @@ export async function authGuard(to: RouteLocationNormalized) {
 
     // 检查 cookie 中是否有 ecmdb session token
     const hasToken = !!getEcmdbToken()
+    // 先登记目标页：token 存在但已失效时，fetchUserInfo 的 401 会先触发跳转
+    setPendingRedirectTarget(appUrlForPath(to.fullPath))
 
     if (!hasToken) {
         // 传目标页而不是当前页：push 尚未生效时 window.location.href 还是旧地址
