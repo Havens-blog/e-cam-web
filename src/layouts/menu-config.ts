@@ -42,7 +42,6 @@ export const menuGroups: MenuGroup[] = [
     title: '概览',
     items: [
       { key: 'dashboard', path: '/dashboard', title: '仪表盘', icon: 'ops-oneterm-dashboard' },
-      { key: 'topology', path: '/topology', title: '资源拓扑', icon: 'icon-xianxing-luyouqi' },
       { key: 'cloud-logs', path: '/logs', title: '日志查询', icon: 'ops-itsm-logs' },
     ]
   },
@@ -151,27 +150,6 @@ export const menuGroups: MenuGroup[] = [
   {
     title: '平台管理',
     items: [
-      {
-        key: 'alert',
-        title: '告警中心',
-        icon: 'ops-itsm-logs',
-        children: [
-          { key: 'alert-events', path: '/alert/events', title: '告警事件', icon: 'ops-itsm-logs' },
-          { key: 'alert-rules', path: '/alert/rules', title: '告警规则', icon: 'icon-xianxing-luyouqi' },
-          { key: 'alert-channels', path: '/alert/channels', title: '通知渠道', icon: 'icon-xianxing-wangka' },
-        ]
-      },
-      {
-        key: 'cmdb',
-        title: 'CMDB',
-        icon: 'icon-xianxing-wuliji',
-        children: [
-          { key: 'cmdb-models', path: '/cmdb/models', title: '资源模型', icon: 'icon-xianxing-wuliji' },
-          { key: 'cmdb-instances', path: '/cmdb/instances', title: '资源实例', icon: 'icon-xianxing-xuniji' },
-          { key: 'cmdb-relations', path: '/cmdb/relations', title: '模型关系', icon: 'icon-xianxing-jiaohuanji' },
-          { key: 'cmdb-topology', path: '/cmdb/topology', title: '拓扑视图', icon: 'icon-xianxing-luyouqi' },
-        ]
-      },
       { key: 'audit-logs', path: '/audit/logs', title: '操作审计', icon: 'ops-itsm-logs' },
       { key: 'audit-changes', path: '/audit/changes', title: '变更历史', icon: 'icon-xianxing-chanpin' },
       { key: 'accounts', path: '/accounts', title: '云账号管理', icon: 'icon-xianxing-aliyun' },

@@ -13,7 +13,6 @@ const defFavs: FavItem[] = [
   { key: 'assets-vm', title: '虚拟机', desc: 'ECS / EC2 / CVM', path: '/compute/ecs' },
   { key: 'assets-rds', title: 'RDS 云数据库', desc: '关系型数据库', path: '/databases/rds' },
   { key: 'fin-cost', title: '成本概览', desc: 'FinOps', path: '/finops/cost' },
-  { key: 'alert-events', title: '告警事件', desc: '告警中心', path: '/alert/events' },
   { key: 'accounts', title: '云账号管理', desc: '多云账号接入', path: '/accounts' },
 ]
 const loadF = (): FavItem[] => { try { const s = localStorage.getItem(SK); if (s) return JSON.parse(s) } catch { /* */ } return [...defFavs] }
@@ -120,11 +119,8 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
           <!-- 平台管理 -->
           <div class="pnav-col">
             <div class="pnav-hd"><span class="pnav-dot" style="background:#a78bfa"></span>平台管理</div>
-            <div class="pnav-sub" style="margin-top:0">告警中心</div>
-            <div class="pnav-it" @click="go('/alert/events')"><IconFont :type="ic('alert-ev')" :size="18" /><span>告警事件</span><i :class="{on:isF('alert-ev')}" @click.stop="togF('alert-ev','告警事件','告警中心','/alert/events')">{{ isF('alert-ev') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/alert/rules')"><IconFont :type="ic('alert-rules')" :size="18" /><span>告警规则</span><i :class="{on:isF('alert-rules')}" @click.stop="togF('alert-rules','告警规则','告警中心','/alert/rules')">{{ isF('alert-rules') ? '★' : '☆' }}</i></div>
-            <div class="pnav-it" @click="go('/alert/channels')"><IconFont :type="ic('alert-ch')" :size="18" /><span>通知渠道</span><i :class="{on:isF('alert-ch')}" @click.stop="togF('alert-ch','通知渠道','告警中心','/alert/channels')">{{ isF('alert-ch') ? '★' : '☆' }}</i></div>
-            <div class="pnav-sub">系统</div>
+            <!-- 告警中心已随迁移下线（本仓导航不再入口；路由与页面按待确认口径保留） -->
+            <div class="pnav-sub" style="margin-top:0">系统</div>
             <div class="pnav-it" @click="go('/audit/logs')"><IconFont :type="ic('audit-log')" :size="18" /><span>操作审计</span><i :class="{on:isF('audit-log')}" @click.stop="togF('audit-log','操作审计','系统','/audit/logs')">{{ isF('audit-log') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/audit/changes')"><IconFont :type="ic('audit-chg')" :size="18" /><span>变更历史</span><i :class="{on:isF('audit-chg')}" @click.stop="togF('audit-chg','变更历史','系统','/audit/changes')">{{ isF('audit-chg') ? '★' : '☆' }}</i></div>
             <div class="pnav-it" @click="go('/accounts')"><IconFont :type="ic('accounts')" :size="18" /><span>云账号管理</span><i :class="{on:isF('accounts')}" @click.stop="togF('accounts','云账号管理','系统','/accounts')">{{ isF('accounts') ? '★' : '☆' }}</i></div>
