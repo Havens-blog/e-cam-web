@@ -264,6 +264,11 @@
     background-color: var(--table-row-hover);
   }
 
+  // 斑马纹行的底色规则比普通 hover 更具体，hover 会被吃掉；这里显式提权补回反馈
+  &.el-table--striped .el-table__body tr.el-table__row--striped:hover > td.el-table__cell {
+    background-color: var(--table-row-hover);
+  }
+
   // 固定列必须不透明：斑马纹/hover 行的底色是半透明叠加，横滑时下层文字会透出与固定列内容叠字。
   // 做法：cell 给实色底（token 可覆盖），各状态用 background-image 叠 tint（image 在 color 之上，
   // 合成后仍不透明），这样不必手算合成色，暗色/浅色主题都成立。
@@ -277,14 +282,14 @@
     background-image: linear-gradient(var(--el-table-header-bg-color), var(--el-table-header-bg-color)) !important;
   }
 
-  .el-table__body tr:hover > td.el-table-fixed-column--left,
-  .el-table__body tr:hover > td.el-table-fixed-column--right {
-    background-image: linear-gradient(var(--table-row-hover), var(--table-row-hover)) !important;
-  }
-
   .el-table__body tr.el-table__row--striped > td.el-table-fixed-column--left,
   .el-table__body tr.el-table__row--striped > td.el-table-fixed-column--right {
     background-image: linear-gradient(var(--el-fill-color-lighter), var(--el-fill-color-lighter)) !important;
+  }
+
+  .el-table__body tr:hover > td.el-table-fixed-column--left,
+  .el-table__body tr:hover > td.el-table-fixed-column--right {
+    background-image: linear-gradient(var(--table-row-hover), var(--table-row-hover)) !important;
   }
 }
 
