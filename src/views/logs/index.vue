@@ -107,6 +107,17 @@
           aria-label="检索关键词"
           @keyup.enter="doSearch"
         />
+        <el-select
+          v-if="hasLevelField && levelOptions.length"
+          :model-value="levelValue"
+          class="filter-level"
+          clearable
+          placeholder="级别"
+          aria-label="按级别筛选"
+          @change="setLevelFilter"
+        >
+          <el-option v-for="lv in levelOptions" :key="lv" :label="lv" :value="lv" />
+        </el-select>
         <el-tooltip content="每日志源采样上限(窗口内实际日志可能更多,明细/统计均为采样视图)" placement="top">
           <el-select v-model="limit" class="filter-limit" aria-label="条数上限">
             <el-option v-for="n in LIMIT_OPTIONS" :key="n" :label="`${n} 条/源`" :value="n" />
@@ -591,6 +602,13 @@ const aggregate = ref<LogAggregateResponse | null>(null)
 const currentMeta = computed(() => typeMetas.value.find((t) => t.type === activeType.value))
 const currentFields = computed(() => currentMeta.value?.fields ?? [])
 
+// ---- 日志级别快速筛选选项(app 为大写级别;K8s 事件归一为 warning/info) ----
+const LEVEL_OPTIONS: Record<string, string[]> = {
+    app: ['ERROR', 'WARN', 'INFO', 'DEBUG'],
+    'k8s-event': ['warning', 'info'],
+}
+const levelOptions = computed(() => LEVEL_OPTIONS[activeType.value] ?? [])
+
 // ================= composable 装配 =================
 const {
     sources,
@@ -620,6 +638,9 @@ let runSearch: () => void = () => {}
 const {
     fieldFilters,
     filterableFields,
+    hasLevelField,
+    levelValue,
+    setLevelFilter,
     aggregatableFields,
     aggregatableDictFields,
     aggregatableRawFields,
@@ -1009,6 +1030,9 @@ onMounted(async () => {
     flex: 1;
     min-width: 200px;
     max-width: 320px;
+}
+.filter-level {
+    width: 120px;
 }
 /* 已保存查询下拉项:名称 + 行内删除 */
 .saved-query-item {
