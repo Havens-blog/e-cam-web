@@ -250,7 +250,7 @@ function formatDateTime(iso: string): string {
 }
 
 .btn-link {
-  color: var(--cert-accent);
+  color: color-mix(in srgb, var(--cert-accent) 72%, #fff);
   font-size: 13px;
   text-decoration: none;
 

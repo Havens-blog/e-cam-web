@@ -350,3 +350,29 @@
   --el-tag-bg-color: color-mix(in srgb, var(--el-color-primary) 82%, #000);
   --el-tag-border-color: color-mix(in srgb, var(--el-color-primary) 82%, #000);
 }
+
+// ==================== 链接型按钮（is-link / is-text）的文字对比度 ====================
+// EP 的 is-link / is-text 变体用 `--el-button-text-color: var(--el-color-primary)`，
+// 而 --el-color-primary(#5e6ad2) 在深色底上作**文字色**只有 3.26~4.05:1（AA 需 4.5）。
+//
+// 为什么不能直接提亮 --el-color-primary：实测「文字达标」与「白字压它达标」两个方向
+// 无法同时满足（混白 10% 时文字刚 4.46，白字已掉到 3.90）。同一个 token 既要当亮的文字色、
+// 又要当暗的按钮底色，只能分开处理——这里只改「文字型」用法。
+.el-button.is-link.is-link,
+.el-button.is-text.is-text {
+  --el-button-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+  --el-button-hover-text-color: color-mix(in srgb, var(--el-color-primary) 55%, #fff);
+  /* EP 对这两个变体是直接写 color: var(--el-button-text-color)，且其规则 (0,2,0) 后加载，
+     故这里把特异性提到 (0,3,0) 才能让自定义变量生效；span 子元素继承此 color。 */
+  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+}
+
+.el-button.is-link.is-link > span,
+.el-button.is-text.is-text > span {
+  color: inherit;
+}
+
+.el-button.is-link.is-link:hover,
+.el-button.is-text.is-text:hover {
+  color: color-mix(in srgb, var(--el-color-primary) 55%, #fff);
+}

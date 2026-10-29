@@ -90,7 +90,8 @@
           <el-table-column type="selection" width="40" />
           <el-table-column prop="key" label="标签键" min-width="120">
             <template #default="{ row }">
-              <span style="font-weight: 600; color: var(--el-color-primary)">{{ row?.key }}</span>
+              <!-- 内联样式，故直接在此提亮：--el-color-primary 作文字在深色底仅 4.05:1（AA 需 4.5） -->
+              <span style="font-weight: 600; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff)">{{ row?.key }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="value" label="标签值" min-width="120">
@@ -494,12 +495,15 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   margin-left: 6px;
 
   .tab-item.active & {
-    background: rgba(255, 255, 255, 0.25);
+    /* 原 rgba(255,255,255,0.25) 叠在实心品牌蓝上 → 合成 rgb(134,143,221)，白字仅 3.0:1。
+       改用半透明黑压暗底色，白字达标且视觉上仍是「亮色药丸」 */
+    background: rgba(0, 0, 0, 0.35);
     color: #fff;
   }
 
   .tab-item:not(.active) & {
-    background: #e5e6eb;
+    /* 原 #e5e6eb 是**浅色模式色值**，深色主题下是浅灰药丸且文字仅 2.61:1 → 改为深色底 */
+    background: var(--bg-hover);
     color: var(--text-secondary);
   }
 }

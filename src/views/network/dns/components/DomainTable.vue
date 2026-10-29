@@ -253,7 +253,7 @@ defineExpose({ refresh: fetchData })
 }
 
 .domain-link {
-  color: var(--el-color-primary);
+  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   cursor: pointer;
   font-weight: 500;
 
@@ -275,7 +275,7 @@ defineExpose({ refresh: fetchData })
 }
 
 .record-count {
-  color: var(--el-color-primary);
+  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   font-weight: 600;
 }
 
