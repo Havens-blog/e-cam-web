@@ -248,3 +248,18 @@
   --el-text-color-placeholder: var(--text-secondary);
   --el-input-placeholder-color: var(--text-secondary);
 }
+
+// ==================== 第三级文字对比度（WCAG 1.4.3）====================
+// --text-tertiary 原值 #62666d 在卡片底 rgb(25,26,27) 上仅 3.02:1、页面底 3.30:1，
+// 均低于 AA 的 4.5:1。而它被大量「承载信息」的文字使用（.stat-label、.page-subtitle、
+// .filter-label、.pagination-info、表头等），是全站剩余对比度问题的主要来源。
+//
+// 这里把 tertiary 提升到「刚好过 AA 且仍暗于 secondary」的档位，保留三级层次：
+//   tertiary 4.63:1 < secondary 5.36:1 < regular 11.93:1（卡片底实测）
+// 取值由 --text-secondary 派生（与白色无关），避免硬编码十六进制色值：
+//   secondary(#8a8f98) 混入 8% 黑 ≈ rgb(127,132,140)
+// 只覆盖 tertiary 一个 token，不动 primary/secondary/regular，视觉层次不变。
+// 注意：theme-variables.scss 用 :root(0,1,0) 定义，这里用 :root:root(0,2,0) 且更晚引入。
+:root:root {
+  --text-tertiary: color-mix(in srgb, var(--text-secondary) 92%, #000);
+}
