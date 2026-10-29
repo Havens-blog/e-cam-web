@@ -373,6 +373,10 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 分页条现在是可横向滚动的容器（min-width:auto→0），不换行会把「共 N 条」caption
+     压成 15px 竖排（实测 360）；允许换行让 caption 独占一行。 */
+  flex-wrap: wrap;
+  row-gap: 12px;
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--border-subtle);
