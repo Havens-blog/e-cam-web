@@ -1,5 +1,6 @@
 import { getEcmdbToken } from '@/utils/cookie'
 import { handleApiError } from '@/utils/error-handler'
+import type { AxiosResponse } from 'axios'
 import { logError, logInfo, logWarn } from '@/utils/error-logger'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
@@ -114,6 +115,42 @@ export function redirectToLogin(redirectTo?: string) {
     window.location.href = `${resolveLoginTarget()}?redirect=${encodeURIComponent(currentUrl)}`
 }
 
+/**
+ * 二进制下载接口在 HTTP 200 时也可能返回**业务信封**（如 { code: 500, msg: '无权限' }），
+ * 若直接落盘会得到一个内容为错误 JSON 的 .csv 并提示「导出成功」。
+ * 这里按内容嗅探：解析出对象且带 code 字段 → 视为业务响应，提示错误并 reject。
+ * 注意不能一律拒绝 JSON：JSON 格式导出（format=json）本身就是合法文件（顶层是数组或数据对象）。
+ */
+export async function assertBinaryPayload(response: AxiosResponse) {
+    const data = response.data
+    if (!(data instanceof Blob)) return response
+
+    const headerType = String(response.headers?.['content-type'] ?? '')
+    const type = (data.type || headerType).toLowerCase()
+    if (!type.includes('json')) return response
+
+    const text = await data.text().catch(() => '')
+    let payload: unknown
+    try {
+        payload = JSON.parse(text)
+    } catch {
+        return response
+    }
+
+    // 顶层数组 / 无 code 字段：当作正常数据文件
+    if (Array.isArray(payload) || payload === null || typeof payload !== 'object') return response
+    if (!('code' in (payload as Record<string, unknown>))) return response
+
+    const envelope = payload as { code?: number; msg?: string; message?: string }
+    const message =
+        envelope.code === 0 || envelope.code === 200
+            ? '接口未返回文件，请稍后重试'
+            : envelope.msg || envelope.message || '导出失败'
+    // 只抛错、不在这里弹提示：调用方（各下载入口）已有 catch + ElMessage，
+    // 在此再弹一次会出现两条重复提示。
+    throw new Error(message)
+}
+
 class HttpRequest {
     instance: AxiosInstance
     interceptors?: RequestInterceptors
@@ -178,10 +215,11 @@ class HttpRequest {
                 }, 'API')
 
                 // 二进制数据：保留 AxiosResponse 形状返回（调用方统一取 res.data），
-                // 直接返回 apiData 会让后续单次拦截器收到 Blob 而读到 undefined.code（曾致导出报 TypeError）
-                const responseType = response.request?.responseType ?? response.config?.responseType
+                // 直接返回 apiData 会让后续单次拦截器收到 Blob 而读到 undefined.code（曾致导出报 TypeError）。
+                // config 是调用方原样传入、与适配器无关的权威来源，故优先于 request。
+                const responseType = response.config?.responseType ?? response.request?.responseType
                 if (responseType === 'blob' || responseType === 'arraybuffer') {
-                    return response
+                    return assertBinaryPayload(response)
                 }
 
                 const code = apiData.code
