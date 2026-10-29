@@ -1,6 +1,7 @@
 <template>
   <PageContainer>
     <ManagerHeader
+      :title-level="1"
       title="异常事件与优化建议"
       subtitle="成本异常检测与资源优化建议"
       :show-add-button="false"

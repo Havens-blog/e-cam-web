@@ -2,7 +2,13 @@
   <div class="trend-chart-card">
     <div class="chart-header">
       <span class="chart-title">成本趋势</span>
-      <el-radio-group v-model="activeGranularity" size="small" @change="handleGranularityChange">
+      <!-- aria-label：EP 的 radio-group 在未提供时兜底输出英文 "radio-group"，中文界面下无意义 -->
+      <el-radio-group
+        v-model="activeGranularity"
+        size="small"
+        aria-label="成本趋势时间粒度"
+        @change="handleGranularityChange"
+      >
         <el-radio-button value="daily">按日</el-radio-button>
         <el-radio-button value="weekly">按周</el-radio-button>
         <el-radio-button value="monthly">按月</el-radio-button>
