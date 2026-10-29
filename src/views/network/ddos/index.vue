@@ -1112,7 +1112,7 @@ onMounted(() => {
 
 .cell-sub {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   white-space: nowrap;
   overflow: hidden;

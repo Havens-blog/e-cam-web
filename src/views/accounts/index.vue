@@ -1121,7 +1121,7 @@ onMounted(() => {
 
     &:last-child { border-right: none; }
     &:hover { color: var(--text-primary); background: var(--bg-hover); }
-    &.active { color: var(--accent-blue); background: rgba(113, 112, 255, 0.1); }
+    &.active { color: color-mix(in srgb, var(--accent-blue) 72%, #fff); background: rgba(113, 112, 255, 0.1); }
   }
 }
 
