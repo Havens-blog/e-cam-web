@@ -57,19 +57,9 @@ export function useNavigation() {
         return router.push('/accounts')
     }
 
-    /**
-     * 导航到云账号创建页面
-     */
-    const goAccountCreate = () => {
-        return router.push('/accounts/create')
-    }
-
-    /**
-     * 导航到云账号编辑页面
-     */
-    const goAccountEdit = (id: string | number) => {
-        return router.push(`/accounts/${id}/edit`)
-    }
+    // 注：/accounts/create 与 /accounts/:id/edit 两条独立路由已随 ui-audit(A-H1/A-H2) 移除
+    // （云账号新增/编辑统一由 accounts/index.vue 的对话框承载），故此处不再提供
+    // goAccountCreate/goAccountEdit 助手 —— 保留会指向不存在的路由（点击即 404）。
 
     /**
      * 导航到资产管理
@@ -130,8 +120,6 @@ export function useNavigation() {
         goHome,
         goDashboard,
         goAccounts,
-        goAccountCreate,
-        goAccountEdit,
         goAssets,
         goAssetDetail,
         goCost,
