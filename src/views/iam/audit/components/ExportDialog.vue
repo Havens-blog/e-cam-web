@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { exportAuditLogsApi } from '@/api/iam'
+import { isErrorNotified } from '@/api/request'
 import { toBackendDateTime } from '@/utils/epoch'
 import type { ExportAuditLogsParams } from '@/api/types/iam'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -190,7 +191,8 @@ const handleExport = async () => {
     handleClose()
   } catch (error: any) {
     console.error('导出失败:', error)
-    ElMessage.error(error.message || '导出失败')
+    // 请求层已弹过提示（403/业务错误）时不再重复弹，避免两条完全重叠的 toast
+    if (!isErrorNotified(error)) ElMessage.error(error.message || '导出失败')
   } finally {
     exporting.value = false
   }

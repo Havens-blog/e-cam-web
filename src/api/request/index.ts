@@ -32,6 +32,20 @@ let pendingRedirectTarget: string | undefined
  *   - 取消（`code === 'ERR_CANCELED'`）：调用方依赖该 code 判定「查询已取消」；
  *   - 无响应的网络/超时错误：调用方按 `err.message`/`code` 判定，保持原对象。
  */
+/** 标记「该错误的用户提示已由请求层弹过」，调用方 catch 里不必重复提示 */
+const NOTIFIED = '__apiErrorNotified'
+
+export function markErrorNotified<T>(error: T): T {
+    if (error && typeof error === 'object') {
+        ;(error as Record<string, unknown>)[NOTIFIED] = true
+    }
+    return error
+}
+
+export function isErrorNotified(error: unknown): boolean {
+    return !!(error && typeof error === 'object' && (error as Record<string, unknown>)[NOTIFIED])
+}
+
 export function normalizeRequestError(error: unknown): unknown {
     if (!error || typeof error !== 'object') return error
     const err = error as {
@@ -61,6 +75,8 @@ export function normalizeRequestError(error: unknown): unknown {
         '请求失败'
 
     const normalized = new Error(msg)
+    // 请求层已经弹过提示时，把标记带到归一后的错误上，调用方据此避免重复提示
+    if (isErrorNotified(error)) markErrorNotified(normalized)
     return Object.assign(normalized, {
         payload: body,
         status,
@@ -286,7 +302,7 @@ class HttpRequest {
                 }, 'API')
 
                 ElMessage.error(apiData.message || apiData.msg || 'Error')
-                return Promise.reject(new Error(apiData.message || apiData.msg || 'Error'))
+                return Promise.reject(markErrorNotified(new Error(apiData.message || apiData.msg || 'Error')))
             },
             (error) => {
                 const requestId = error.config?.headers?.['X-Request-ID']
@@ -310,13 +326,13 @@ class HttpRequest {
                 // 403 无权限
                 if (error.response?.status === 403) {
                     ElMessage.error('权限不足，请联系管理员')
-                    return Promise.reject(error)
+                    return Promise.reject(markErrorNotified(error))
                 }
 
-                // 使用统一错误处理
+                // 使用统一错误处理（内部会弹提示）
                 handleApiError(error)
 
-                return Promise.reject(error)
+                return Promise.reject(markErrorNotified(error))
             }
         )
     }
