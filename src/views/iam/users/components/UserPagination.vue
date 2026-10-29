@@ -86,6 +86,10 @@ const emit = defineEmits<{
 <style scoped lang="scss">
 // 分页（CSS 逐字搬迁自 index.vue 原 style 的 `.pagination-bar` 块）
 .pagination-bar {
+  /* 801–889：info(88) + 控件(490) + padding 放不进一行，允许整条换行，
+     而不是把 info 压成竖排（原缺陷：info 宽 24px、5 行、卡片高 139px） */
+  flex-wrap: wrap;
+  row-gap: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -102,6 +106,10 @@ const emit = defineEmits<{
   .pagination-info {
     font-size: 14px;
     color: var(--text-tertiary);
+    /* 801–889 区间分页条是 flex row + space-between：控件固定 490px 时 info 会被压成 24px 竖排（5 行），
+       整条卡片高度涨到 139px。禁止压缩与换行，让它保持单行，必要时由分页条自己换行。 */
+    flex-shrink: 0;
+    white-space: nowrap;
 
     strong {
       color: var(--text-primary);
@@ -184,6 +192,15 @@ const emit = defineEmits<{
       border-radius: 8px;
       height: 36px;
     }
+  }
+}
+
+/* 分页条换行后 space-between 在「行内只有 1 个子项」时退化为 flex-start，
+   控件会从最右跳到最左（跳变约 400px）。auto 外边距让它始终贴右，视觉连续。
+   注意：≤640 是 column 方向，margin-left:auto 会顶掉水平居中，故限定 ≥641。 */
+@media (min-width: 641px) {
+  .pagination-bar .pagination-controls {
+    margin-left: auto;
   }
 }
 
