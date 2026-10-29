@@ -62,6 +62,17 @@
           <el-option v-for="a in accountOptions" :key="a.value" :label="a.label" :value="a.value" />
         </el-select>
         <el-select
+          v-model="selectedRegions"
+          class="filter-regions"
+          multiple
+          collapse-tags
+          clearable
+          placeholder="全部区域"
+          aria-label="按区域筛选"
+        >
+          <el-option v-for="r in regionOptions" :key="r" :label="r" :value="r" />
+        </el-select>
+        <el-select
           v-model="selectedResources"
           class="filter-resources"
           multiple
@@ -593,6 +604,8 @@ const selectedClouds = ref<string[]>([...DEFAULT_CLOUDS])
 const cloudsTouched = ref(false)
 /** 账号级筛选(平台内 ID;空 = 全部账号;随 search/aggregate/翻页/诊断/缓存请求下发) */
 const selectedAccounts = ref<number[]>([])
+/** 区域级筛选(空 = 全部区域;随 search/aggregate 请求下发,后端联邦层映射为资源过滤) */
+const selectedRegions = ref<string[]>([])
 const selectedResources = ref<string[]>([])
 const keyword = ref('')
 const limit = ref(1000)
@@ -638,6 +651,15 @@ const {
     defaultClouds: DEFAULT_CLOUDS,
 })
 
+/** 区域选项(来自当前类型源清单;按出现顺序去重) */
+const regionOptions = computed(() => {
+    const set: string[] = []
+    for (const s of sources.value) {
+        if (s.region && !set.includes(s.region)) set.push(s.region)
+    }
+    return set
+})
+
 /**
  * 查询引擎与筛选模块互为输入(查询要用筛选组装条件,筛选下钻后要重查)。
  * 以「先声明、后赋值」的转发引用打破构造期循环:该函数只在用户交互/查询触发时
@@ -681,6 +703,7 @@ const {
     keyword,
     selectedClouds,
     selectedAccounts,
+    selectedRegions,
     selectedResources,
     triggerSearch: () => runSearch(),
 })
@@ -713,6 +736,7 @@ const {
     selectedClouds,
     selectedResources,
     selectedAccounts,
+    selectedRegions,
     limit,
     aggrDimension,
     aggrMetric,
@@ -1035,6 +1059,9 @@ onMounted(async () => {
 }
 .filter-accounts {
     width: 200px;
+}
+.filter-regions {
+    width: 180px;
 }
 .filter-resources {
     width: 280px;

@@ -167,6 +167,8 @@ export interface LogSearchRequest {
     clouds?: string[]
     /** 可选,限定云账号(平台内 ID) */
     account_ids?: number[]
+    /** 可选,限定区域(如 cn-shenzhen / eu-central-1) */
+    regions?: string[]
     /** 可选,限定资源(域名 / LB ID) */
     resources?: string[]
     /** 可选,结构化字段筛选(AND 叠加) */
@@ -210,6 +212,8 @@ export interface LogAggregateRequest {
     clouds?: string[]
     /** 可选,限定云账号(平台内 ID;后端 aggregateRequest 已支持,2026-10-28 前端未暴露) */
     account_ids?: number[]
+    /** 可选,限定区域(与 search.regions 同语义) */
+    regions?: string[]
     resources?: string[]
     /** 可选,结构化字段筛选(可下推的源生效,否则显式标注) */
     filters?: FieldFilter[]

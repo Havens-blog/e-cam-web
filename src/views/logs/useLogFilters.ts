@@ -71,13 +71,14 @@ export interface UseLogFiltersOptions {
     keyword: Ref<string>
     selectedClouds: Ref<string[]>
     selectedAccounts: Ref<number[]>
+    selectedRegions: Ref<string[]>
     selectedResources: Ref<string[]>
     /** 页面注入的重查入口（改完筛选/下钻后触发） */
     triggerSearch: () => void
 }
 
 export function useLogFilters(opts: UseLogFiltersOptions) {
-    const { activeType, currentFields, currentMeta, allEntries, aggregate, timeRange, keyword, selectedClouds, selectedAccounts, selectedResources, triggerSearch } = opts
+    const { activeType, currentFields, currentMeta, allEntries, aggregate, timeRange, keyword, selectedClouds, selectedAccounts, selectedRegions, selectedResources, triggerSearch } = opts
 
     // ---- 结构化字段筛选（多条件 AND；与 keyword 叠加） ----
     const fieldFilters = ref<FieldFilterRow[]>([])
@@ -283,6 +284,8 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
                 end_time: timeRange.value[1].getTime(),
                 query: keyword.value || undefined,
                 clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+                account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
+                regions: selectedRegions.value.length ? selectedRegions.value : undefined,
                 resources: selectedResources.value.length ? selectedResources.value : undefined,
                 filters: buildFilters(),
                 dimension: aggrDimension.value || undefined,

@@ -39,6 +39,8 @@ export interface UseLogSearchOptions {
     selectedResources: Ref<string[]>
     /** 账号级筛选(平台内 ID;空 = 全部;search/aggregate 请求均携带,2026-10-28 口径确认) */
     selectedAccounts: Ref<number[]>
+    /** 区域级筛选(空 = 全部;search 请求携带,后端联邦层映射为资源过滤) */
+    selectedRegions: Ref<string[]>
     limit: Ref<number>
     aggrDimension: Ref<string>
     aggrMetric: Ref<string>
@@ -65,6 +67,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         selectedClouds,
         selectedResources,
         selectedAccounts,
+        selectedRegions,
         limit,
         aggrDimension,
         aggrMetric,
@@ -185,6 +188,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
             query: keyword.value || undefined,
             clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
             account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
+            regions: selectedRegions.value.length ? selectedRegions.value : undefined,
             resources: selectedResources.value.length ? selectedResources.value : undefined,
             filters: filters as FieldFilter[] | undefined,
         }
@@ -247,6 +251,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
                 query: keyword.value || undefined,
                 clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
                 account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
+            regions: selectedRegions.value.length ? selectedRegions.value : undefined,
                 resources: selectedResources.value.length ? selectedResources.value : undefined,
                 filters: buildFilters(),
                 limit: limit.value,
@@ -295,6 +300,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
                 query: keyword.value || undefined,
                 clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
                 account_ids: failedIds,
+                regions: selectedRegions.value.length ? selectedRegions.value : undefined,
                 resources: selectedResources.value.length ? selectedResources.value : undefined,
                 filters: buildFilters(),
                 limit: limit.value,
