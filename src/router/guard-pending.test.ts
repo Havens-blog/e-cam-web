@@ -2,7 +2,7 @@
 /**
  * 守卫在「导航被拦截前」登记目标页：锁住 M1（401 拦截器先跳转时仍用目标页）。
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getEcmdbToken = vi.fn()
 const redirectToLogin = vi.fn()
@@ -53,6 +53,10 @@ beforeEach(() => {
     redirectToLogin.mockClear()
     setPendingRedirectTarget.mockClear()
     fetchUserInfo.mockReset()
+})
+
+afterEach(() => {
+    vi.unstubAllEnvs()
 })
 
 describe('authGuard 目标页登记', () => {

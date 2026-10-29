@@ -5,7 +5,6 @@ const getEcmdbToken = vi.fn()
 const redirectToLogin = vi.fn()
 const fetchUserInfo = vi.fn()
 const hasCertManageAccess = vi.fn()
-const setPendingRedirectTarget = vi.fn()
 const storeState = { isLoggedIn: true, isAdmin: false, permissions: [] as string[] }
 
 vi.mock('@/utils/cookie', () => ({ getEcmdbToken: () => getEcmdbToken() }))
@@ -14,7 +13,6 @@ vi.mock('@/api/request', async (importOriginal) => {
     return {
         ...actual,
         redirectToLogin: (url?: string) => redirectToLogin(url),
-        setPendingRedirectTarget: (url?: string) => setPendingRedirectTarget(url),
     }
 })
 vi.mock('@/utils/cert-permission', async (importOriginal) => {

@@ -55,7 +55,9 @@ describe('redirectToLogin 回跳优先级', () => {
         )
     })
 
-    it('pending target 用后清空：第二次跳转不再复用它', async () => {
+    // 注意：同实例内 redirectToLogin 会被 isRedirectingToLogin 闩锁早退，
+    // 「用后清空」无法在同实例观测；此例只保证「新模块实例不复用上一实例的 pending」。
+    it('新模块实例不复用上一实例的 pending target', async () => {
         stubLocation('http://localhost:8888/cam/certs/dashboard')
         const mod = await freshModule()
         mod.setPendingRedirectTarget('http://localhost:8888/cam/tasks')
