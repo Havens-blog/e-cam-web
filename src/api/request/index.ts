@@ -33,16 +33,17 @@ export function appUrlForPath(fullPath: string): string {
     return `${window.location.origin}${base}${path}`
 }
 
-/**
- * 统一跳转登录页（防重复）
- * @param redirectTo 回跳地址；路由守卫应传「要去的目标页」绝对地址，
- *   否则 window.location.href 在 push 生效前仍是「当前页」，登录后会回到错误页面。
- */
 /** 登记「登录成功后应回跳的目标页」；守卫在导航被拦截前调用 */
 export function setPendingRedirectTarget(url?: string) {
     pendingRedirectTarget = url
 }
 
+/**
+ * 统一跳转登录页（防重复）
+ * @param redirectTo 回跳地址。优先级：显式参数 > 守卫登记的目标页 > 当前 URL。
+ *   路由守卫应传「要去的目标页」：SPA 内 push 尚未生效时 window.location.href 仍是旧页，
+ *   直接用它会令用户登录后回到错误页面。
+ */
 export function redirectToLogin(redirectTo?: string) {
     if (isRedirectingToLogin) return
     isRedirectingToLogin = true

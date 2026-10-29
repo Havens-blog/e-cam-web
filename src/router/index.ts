@@ -90,6 +90,8 @@ router.beforeEach(authGuard)
  * 在路由跳转后执行
  */
 router.afterEach((_to: RouteLocationNormalized) => {
+    // 导航已落地：清掉守卫登记的回跳目标，避免「导航取消 + 后续无关 401」回跳到用户没打开过的页面
+    setPendingRedirectTarget(undefined)
     // 可以在这里添加页面访问统计等逻辑
 })
 
