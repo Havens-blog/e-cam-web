@@ -23,6 +23,12 @@ export interface DnsRecord {
     value: string
     ttl: number
     priority: number
+    /**
+     * 权重（负载均衡解析，0-100）。
+     * 后端以"无值即缺省/`null`"表达"该云或该记录无权重概念"（如阿里云仅负载均衡记录有权重、
+     * 且该云权重只读；华为/火山不支持），前端统一展示为 `-`，不得当作 0 展示。
+     */
+    weight?: number | null
     line: string
     status: string
     provider: string
@@ -71,6 +77,8 @@ export interface CreateDnsRecordReq {
     ttl?: number
     priority?: number
     line?: string
+    /** 权重（0-100，可选）；仅对"可写"云可提交，否则后端 400060 拒绝 */
+    weight?: number
 }
 
 /** 修改解析记录请求 */
@@ -82,4 +90,6 @@ export interface UpdateDnsRecordReq {
     ttl?: number
     priority?: number
     line?: string
+    /** 权重（0-100，可选，缺省=不修改）；仅对"可写"云可提交，否则后端 400060 拒绝 */
+    weight?: number
 }
