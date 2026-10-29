@@ -75,6 +75,22 @@ describe('assertBinaryPayload（二进制下载的业务信封嗅探）', () => 
         expect(await (out.data as Blob).text()).toBe('[{"id":1},{"id":2}]')
     })
 
+    it('标量或空对象的 data 不重建文件（避免产出坏文件）', async () => {
+        for (const data of [0, false, '', {}, []]) {
+            const res = response(jsonBlob({ code: 0, data }))
+            await expect(assertBinaryPayload(res)).rejects.toThrow('接口未返回文件')
+        }
+    })
+
+    it('字符串 code "0"/"200" 视为成功码', async () => {
+        const emptyRes = response(jsonBlob({ code: '200', data: null }))
+        await expect(assertBinaryPayload(emptyRes)).rejects.toThrow('接口未返回文件')
+
+        const withData = response(jsonBlob({ code: '0', data: [{ id: 9 }] }))
+        const out = await assertBinaryPayload(withData)
+        expect(await (out.data as Blob).text()).toBe('[{"id":9}]')
+    })
+
     it('大体积顶层数组（>64KB）走头部预判，不解析全文', async () => {
         const rows = Array.from({ length: 12000 }, (_, i) => ({ id: i, name: 'row-' + i }))
         const blob = new Blob([JSON.stringify(rows)], { type: 'application/json' })

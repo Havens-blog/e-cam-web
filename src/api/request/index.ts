@@ -157,7 +157,10 @@ export async function assertBinaryPayload(response: AxiosResponse) {
     if (isSuccessCode) {
         // 成功信封但带真实数据（如 { code:0, data:[...] }）：用 data 重建文件，别把可用数据判死
         const inner = envelope.data
-        const hasData = Array.isArray(inner) ? inner.length > 0 : inner !== null && inner !== undefined && inner !== ''
+        // 只接受「非空数组 / 非空对象」：标量（0/false/""）与空对象重建出来就是坏文件
+        const hasData = Array.isArray(inner)
+            ? inner.length > 0
+            : inner !== null && typeof inner === 'object' && Object.keys(inner as object).length > 0
         if (hasData) {
             const rebuilt = JSON.stringify(inner)
             response.data = new Blob([rebuilt], { type: 'application/json' })
