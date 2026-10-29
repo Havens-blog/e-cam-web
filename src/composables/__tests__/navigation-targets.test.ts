@@ -36,8 +36,11 @@ function collectRoutes() {
     const paths = [...src.matchAll(/path:\s*'([^']+)'/g)]
         .map((m) => m[1])
         .filter((p): p is string => !!p)
+    // 通配/catch-all（如 `/:pathMatch(.*)*`，即 404 兜底）必须排除：
+    // 否则 `:[^/]+` 会被替换成"任意单段"，使匹配器**匹配一切单段路径**，
+    // 单段死链（如已移除的 /topology）将被静默放过（实测踩到该假绿，2026-10-29）。
     const dynamics = paths
-        .filter((p) => p.includes(':'))
+        .filter((p) => p.includes(':') && !p.includes('*') && !p.includes('pathMatch'))
         .map((p) => new RegExp('^' + p.replace(/:[^/]+/g, '[^/]+').replace(/\//g, '\\/') + '$'))
     return { paths, dynamics }
 }
@@ -56,9 +59,17 @@ function findStaticTargets(): { file: string; line: number; path: string }[] {
         const lines = readFileSync(file, 'utf8').split(/\r?\n/)
         lines.forEach((line, idx) => {
             const patterns = [
+                // 字符串式
                 /router\.(?:push|replace)\(\s*['"]([^'"]+)['"]/g,
                 /\b(?:push|replace)\(\s*['"]([^'"]+)['"]/g,
                 /to="([^"]+)"/g,
+                // 对象式：push({ path: '/x' }) / :to="{ path: '/x' }"
+                /(?:push|replace)\(\s*\{\s*path:\s*['"]([^'"]+)['"]/g,
+                /:to="\{\s*path:\s*'([^']+)'/g,
+                // 原生跳转：href="/x" / window.open('/x') / location.href = '/x'
+                /href="(\/[^"]*)"/g,
+                /window\.open\(\s*['"](\/[^'"]*)['"]/g,
+                /location\.href\s*=\s*['"](\/[^'"]*)['"]/g,
             ]
             for (const re of patterns) {
                 for (const m of line.matchAll(re)) {
@@ -76,6 +87,19 @@ function findStaticTargets(): { file: string; line: number; path: string }[] {
 }
 
 describe('导航目标契约', () => {
+    it('匹配器不得"空转"：任意不存在的路径都必须判为未知', () => {
+        // 关键自检（2026-10-29 实测踩过假绿）：若把路由表的 404 兜底 `/:pathMatch(.*)*`
+        // 误当动态段，`:[^/]+` 会膨胀成"任意单段"，匹配器将匹配一切单段路径 ——
+        // 于是单段死链（如已移除的 /topology）被静默放过。此处用几个必然不存在的路径
+        // 锁死该行为，含**单段**与**多段**两种形态。
+        for (const p of ['/definitely-not-a-route', '/definitely/not/a/route', '/topology-absent']) {
+            expect(isKnownTarget(p), `${p} 被判为已知路由，说明匹配器空转`).toBe(false)
+        }
+        // 合法目标仍必须判为已知（含动态段）
+        expect(isKnownTarget('/dashboard')).toBe(true)
+        expect(isKnownTarget('/assets/123')).toBe(true)
+    })
+
     it('静态内部跳转路径必须存在于路由表（防止指向已移除路由的死链）', () => {
         const targets = findStaticTargets()
         // 扫描有效性自检：应能扫到大量合法跳转，否则说明正则/路径失效（避免"假绿"）
