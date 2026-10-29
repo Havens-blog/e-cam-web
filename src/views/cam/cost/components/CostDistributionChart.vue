@@ -2,7 +2,13 @@
   <div class="distribution-chart-card">
     <div class="chart-header">
       <span class="chart-title">成本分布</span>
-      <el-radio-group v-model="activeDimension" size="small" @change="handleDimensionChange">
+      <!-- aria-label：EP 的 radio-group 在未提供时兜底输出英文 "radio-group"，中文界面下无意义 -->
+      <el-radio-group
+        v-model="activeDimension"
+        size="small"
+        aria-label="成本分布维度"
+        @change="handleDimensionChange"
+      >
         <el-radio-button value="provider">按云厂商</el-radio-button>
         <el-radio-button value="service_type">按服务类型</el-radio-button>
         <el-radio-button value="region">按地域</el-radio-button>

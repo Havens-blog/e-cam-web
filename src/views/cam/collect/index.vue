@@ -1,6 +1,7 @@
 <template>
   <PageContainer>
     <ManagerHeader
+      :title-level="1"
       title="采集管理"
       subtitle="手动触发云账单数据采集"
       :show-add-button="false"

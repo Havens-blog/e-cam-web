@@ -3,6 +3,7 @@
     <ManagerHeader
       title="成本分析"
       subtitle="分析云平台成本趋势和分布"
+      :title-level="1"
       @refresh="fetchCostAnalysis"
     />
 

@@ -1,6 +1,7 @@
 <template>
   <PageContainer>
     <ManagerHeader
+      :title-level="1"
       title="数据字典"
       subtitle="管理系统字典类型与字典项数据"
       :show-add-button="false"

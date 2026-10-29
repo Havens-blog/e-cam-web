@@ -3,6 +3,7 @@
     <ManagerHeader
       title="预算管理"
       subtitle="设置预算规则，监控成本消耗进度"
+      :title-level="1"
       add-button-text="创建预算"
       @add="openCreateDialog"
       @refresh="fetchAll"

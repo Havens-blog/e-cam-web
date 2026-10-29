@@ -3,6 +3,7 @@
     <ManagerHeader
       title="成本概览"
       subtitle="多云成本分析与 FinOps 管理"
+      :title-level="1"
       :show-add-button="false"
       @refresh="refreshAll"
     />

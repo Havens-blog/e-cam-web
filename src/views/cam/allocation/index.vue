@@ -1,6 +1,7 @@
 <template>
   <PageContainer>
     <ManagerHeader
+      :title-level="1"
       title="成本分摊"
       subtitle="配置分摊规则，按多维度查看成本归属"
       :show-add-button="false"

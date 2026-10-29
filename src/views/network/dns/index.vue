@@ -2,7 +2,8 @@
   <PageContainer>
     <div class="dns-page">
       <div class="page-header">
-        <div class="page-title">DNS 管理</div>
+        <!-- 原为 <div>，页面缺少 <h1>；.page-title 已显式定义 24px/700，改为 h1 视觉不变 -->
+        <h1 class="page-title">DNS 管理</h1>
         <div class="page-desc">统一管理多云平台的 DNS 域名和解析记录</div>
       </div>
 
