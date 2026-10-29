@@ -186,4 +186,32 @@ const emit = defineEmits<{
     }
   }
 }
+
+/* IAM_USERS_MOBILE_NO_OVERFLOW：分页控件 7 页时约 490px，而 360 下可用宽度仅约 230px。
+   ≤800 而非 ≤768：769 起侧栏展开为 220px，内容宽骤降，490px 的分页条会溢出约 10px。
+   - 控件与页码序列都可换行
+   - 页码改用 min-width + 自动宽度（固定 30px 会在 padding/边框挤压下裁切 3 位数）
+   - 只压缩列间距，不动 row-gap，避免换行后两行贴死 */
+@media (max-width: 800px) {
+  .pagination-bar .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 4px;
+    row-gap: 8px;
+  }
+
+  .pagination-bar .page-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 4px;
+    row-gap: 4px;
+  }
+
+  .pagination-bar .page-num,
+  .pagination-bar .page-btn {
+    width: auto;
+    min-width: 28px;
+    padding: 0 4px;
+  }
+}
 </style>

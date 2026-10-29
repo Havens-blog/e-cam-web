@@ -107,4 +107,12 @@ const emit = defineEmits<{
     }
   }
 }
+
+/* IAM_USERS_MOBILE_NO_OVERFLOW：360 下三个操作按钮合计 316px，内容区仅约 272px */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
 </style>
