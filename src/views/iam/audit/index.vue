@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { listAuditLogsApi } from '@/api/iam'
+import { normalizeAuditLogs } from './normalize'
 import type { AuditLog } from '@/api/types/iam'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
@@ -253,7 +254,8 @@ const loadAuditLogs = async () => {
       size: pagination.size
     }
     const res = await listAuditLogsApi(params)
-    logList.value = res.data.data ?? res.data.logs ?? []
+    // 后端字段与表格绑定不一致（operator_name vs operator、ctime vs operation_time），统一归一
+    logList.value = normalizeAuditLogs((res.data.data ?? res.data.logs ?? []) as never)
     pagination.total = res.data.total || 0
   } catch (error) {
     console.error('加载审计日志失败:', error)
