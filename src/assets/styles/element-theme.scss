@@ -257,6 +257,20 @@
   .el-table__row:hover > td.el-table__cell {
     background-color: var(--table-row-hover);
   }
+
+  // 固定列必须不透明：斑马纹行的底色是半透明叠加（rgba(255,255,255,0.03)），
+  // 横滑时下层文字会透出来与固定列内容叠字（1024 下实测）。
+  .el-table-fixed-column--left,
+  .el-table-fixed-column--right {
+    // 与卡片/表格底色一致（--bg-elevated），用 --bg-base 会出现一道更暗的竖带
+    background-color: var(--bg-elevated, var(--bg-base)) !important;
+  }
+
+  .el-table__row--striped .el-table-fixed-column--left,
+  .el-table__row--striped .el-table-fixed-column--right {
+    // 斑马纹是白色 3% 叠加在表格底色上：合成成实色，横滑时下层文字才不会透出
+    background-color: color-mix(in srgb, var(--bg-elevated, #0f1011) 97%, white) !important;
+  }
 }
 
 // 对话框
