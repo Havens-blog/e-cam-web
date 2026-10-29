@@ -128,6 +128,29 @@
           aria-label="复制查询链接"
           @click="copyQueryLink"
         >复制链接</el-button>
+        <el-button
+          size="small"
+          text
+          type="primary"
+          aria-label="保存当前查询条件"
+          @click="handleSaveQuery"
+        >保存查询</el-button>
+        <el-dropdown trigger="click">
+          <el-button size="small" text aria-label="已保存的查询">
+            已存查询{{ savedQueries.length ? `(${savedQueries.length})` : '' }}<el-icon><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-if="!savedQueries.length" disabled>暂无保存的查询</el-dropdown-item>
+              <el-dropdown-item v-for="q in savedQueries" :key="q.id" @click="handleLoadSaved(q)">
+                <span class="saved-query-item">
+                  <span class="saved-query-name">{{ q.name }}</span>
+                  <el-icon class="saved-query-del" aria-label="删除该查询" @click.stop="removeQuery(q.id)"><Delete /></el-icon>
+                </span>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
 
       <!-- 结构化字段筛选(多条件 AND 叠加,语义在统一字段上): -->
@@ -507,7 +530,7 @@
 import { ArrowDown, ArrowRight, Delete, Refresh } from '@element-plus/icons-vue'
 import { getLogTypesApi } from '@/api/logs'
 import type { LogAggregateResponse, LogDiagnoseContext, LogEntry, LogType, LogTypeMeta } from '@/api/types/logs'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import CacheAnalyzeCard from './components/CacheAnalyzeCard.vue'
 import LogDetailDrawer from './components/LogDetailDrawer.vue'
@@ -531,6 +554,8 @@ import { DIM_TIP, FILTER_OPS, METRIC_OPTS, useLogFilters } from './useLogFilters
 import { useLogSearch } from './useLogSearch'
 import { useLogSources } from './useLogSources'
 import { useLogUrlSync } from './useLogUrlSync'
+import { useSavedQueries } from './useSavedQueries'
+import type { SavedQuery } from './saved-queries'
 import { clampWindow, hasQueryParams } from './url-state'
 
 /** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
@@ -692,6 +717,51 @@ const { hydrateFromUrl, copyQueryLink } = useLogUrlSync({
     currentMeta,
     limitOptions: LIMIT_OPTIONS,
 })
+
+// ---- 查询条件保存与复用(localStorage 预设;账号筛选也纳入) ----
+const { savedQueries, saveCurrent, applyQuery, removeQuery } = useSavedQueries({
+    activeType,
+    timeRange,
+    selectedClouds,
+    selectedAccounts,
+    selectedResources,
+    keyword,
+    fieldFilters,
+    aggrDimension,
+    aggrMetric,
+    limit,
+    cloudsTouched,
+    currentMeta,
+    limitOptions: LIMIT_OPTIONS,
+})
+
+function handleSaveQuery() {
+    ElMessageBox.prompt('给当前查询条件起个名字(类型/时间/云/账号/源/关键词/字段筛选)', '保存查询', {
+        confirmButtonText: '保存',
+        cancelButtonText: '取消',
+        inputPlaceholder: '例如:生产 WAF 攻击源排查',
+        inputValidator: (v) => (v && v.trim() ? true : '名称不能为空'),
+    })
+        .then(({ value }) => {
+            saveCurrent(value)
+        })
+        .catch(() => {})
+}
+
+function handleLoadSaved(q: SavedQuery) {
+    const typeChanged = q.state.t !== activeType.value
+    if (typeChanged) {
+        // 复用保存条件时若类型变化:清理旧类型结果/折叠/筛选并刷新源清单,
+        // 再由 applyQuery 回填保存条件(时间窗不回退到默认,保留保存值)
+        resetSearch()
+        aggregate.value = null
+        resetCollapsed()
+        resetFilters()
+        void loadSources()
+    }
+    applyQuery(q.state)
+    if (timeRange.value) void doSearch()
+}
 
 // ================= 详情抽屉 =================
 const drawerVisible = ref(false)
@@ -938,6 +1008,28 @@ onMounted(async () => {
     flex: 1;
     min-width: 200px;
     max-width: 320px;
+}
+/* 已保存查询下拉项:名称 + 行内删除 */
+.saved-query-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.saved-query-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.saved-query-del {
+    flex-shrink: 0;
+    color: var(--el-text-color-secondary);
+
+    &:hover {
+        color: var(--el-color-danger);
+    }
 }
 /* 结构化字段筛选 */
 .filter-fields {
