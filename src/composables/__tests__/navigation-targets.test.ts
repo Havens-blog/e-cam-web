@@ -110,6 +110,38 @@ describe('导航目标契约', () => {
         expect(dangling, `发现指向不存在路由的跳转:\n${detail}`).toEqual([])
     })
 
+    it('路由表自身的 redirect 目标必须存在（否则进入该路由即被重定向到空处）', () => {
+        const src = readFileSync(join(SRC, 'router', 'routes.ts'), 'utf8')
+        const redirects = [...src.matchAll(/redirect:\s*'([^']+)'/g)]
+            .map((m) => m[1])
+            .filter((t): t is string => !!t && t.startsWith('/'))
+        // 非空转自检：路由表确实存在字符串形式 redirect（当前 7 条），否则说明正则或写法变了
+        expect(redirects.length, '未扫到任何字符串形式的 redirect，检查扫描正则').toBeGreaterThan(0)
+        const dangling = redirects.filter((t) => !isKnownTarget(t))
+        expect(dangling, `以下 redirect 指向不存在路由: ${dangling.join(', ')}`).toEqual([])
+    })
+
+    it('按路由名跳转（push/replace/to 的 name）必须存在于路由表 name 集合', () => {
+        const routesSrc = readFileSync(join(SRC, 'router', 'routes.ts'), 'utf8')
+        const names = new Set([...routesSrc.matchAll(/name:\s*'([^']+)'/g)].map((m) => m[1]).filter((n): n is string => !!n))
+        expect(names.size, '未扫到路由 name，检查扫描正则').toBeGreaterThan(10)
+
+        const bad: string[] = []
+        for (const file of walk(SRC)) {
+            const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+            lines.forEach((line, idx) => {
+                // 仅在"跳转上下文"里取 name，避免把路由定义/组件 props 误判为跳转
+                if (!/(?:push|replace)\(|:to=|\bto:/.test(line)) return
+                for (const m of line.matchAll(/name:\s*['"]([^'"]+)['"]/g)) {
+                    const n = m[1]
+                    if (!n || n.includes('${')) continue
+                    if (!names.has(n)) bad.push(`${relative(SRC, file)}:${idx + 1} name=${n}`)
+                }
+            })
+        }
+        expect(bad, `以下按名跳转引用了不存在的路由名:\n${bad.join('\n')}`).toEqual([])
+    })
+
     it('已移除的账号独立路由不得再被引用（本次修复的回归点）', () => {
         const targets = findStaticTargets().map((t) => t.path)
         for (const p of ['/accounts/create', '/accounts/1/edit']) {
