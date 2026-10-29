@@ -76,6 +76,12 @@
           <span class="ttl-value">{{ row?.ttl ?? '-' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="权重" width="80" align="center">
+        <template #default="{ row }">
+          <!-- 无权重概念/云端未返回 → '-'（formatWeight 有单测兜底，不把"不支持"显示成 0） -->
+          <span class="weight-value">{{ formatWeight(row?.weight) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="线路" width="80" align="center">
         <template #default="{ row }">
           {{ lineLabel(row?.line) }}
@@ -129,6 +135,7 @@
 import { getDnsRecordsApi } from '@/api/dns'
 import type { DnsRecord } from '@/api/types/dns'
 import { DNS_LINE_LABELS, DNS_RECORD_SOURCE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { formatWeight } from '../format'
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
