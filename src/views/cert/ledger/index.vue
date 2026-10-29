@@ -410,12 +410,12 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 // ===== Vercel 设计 token（ui-design Design System）+ Element Plus 变量对齐 =====
 .cert-ledger-page {
-  --cert-accent: #0070f3;
+  --cert-accent: #338df5;
   --cert-accent-hover: #3291ff;
   --cert-success: #50e3c2;
   --cert-warning: #f5a623;
   --cert-warning-deep: #d98c0a;
-  --cert-error: #ee0000;
+  --cert-error: #f45959;
   --cert-surface-alt: rgba(255, 255, 255, 0.05);
   --cert-highlight-bg: rgba(0, 112, 243, 0.08);
   --cert-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

@@ -1338,7 +1338,7 @@ onMounted(async () => {
 .card-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
 .title-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; flex-shrink: 0; }
 .card-header-extra { font-size: 12px; color: var(--text-tertiary); }
-.auto-fill-hint { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+.auto-fill-hint { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
 
 /* 原为浅色模式色值 #ecf5ff/#d9ecff —— 深色主题下是浅蓝块，上面的 --text-primary 文字仅 1.03:1（几乎不可见）。
    改用已适配深色的品牌浅底 token（primary-light-9 已在 pages-dark.scss 覆盖为深色 tint）。 */
@@ -1366,7 +1366,7 @@ onMounted(async () => {
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group.full { grid-column: 1 / -1; }
 .form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-.slider-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.slider-hint { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
 .disk-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-surface); margin-bottom: 8px; }
 .disk-icon { font-size: 20px; }
@@ -1374,11 +1374,11 @@ onMounted(async () => {
 .disk-size { display: flex; align-items: center; gap: 6px; }
 .size-unit { font-size: 12px; color: var(--text-tertiary); }
 
-.sg-count-badge { font-size: 11px; font-weight: 500; color: var(--el-color-primary); background: #ecf5ff; padding: 1px 8px; border-radius: 10px; }
+.sg-count-badge { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); background: var(--el-color-primary-light-9); padding: 1px 8px; border-radius: 10px; }
 
 .sg-selector { display: flex; flex-direction: column; gap: 10px; }
 .sg-selected-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: #ecf5ff; border: 1px solid #d9ecff; font-size: 12px; color: var(--el-color-primary); }
+.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: var(--el-color-primary); }
 .sg-tag-icon { font-size: 12px; color: #a0cfff; }
 .sg-tag-name { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sg-tag-remove { font-size: 12px; cursor: pointer; color: #a0cfff; transition: color 0.2s; }
@@ -1401,14 +1401,14 @@ onMounted(async () => {
 .sg-panel-id { font-size: 11px; color: var(--text-muted); margin-top: 1px; font-family: monospace; }
 
 .tags-input-area { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.tag-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; background: #ecf5ff; border: 1px solid #d9ecff; font-size: 12px; color: var(--el-color-primary); }
+.tag-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: var(--el-color-primary); }
 .tag-close { cursor: pointer; font-size: 12px; }
 .tag-close:hover { color: var(--el-color-danger); }
 .tag-add-row { display: flex; align-items: center; gap: 6px; }
 
 .quantity-selector { display: flex; align-items: center; gap: 16px; }
 .quantity-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; user-select: none; }
-.quantity-btn:hover { border-color: var(--el-color-primary); color: var(--el-color-primary); background: #ecf5ff; }
+.quantity-btn:hover { border-color: var(--el-color-primary); color: var(--el-color-primary); background: var(--el-color-primary-light-9); }
 .quantity-value { font-size: 24px; font-weight: 600; color: var(--text-primary); min-width: 50px; text-align: center; }
 
 .right-panel { align-self: start; }

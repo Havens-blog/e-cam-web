@@ -571,7 +571,7 @@ function toggleGroup(key: string) {
   font-size: 10px;
   font-weight: 700;
   background: rgba(245, 108, 108, 0.15);
-  color: #f56c6c;
+  color: color-mix(in srgb, #f56c6c 75%, #fff);
   letter-spacing: 0.5px;
   flex-shrink: 0;
 }
