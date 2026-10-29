@@ -26,7 +26,7 @@ vi.mock('element-plus', async (importOriginal) => {
 })
 
 import { ElMessage } from 'element-plus'
-import HttpRequest, { isErrorNotified, showApiError } from './index'
+import HttpRequest, { isCanceledError, isErrorNotified, showApiError } from './index'
 
 const callableMock = vi.mocked(ElMessage as unknown as ReturnType<typeof vi.fn>)
 const errorMock = vi.mocked((ElMessage as unknown as { error: ReturnType<typeof vi.fn> }).error)
@@ -136,5 +136,30 @@ describe('失败请求的提示契约（装配级）', () => {
         const res = await c.get<{ ok: boolean }>({ url: '/x' })
         expect(totalToasts()).toBe(0)
         expect(res).toEqual({ code: 0, data: { ok: true } })
+    })
+})
+
+
+describe('isCanceledError（统一取消判定）', () => {
+    it('识别 axios CanceledError / AbortError / __CANCEL__', () => {
+        expect(isCanceledError({ code: 'ERR_CANCELED' })).toBe(true)
+        expect(isCanceledError({ name: 'CanceledError' })).toBe(true)
+        expect(isCanceledError({ name: 'AbortError' })).toBe(true)
+        expect(isCanceledError({ __CANCEL__: true })).toBe(true)
+    })
+
+    it('刻意不把超时/断网当取消', () => {
+        // ECONNABORTED 是真超时，signal.aborted 也可能只是超时信号，吞掉会隐藏真实故障
+        expect(isCanceledError({ code: 'ECONNABORTED', message: 'timeout of 30000ms exceeded' })).toBe(false)
+        expect(isCanceledError({ message: 'Network Error' })).toBe(false)
+        expect(isCanceledError(new Error('boom'))).toBe(false)
+        expect(isCanceledError(null)).toBe(false)
+        expect(isCanceledError('x')).toBe(false)
+    })
+
+    it('showApiError 对取消静默（不借用 fallback 文案）', () => {
+        const before = totalToasts()
+        showApiError({ code: 'ERR_CANCELED' }, '导出失败')
+        expect(totalToasts()).toBe(before)
     })
 })

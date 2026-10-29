@@ -32,6 +32,19 @@ let pendingRedirectTarget: string | undefined
  *   - 取消（`code === 'ERR_CANCELED'`）：调用方依赖该 code 判定「查询已取消」；
  *   - 无响应的网络/超时错误：调用方按 `err.message`/`code` 判定，保持原对象。
  */
+/**
+ * 统一的「请求被取消」判定。
+ *
+ * axios 的 CanceledError 形状：`code === 'ERR_CANCELED'`、`name === 'CanceledError'`、
+ * 原型上带 `__CANCEL__`；AbortController 原生中止可能只给 `AbortError`。
+ * 刻意**不**把 `ECONNABORTED`（真超时）或 `signal.aborted` 当取消——否则真超时/真断网会被吞掉。
+ */
+export function isCanceledError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false
+    const e = error as { code?: string; name?: string; __CANCEL__?: boolean }
+    return e.code === 'ERR_CANCELED' || e.name === 'CanceledError' || e.name === 'AbortError' || e.__CANCEL__ === true
+}
+
 /** 标记「该错误的用户提示已由请求层弹过」，调用方 catch 里不必重复提示 */
 const NOTIFIED = '__apiErrorNotified'
 
@@ -53,6 +66,8 @@ export function isErrorNotified(error: unknown): boolean {
  * 这里仅在**没有**被提示过时才补一条，避免两条完全重叠的 toast 把中文盖住。
  */
 export function showApiError(error: unknown, fallback = '操作失败') {
+    // 取消不是错误：既不该提示，也不该借用 fallback 文案
+    if (isCanceledError(error)) return
     if (isErrorNotified(error)) return
     const message = error instanceof Error && error.message ? error.message : fallback
     ElMessage.error(message || fallback)
@@ -65,8 +80,8 @@ export function normalizeRequestError(error: unknown): unknown {
         message?: string
         response?: { data?: unknown; status?: number }
     }
-    // 取消：原样透传（axios CanceledError 的 code 即 ERR_CANCELED）
-    if (err.code === 'ERR_CANCELED') return error
+    // 取消：原样透传（统一走 isCanceledError，避免多处判定口径不一致）
+    if (isCanceledError(error)) return error
     // 无 HTTP 响应（网络错误/超时/业务错误已由拦截器转成 Error）：保持原样
     if (!err.response) return error
 
@@ -323,7 +338,7 @@ class HttpRequest {
 
                 // 取消的请求不是错误：调用方用 AbortController 做「输入防抖/切换取消」，
                 // 既不该弹提示（会被当成网络故障），也不该以 error 级别记日志。判定要放在 logError 之前。
-                if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError' || error.name === 'AbortError') {
+                if (isCanceledError(error)) {
                     logInfo('Request canceled', { requestId, url: error.config?.url }, 'API')
                     return Promise.reject(error)
                 }

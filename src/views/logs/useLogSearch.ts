@@ -18,6 +18,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { aggregateLogsApi, searchLogsApi } from '@/api/logs'
+import { isCanceledError } from '@/api/request'
 import type {
     FieldFilter,
     LogAggregateResponse,
@@ -106,7 +107,8 @@ export function useLogSearch(opts: UseLogSearchOptions) {
 
     /** 取消异常归一到「已取消」文案（axios CanceledError 的 code 即为 ERR_CANCELED） */
     function isCanceled(e: unknown): boolean {
-        return !!e && typeof e === 'object' && (e as { code?: string }).code === 'ERR_CANCELED'
+    // 与请求层共用同一判定，避免「拦截器认 AbortError、页面不认」导致渲染英文 message
+    return isCanceledError(e)
     }
 
     function startProgress() {
