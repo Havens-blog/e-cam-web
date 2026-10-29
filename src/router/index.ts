@@ -6,7 +6,7 @@ import {
     CERT_VIEWER_FALLBACK_PATH,
     hasCertManageAccess,
 } from '@/utils/cert-permission'
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import routes from './routes'
@@ -35,51 +35,47 @@ const router = createRouter({
  * 全局前置守卫
  * 在路由跳转前执行
  */
-router.beforeEach(
-    async (
-        to: RouteLocationNormalized,
-        _from: RouteLocationNormalized,
-        next: NavigationGuardNext
-    ) => {
-        // 设置页面标题
-        if (to.meta.title) {
-            document.title = `${to.meta.title} - CAM 多云资产管理`
-        } else {
-            document.title = 'CAM 多云资产管理'
-        }
+router.beforeEach(async (to: RouteLocationNormalized) => {
+    // 设置页面标题
+    if (to.meta.title) {
+        document.title = `${to.meta.title} - CAM 多云资产管理`
+    } else {
+        document.title = 'CAM 多云资产管理'
+    }
 
-        const userStore = useUserStore()
+    const userStore = useUserStore()
 
-        // 检查 cookie 中是否有 ecmdb session token
-        const hasToken = !!getEcmdbToken()
+    // 检查 cookie 中是否有 ecmdb session token
+    const hasToken = !!getEcmdbToken()
 
-        if (!hasToken) {
+    if (!hasToken) {
+        redirectToLogin()
+        // 用返回值而非 next()：async 守卫若不调用 next 也不返回，vue-router 会报
+        // "Invalid navigation guard"（DEV 下 console.error）。返回 false 表示中止本次导航。
+        return false
+    }
+
+    // 有 token 但还没获取用户信息，尝试获取
+    if (!userStore.isLoggedIn) {
+        const success = await userStore.fetchUserInfo()
+        if (!success) {
             redirectToLogin()
-            return
+            return false
         }
+    }
 
-        // 有 token 但还没获取用户信息，尝试获取
-        if (!userStore.isLoggedIn) {
-            const success = await userStore.fetchUserInfo()
-            if (!success) {
-                redirectToLogin()
-                return
-            }
-        }
+    // 证书域只读角色拦截（任务 6.1）：只读查看者仅可访问 /certs/dashboard 与
+    // /certs/:id；台账/变更管理（含子路由）/配置直接访问时提示并回退到期看板。
+    // 前端拦截仅为体验层——接口由 EIAM 在后端同步拦截（Hard Rule：双侧拦截）。
+    if (to.meta.certManageOnly && !hasCertManageAccess({
+        isAdmin: userStore.isAdmin,
+        permissions: userStore.permissions,
+    })) {
+        ElMessage.warning(CERT_VIEWER_BLOCKED_MESSAGE)
+        return CERT_VIEWER_FALLBACK_PATH
+    }
 
-        // 证书域只读角色拦截（任务 6.1）：只读查看者仅可访问 /certs/dashboard 与
-        // /certs/:id；台账/变更管理（含子路由）/配置直接访问时提示并回退到期看板。
-        // 前端拦截仅为体验层——接口由 EIAM 在后端同步拦截（Hard Rule：双侧拦截）。
-        if (to.meta.certManageOnly && !hasCertManageAccess({
-            isAdmin: userStore.isAdmin,
-            permissions: userStore.permissions,
-        })) {
-            ElMessage.warning(CERT_VIEWER_BLOCKED_MESSAGE)
-            next(CERT_VIEWER_FALLBACK_PATH)
-            return
-        }
-
-        next()
+    return true
     }
 )
 
