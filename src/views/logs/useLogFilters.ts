@@ -87,6 +87,22 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         currentFields.value.filter((f) => !f.key.startsWith('meta.') && f.key !== 'timestamp'),
     )
 
+    // ---- 日志级别快速筛选(app/k8s-event 有 level 字段;单一 eq,复用在 fieldFilters 上) ----
+    /** 当前类型是否有「级别」字段(应用/K8s 事件日志) */
+    const hasLevelField = computed(() => filterableFields.value.some((f) => f.key === 'level'))
+    /** 当前选中的级别(取 fieldFilters 里的 level eq 行;无则空串) */
+    const levelValue = computed(() => {
+        const row = fieldFilters.value.find((f) => f.field === 'level' && f.op === 'eq')
+        return row?.value ?? ''
+    })
+    /** 设置级别:空串清空;非空则更新或新增 level eq 行,随后重查 */
+    function setLevelFilter(level: string) {
+        const v = level.trim()
+        const others = fieldFilters.value.filter((f) => !(f.field === 'level' && f.op === 'eq'))
+        fieldFilters.value = v ? [...others, { field: 'level', op: 'eq', value: v }] : others
+        triggerSearch()
+    }
+
     // ---- 分组聚合维度白名单（后端索引探测：列必须开过 KV 分析索引才能 group by） ----
     /** 当前类型可聚合字段清单（空 = 探测失败/无账号 → 维度下拉回退全量字典，不劣化） */
     const aggregatableFields = computed(() => currentMeta.value?.aggregatable ?? [])
@@ -289,6 +305,9 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
     return {
         fieldFilters,
         filterableFields,
+        hasLevelField,
+        levelValue,
+        setLevelFilter,
         aggregatableFields,
         aggregatableDictFields,
         aggregatableRawFields,
