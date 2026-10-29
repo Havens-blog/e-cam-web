@@ -34,3 +34,17 @@ export function formatEpochDateTime(value: number | string | null | undefined): 
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${year}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
+
+
+/**
+ * 后端查询参数用的时间串（UTC 墙钟，秒精度）。
+ *
+ * 后端用 `time.Parse("2006-01-02 15:04:05", v)` 解析，Go 在无时区标识时按 **UTC** 解释；
+ * 因此这里必须输出 UTC 墙钟而不是本地墙钟（本地墙钟会被当 UTC，UTC+8 下整体偏移 8 小时）。
+ * 也不要直接传 toISOString()（带 T/Z，后端解析直接 400）。
+ */
+export function toBackendDateTime(value: Date | number): string {
+    const ms = value instanceof Date ? value.getTime() : value
+    if (!Number.isFinite(ms)) return ''
+    return new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
+}
