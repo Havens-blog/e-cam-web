@@ -54,7 +54,7 @@
         <div class="panel-card__header">
           <h2>云厂商分布</h2>
         </div>
-        <StateBlock :status="providerStatus" error-text="获取总览数据失败" @retry="fetchOverview">
+        <StateBlock :status="providerStatus" error-text="获取总览数据失败" loading-text="正在加载云厂商分布…" @retry="fetchOverview">
           <div ref="providerChartRef" class="chart-container"></div>
         </StateBlock>
       </section>
@@ -62,7 +62,7 @@
         <div class="panel-card__header">
           <h2>资产类型分布</h2>
         </div>
-        <StateBlock :status="assetTypeStatus" error-text="资产类别统计加载失败" @retry="fetchAssetTypeStats">
+        <StateBlock :status="assetTypeStatus" error-text="资产类别统计加载失败" loading-text="正在加载资产类型分布…" @retry="fetchAssetTypeStats">
           <div ref="assetTypeChartRef" class="chart-container"></div>
         </StateBlock>
       </section>
@@ -74,7 +74,7 @@
         <div class="panel-card__header">
           <h2>地域分布 TOP10</h2>
         </div>
-        <StateBlock :status="regionStatus" error-text="地域统计加载失败" @retry="fetchByRegion">
+        <StateBlock :status="regionStatus" error-text="地域统计加载失败" loading-text="正在加载地域分布…" @retry="fetchByRegion">
           <div ref="regionChartRef" class="chart-container"></div>
         </StateBlock>
       </section>
@@ -86,6 +86,7 @@
           :status="costByProductStatus"
           error-text="产品成本分布加载失败"
           empty-text="暂无成本数据"
+          loading-text="正在加载产品成本 TOP10…"
           @retry="fetchCostByProduct"
         >
           <div ref="costByProductChartRef" class="chart-container"></div>

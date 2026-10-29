@@ -2,8 +2,13 @@
   <div class="state-block">
     <slot v-if="status === 'success'" />
 
+    <!--
+      加载态同时提供读屏播报：el-skeleton 只是视觉骨架屏，读屏不感知「正在加载」。
+      用 sr-only 的 polite live region 播报；文案可由父组件覆盖（loadingText）。
+    -->
     <div v-else-if="status === 'loading'" class="state-block__state">
       <el-skeleton :rows="skeletonRows" animated />
+      <p class="state-block__sr-status" role="status" aria-live="polite">{{ loadingText }}</p>
     </div>
 
     <div v-else-if="status === 'empty'" class="state-block__state">
@@ -62,6 +67,8 @@ interface Props {
   emptyImageSize?: number
   /** loading 骨架屏段落数 */
   skeletonRows?: number
+  /** 加载态读屏播报文案（el-skeleton 无 live region，读屏感知不到「正在加载」） */
+  loadingText?: string
   /** 错误态主文案（吸收 ErrorDisplay.errorInfo.message） */
   errorText?: string
   /** 错误码（吸收 ErrorDisplay.errorInfo.code；空值不展示） */
@@ -77,6 +84,7 @@ withDefaults(defineProps<Props>(), {
   emptyText: '暂无数据',
   emptyImageSize: 120,
   skeletonRows: 3,
+  loadingText: '正在加载…',
   errorText: '操作失败',
   retryText: '重试',
 })
@@ -99,6 +107,19 @@ defineSlots<{
 <style scoped lang="scss">
 .state-block {
   width: 100%;
+
+  /* 读屏播报专用：视觉隐藏但保留在无障碍树中（不能用 display:none，否则播报一并消失） */
+  &__sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   &__state {
     padding: 40px 16px;
