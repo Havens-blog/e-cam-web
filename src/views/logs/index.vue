@@ -250,6 +250,16 @@
       </el-tag>
       <el-tag v-if="resp.truncated" type="warning" size="small">结果已截断(可缩小时间范围或加筛选)</el-tag>
       <span class="strip-total">共 {{ resp.total }} 条</span>
+      <el-button
+        v-if="hasFailedSources"
+        size="small"
+        type="warning"
+        plain
+        :loading="retryingFailed"
+        class="strip-retry"
+        aria-label="重试失败源"
+        @click="retryFailedSources"
+      >重试失败源</el-button>
     </div>
 
     <!-- 分组聚合:自定义维度 + 指标,全窗真实下推(影响上方 TopN 图) -->
@@ -693,6 +703,9 @@ const {
     loadEarlier,
     backToLatest,
     resetSearch,
+    hasFailedSources,
+    retryingFailed,
+    retryFailedSources,
 } = useLogSearch({
     activeType,
     timeRange,
@@ -1200,6 +1213,9 @@ onMounted(async () => {
 .strip-label,
 .strip-total {
     color: var(--el-text-color-secondary);
+}
+.strip-retry {
+    margin-left: auto;
 }
 .source-tag {
     font-size: 12px;
