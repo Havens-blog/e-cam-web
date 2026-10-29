@@ -202,6 +202,65 @@ async function auditDetails() {
     return { rows, bad }
 }
 
+/**
+ * 非法输入健壮性：非法查询值不得导致 5xx（仅 GET，无副作用）。
+ * 期望：4xx 正确拒绝，或 200 容错（忽略/钳制非法值）都算通过；**5xx 记为失败**。
+ */
+const INVALID_INPUT_CASES = [
+    ['非数字 limit', '/api/v1/cam/assets/ecs?offset=0&limit=abc'],
+    ['负数 limit', '/api/v1/cam/assets/ecs?offset=0&limit=-5'],
+    ['负数 offset', '/api/v1/cam/assets/ecs?offset=-1&limit=5'],
+    ['不存在的资产', '/api/v1/cam/assets/ecs/no-such-instance-zzz'],
+    ['不存在的任务', '/api/v1/cam/tasks/not-a-uuid-zzz'],
+    ['非法审计时间', '/api/v1/cam/audit/logs?start_time=garbage&offset=0&limit=1'],
+    ['非法枚举 type', '/api/v1/cam/tasks?type=not-a-type&offset=0&limit=1'],
+    ['非法 account_id', '/api/v1/cam/assets/ecs?account_id=not-a-number'],
+]
+
+async function auditInvalidInput() {
+    const rows = []
+    let bad = 0
+    for (const [label, path] of INVALID_INPUT_CASES) {
+        const { status } = await get(path)
+        const fiveHundred = status >= 500
+        if (fiveHundred) bad++
+        rows.push({ check: label, status, result: fiveHundred ? '⚠ 5xx(未处理错误)' : status === 200 ? '✓ 200(容错)' : `✓ ${status}(正确拒绝)` })
+    }
+    return { rows, bad }
+}
+
+/**
+ * 分页上限保护：超大 limit 不应一次性返回全量（实测 limit=999999 返回 5228/7360 条、4.5–6.4MB）。
+ *
+ * 判定与处置说明：这是**已确认存在**的健壮性风险（绕过分页、放大内存/带宽），
+ * 但修复需后端在多处 handler 加钳制（`limit` 读取点分布于 25 个文件），属**未决事项**，
+ * 故此处只作**警告**（不计失败），保持可见与可回归；决策后再改为失败判据。
+ * 参考：前端当前最大只请求 200（limit/pageSize），故加合理上限对现有客户端零影响。
+ */
+const LIMIT_CASES = [
+    ['资产 DISK', '/api/v1/cam/assets/disk?offset=0&limit=999999'],
+    ['审计日志', '/api/v1/cam/audit/logs?offset=0&limit=999999'],
+    ['资产 ECS', '/api/v1/cam/assets/ecs?offset=0&limit=100000'],
+]
+const LIMIT_ITEM_THRESHOLD = 1000 // 一页超过此条数视为"疑似缺少上限保护"
+
+async function auditLimits() {
+    const rows = []
+    let warnings = 0
+    for (const [label, path] of LIMIT_CASES) {
+        const { status, text } = await get(path)
+        let n = 0
+        try {
+            n = listOf(JSON.parse(text)).length
+        } catch { /* 解析失败按 0 计 */ }
+        const kb = Math.round(text.length / 1024)
+        const risky = status === 200 && n > LIMIT_ITEM_THRESHOLD
+        if (risky) warnings++
+        rows.push({ check: label, status, result: risky ? `⚠ 缺少上限保护：一页返回 ${n} 条 / ${kb}KB（已知未决项）` : `✓ 一页 ${n} 条 / ${kb}KB` })
+    }
+    return { rows, bad: 0, warnings }
+}
+
 async function main() {
     // 鉴权探活
     const probe = await get('/api/v1/cam/cloud-accounts?offset=0&limit=1')
@@ -211,12 +270,16 @@ async function main() {
     }
 
     let failures = 0
+    let warnings = 0
     if (!only || only === 'secrets') { const r = await auditSecrets(); print('敏感字段泄漏', r.rows); failures += r.bad }
     if (!only || only === 'filters') { const r = await auditFilters(); print('筛选是否生效', r.rows); failures += r.bad }
     if (!only || only === 'paging') { const r = await auditPaging(); print('分页是否生效', r.rows); failures += r.bad }
     if (!only || only === 'details') { const r = await auditDetails(); print('详情接口可用性', r.rows); failures += r.bad }
+    if (!only || only === 'invalid') { const r = await auditInvalidInput(); print('非法输入健壮性(不得 5xx)', r.rows); failures += r.bad }
+    if (!only || only === 'limits') { const r = await auditLimits(); print('分页上限保护', r.rows); warnings += r.warnings }
 
-    console.log(`\n结论: ${failures === 0 ? '全部通过' : `${failures} 项需人工确认`}`)
+    const warnPart = warnings ? `，另 ${warnings} 项已知未决警告（不阻塞）` : ''
+    console.log(`\n结论: ${failures === 0 ? '全部通过' : `${failures} 项需人工确认`}${warnPart}`)
     process.exit(failures === 0 ? 0 : 1)
 }
 
