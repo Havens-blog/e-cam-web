@@ -204,7 +204,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .cert-change-report-page {
-  --cert-accent: #0070f3;
+  --cert-accent: #338df5;
   --cert-accent-hover: #3291ff;
   --cert-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 

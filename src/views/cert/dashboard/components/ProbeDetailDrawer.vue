@@ -394,7 +394,7 @@ async function onCopySummary() {
   height: 32px;
   padding: 0 15px;
   border-radius: 6px;
-  background: var(--cert-accent);
+  background: color-mix(in srgb, var(--cert-accent) 72%, #000); /* 白字压实底：压暗后约 5.4:1 */
   color: #ffffff;
   font-size: 14px;
   text-decoration: none;

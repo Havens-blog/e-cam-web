@@ -661,11 +661,11 @@ function detailToChangeList(d: Awaited<ReturnType<typeof getChangeApi>>): Change
 
 <style lang="scss" scoped>
 .cert-wizard-page {
-  --cert-accent: #0070f3;
+  --cert-accent: #338df5;
   --cert-accent-hover: #3291ff;
   --cert-success: #50e3c2;
   --cert-warning: #f5a623;
-  --cert-error: #ee0000;
+  --cert-error: #f45959;
   --cert-verifying: #8b5cf6;
   --cert-surface-alt: rgba(255, 255, 255, 0.05);
   --cert-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
