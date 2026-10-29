@@ -37,11 +37,22 @@ export const useUserStore = defineStore(
         }
 
         /**
+         * 在途 profile 请求（单飞）。
+         *
+         * 【为什么需要】实测（2026-10-30，真实环境逐页统计）：**每个页面**加载都会把
+         * `GET /api/iam/user/profile` 请求 **2 次** —— 触发点是 `main.ts` 启动时的
+         * `initUserState()` 与路由守卫里的 `fetchUserInfo()`，二者在同一次导航内并发执行。
+         * 并发时复用同一在途请求即可，行为与结果完全一致（两处都拿同一个 boolean）。
+         * 请求结束后清空，保证后续仍能真实重取（如租户变更后 reload、登出后重登）。
+         */
+        let inflightFetch: Promise<boolean> | null = null
+
+        /**
          * 从 eiam 获取当前登录用户信息。
          * eiam 的 profile 同时返回权限码与租户上下文，故一次请求即可，
          * 无需再单独调权限菜单接口。
          */
-        const fetchUserInfo = async (): Promise<boolean> => {
+        const doFetchUserInfo = async (): Promise<boolean> => {
             try {
                 const res = await eiamAxios.get('/api/iam/user/profile')
                 const body = res.data
@@ -75,6 +86,19 @@ export const useUserStore = defineStore(
                 console.warn('[user] 请求 eiam profile 失败', err)
                 return false
             }
+        }
+
+        /**
+         * 对外入口：并发调用共享同一在途请求（单飞），避免启动与路由守卫重复拉取。
+         * 不做结果缓存 —— 请求结束后再次调用仍会真实发起（租户变更/重登场景需要）。
+         */
+        const fetchUserInfo = (): Promise<boolean> => {
+            if (!inflightFetch) {
+                inflightFetch = doFetchUserInfo().finally(() => {
+                    inflightFetch = null
+                })
+            }
+            return inflightFetch
         }
 
         /**
