@@ -52,7 +52,7 @@
     <div class="charts-row">
       <section class="panel-card">
         <div class="panel-card__header">
-          <h3>云厂商分布</h3>
+          <h2>云厂商分布</h2>
         </div>
         <StateBlock :status="providerStatus" error-text="获取总览数据失败" @retry="fetchOverview">
           <div ref="providerChartRef" class="chart-container"></div>
@@ -60,7 +60,7 @@
       </section>
       <section class="panel-card">
         <div class="panel-card__header">
-          <h3>资产类型分布</h3>
+          <h2>资产类型分布</h2>
         </div>
         <StateBlock :status="assetTypeStatus" error-text="资产类别统计加载失败" @retry="fetchAssetTypeStats">
           <div ref="assetTypeChartRef" class="chart-container"></div>
@@ -72,7 +72,7 @@
     <div class="charts-row">
       <section class="panel-card">
         <div class="panel-card__header">
-          <h3>地域分布 TOP10</h3>
+          <h2>地域分布 TOP10</h2>
         </div>
         <StateBlock :status="regionStatus" error-text="地域统计加载失败" @retry="fetchByRegion">
           <div ref="regionChartRef" class="chart-container"></div>
@@ -80,7 +80,7 @@
       </section>
       <section class="panel-card">
         <div class="panel-card__header">
-          <h3>产品成本 TOP10（{{ costMonth }}）</h3>
+          <h2>产品成本 TOP10（{{ costMonth }}）</h2>
         </div>
         <StateBlock
           :status="costByProductStatus"
@@ -96,7 +96,7 @@
     <!-- 即将过期资源 -->
     <section ref="expiringRef" class="panel-card expiring-section">
       <div class="panel-card__header">
-        <h3>即将过期资源</h3>
+        <h2>即将过期资源</h2>
         <el-select v-model="expiringDays" size="small" style="width: 120px" @change="fetchExpiring">
           <el-option :label="'7 天内'" :value="7" />
           <el-option :label="'30 天内'" :value="30" />
@@ -618,7 +618,9 @@ onUnmounted(() => {
     align-items: center;
     margin-bottom: 20px;
 
-    h3 {
+    /* 分区标题由 h3 提升为 h2（修标题跳级），样式同步，视觉不变 */
+
+    h2 {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-primary);
