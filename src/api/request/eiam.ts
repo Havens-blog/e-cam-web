@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import { getEcmdbToken } from '@/utils/cookie'
-import { redirectToLogin } from './index'
+import { normalizeRequestError, redirectToLogin } from './index'
 
 /**
  * eiam 统一身份服务专用 axios 实例。
@@ -29,6 +29,8 @@ eiamAxios.interceptors.response.use(
         if (error.response?.status === 401) {
             redirectToLogin()
         }
-        return Promise.reject(error)
+        // 失败归一同主实例（Option A）：eiam 侧消费方（如 switchTenant）此前拿到的是
+        // axios 泛化文案（"Request failed with status code 4xx"），归一后为服务端原因。
+        return Promise.reject(normalizeRequestError(error))
     }
 )
