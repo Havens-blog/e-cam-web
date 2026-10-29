@@ -79,7 +79,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: Number(env.VITE_PORT) || 5173,
       host: true, // 监听所有地址
-      open: true, // 自动打开浏览器
+      // 不自动打开浏览器：测试/多实例（同一端口被反复拉起、CI、自动化验收）下
+      // 每次启动都弹窗会持续干扰使用者（实测：3333 验证实例反复打开 /cam/dashboard）。
+      // 需要时显式用 `vite --open`（临时验证场景由自动化脚本自行导航，无需弹窗）。
+      open: false,
       cors: true, // 允许跨域
       // API 代理配置
       proxy: {
@@ -183,7 +186,8 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 4173,
       host: true,
-      open: true,
+      // 同 server：不自动打开（需要时 `vite preview --open`）
+      open: false,
     },
 
     // 日志级别
