@@ -13,10 +13,22 @@ import type {
     LogSearchRequest,
     LogSearchResponse,
     LogSource,
+    LogType,
     LogTypeMeta,
 } from './types/logs';
 
 const BASE = '/cam/logs';
+
+/** 日志导出审计请求(只承载脱敏后的导出范围与条数,不含关键词/字段筛选值) */
+export interface LogExportAuditRequest {
+    log_type: LogType
+    start_time: number
+    end_time: number
+    clouds?: string[]
+    account_ids?: number[]
+    resources?: string[]
+    count: number
+}
 
 /**
  * 主实例拦截器返回 ResponseData<T>({code,data,msg});统一在此解包,
@@ -58,6 +70,11 @@ export async function searchLogsApi(data: LogSearchRequest, opts?: { signal?: Ab
         signal: opts?.signal,
     })
     return unwrap<LogSearchResponse>(res)
+}
+
+/** 记录一次日志导出审计(CSV 仍由前端生成,此端点只落脱敏审计;失败不阻断导出) */
+export async function exportLogsAuditApi(data: LogExportAuditRequest): Promise<void> {
+    await instance.post<void>({ url: `${BASE}/export-audit`, data }).catch(() => {})
 }
 
 /**

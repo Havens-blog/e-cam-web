@@ -12,7 +12,7 @@
  */
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { aggregateLogsApi } from '@/api/logs'
+import { aggregateLogsApi, exportLogsAuditApi } from '@/api/logs'
 import type {
     FieldFilter,
     LogAggregateResponse,
@@ -70,13 +70,14 @@ export interface UseLogFiltersOptions {
     timeRange: Ref<[Date, Date] | null>
     keyword: Ref<string>
     selectedClouds: Ref<string[]>
+    selectedAccounts: Ref<number[]>
     selectedResources: Ref<string[]>
     /** 页面注入的重查入口（改完筛选/下钻后触发） */
     triggerSearch: () => void
 }
 
 export function useLogFilters(opts: UseLogFiltersOptions) {
-    const { activeType, currentFields, currentMeta, allEntries, aggregate, timeRange, keyword, selectedClouds, selectedResources, triggerSearch } = opts
+    const { activeType, currentFields, currentMeta, allEntries, aggregate, timeRange, keyword, selectedClouds, selectedAccounts, selectedResources, triggerSearch } = opts
 
     // ---- 结构化字段筛选（多条件 AND；与 keyword 叠加） ----
     const fieldFilters = ref<FieldFilterRow[]>([])
@@ -195,6 +196,20 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
     }
 
+    /** 落一条脱敏的导出审计(fire-and-forget,失败不阻断导出) */
+    function recordExportAudit(count: number) {
+        if (!timeRange.value) return
+        void exportLogsAuditApi({
+            log_type: activeType.value,
+            start_time: timeRange.value[0].getTime(),
+            end_time: timeRange.value[1].getTime(),
+            clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+            account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
+            resources: selectedResources.value.length ? selectedResources.value : undefined,
+            count,
+        })
+    }
+
     /** 明细导出：按当前字段字典列导出 allEntries，值口径与表格一致 */
     function exportDetailCsv() {
         if (!allEntries.value.length) return
@@ -206,6 +221,7 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         const csv = csvSerialize(columns.map((c) => c.label), entryRows(allEntries.value, columns))
         downloadCsv(`日志明细-${activeType.value}-${datetimeStamp()}.csv`, csv)
         ElMessage.success(`已导出明细 ${allEntries.value.length} 条`)
+        recordExportAudit(allEntries.value.length)
     }
 
     /** 统计导出：趋势（时间，请求数）+ TopN（名称，计数）两段单文件，首列类型区分 */
@@ -225,6 +241,7 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         }
         downloadCsv(`日志统计-${activeType.value}-${datetimeStamp()}.csv`, csvSerialize(header, rows))
         ElMessage.success('已导出统计(趋势 + TopN)')
+        recordExportAudit(rows.length)
     }
 
     /** 清除下钻：仅移除带下钻标记的条件行（用户手动条件与 keyword 原样保留），并重查还原 */
