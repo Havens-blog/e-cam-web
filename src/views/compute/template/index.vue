@@ -689,6 +689,14 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 20px;
 }
+
+/* 卡片最小 360px：390 视口内容区仅约 302px，会撑出容器（实测溢出 78px），
+   并把「使用模板」按钮裁到视口外。窄屏退化为单列满宽。 */
+@media (max-width: 768px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .template-card {
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-lighter);
@@ -953,5 +961,55 @@ html.dark .btn-secondary {
 html.dark .btn-secondary:hover {
   background: rgba(30, 41, 59, 1);
   color: #e2e8f0;
+}
+
+/* TEMPLATE_MOBILE_NO_OVERFLOW：窄屏下模板页三处溢出（390 卡片撑出 78px、360 搜索框 280px、规格项 102px） */
+@media (max-width: 768px) {
+  /* 卡片头部：窄屏下 info 会被压到 0 宽（模板名消失），4 个操作按钮被 overflow:hidden 裁掉。
+     让头部换行、信息区独占一行、按钮组右对齐。 */
+  .template-card-header {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .template-header-info {
+    flex: 1 1 100%;
+  }
+
+  .template-actions {
+    margin-left: auto;
+  }
+
+  /* 统计卡四列在 320 下被挤到 42px，图标溢出（实测 16px） */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .search-box {
+    /* flex:1 = flex-basis:0%，会把宽度压到 74px（实测 360）；basis 改 100% 才能独占一行 */
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .template-specs {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* 320 下 .spec-item 的 min-content（132px）略大于轨道（126px），溢出 6px：
+     收紧间距并让标签走省略号，保证数值仍完整可见 */
+  .spec-item {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .spec-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 </style>
