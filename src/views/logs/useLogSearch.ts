@@ -62,6 +62,8 @@ export interface UseLogSearchOptions {
 
 /** 取消不是失败：统一文案常量，避免「查询失败」错误卡去解释用户主动取消 */
 export const CANCELED_MESSAGE = '查询已取消'
+/** 取消态说明（与标题分开，避免页面里再手写一份文案） */
+export const CANCELED_DESC = '已停止本次查询：这是你主动取消的结果，不是故障；可随时重新发起查询。'
 
 export function useLogSearch(opts: UseLogSearchOptions) {
     const {
@@ -151,16 +153,15 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         querySourceCount.value > 0 ? `正在查询 ${querySourceCount.value} 个云账号` : '正在查询所选日志源',
     )
     /** 当前错误是否为「用户主动取消」：UI 据此不渲染成故障态（标题/原始错误行/按钮文案） */
-    const isCanceledState = computed(() => searchError.value === CANCELED_MESSAGE)
+    // 用布尔标志而非「文案相等」驱动：改文案、本地化或误撞串都不会让失败态被误判成取消态
+    const searchCanceled = ref(false)
+    const isCanceledState = computed(() => searchCanceled.value)
 
     const progressAria = computed(() => `查询进行中:${progressText.value},已耗时 ${searchElapsed.value} 秒`)
 
     /** 整页失败原因映射：裸错误串转可读中文降级说明（原始串仍附在下方供排查） */
 
     function friendlySearchError(raw: string): string {
-        if (raw === CANCELED_MESSAGE) {
-            return '已停止本次查询：这是你主动取消的结果，不是故障；可随时重新发起查询。'
-        }
         const msg = raw.toLowerCase()
         if (msg.includes('timeout') || raw.includes('超时')) {
             return '查询超时:云端检索耗时过长,可缩小时间范围、减少所选源或降低条数上限后重试。'
@@ -181,6 +182,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
     }
 
     async function doSearch() {
+        searchCanceled.value = false
         // 按钮与回车共用入口：查询进行中（联邦跨多云，耗时可观）直接忽略再次触发，
         // 否则并发叠加请求且响应乱序时后返回的旧结果会覆盖新结果
         if (searching.value) return
@@ -229,7 +231,9 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         } catch (e) {
             resp.value = null
             aggregate.value = null
-            searchError.value = isCanceled(e) ? CANCELED_MESSAGE : errorMessage(e)
+            const canceled = isCanceled(e)
+        searchCanceled.value = canceled
+        searchError.value = canceled ? CANCELED_MESSAGE : errorMessage(e)
         } finally {
             stopProgress()
             searching.value = false

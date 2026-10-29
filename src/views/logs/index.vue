@@ -366,8 +366,8 @@
           >
             {{ isCanceledState ? '⏹' : '⚠' }}
           </div>
-          <div class="state-title">{{ isCanceledState ? '查询已取消' : '查询失败' }}</div>
-          <div class="state-desc">{{ friendlySearchError(searchError) }}</div>
+          <div class="state-title">{{ isCanceledState ? CANCELED_MESSAGE : '查询失败' }}</div>
+          <div class="state-desc">{{ isCanceledState ? CANCELED_DESC : friendlySearchError(searchError) }}</div>
           <div v-if="!isCanceledState" class="state-raw">原始错误:{{ searchError }}</div>
           <el-button
             class="state-cta"
@@ -596,7 +596,7 @@ import {
 } from './format'
 import { useEntryGroups } from './useEntryGroups'
 import { DIM_TIP, FILTER_OPS, METRIC_OPTS, useLogFilters } from './useLogFilters'
-import { useLogSearch } from './useLogSearch'
+import { CANCELED_DESC, CANCELED_MESSAGE, useLogSearch } from './useLogSearch'
 import { useLogSources } from './useLogSources'
 import { useLogUrlSync } from './useLogUrlSync'
 import { useSavedQueries } from './useSavedQueries'
