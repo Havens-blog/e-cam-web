@@ -82,14 +82,14 @@ async function get(path) {
 
 /**
  * 取 data 中的条目数组。
- * 【教训】不同接口键名不同：assets 用 `items`、任务用 `tasks`、部分接口直接返回数组。
- * 只认 items/list 会把"键名不同"误判成"空列表"（实测踩过 tasks）。
+ * 【教训】不同接口键名不同：资产用 `items`、任务用 `tasks`、资源模型用 `models`、
+ * 部分接口直接返回数组。只认 items/list 会把"键名不同"误判成"空列表"（实测踩过 tasks、models）。
  * 这里改为：数组本身、或 data 中**任意单一数组字段**都接受。
  */
 function listOf(json) {
     const d = (json && json.data) || {}
     if (Array.isArray(d)) return d
-    for (const key of ['items', 'list', 'tasks', 'records']) {
+    for (const key of ['items', 'list', 'tasks', 'records', 'models', 'groups', 'users']) {
         if (Array.isArray(d[key])) return d[key]
     }
     const arrayKeys = Object.keys(d).filter((k) => Array.isArray(d[k]))
@@ -156,6 +156,52 @@ function print(title, rows) {
     for (const r of rows) console.log(`  ${r.check.padEnd(28)} [${String(r.status).padEnd(7)}] ${r.result}`)
 }
 
+/**
+ * 详情接口可用性审计：列表首条的 id 能否打开对应详情。
+ * 高产出类：详情 handler 常滞后于列表（改列表忘了详情）→ 点行进详情 404/空。
+ * 无样本时标"跳过"，不计失败（可能是该模块暂无数据，如测试库无权限组）。
+ */
+const DETAIL_CASES = [
+    ['资产 ECS 详情', '/api/v1/cam/assets/ecs?offset=0&limit=1', 'asset_id', (id) => `/api/v1/cam/assets/ecs/${id}`],
+    ['资产 DISK 详情', '/api/v1/cam/assets/disk?offset=0&limit=1', 'asset_id', (id) => `/api/v1/cam/assets/disk/${id}`],
+    ['资产 VSWITCH 详情', '/api/v1/cam/assets/vswitch?offset=0&limit=1', 'asset_id', (id) => `/api/v1/cam/assets/vswitch/${id}`],
+    ['资产 RDS 详情', '/api/v1/cam/assets/rds?offset=0&limit=1', 'asset_id', (id) => `/api/v1/cam/assets/rds/${id}`],
+    ['资产 LB 详情', '/api/v1/cam/assets/lb?offset=0&limit=1', 'asset_id', (id) => `/api/v1/cam/assets/lb/${id}`],
+    ['任务详情', '/api/v1/cam/tasks?offset=0&limit=1', 'id', (id) => `/api/v1/cam/tasks/${id}`],
+    ['IAM 用户详情', '/api/v1/cam/iam/users?page=1&size=1', 'id', (id) => `/api/v1/cam/iam/users/${id}`],
+    ['DNS 域名记录', '/api/v1/cam/dns/domains?offset=0&limit=1', 'domain_name', (id) => `/api/v1/cam/dns/domains/${id}/records`],
+]
+
+function isEmptyData(data) {
+    if (data == null) return true
+    if (Array.isArray(data)) return data.length === 0
+    if (typeof data === 'object') return Object.keys(data).length === 0
+    return false
+}
+
+async function auditDetails() {
+    const rows = []
+    let bad = 0
+    for (const [label, listPath, idKey, detailOf] of DETAIL_CASES) {
+        const l = await get(listPath)
+        let id
+        try {
+            id = listOf(JSON.parse(l.text))[0]?.[idKey]
+        } catch { /* 解析失败 → id 仍为 undefined */ }
+        if (!id) {
+            rows.push({ check: label, status: l.status, result: `∅ 列表无样本(缺 ${idKey})，跳过(不计失败)` })
+            continue
+        }
+        const d = await get(detailOf(id))
+        let empty = true
+        try { empty = isEmptyData(JSON.parse(d.text).data) } catch { /* 非 JSON 视为空 */ }
+        const ok = d.status === 200 && !empty
+        if (!ok) bad++
+        rows.push({ check: label, status: `${l.status}/${d.status}`, result: ok ? '✓ 详情可用' : empty ? '⚠ 详情返回空数据' : '⚠ 详情异常' })
+    }
+    return { rows, bad }
+}
+
 async function main() {
     // 鉴权探活
     const probe = await get('/api/v1/cam/cloud-accounts?offset=0&limit=1')
@@ -168,6 +214,7 @@ async function main() {
     if (!only || only === 'secrets') { const r = await auditSecrets(); print('敏感字段泄漏', r.rows); failures += r.bad }
     if (!only || only === 'filters') { const r = await auditFilters(); print('筛选是否生效', r.rows); failures += r.bad }
     if (!only || only === 'paging') { const r = await auditPaging(); print('分页是否生效', r.rows); failures += r.bad }
+    if (!only || only === 'details') { const r = await auditDetails(); print('详情接口可用性', r.rows); failures += r.bad }
 
     console.log(`\n结论: ${failures === 0 ? '全部通过' : `${failures} 项需人工确认`}`)
     process.exit(failures === 0 ? 0 : 1)
