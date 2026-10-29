@@ -46,6 +46,18 @@ export function isErrorNotified(error: unknown): boolean {
     return !!(error && typeof error === 'object' && (error as Record<string, unknown>)[NOTIFIED])
 }
 
+/**
+ * 统一的请求失败提示入口（供各页面/对话框 catch 使用）。
+ *
+ * 约定：请求层弹过的提示（403/401/业务错误/兜底）会给错误打标记，
+ * 这里仅在**没有**被提示过时才补一条，避免两条完全重叠的 toast 把中文盖住。
+ */
+export function showApiError(error: unknown, fallback = '操作失败') {
+    if (isErrorNotified(error)) return
+    const message = error instanceof Error && error.message ? error.message : fallback
+    ElMessage.error(message || fallback)
+}
+
 export function normalizeRequestError(error: unknown): unknown {
     if (!error || typeof error !== 'object') return error
     const err = error as {
@@ -286,7 +298,7 @@ class HttpRequest {
                 if (code === undefined) {
                     logWarn('Invalid API response format', { requestId, response: apiData }, 'API')
                     ElMessage.error('接口响应格式错误')
-                    return Promise.reject(new Error('接口响应格式错误'))
+                    return Promise.reject(markErrorNotified(new Error('接口响应格式错误')))
                 }
 
                 // code为0或200都视为成功
@@ -319,8 +331,9 @@ class HttpRequest {
                 // 401 未认证：session 过期或未登录，跳转到控制台登录页（/console/login）
                 if (error.response?.status === 401) {
                     logWarn('Session expired, redirecting to console login', {}, 'AUTH')
+                    // redirectToLogin 内部会弹「登录状态已失效」提示，因此这里也标记为已提示
                     redirectToLogin()
-                    return Promise.reject(error)
+                    return Promise.reject(markErrorNotified(error))
                 }
 
                 // 403 无权限

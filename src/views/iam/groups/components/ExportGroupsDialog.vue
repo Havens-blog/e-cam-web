@@ -57,6 +57,7 @@
 import { getGroupMembersApi } from '@/api'
 import type { CloudUser, PermissionGroup } from '@/api/types/iam'
 import { ElMessage } from 'element-plus'
+import { showApiError } from '@/api/request'
 import { computed, reactive, ref } from 'vue'
 
 interface Props {
@@ -179,7 +180,7 @@ const handleExport = async () => {
     dialogVisible.value = false
   } catch (error: any) {
     console.error('导出失败:', error)
-    ElMessage.error(error.message || '导出失败')
+    showApiError(error, '导出失败')
   } finally {
     exporting.value = false
   }
