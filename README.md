@@ -207,6 +207,34 @@ pnpm dev
 # 访问应用: http://localhost:5173/cam/dashboard
 ```
 
+> **多实例 / 验证实例务必隔离依赖缓存（否则页面会 `504 Outdated Optimize Dep` 打不开）**
+>
+> Vite 把依赖预打包结果写在 `cacheDir`（默认 `node_modules/.vite/deps`）。若**同一份
+> `node_modules` 上跑了两个以上 vite 实例**（主 dev server + 工作树验证实例，或用目录
+> 联接共享 `node_modules`），后启动的实例会**重写同一份 deps**，先启动实例已在浏览器里
+> 加载的依赖 URL（`…/deps/xxx.js?v=<旧hash>`）随之失效 → 页面报
+> `504 Outdated Optimize Dep`，且**普通刷新无效**（服务端内存元数据仍指向已被替换的
+> 文件），**必须重启该 dev server**。
+>
+> 规避：验证实例用独立配置指向**独立 cacheDir**（必要时另开端口）：
+>
+> ```ts
+> // vite.verify.config.ts（工作树内本地文件，不入库）
+> import { defineConfig } from 'vite'
+> import baseConfig from './vite.config'
+>
+> export default defineConfig(async (env) => {
+>   const base = typeof baseConfig === 'function' ? await baseConfig(env) : baseConfig
+>   return {
+>     ...base,
+>     cacheDir: 'node_modules/.vite-verify', // 与主实例的 .vite 分离
+>     server: { ...(base as any).server, port: 3333, open: false },
+>   }
+> })
+> ```
+>
+> 启动：`npx vite --config vite.verify.config.ts`
+
 **注意**: 所有页面路由都使用 `/cam` 前缀，例如：
 
 - 多云概览: `http://localhost:5173/cam/dashboard`
