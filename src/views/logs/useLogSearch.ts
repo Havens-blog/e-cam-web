@@ -28,6 +28,7 @@ import type {
 } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
 import { errorMessage } from './format'
+import { failedAccountIds, mergeRetryResult } from './retry'
 
 export interface UseLogSearchOptions {
     activeType: Ref<LogType>
@@ -262,6 +263,66 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         }
     }
 
+    /** 重试失败源进行中（独立于 searching/pageLoading，避免与查询/翻页互斥语义混淆） */
+    const retryingFailed = ref(false)
+
+    const hasFailedSources = computed(() => failedAccountIds(resp.value?.sources ?? []).length > 0)
+
+    /** 仅重试失败源：成功源结果保留，失败源按账号重查后合并回明细与状态条 */
+    async function retryFailedSources() {
+        if (retryingFailed.value || searching.value || pageLoading.value) return
+        const failedIds = failedAccountIds(resp.value?.sources ?? [])
+        if (!failedIds.length || !timeRange.value) return
+
+        retryingFailed.value = true
+        startProgress()
+        const ctrl = new AbortController()
+        searchAbort.value = ctrl
+        try {
+            const retryRes = await searchLogsApi({
+                log_type: activeType.value,
+                start_time: timeRange.value[0].getTime(),
+                end_time: timeRange.value[1].getTime(),
+                query: keyword.value || undefined,
+                clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+                account_ids: failedIds,
+                resources: selectedResources.value.length ? selectedResources.value : undefined,
+                filters: buildFilters(),
+                limit: limit.value,
+            }, { signal: ctrl.signal })
+
+            // 成功源结果原样保留;失败源用重试结果替换(失败源此前无明细,故直接追加)
+            const merged = mergeRetryResult(
+                resp.value?.sources ?? [],
+                retryRes.sources,
+                allEntries.value,
+                retryRes.entries,
+                failedIds,
+            )
+            resp.value = {
+                ...retryRes,
+                total: merged.entries.length,
+                truncated: (resp.value?.truncated ?? false) || retryRes.truncated,
+                entries: merged.entries,
+                sources: merged.sources,
+            }
+            allEntries.value = merged.entries
+
+            const stillFailed = retryRes.sources.filter((s) => s.error !== '').length
+            if (stillFailed > 0) {
+                ElMessage.warning(`重试后仍有 ${stillFailed} 个源失败`)
+            } else {
+                ElMessage.success('失败源已全部恢复')
+            }
+        } catch (e) {
+            if (!isCanceled(e)) ElMessage.error(`重试失败源失败: ${errorMessage(e)}`)
+        } finally {
+            stopProgress()
+            retryingFailed.value = false
+            searchAbort.value = null
+        }
+    }
+
     /** 回到窗口起点重置为最新一批 */
     function backToLatest() {
         if (searching.value) return
@@ -294,5 +355,8 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         loadEarlier,
         backToLatest,
         resetSearch,
+        hasFailedSources,
+        retryingFailed,
+        retryFailedSources,
     }
 }
