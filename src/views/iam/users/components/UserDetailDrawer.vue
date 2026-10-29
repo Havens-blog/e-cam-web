@@ -322,7 +322,8 @@ const formatDateTime = (time: string | undefined) => {
     font-size: 12px;
     font-weight: 500;
     background: rgba(113, 112, 255, 0.15);
-    color: var(--accent-blue);
+    /* 品牌蓝作文字叠在品牌蓝 15% 浅底上仅 3.19:1（AA 需 4.5）→ 与白混 28% 提亮，色相不变 */
+    color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
   }
 }
 
@@ -344,12 +345,13 @@ const formatDateTime = (time: string | undefined) => {
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
-    color: var(--text-tertiary);
+    /* tertiary 叠在本组件更亮的 --bg-hover 底上仅 3.89:1（AA 需 4.5）→ 用 secondary */
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 200ms ease;
 
     &:hover {
-      color: var(--text-secondary);
+      color: var(--text-primary);
     }
 
     &.active {
