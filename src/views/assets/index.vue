@@ -3,7 +3,7 @@
     <template #header>
       <div class="page-header">
         <div class="page-heading">
-          <h2 class="page-title">资产管理</h2>
+          <h1 class="page-title">资产管理</h1>
           <p class="page-subtitle">查看和管理所有云平台的资产</p>
         </div>
         <div class="page-actions">

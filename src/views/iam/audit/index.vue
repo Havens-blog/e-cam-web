@@ -4,7 +4,7 @@
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-left">
-          <h2 class="page-title">审计日志</h2>
+          <h1 class="page-title">审计日志</h1>
           <p class="page-subtitle">查看和管理 IAM 操作的审计日志记录</p>
         </div>
         <div class="header-right">

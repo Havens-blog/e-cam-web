@@ -1,7 +1,7 @@
 <template>
   <div class="provision-page">
     <div class="page-title-area">
-      <h2 class="page-title">{{ isEditMode ? '编辑主机模板' : isTemplateMode ? '创建主机模板' : '创建云服务器' }}</h2>
+      <h1 class="page-title">{{ isEditMode ? '编辑主机模板' : isTemplateMode ? '创建主机模板' : '创建云服务器' }}</h1>
       <p class="page-subtitle">{{ isEditMode ? '修改模板配置参数' : isTemplateMode ? '配置主机参数并保存为模板，方便后续快速创建' : '选择云账号和配置参数，快速创建云服务器实例' }}</p>
     </div>
 
