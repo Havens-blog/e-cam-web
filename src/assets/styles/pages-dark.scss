@@ -235,3 +235,16 @@
     margin-bottom: 20px;
   }
 }
+
+// ==================== 表单占位文字对比度（WCAG 1.4.3）====================
+// 原 --text-placeholder 在深色底上仅 1.90–2.09:1，远低于 AA 的 4.5:1。
+// 占位文字承载「这里该填什么」的信息，属于正文文本，必须达标。
+// 这里只覆盖 Element Plus 的占位 token（不动 theme-variables 的通用 token，
+// 避免影响仅作装饰的其它 tertiary/muted 用法）。
+// 取 --text-secondary：在 CAM 各种页面背景上 5.36–6.13:1，最亮的卡片底也达标；
+// 同时仍明显浅于真实输入值（--text-regular，约 11.9:1），保持「占位 vs 已填」的区分。
+// 选择器与 element-theme.scss 保持一致（:root:root），靠「更晚引入」取胜。
+:root:root {
+  --el-text-color-placeholder: var(--text-secondary);
+  --el-input-placeholder-color: var(--text-secondary);
+}
