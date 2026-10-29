@@ -10,6 +10,55 @@ import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
 let isRedirectingToLogin = false
 
 /**
+ * 请求失败归一（Option A，2026-10-29 维护者确认）。
+ *
+ * 原实现在 `request<T>()` 的 catch 里直接 `reject(error.response ? error.response.data : error)`
+ * —— 把**响应体普通对象**抛给调用方，而调用方普遍按 `Error`/`AxiosError` 假设取值：
+ *   - `err instanceof Error ? err.message : String(e)` → 渲染成 `[object Object]`（#51 实测）；
+ *   - 基于文案的分支静默失效（如 `isScanConfirmError` 的「确认并继续分析」通道）；
+ *   - `err.response?.data?.msg` 取值点恒不可达（4 处）。
+ *
+ * 归一为 `Error`（message = 服务端 msg/message），并附带：
+ *   - `payload`：原始响应体（保留 code 等原貌，供需要时读取）；
+ *   - `status`：HTTP 状态码；
+ *   - `response`：`{ data, status }` 形态，兼容既有的 AxiosError 取值写法。
+ *
+ * 特殊路径**原样透传**，不改变既有语义：
+ *   - 取消（`code === 'ERR_CANCELED'`）：调用方依赖该 code 判定「查询已取消」；
+ *   - 无响应的网络/超时错误：调用方按 `err.message`/`code` 判定，保持原对象。
+ */
+export function normalizeRequestError(error: unknown): unknown {
+    if (!error || typeof error !== 'object') return error
+    const err = error as {
+        code?: string
+        message?: string
+        response?: { data?: unknown; status?: number }
+    }
+    // 取消：原样透传（axios CanceledError 的 code 即 ERR_CANCELED）
+    if (err.code === 'ERR_CANCELED') return error
+    // 无 HTTP 响应（网络错误/超时/业务错误已由拦截器转成 Error）：保持原样
+    if (!err.response) return error
+
+    const body = err.response.data
+    const status = err.response.status
+    const pick = (v: unknown) => (typeof v === 'string' && v.trim() ? v : '')
+    const asRecord = (v: unknown) => (v && typeof v === 'object' ? (v as Record<string, unknown>) : {})
+    const msg =
+        pick(asRecord(body).msg) ||
+        pick(asRecord(body).message) ||
+        pick(err.message) ||
+        '请求失败'
+
+    const normalized = new Error(msg)
+    return Object.assign(normalized, {
+        payload: body,
+        status,
+        // 兼容按 AxiosError 取值的调用点（err.response?.data?.msg）
+        response: { data: body, status },
+    })
+}
+
+/**
  * 登录目标唯一取值处（RC#2，platform-console 任务 2.13）：
  * 401/会话过期与登出后的登录页从 ecmdb-web /login 切到控制台 /console/login。
  * 目标由 build 期 env 注入（VITE_LOGIN_TARGET），默认控制台登录页相对路径；
@@ -119,7 +168,7 @@ class HttpRequest {
                     return response
                 }
 
-                // 其他code视为业务错误
+                // 其他code视为业务错误（信封字段为 msg，message 为兼容旧后端）
                 logWarn('Business error', {
                     requestId,
                     code,
@@ -127,7 +176,7 @@ class HttpRequest {
                 }, 'API')
 
                 ElMessage.error(apiData.message || apiData.msg || 'Error')
-                return Promise.reject(new Error(apiData.message || 'Error'))
+                return Promise.reject(new Error(apiData.message || apiData.msg || 'Error'))
             },
             (error) => {
                 const requestId = error.config?.headers?.['X-Request-ID']
@@ -179,7 +228,8 @@ class HttpRequest {
                     resolve(res.data)
                 })
                 .catch((error) => {
-                    reject(error.response ? error.response.data : error)
+                    // 失败归一见 normalizeRequestError：错误对象形态统一为 Error（携带服务端原因）
+                    reject(normalizeRequestError(error))
                 })
         })
     }
