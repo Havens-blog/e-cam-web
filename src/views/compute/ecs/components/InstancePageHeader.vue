@@ -102,7 +102,7 @@ const emit = defineEmits<{
     }
 
     &.active {
-      color: var(--accent-blue);
+      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
       background: rgba(113, 112, 255, 0.1);
     }
   }
