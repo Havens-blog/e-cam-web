@@ -35,7 +35,8 @@
           <ProviderIcon :provider="provider.id" size="small" />
         </div>
         <div class="stat-body">
-          <div class="stat-value" :style="{ color: provider.color }">{{ provider.count }}</div>
+          <!-- 数字用 readColor（品牌色提亮到满足 AA），图标块仍用原品牌色 -->
+          <div class="stat-value" :style="{ color: provider.readableColor }">{{ provider.count }}</div>
           <div class="stat-label">{{ provider.name }}账号</div>
           <div v-if="provider.note" class="stat-change" :class="provider.noteType">{{ provider.note }}</div>
         </div>
@@ -349,6 +350,7 @@ import type { CloudAccount } from '@/api/types/account'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
 import { cacheManager } from '@/utils/cache-manager'
+import { ensureReadableOnDark } from '@/utils/colorContrast'
 import { ACCOUNT_STATUS, CLOUD_PROVIDERS, ENVIRONMENTS, PROVIDER_CONFIGS } from '@/utils/constants'
 import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
@@ -437,6 +439,9 @@ const errorCount = computed(() => accounts.value.filter(a => a.status === 'error
 const totalAssets = computed(() => accounts.value.reduce((sum, a) => sum + (a.asset_count || 0), 0))
 
 // 按云厂商统计
+// 厂商账号卡片的实际底色（_dark 主题，实测 rgb(25,26,27)）；
+// 用于计算「品牌色当文字色」时是否需要提亮以满足 WCAG AA。
+const PROVIDER_STAT_CARD_BG = '#191a1b'
 const providerStats = computed(() => {
   const providers = [
     { id: 'aliyun', name: '阿里云', color: '#ff6a00', bgColor: 'rgba(255, 106, 0, 0.12)' },
@@ -449,6 +454,9 @@ const providerStats = computed(() => {
     const errCount = list.filter(a => a.status === 'error' || a.status === 'disabled').length
     return {
       ...p,
+      // 品牌色直接当文字色时，腾讯蓝(2.66:1)/华为红(3.04:1) 在深色卡片底上不满足 AA 的 4.5:1。
+      // 保留色相、只提亮到刚好达标；已达标者（阿里云 6.07 / AWS 8.14）原样返回，无视觉变化。
+      readableColor: ensureReadableOnDark(p.color, PROVIDER_STAT_CARD_BG),
       count: list.length,
       note: errCount > 0 ? `⚠ ${errCount} 凭证异常` : '',
       noteType: errCount > 0 ? 'dn' : 'up',
