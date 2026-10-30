@@ -8,6 +8,9 @@ import { shouldToastRejection } from './rejection-toast'
  * 全局错误处理插件
  */
 let lastRejectionToastAt = 0
+let lastJsErrorToastAt = 0
+let lastWindowErrorToastAt = 0
+let lastResourceNoticeAt = 0
 
 export default {
     install(app: App) {
@@ -24,7 +27,13 @@ export default {
 
             // 生产环境显示用户友好的错误提示
             if (!import.meta.env.DEV) {
-                ElMessage.error('页面出现异常，请刷新重试')
+                // 同类提示做时间窗节流：批量异常会连弹数条（实测 5 个异常 → 5 条 toast）；
+                // 上方 logError 仍逐条记录，诊断能力不变。
+                const errNow = Date.now()
+                if (shouldToastRejection(errNow, lastJsErrorToastAt)) {
+                    lastJsErrorToastAt = errNow
+                    ElMessage.error('页面出现异常，请刷新重试')
+                }
             }
         }
 
@@ -69,7 +78,13 @@ export default {
             }, 'JavaScript')
 
             // 显示用户友好的错误提示
-            ElMessage.error('页面出现异常，请刷新重试')
+            // 同类提示做时间窗节流：批量未捕获异常会连弹数条（实测 5 个 → 5 条 toast）；
+            // 上方 logError 仍逐条记录，诊断能力不变。
+            const jsErrNow = Date.now()
+            if (shouldToastRejection(jsErrNow, lastWindowErrorToastAt)) {
+                lastWindowErrorToastAt = jsErrNow
+                ElMessage.error('页面出现异常，请刷新重试')
+            }
         })
 
         // 资源加载错误
@@ -83,7 +98,10 @@ export default {
                 }, 'Resource')
 
                 // 对于关键资源加载失败，显示提示
-                if (target.tagName === 'SCRIPT' || target.tagName === 'LINK') {
+                const resNow = Date.now()
+                // 同批失败（如发版后多个 chunk 同时 404）会连弹多条通知（实测 5 个 → 5 条），同样节流。
+                if ((target.tagName === 'SCRIPT' || target.tagName === 'LINK') && shouldToastRejection(resNow, lastResourceNoticeAt)) {
+                    lastResourceNoticeAt = resNow
                     ElNotification({
                         title: '资源加载失败',
                         message: '部分资源加载失败，页面可能无法正常工作',
