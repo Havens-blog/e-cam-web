@@ -30,7 +30,7 @@
       </div>
       <div class="info-item">
         <span class="label">区域:</span>
-        <span class="value">{{ account.region || '-' }}</span>
+        <span class="value">{{ accountRegionLabel(account) }}</span>
       </div>
       <div v-if="account.description" class="info-item">
         <span class="label">描述:</span>
@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import type { CloudAccount } from '@/api/types/account'
 import { getEnvironmentLabel, getProviderLabel, safeTagType } from '@/utils/constants'
+import { accountRegionLabel } from '@/utils/display-fallbacks'
 import { Setting, User, UserFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 
