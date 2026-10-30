@@ -41,7 +41,10 @@
         </el-form>
       </div>
 
-      <div v-loading="loading">
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是落到「请选择云厂商」的引导空态 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchCostAnalysis()" />
+
+      <div v-else v-loading="loading">
         <!-- 总成本卡片 -->
         <div class="total-cost-card">
           <StatCard
@@ -82,6 +85,8 @@ import { getCostAnalysisApi } from '@/api'
 import type { CostAnalysisResponse } from '@/api/types/cost'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import StatCard from '@/components/StatCard.vue'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
@@ -93,6 +98,10 @@ import CostChart from './components/CostChart.vue'
 // 状态
 const loading = ref(false)
 const costAnalysis = ref<CostAnalysisResponse | null>(null)
+// 请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）。
+// 此前 catch 只弹 3 秒 toast 并把 costAnalysis 置空 → 页面落到「请选择云厂商查看成本分析」的
+// 引导空态，会让用户以为是筛选条件问题，而不是请求失败。
+const errorInfo = ref<ErrorInfo | null>(null)
 
 // 筛选条件
 const filters = reactive({
@@ -114,8 +123,10 @@ const fetchCostAnalysis = async () => {
       days: filters.days,
     })
     costAnalysis.value = data
+    errorInfo.value = null
   } catch (error: any) {
-    ElMessage.error(error.message || '获取成本分析失败')
+    // 持久错误态（含重试）；不再只靠瞬时 toast 让页面落到引导空态
+    errorInfo.value = handleApiError(error, '获取成本分析失败')
     costAnalysis.value = null
   } finally {
     loading.value = false
