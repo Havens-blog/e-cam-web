@@ -118,13 +118,17 @@ export const menuGroups: MenuGroup[] = [
         ]
       },
       {
+        // 服务树已随 CMDB 迁移到独立应用 e-cmdb-web（nginx /cmdb/）。
+        // 这里用 `/cmdb/` 前缀：AppSidebar 经 resolveMenuTarget 判定为**跨应用**，
+        // 新窗口打开并自动带上 ?tenant_id=（e-cmdb-web 路由守卫要求），
+        // 不再产生"有菜单项但本仓无对应路由"的死链。
         key: 'service-tree',
         title: '服务树',
         icon: 'icon-xianxing-yingyong',
         children: [
-          { key: 'service-tree-main', path: '/service-tree', title: '服务树总览', icon: 'icon-xianxing-yingyong' },
-          { key: 'service-tree-envs', path: '/service-tree/environments', title: '环境管理', icon: 'icon-xianxing-chanpin' },
-          { key: 'service-tree-rules', path: '/service-tree/rules', title: '绑定规则', icon: 'icon-xianxing-luyouqi' },
+          { key: 'service-tree-main', path: '/cmdb/service-tree', title: '服务树总览', icon: 'icon-xianxing-yingyong' },
+          { key: 'service-tree-envs', path: '/cmdb/service-tree/environments', title: '环境管理', icon: 'icon-xianxing-chanpin' },
+          { key: 'service-tree-rules', path: '/cmdb/service-tree/rules', title: '绑定规则', icon: 'icon-xianxing-luyouqi' },
         ]
       },
       { key: 'tasks', path: '/tasks', title: '任务管理', icon: 'icon-xianxing-bumen' },
