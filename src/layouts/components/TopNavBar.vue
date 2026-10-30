@@ -542,15 +542,26 @@ $navbar-height: 56px;
   margin-left: 8px;
 }
 
+/* 中等宽度（≤1180）：隐藏顶栏的全局搜索入口，让顶栏在常见笔记本屏上「不用横向滚动就能放下」。
+   实测顶栏内容需约 964px（含搜索 240），视口 1180/1024 时可用宽只有 960/804：
+     - 不隐藏：1180 溢出 4px、1024 溢出 160px（虽可横向滚动抵达，但要先滚动才能点到右侧用户菜单）；
+     - 隐藏后：1180 与 1024 均溢出 0，右侧控件一屏可见。
+   安全性：`.navbar-search` 本身只是一个点击触发器（@click 打开 CommandPalette，
+   title="全局搜索 (Ctrl+K)"），真正的搜索能力由 CommandPalette 的全局快捷键提供
+   （src/components/CommandPalette/useCommandPalette.ts），所以隐藏这个按钮**不减少任何功能**。 */
+@media (max-width: 1180px) {
+  .navbar-search {
+    display: none;
+  }
+}
+
 /* 手机窄屏（≤560）：顶栏在 326px 可用宽度里放不下全部控件（内容需 964px）。
-   这里隐藏四项「可在别处获得」的次要元素，把顶栏所需宽度从 964 压到约 366：
-   - 搜索框（240px）：手机上这个宽度的输入框本就不可用；
+   这里再隐藏三项「可在别处获得」的次要元素：
    - 租户选择器（200px）：租户信息在个人/租户相关页面可见；
    - 用户名（70px）：头像已能表达当前用户；
    - 面包屑（88px）：当前页标题在正文 h1 里已有。
    保留折叠钮、平台导航、3 个图标按钮与用户头像这些随时需要点的操作。 */
 @media (max-width: 560px) {
-  .navbar-search,
   .tenant-selector,
   .user-name,
   .el-breadcrumb {
