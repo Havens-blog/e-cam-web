@@ -74,8 +74,11 @@
         </el-form>
       </div>
 
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无任务」 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchTasks()" />
+
       <!-- 任务列表 -->
-      <div v-loading="loading" class="tasks-list">
+      <div v-else v-loading="loading" class="tasks-list">
         <template v-if="tasks.length > 0">
           <TaskCard
             v-for="task in tasks"
@@ -91,7 +94,7 @@
       </div>
 
       <!-- 分页 -->
-      <div v-if="pagination.total > 0" ref="paginationContainer" class="pagination-container">
+      <div v-if="!errorInfo && pagination.total > 0" ref="paginationContainer" class="pagination-container">
         <el-pagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
@@ -111,6 +114,8 @@
 <script setup lang="ts">
 import { cancelTaskApi, deleteTaskApi, listTasksApi } from '@/api'
 import type { Task } from '@/api/types/task'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
@@ -142,6 +147,10 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）。
+// 此前只在 catch 里弹一个 3 秒自动消失的 ElMessage，列表保持上一次内容或空 → 用户分不清
+// 「没有任务」和「请求失败」。
+const errorInfo = ref<ErrorInfo | null>(null)
 const tasks = ref<Task[]>([])
 // 防重复提交：正在执行取消/删除的任务 id（请求期间禁用所有卡片操作按钮）
 const actionTaskId = ref<string>('')
@@ -227,6 +236,7 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     if (disposed || seq !== listSeq) return
     tasks.value = data.tasks || []
     pagination.total = Number(data.total) || 0
+    errorInfo.value = null
     // 深链页码超出范围（例如数据变少）：收敛到最后一页并重新取数
     const clamped = clampPageToTotal(pagination.page, pagination.total, pagination.size)
     if (clamped !== pagination.page) {
@@ -238,7 +248,8 @@ const fetchTasks = async (options: { silent?: boolean } = {}) => {
     void fetchOldestPending()
   } catch (error: any) {
     if (disposed || seq !== listSeq) return
-    ElMessage.error(error.message || '获取任务列表失败')
+    // 持久错误态（含重试）；不再只靠瞬时 toast
+    errorInfo.value = handleApiError(error, '获取任务列表失败')
   } finally {
     if (seq === listSeq) loading.value = false
   }
