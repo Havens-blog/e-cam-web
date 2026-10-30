@@ -54,8 +54,11 @@
       </div>
     </div>
 
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是让 el-table 自带空态显示成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchLogs()" />
+
     <!-- 表格 -->
-    <div class="table-card">
+    <div v-else class="table-card">
       <el-table :data="logList" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable>
           <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
@@ -102,7 +105,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" :page-sizes="[20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" @current-change="fetchLogs" @size-change="fetchLogs" />
     </div>
 
@@ -132,6 +135,8 @@
 import type { AuditLog, AuditLogParams } from '@/api/audit'
 import { exportAuditLogsApi, listAuditLogsApi } from '@/api/audit'
 import { useDictionary } from '@/composables/useDictionary'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { parseError, type ErrorInfo } from '@/utils/error-handler'
 import { formatAuditTime } from './format'
 import { CircleCheck, CircleClose, Download, Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -142,6 +147,9 @@ import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resul
 const { loadDict, getDictOptions } = useDictionary()
 
 const loading = ref(false)
+// 请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）。
+// 此前 catch 只弹 3 秒 toast，表格保持空 → el-table 自带空态会把「请求失败」显示成「暂无数据」。
+const errorInfo = ref<ErrorInfo | null>(null)
 const logList = ref<AuditLog[]>([])
 const total = ref(0)
 const page = ref(1)
@@ -195,8 +203,13 @@ async function fetchLogs() {
     const data = (res as any).data || res
     logList.value = data.items || []
     total.value = data.total || 0
+    errorInfo.value = null
   } catch (e: any) {
+    // 保留 showApiError 的去重（跳过「已提示 / 请求被取消」的情况，避免重复 toast），
+    // 另用 parseError 构造**持久**错误态 —— 注意不能用 handleApiError：它内部会再弹一次
+    // toast，与 showApiError 叠加就是双重提示。
     showApiError(e, '加载审计日志失败')
+    errorInfo.value = { ...parseError(e), message: '加载审计日志失败' }
   } finally {
     loading.value = false
   }
