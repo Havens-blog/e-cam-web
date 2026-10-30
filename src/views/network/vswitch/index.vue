@@ -219,6 +219,14 @@
         <div v-if="!loading && vswitchList.length === 0" class="empty-state">
           <el-icon :size="48"><Box /></el-icon>
           <p>{{ searchConditions.length > 0 ? '没有匹配的数据，请调整或清除筛选条件后再试' : '暂无数据' }}</p>
+          <el-button
+            v-if="searchConditions.length > 0"
+            size="small"
+            class="empty-state-action"
+            @click="clearAllSearchConditions"
+          >
+            清除筛选
+          </el-button>
         </div>
       </div>
     </div>
@@ -1212,6 +1220,9 @@ onMounted(() => {
   color: var(--text-muted);
 
   p {
+    margin-top: 12px;
+  }
+  .empty-state-action {
     margin-top: 12px;
   }
 }
