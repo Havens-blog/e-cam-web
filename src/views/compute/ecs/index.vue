@@ -29,8 +29,16 @@
     <!-- 搜索栏（拆至 components/InstanceSearchBar.vue） -->
     <InstanceSearchBar v-model:conditions="searchConditions" @apply="applySearchConditions" />
 
+    <!-- 错误态：请求失败时显示持久错误说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay
+      v-if="errorInfo"
+      :error-info="errorInfo"
+      @retry="fetchInstances"
+    />
+
     <!-- 表格区域（拆至 components/InstanceTable.vue） -->
     <InstanceTable
+      v-else
       :instances="instances"
       :loading="loading"
       :visible-columns="visibleColumns"
@@ -40,7 +48,7 @@
     />
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <div class="pagination-right">
         <el-pagination
           :current-page="pagination.page"
@@ -102,6 +110,8 @@ import { listECSAssetsApi } from '@/api/asset'
 import { listTagsApi } from '@/api/tag'
 import type { Asset } from '@/api/types/asset'
 import { fetchAllRows } from '@/utils/exportAll'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { CHARGE_TYPE_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { getProviderLabel } from '@/utils/constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -124,6 +134,10 @@ const router = useRouter()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败时置为 ErrorInfo，由 <ErrorDisplay> 渲染**持久**的错误态 + 重试。
+// 此前仅弹一个 3 秒自动消失的 ElMessage，然后把列表清空 → 页面持久显示「暂无数据」，
+// 与「真的没有实例」无法区分，容易让运维误判资源不存在（BACKLOG §二 T1）。
+const errorInfo = ref<ErrorInfo | null>(null)
 const submitting = ref(false)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -396,11 +410,14 @@ const fetchInstances = async () => {
     const responseData = (res as any).data || res
     instances.value = responseData.items || []
     pagination.total = responseData.total || 0
+    errorInfo.value = null
     // 同步刷新全局状态统计
     fetchStatusCounts()
   } catch (error: any) {
     console.error('获取实例列表失败:', error)
-    ElMessage.error('获取实例列表失败')
+    // 保留 errorInfo 让页面持续显示错误态与重试入口；不再只靠瞬时 toast + 清空列表
+    // （否则用户会看到「暂无数据」，把请求失败误读成「没有实例」）
+    errorInfo.value = handleApiError(error, '获取实例列表失败')
     instances.value = []
     pagination.total = 0
   } finally {
