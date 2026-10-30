@@ -15,12 +15,7 @@
 import { ref } from 'vue'
 import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 
-export interface UseListErrorOptions {
-    /** 失败时是否同时弹一次 toast（默认 false：由持久错误态呈现，避免重复提示） */
-    toast?: boolean
-}
-
-export function useListError(options: UseListErrorOptions = {}) {
+export function useListError() {
     const errorInfo = ref<ErrorInfo | null>(null)
 
     /** 清空错误态（成功路径 / 手动重试前） */
@@ -43,11 +38,6 @@ export function useListError(options: UseListErrorOptions = {}) {
             return result
         } catch (e) {
             errorInfo.value = handleApiError(e, fallbackMessage)
-            if (options.toast) {
-                // 仅在调用方明确要求时补一次 toast（兼容「错误态 + 提示」双通道的老页面）
-                const { ElMessage } = await import('element-plus')
-                ElMessage.error(fallbackMessage)
-            }
             return undefined
         }
     }

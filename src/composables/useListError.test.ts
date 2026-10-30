@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { useListError } from './useListError'
 
 describe('useListError（列表请求的持久错误态）', () => {
@@ -47,16 +47,4 @@ describe('useListError（列表请求的持久错误态）', () => {
         expect(errorInfo.value).toBeNull()
     })
 
-    it('默认不额外弹 toast（由持久错误态呈现，避免重复提示）', async () => {
-        const { run } = useListError()
-        const elMessage = { error: vi.fn() }
-        vi.doMock('element-plus', () => ({ ElMessage: elMessage }))
-
-        await run(async () => {
-            throw new Error('x')
-        }, '失败')
-
-        expect(elMessage.error).not.toHaveBeenCalled()
-        vi.doUnmock('element-plus')
-    })
 })
