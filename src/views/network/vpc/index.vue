@@ -157,7 +157,9 @@
     </div>
 
     <!-- 表格区域（无多选列；首列名称 + 等宽 ID 副行） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -221,7 +223,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <el-pagination
         :current-page="pagination.page"
         :page-size="pagination.size"
@@ -284,6 +286,8 @@ import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExport
 import { IconFont } from '@haven/ui/IconFont'
 import { CLOUD_PROVIDERS, getProviderLabel, PROVIDER_CONFIGS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { VPC_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -346,6 +350,8 @@ const router = useRouter()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）
+const errorInfo = ref<ErrorInfo | null>(null)
 
 // 筛选条件（字段搜索栏映射到后端实测有效参数）
 const filters = reactive({
@@ -628,11 +634,12 @@ const fetchData = async () => {
     const res = await listVPCAssetsApi(buildListParams(pagination.page, pagination.size))
     vpcList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
+    errorInfo.value = null
     // 同步刷新全局领域统计
     fetchVpcCounts()
   } catch (error: any) {
     console.error('获取VPC列表失败:', error)
-    ElMessage.error(error.message || '获取VPC列表失败')
+    errorInfo.value = handleApiError(error, '获取VPC列表失败')
     vpcList.value = []
     pagination.total = 0
   } finally {

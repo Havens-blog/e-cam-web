@@ -160,7 +160,9 @@
     </div>
 
     <!-- 表格区域（无默认多选列） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchInstances" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -234,7 +236,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <el-pagination
         :current-page="pagination.page"
         :page-size="pagination.size"
@@ -256,6 +258,8 @@
 </template>
 
 <script setup lang="ts">
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { listRDSAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
@@ -297,6 +301,8 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）
+const errorInfo = ref<ErrorInfo | null>(null)
 const instances = ref<Asset[]>([])
 const detailDrawerVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
@@ -503,11 +509,12 @@ const fetchInstances = async () => {
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
+    errorInfo.value = null
     // 同步刷新全局状态统计
     fetchStatusCounts()
   } catch (error) {
     console.error('获取RDS列表失败:', error)
-    ElMessage.error('获取RDS列表失败')
+    errorInfo.value = handleApiError(error, '获取RDS列表失败')
     instances.value = []
     pagination.total = 0
   } finally {
