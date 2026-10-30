@@ -252,7 +252,7 @@
         </table>
         <div v-if="!loading && instances.length === 0" class="empty-state">
           <el-icon :size="48"><Box /></el-icon>
-          <p>暂无数据</p>
+          <p>{{ searchConditions.length > 0 ? '没有匹配的数据，请调整或清除筛选条件后再试' : '暂无数据' }}</p>
         </div>
       </div>
     </div>
