@@ -316,6 +316,7 @@
         ⚠ 部分源不支持该维度/指标,TopN 可能有缺失(趋势/总数仍全窗准确)
       </span>
       <el-button
+        v-if="canExport"
         class="aggr-export"
         size="small"
         text
@@ -527,6 +528,7 @@
             </el-button>
             <el-button size="small" text :disabled="pageLoading" @click="backToLatest">回到最新</el-button>
             <el-button
+              v-if="canExport"
               class="pager-export"
               size="small"
               text
@@ -604,11 +606,17 @@ import { useLogUrlSync } from './useLogUrlSync'
 import { useSavedQueries } from './useSavedQueries'
 import type { SavedQuery } from './saved-queries'
 import { clampWindow, hasQueryParams } from './url-state'
+import { canExportLogs } from './export-permission'
+import { useUserStore } from '@/stores/user'
 
 /** 默认选中的云:阿里云(数据最全的源;用户手动改动后不再自动收敛) */
 const DEFAULT_CLOUDS = ['aliyun']
 /** 每日志源采样上限(后端单源硬顶 2000、联邦 3000;默认 1000 提高样本覆盖) */
 const LIMIT_OPTIONS = [100, 500, 1000, 2000]
+
+// ---- 导出权限:独立权限码 cam:logs:export;admin/只读默认拥有;默认放行 ----
+const userStore = useUserStore()
+const canExport = computed(() => canExportLogs(userStore.isAdmin, userStore.permissions))
 
 // ---- 页面级状态:被两个及以上 composable 读写,故由页面持有并注入 ----
 const typeMetas = ref<LogTypeMeta[]>([])
