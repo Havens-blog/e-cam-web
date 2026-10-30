@@ -57,7 +57,8 @@ describe('daysLeftBadge（剩余天数状态色：>30 Success / ≤30·≤14 War
         expect(daysLeftBadge(1)).toMatchObject({ tone: 'error' })
     })
     it('已过期 → error + 「已过期 N 天」文案', () => {
-        expect(daysLeftBadge(0)).toMatchObject({ text: '已过期 0 天', tone: 'error' })
+        // 0 = 已过期不足 1 天（后端 ceil 口径）；不能说成「已过期 0 天」
+        expect(daysLeftBadge(0)).toMatchObject({ text: '今日已到期', tone: 'error' })
         expect(daysLeftBadge(-2)).toMatchObject({ text: '已过期 2 天', tone: 'error' })
     })
 })
