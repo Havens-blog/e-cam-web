@@ -103,6 +103,7 @@
  */
 import StateBlock from '@/components/StateBlock/index.vue'
 import type { StateBlockStatus } from '@/components/StateBlock/index.vue'
+import { parseError } from '@/utils/error-handler'
 import type { TableInstance } from 'element-plus'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -197,6 +198,27 @@ const tableSize = computed<'default' | 'small'>(() =>
   props.density === 'compact' ? 'small' : 'default',
 )
 
+/**
+ * 英文传输层错误文案（axios / fetch 的原生英文），需要翻成中文再展示。
+ * 背景（iter103）：此前直接把 `error.message` 显示给用户，于是网络不可达时
+ * 页面错误态显示的是 axios 原文「Network Error」、HTTP 失败显示
+ * 「Request failed with status code 500」—— 在中文化产品里属明确缺陷。
+ * 但既有契约是「显示错误自身的 message」（已有单测断言 `new Error('网络超时')` 原样展示），
+ * 所以这里**只翻译这些已知的英文传输层文案**，其余 message 一律保持原样。
+ */
+const TRANSPORT_ERROR_EN =
+  /^(Network Error|Failed to fetch|Load failed|Request failed with status code \d+|timeout of \d+ms exceeded|NetworkError.*)$/i
+
+/** 解析错误态文案：英文传输层错误走共享 parseError 翻成中文，其余保留原 message */
+function resolveErrorMessage(error: unknown, fallback?: string): string {
+  const raw = error instanceof Error ? error.message : ''
+  if (raw && TRANSPORT_ERROR_EN.test(raw.trim())) {
+    // parseError 对「无 response」的错误统一给出「网络连接失败」+ 检查网络的建议
+    return parseError(error).message || raw
+  }
+  return raw || fallback || ''
+}
+
 /** 批量操作条展示条件：多选已开启、配置了动作且有选中行 */
 const showBatchBar = computed<boolean>(
   () => props.selectable && props.batchActions.length > 0 && selectedRows.value.length > 0,
@@ -213,7 +235,7 @@ const load = async (): Promise<void> => {
     const rows = await props.fetch()
     fetchRows.value = rows ?? []
   } catch (error) {
-    fetchError.value = error instanceof Error ? error.message : (props.errorText ?? '加载失败')
+    fetchError.value = resolveErrorMessage(error, props.errorText) || '加载失败'
     fetchRows.value = []
   } finally {
     fetchLoading.value = false
