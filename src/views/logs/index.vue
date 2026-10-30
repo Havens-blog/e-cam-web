@@ -533,10 +533,11 @@
               size="small"
               text
               type="primary"
-              :disabled="!allEntries.length || pageLoading"
-              aria-label="导出明细 CSV"
-              @click="exportDetailCsv"
-            >导出明细</el-button>
+              :disabled="!timeRange || exporting"
+              :loading="exporting"
+              aria-label="全量导出 CSV"
+              @click="exportAllDetail"
+            >全量导出{{ exporting && exportTotal ? ` ${exportTotal} 条` : '' }}</el-button>
             <el-tooltip placement="top">
               <template #content>
                 按时间游标向前翻页(窗口上界 = 当前最旧一条 - 1ms),逐页追加,不会重复;<br />
@@ -708,8 +709,10 @@ const {
     hasDrilldown,
     onBarDrilldown,
     onDiagDrilldown,
-    exportDetailCsv,
     exportStatsCsv,
+    exporting,
+    exportTotal,
+    exportAllDetail,
     clearDrilldown,
     aggrDimension,
     aggrMetric,
