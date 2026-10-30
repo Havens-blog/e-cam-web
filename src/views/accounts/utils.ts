@@ -1,10 +1,15 @@
 // 云账号视图共享的纯展示格式化函数（自 index.vue 抽出，卡片/列表两个视图组件共用）。
 // 注意：components/AccountDetailDrawer.vue 内另有同名函数且实现已历史分化（如状态标签
 // 文案、provider 类名映射方式不同），去重统一属行为变更，需单独评估，不在本次拆分范围。
-import { ACCOUNT_STATUS, ENVIRONMENTS, PROVIDER_CONFIGS } from '@/utils/constants'
+// 走 utils/constants 的展示名单源（转发 @haven/ui/provider.getProviderLabel，
+// 该实现已认 `volcengine`/`bytedance` 等别名）。
+// 修复前直接用 PROVIDER_CONFIGS 查表：云账号接口对火山云返回 `volcengine`，
+// 查不到配置就回退原值 ⇒ 列表/卡片视图显示裸英文 `volcengine`，
+// 而同页其他云（腾讯云等）与详情抽屉（走 getProviderLabel）都是中文名，前后不一致。
+import { ACCOUNT_STATUS, ENVIRONMENTS, getProviderLabel } from '@/utils/constants'
 
 export const getProviderName = (provider: string) => {
-  return PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]?.displayName || provider || '-'
+  return provider ? getProviderLabel(provider) : '-'
 }
 
 export const getProviderClass = (provider: string | undefined) => {
