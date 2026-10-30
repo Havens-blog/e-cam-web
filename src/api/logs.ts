@@ -4,6 +4,7 @@
 
 import instance from './request/service';
 import type {
+    FieldFilter,
     LogAggregateRequest,
     LogAggregateResponse,
     LogCacheAnalyzeRequest,
@@ -75,6 +76,67 @@ export async function searchLogsApi(data: LogSearchRequest, opts?: { signal?: Ab
 /** 记录一次日志导出审计(CSV 仍由前端生成,此端点只落脱敏审计;失败不阻断导出) */
 export async function exportLogsAuditApi(data: LogExportAuditRequest): Promise<void> {
     await instance.post<void>({ url: `${BASE}/export-audit`, data }).catch(() => {})
+}
+
+// ---- 服务端异步导出任务(全量拉取,绕开 3000 采样上限) ----
+
+/** 导出任务请求(含关键字/字段筛选,仅内存传递不落库) */
+export interface LogExportTaskRequest {
+    log_type: LogType
+    start_time: number
+    end_time: number
+    query?: string
+    clouds?: string[]
+    account_ids?: number[]
+    regions?: string[]
+    resources?: string[]
+    filters?: FieldFilter[]
+}
+
+/** 导出任务状态(轮询返回) */
+export interface LogExportTask {
+    id: string
+    tenant_id: number
+    operator_id: string
+    operator_name: string
+    log_type: string
+    start_time: number
+    end_time: number
+    clouds: string[]
+    account_ids: number[]
+    regions: string[]
+    resources: string[]
+    status: 'queued' | 'running' | 'done' | 'failed' | 'canceled'
+    total: number
+    file_name: string
+    error: string
+    created_at: number
+    finished_at: number
+    canceled: boolean
+}
+
+/** 创建导出任务,返回 task_id */
+export async function createExportTaskApi(data: LogExportTaskRequest): Promise<string> {
+    const res = await instance.post<{ task_id: string }>({ url: `${BASE}/export`, data })
+    const out = unwrap<{ task_id: string }>(res)
+    return out?.task_id ?? ''
+}
+
+/** 查询导出任务状态 */
+export async function getExportTaskApi(taskId: string): Promise<LogExportTask> {
+    const res = await instance.get<LogExportTask>({ url: `${BASE}/export/${taskId}` })
+    return unwrap<LogExportTask>(res)
+}
+
+/** 取消导出任务 */
+export async function cancelExportTaskApi(taskId: string): Promise<void> {
+    await instance.post<void>({ url: `${BASE}/export/${taskId}/cancel` }).catch(() => {})
+}
+
+/** 下载导出文件(返回 blob) */
+export async function downloadExportTaskApi(taskId: string): Promise<Blob> {
+    const res = await instance.get<Blob>({ url: `${BASE}/export/${taskId}/download`, responseType: 'blob' })
+    return (res as any) as Blob
 }
 
 /**

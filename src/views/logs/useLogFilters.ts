@@ -12,7 +12,7 @@
  */
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { aggregateLogsApi, exportLogsAuditApi } from '@/api/logs'
+import { aggregateLogsApi, createExportTaskApi, downloadExportTaskApi, exportLogsAuditApi, getExportTaskApi } from '@/api/logs'
 import type {
     FieldFilter,
     LogAggregateResponse,
@@ -261,6 +261,61 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         recordExportAudit(rows.length)
     }
 
+    // ---- 服务端全量导出(异步任务:创建 → 轮询 → 下载;绕开 3000 采样上限) ----
+    const exporting = ref(false)
+    const exportStatus = ref('')
+    const exportTotal = ref(0)
+
+    function sleep(ms: number): Promise<void> {
+        return new Promise((r) => setTimeout(r, ms))
+    }
+
+    async function exportAllDetail() {
+        if (exporting.value || !timeRange.value) return
+        exporting.value = true
+        exportStatus.value = 'queued'
+        exportTotal.value = 0
+        try {
+            const taskId = await createExportTaskApi({
+                log_type: activeType.value,
+                start_time: timeRange.value[0].getTime(),
+                end_time: timeRange.value[1].getTime(),
+                query: keyword.value || undefined,
+                clouds: selectedClouds.value.length ? selectedClouds.value : undefined,
+                account_ids: selectedAccounts.value.length ? selectedAccounts.value : undefined,
+                regions: selectedRegions.value.length ? selectedRegions.value : undefined,
+                resources: selectedResources.value.length ? selectedResources.value : undefined,
+                filters: buildFilters(),
+            })
+            if (!taskId) throw new Error('创建导出任务失败')
+            for (;;) {
+                await sleep(2000)
+                const task = await getExportTaskApi(taskId)
+                exportStatus.value = task.status
+                exportTotal.value = task.total
+                if (task.status === 'done') {
+                    const blob = await downloadExportTaskApi(taskId)
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `日志全量-${activeType.value}-${taskId}.csv`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                    ElMessage.success(`已导出 ${task.total} 条`)
+                    return
+                }
+                if (task.status === 'failed' || task.status === 'canceled') {
+                    throw new Error(task.error || task.status)
+                }
+            }
+        } catch (e) {
+            exportStatus.value = 'failed'
+            ElMessage.error(`导出失败: ${e instanceof Error ? e.message : String(e)}`)
+        } finally {
+            exporting.value = false
+        }
+    }
+
     /** 清除下钻：仅移除带下钻标记的条件行（用户手动条件与 keyword 原样保留），并重查还原 */
     function clearDrilldown() {
         const next = stripDrilldown(fieldFilters.value)
@@ -325,6 +380,10 @@ export function useLogFilters(opts: UseLogFiltersOptions) {
         onDiagDrilldown,
         exportDetailCsv,
         exportStatsCsv,
+        exporting,
+        exportStatus,
+        exportTotal,
+        exportAllDetail,
         clearDrilldown,
         aggrDimension,
         aggrMetric,
