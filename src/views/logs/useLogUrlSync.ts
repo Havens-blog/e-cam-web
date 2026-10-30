@@ -10,7 +10,7 @@
  * 顺序约束（拆分时保留）：`hydrateFromUrl()` 必须在 `resetTimeRange()` 之后调用 ——
  * 先落默认值，再用 URL 覆盖；否则默认时间窗会盖掉链接里的时间范围。
  */
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { LogType, LogTypeMeta } from '@/api/types/logs'
 import { ElMessage } from 'element-plus'
@@ -122,6 +122,15 @@ export function useLogUrlSync(opts: UseLogUrlSyncOptions) {
             ElMessage.error('复制失败,请手动复制地址栏')
         }
     }
+
+    // 防抖定时器必须在卸载时清掉：否则组件销毁后仍会调用 window.history.replaceState
+    // （单测里表现为测试环境销毁后触发 "window is not defined" 的未捕获错误）
+    onBeforeUnmount(() => {
+        if (urlTimer) {
+            clearTimeout(urlTimer)
+            urlTimer = null
+        }
+    })
 
     return { urlHydrated, currentUrlState, hydrateFromUrl, syncUrl, copyQueryLink }
 }

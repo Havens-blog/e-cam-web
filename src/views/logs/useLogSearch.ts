@@ -64,6 +64,8 @@ export interface UseLogSearchOptions {
 export const CANCELED_MESSAGE = '查询已取消'
 /** 取消态说明（与标题分开，避免页面里再手写一份文案） */
 export const CANCELED_DESC = '已停止本次查询：这是你主动取消的结果，不是故障；可随时重新发起查询。'
+/** 读屏播报文案（与视觉文案分开：播报要短，视觉说明可以长） */
+export const CANCELED_ANNOUNCE = '查询已取消'
 
 export function useLogSearch(opts: UseLogSearchOptions) {
     const {
@@ -156,6 +158,8 @@ export function useLogSearch(opts: UseLogSearchOptions) {
     // 用布尔标志而非「文案相等」驱动：改文案、本地化或误撞串都不会让失败态被误判成取消态
     const searchCanceled = ref(false)
     const isCanceledState = computed(() => searchCanceled.value)
+    /** 供常驻 live region 播报：取消时给出短语，其余为空（清空是为了「连续两次取消」也能再播报） */
+    const canceledAnnounce = computed(() => (searchCanceled.value ? CANCELED_ANNOUNCE : ''))
 
     const progressAria = computed(() => `查询进行中:${progressText.value},已耗时 ${searchElapsed.value} 秒`)
 
@@ -388,6 +392,7 @@ export function useLogSearch(opts: UseLogSearchOptions) {
         progressAria,
         friendlySearchError,
         isCanceledState,
+        canceledAnnounce,
         cancelSearch,
         doSearch,
         loadEarlier,

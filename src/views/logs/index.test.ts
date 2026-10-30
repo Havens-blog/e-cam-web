@@ -203,20 +203,21 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         await findSearchBtn(w)!.trigger('click')
         await flushPromises()
 
-        const card = w.find('.state-card')
-        expect(card.attributes('role')).toBe('status')
-        expect(card.attributes('aria-live')).toBe('polite')
-        // 图标用独立 span 承载，便于强制文本变体（单色）
-        expect(w.find('.state-icon-glyph').exists()).toBe(true)
+        // 播报走「常驻 live region」：卡片上不带 role，避免「live region 与内容同时插入」的不可靠模式
+        expect(w.find('.state-card').attributes('role')).toBeUndefined()
+        const live = w.find('[role="status"]')
+        expect(live.exists()).toBe(true)
+        expect(live.attributes('aria-live')).toBe('polite')
+        expect(live.text()).toBe('查询已取消')
         w.unmount()
 
         searchApi.mockRejectedValueOnce(new Error('network error'))
         const w2 = await mountPage()
         await findSearchBtn(w2)!.trigger('click')
         await flushPromises()
+        // 失败态：常驻 live region 保持空（不播报），卡片也不带 role
+        expect(w2.find('[role="status"]').text()).toBe('')
         expect(w2.find('.state-card').attributes('role')).toBeUndefined()
-        expect(w2.find('.state-card').attributes('aria-live')).toBeUndefined()
-        expect(w2.find('.state-icon-glyph').exists()).toBe(false)
         w2.unmount()
     })
 

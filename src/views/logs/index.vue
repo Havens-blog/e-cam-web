@@ -1,5 +1,7 @@
 <template>
   <div class="logs-page" aria-labelledby="logs-title">
+    <!-- 常驻 live region：取消完成时向读屏播报（必须一开始就在 DOM 里，随后改文案才可靠） -->
+    <p class="sr-only" role="status" aria-live="polite">{{ canceledAnnounce }}</p>
     <div class="page-header">
       <h1 id="logs-title" class="page-title">日志查询</h1>
       <span class="page-sub">多云日志统一视图(CDN / WAF / 负载均衡 / 源站 / 应用 / K8s 事件) · 联邦实时查询</span>
@@ -357,20 +359,14 @@
           </div>
         </div>
       </template>
-      <div
-        v-else-if="searchError"
-        class="state-card"
-        :role="isCanceledState ? 'status' : undefined"
-        :aria-live="isCanceledState ? 'polite' : undefined"
-      >
+      <div v-else-if="searchError" class="state-card">
         <div class="error-state">
           <div
             class="state-icon"
             :class="isCanceledState ? 'state-icon-canceled' : 'state-icon-error'"
             aria-hidden="true"
           >
-            <span v-if="isCanceledState" class="state-icon-glyph">⏹</span>
-            <template v-else>⚠</template>
+            <span class="state-icon-glyph">{{ isCanceledState ? '⏹' : '⚠' }}</span>
           </div>
           <div class="state-title">{{ isCanceledState ? CANCELED_MESSAGE : '查询失败' }}</div>
           <div class="state-desc">{{ isCanceledState ? CANCELED_DESC : friendlySearchError(searchError) }}</div>
@@ -741,6 +737,7 @@ const {
     progressAria,
     friendlySearchError,
     isCanceledState,
+    canceledAnnounce,
     cancelSearch,
     doSearch,
     loadEarlier,
@@ -1401,6 +1398,17 @@ onMounted(async () => {
 }
 
 /* U+23F9 默认是文本呈现，但字体回退可能给彩色 emoji；强制文本变体以保持中性灰表达 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .state-icon-glyph {
     font-variant-emoji: text;
 }
