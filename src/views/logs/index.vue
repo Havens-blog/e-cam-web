@@ -357,14 +357,20 @@
           </div>
         </div>
       </template>
-      <div v-else-if="searchError" class="state-card">
+      <div
+        v-else-if="searchError"
+        class="state-card"
+        :role="isCanceledState ? 'status' : undefined"
+        :aria-live="isCanceledState ? 'polite' : undefined"
+      >
         <div class="error-state">
           <div
             class="state-icon"
             :class="isCanceledState ? 'state-icon-canceled' : 'state-icon-error'"
             aria-hidden="true"
           >
-            {{ isCanceledState ? '⏹' : '⚠' }}
+            <span v-if="isCanceledState" class="state-icon-glyph">⏹</span>
+            <template v-else>⚠</template>
           </div>
           <div class="state-title">{{ isCanceledState ? CANCELED_MESSAGE : '查询失败' }}</div>
           <div class="state-desc">{{ isCanceledState ? CANCELED_DESC : friendlySearchError(searchError) }}</div>
@@ -1392,6 +1398,11 @@ onMounted(async () => {
 /* 取消不是失败：用中性色，避免红图标暗示故障 */
 .state-icon-canceled {
     color: var(--text-secondary);
+}
+
+/* U+23F9 默认是文本呈现，但字体回退可能给彩色 emoji；强制文本变体以保持中性灰表达 */
+.state-icon-glyph {
+    font-variant-emoji: text;
 }
 .state-title {
     font-weight: 600;

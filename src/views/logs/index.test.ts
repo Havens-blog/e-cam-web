@@ -197,6 +197,29 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         w.unmount()
     })
 
+    it('取消态对读屏可感知（role=status / aria-live），且失败态不带这些属性', async () => {
+        searchApi.mockRejectedValueOnce(Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' }))
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        const card = w.find('.state-card')
+        expect(card.attributes('role')).toBe('status')
+        expect(card.attributes('aria-live')).toBe('polite')
+        // 图标用独立 span 承载，便于强制文本变体（单色）
+        expect(w.find('.state-icon-glyph').exists()).toBe(true)
+        w.unmount()
+
+        searchApi.mockRejectedValueOnce(new Error('network error'))
+        const w2 = await mountPage()
+        await findSearchBtn(w2)!.trigger('click')
+        await flushPromises()
+        expect(w2.find('.state-card').attributes('role')).toBeUndefined()
+        expect(w2.find('.state-card').attributes('aria-live')).toBeUndefined()
+        expect(w2.find('.state-icon-glyph').exists()).toBe(false)
+        w2.unmount()
+    })
+
     it('真失败仍渲染「查询失败」+ 原始错误行（取消态改动不影响失败态）', async () => {
         searchApi.mockRejectedValueOnce(new Error('network error'))
         const w = await mountPage()
