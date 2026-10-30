@@ -2,10 +2,13 @@ import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logError, logger } from '@/utils/error-logger'
 import { ElMessage, ElNotification } from 'element-plus'
 import type { App } from 'vue'
+import { shouldToastRejection } from './rejection-toast'
 
 /**
  * 全局错误处理插件
  */
+let lastRejectionToastAt = 0
+
 export default {
     install(app: App) {
         // Vue 错误处理
@@ -40,8 +43,13 @@ export default {
             // 阻止默认的控制台错误输出
             event.preventDefault()
 
-            // 显示用户友好的错误提示
-            ElMessage.error('操作失败，请重试')
+            // 用户提示做节流：并发/批量 rejection 会连弹数条重复 toast（实测 5 个 → 5 条），
+            // 日志仍逐条记录，诊断能力不变。
+            const now = Date.now()
+            if (shouldToastRejection(now, lastRejectionToastAt)) {
+                lastRejectionToastAt = now
+                ElMessage.error('操作失败，请重试')
+            }
         })
 
         // 全局 JavaScript 错误
