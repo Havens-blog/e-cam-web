@@ -10,6 +10,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import routes from './routes'
+import { isChunkLoadError } from './chunk-error'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL), // 使用 vite.config.ts 中的 base 配置
@@ -98,8 +99,27 @@ router.afterEach((_to: RouteLocationNormalized) => {
 /**
  * 全局错误处理
  */
+// 同一会话只提示一次刷新，避免「刷新后仍失败 → 再弹窗」的循环
+let chunkReloadPrompted = false
+
 router.onError((error) => {
     console.error('[Router] Navigation error:', error)
-})
 
+    // 懒加载 chunk 取不到（发版后旧哈希失效 / CDN 抖动）：页面会白屏且没有任何提示，
+    // 用户既不知道发生了什么也没有恢复入口。这里给出明确说明并一键刷新。
+    if (!isChunkLoadError(error)) return
+    if (chunkReloadPrompted) return // 同一会话只提示一次，避免刷新后仍失败造成弹窗循环
+    chunkReloadPrompted = true
+    ElMessageBox.confirm('页面资源已更新或网络异常，需要刷新后继续访问。', '需要刷新页面', {
+        confirmButtonText: '立即刷新',
+        cancelButtonText: '返回上一页',
+        type: 'warning',
+        distinguishCancelAndClose: true,
+    })
+        .then(() => window.location.reload())
+        .catch(() => {
+            chunkReloadPrompted = false
+            router.back()
+        })
+})
 export default router
