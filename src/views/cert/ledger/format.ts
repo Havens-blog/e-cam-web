@@ -35,7 +35,9 @@ export interface DaysLeftBadge {
  * 负数渲染为「已过期 N 天」。
  */
 export function daysLeftBadge(daysLeft: number): DaysLeftBadge {
-    if (daysLeft <= 0) return { text: `已过期 ${-daysLeft} 天`, tone: 'error', icon: '✗' }
+    // daysLeft=0 表示「已过期但不足 1 天」（后端为 ceil 口径），文案不能说成「已过期 0 天」
+    if (daysLeft === 0) return { text: '今日已到期', tone: 'error', icon: '✗' }
+    if (daysLeft < 0) return { text: `已过期 ${-daysLeft} 天`, tone: 'error', icon: '✗' }
     const text = `${daysLeft} 天`
     if (daysLeft > 30) return { text, tone: 'success', icon: '✓' }
     if (daysLeft > 7) return { text, tone: 'warning', icon: '⚠' }
