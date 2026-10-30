@@ -87,7 +87,7 @@
               </div>
               <div class="info-item">
                 <span class="info-label">云账号</span>
-                <span class="info-value">{{ user?.cloud_account_name || '-' }}</span>
+                <span class="info-value">{{ userAccountLabel(user) }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">租户ID</span>
@@ -106,9 +106,9 @@
 
           <!-- 用户组 -->
           <div v-show="activeTab === 'groups'" class="tab-panel">
-            <div v-if="user?.permission_groups && user.permission_groups.length > 0" class="groups-list">
+            <div v-if="userGroups(user).length > 0" class="groups-list">
               <div
-                v-for="group in user.permission_groups"
+                v-for="group in userGroups(user)"
                 :key="group.id"
                 class="group-card"
               >
@@ -163,6 +163,7 @@
 import type { CloudUser } from '@/api/types/iam'
 import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel, getUserStatus, getUserTypeLabel } from '@/utils/constants'
+import { userAccountLabel, userPermissionGroups as userGroups } from '@/utils/display-fallbacks'
 import { Delete, Document, Edit, Folder, FolderRemove } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 

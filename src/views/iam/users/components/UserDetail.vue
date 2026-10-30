@@ -29,7 +29,7 @@
       </el-descriptions-item>
       
       <el-descriptions-item label="云账号">
-        <span class="detail-value">{{ user?.cloud_account_name || '-' }}</span>
+        <span class="detail-value">{{ userAccountLabel(user) }}</span>
       </el-descriptions-item>
       
       <el-descriptions-item label="邮箱">
@@ -59,9 +59,9 @@
         </el-button>
       </div>
       
-      <div v-if="user?.permission_groups && user.permission_groups.length > 0" class="groups-list">
+      <div v-if="userGroups(user).length > 0" class="groups-list">
         <el-card
-          v-for="group in user.permission_groups"
+          v-for="group in userGroups(user)"
           :key="group.id"
           class="group-card"
           shadow="hover"
@@ -104,6 +104,7 @@ import type { CloudUser } from '@/api/types/iam'
 import { getUserDetailApi } from '@/api/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import { getUserStatus, getUserTypeLabel, safeTagType } from '@/utils/constants'
+import { userAccountLabel, userPermissionGroups as userGroups } from '@/utils/display-fallbacks'
 import { formatDateTime } from '@/utils/format'
 import { Delete, Edit, Setting, Switch } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

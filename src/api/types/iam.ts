@@ -19,7 +19,8 @@ export interface CloudUser {
     status: CloudUserStatus
     provider: CloudProvider
     cloud_account_id: number
-    cloud_account_name: string
+    /** 后端 /iam/users 未返回账号名（只给 cloud_account_id/provider）；展示请用 @/utils/display-fallbacks.userAccountLabel */
+  cloud_account_name?: string
     email: string
     permission_groups: PermissionGroup[]
     groups?: PermissionGroup[]

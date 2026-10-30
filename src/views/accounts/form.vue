@@ -319,7 +319,8 @@ watch(
       formData.provider = account.provider
       formData.environment = account.environment
       formData.access_key_id = account.access_key_id
-      formData.region = account.region
+      // 接口只返回 regions[]（无单数 region）：编辑态优先单数，回退首个 regions 项，避免区域字段留空
+      formData.region = account.region ?? account.regions?.[0] ?? ''
       
       // 填充已选择的区域
       if (account.regions && account.regions.length > 0) {

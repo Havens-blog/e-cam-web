@@ -9,7 +9,11 @@ export interface CloudAccount {
     environment: "production" | "staging" | "development"
     access_key_id: string
     access_key_secret?: string // 敏感信息，通常不返回
-    region: string
+    /**
+     * 单数 region 属**历史字段**：`GET /cloud-accounts` 实测只返回 `regions: string[]`（无 region）。
+     * 展示请用 @/utils/display-fallbacks.accountRegionLabel（优先 region，退到 regions[0]）。
+     */
+    region?: string
     regions?: string[] // 支持多区域
     description?: string
     status: "active" | "disabled" | "error" | "testing" | "inactive"
