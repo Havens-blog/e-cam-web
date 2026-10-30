@@ -48,28 +48,22 @@ describe('导航菜单契约', () => {
     })
 
     it('非跨应用前缀的菜单路径必须存在本地路由（防止再次留下点击即 404 的死链）', () => {
-        // 已知遗留（本轮清单外、待产品确认"删除 or 改指 /cmdb/service-tree"）：
-        // 服务树同样已迁出至 e-cmdb-web（见 api/service-tree-stats.ts 注释、e-cmdb-web/src/views/service-tree），
-        // 但其 `/service-tree*` 菜单既无本地路由也未加入 EXTERNAL_APP_PREFIXES —— 先豁免，避免静默存在。
-        const KNOWN_DANGLING_PENDING = [
-            'service-tree-main:/service-tree',
-            'service-tree-envs:/service-tree/environments',
-            'service-tree-rules:/service-tree/rules',
-        ]
+        // 服务树曾长期是"有菜单项、本仓无路由、也未标记跨应用"的死链；现已按迁移收尾改为
+        // `/cmdb/service-tree*`（命中 EXTERNAL_APP_PREFIXES，由 AppSidebar 新窗口打开并带 tenant_id）。
+        // 因此**不再豁免任何项**：任何非跨应用且无本地路由的菜单路径都必须让本用例失败。
         const dangling = withPath
             .filter((i) => !EXTERNAL_APP_PREFIXES.some((p) => i.path.startsWith(p)))
             .filter((i) => !routePaths.includes(i.path))
             .map((i) => `${i.key}:${i.path}`)
-            .filter((id) => !KNOWN_DANGLING_PENDING.includes(id))
         expect(dangling, `以下菜单项没有对应本地路由，也不是跨应用外开: ${dangling.join(', ')}`).toEqual([])
     })
 
-    it('已知遗留项个数被锁定：新增死链或未同步清理都会被这条守住', () => {
-        const KNOWN_COUNT = 3 // 上一条测试中的 KNOWN_DANGLING_PENDING
-        const dangling = withPath
-            .filter((i) => !EXTERNAL_APP_PREFIXES.some((p) => i.path.startsWith(p)))
-            .filter((i) => !routePaths.includes(i.path))
-        expect(dangling.length).toBeLessThanOrEqual(KNOWN_COUNT)
+    it('服务树三条菜单必须指向 e-cmdb-web（回归锚点，防止改回本仓路径）', () => {
+        const serviceTree = withPath.filter((i) => i.key.startsWith('service-tree-'))
+        expect(serviceTree.length).toBeGreaterThan(0)
+        for (const item of serviceTree) {
+            expect(item.path, `${item.key} 应指向跨应用的 /cmdb/service-tree*`).toMatch(/^\/cmdb\/service-tree(\/|$)/)
+        }
     })
 
     it('跨应用前缀仍受 external-app 机制覆盖（CMDB 类外开入口不被误当死链）', () => {

@@ -116,6 +116,8 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { getDnsDomainsApi } from '@/api/dns'
 import type { DnsDomain } from '@/api/types/dns'
+import { buildDomainTopologyUrl } from '@/views/network/dns/topology-link'
+import { useUserStore } from '@/stores/user'
 import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { DNS_DOMAIN_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
@@ -124,6 +126,7 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const domainList = ref<DnsDomain[]>([])
 const total = ref(0)
@@ -215,7 +218,10 @@ const submitSync = async () => {
 }
 
 const handleViewTopo = (row: DnsDomain) => {
-  router.push(`/topology?domain=${row?.domain_name}`)
+  // 拓扑页已随 CMDB 迁移到独立应用 e-cmdb-web（本仓没有 /topology 路由，router.push 会命中 404 兜底页）：
+  // 与侧边栏一致走**跨应用**打开（新窗口 + 自动带 ?tenant_id=，e-cmdb-web 路由守卫要求该参数）。
+  // URL 构造抽到 topology-link.ts 并有单测锚定，避免再次回退成本仓路径。
+  window.open(buildDomainTopologyUrl(row?.domain_name, userStore.currentTenantId), '_blank', 'noopener')
 }
 
 onMounted(() => {
