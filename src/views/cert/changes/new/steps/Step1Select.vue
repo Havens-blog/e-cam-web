@@ -46,7 +46,7 @@
             <div class="option-row">
               <span class="option-name">{{ c.commonName }}</span>
               <span class="mono option-fp">{{ truncateMiddle(c.fingerprint) }}</span>
-              <span class="option-days">{{ c.daysLeft }} 天</span>
+              <span class="option-days">{{ daysLeftBadge(c.daysLeft).text }}</span>
             </div>
           </el-option>
         </el-select>
@@ -70,7 +70,7 @@
           <div class="row">
             <strong>{{ oldCert.commonName }}</strong>
             <span class="chg-badge tone-accent">{{ hostingStatusMeta(oldCert.hostingStatus).label }}</span>
-            <span class="chg-badge tone-success">{{ oldCert.daysLeft }} 天</span>
+            <span class="chg-badge tone-success">{{ daysLeftBadge(oldCert.daysLeft).text }}</span>
           </div>
           <div class="text-secondary text-sm mono selected-fp">
             {{ truncateMiddle(oldCert.fingerprint) }} · 引用 {{ oldCert.refCount }}
@@ -104,7 +104,7 @@
             <div class="option-row">
               <span class="option-name">{{ c.commonName }}</span>
               <span class="mono option-fp">{{ truncateMiddle(c.fingerprint) }}</span>
-              <span class="option-days">{{ c.daysLeft }} 天</span>
+              <span class="option-days">{{ daysLeftBadge(c.daysLeft).text }}</span>
             </div>
           </el-option>
         </el-select>
@@ -139,7 +139,7 @@
           <div class="row">
             <strong>{{ newCert.commonName }}</strong>
             <span class="chg-badge tone-accent">{{ hostingStatusMeta(newCert.hostingStatus).label }}</span>
-            <span class="chg-badge tone-success">{{ newCert.daysLeft }} 天</span>
+            <span class="chg-badge tone-success">{{ daysLeftBadge(newCert.daysLeft).text }}</span>
           </div>
           <div class="text-secondary text-sm mono selected-fp">{{ truncateMiddle(newCert.fingerprint) }}</div>
         </div>
@@ -190,7 +190,7 @@ import type { CertListItem } from '@/api/cert'
 import { listCertsApi } from '@/api/cert'
 import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'
-import { hostingStatusMeta } from '../../../ledger/format'
+import { daysLeftBadge, hostingStatusMeta } from '../../../ledger/format'
 import { truncateMiddle } from '../../format'
 
 const props = defineProps<{
