@@ -197,6 +197,30 @@ describe('LogsIndex(查询进行中状态 + 失败可重试)', () => {
         w.unmount()
     })
 
+    it('取消态对读屏可感知（role=status / aria-live），且失败态不带这些属性', async () => {
+        searchApi.mockRejectedValueOnce(Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' }))
+        const w = await mountPage()
+        await findSearchBtn(w)!.trigger('click')
+        await flushPromises()
+
+        // 播报走「常驻 live region」：卡片上不带 role，避免「live region 与内容同时插入」的不可靠模式
+        expect(w.find('.state-card').attributes('role')).toBeUndefined()
+        const live = w.find('[role="status"]')
+        expect(live.exists()).toBe(true)
+        expect(live.attributes('aria-live')).toBe('polite')
+        expect(live.text()).toBe('查询已取消')
+        w.unmount()
+
+        searchApi.mockRejectedValueOnce(new Error('network error'))
+        const w2 = await mountPage()
+        await findSearchBtn(w2)!.trigger('click')
+        await flushPromises()
+        // 失败态：常驻 live region 保持空（不播报），卡片也不带 role
+        expect(w2.find('[role="status"]').text()).toBe('')
+        expect(w2.find('.state-card').attributes('role')).toBeUndefined()
+        w2.unmount()
+    })
+
     it('真失败仍渲染「查询失败」+ 原始错误行（取消态改动不影响失败态）', async () => {
         searchApi.mockRejectedValueOnce(new Error('network error'))
         const w = await mountPage()
