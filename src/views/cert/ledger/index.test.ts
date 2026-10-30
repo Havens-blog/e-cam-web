@@ -128,6 +128,17 @@ describe('台账页「从云端导入」双入口（AC1）', () => {
         expect(wrapper.find('.toolbar-spacer').exists()).toBe(false)
     })
 
+    it('两个筛选下拉在未选择时自解释：显示维度而非「请选择」（否则用户无法分辨该点哪个）', async () => {
+        const wrapper = await mountLedgerWith({ items: [certRow('a', 'a.example.com')], total: 1, hiddenCount: 0 })
+
+        // 本用例环境未全局注册 Element Plus，el-select 以未知元素渲染，placeholder 落为 attribute。
+        const placeholders = wrapper.findAll('.toolbar-select').map((s) => s.attributes('placeholder') ?? '')
+        // 三个下拉长得一样时，维度只能靠 placeholder 传达；不含「请选择」兜底。
+        expect(placeholders).toContain('托管状态：全部')
+        expect(placeholders).toContain('剩余天数：全部')
+        expect(placeholders.some((v) => v.includes('请选择'))).toBe(false)
+    })
+
     it('空态 CTA：从云端导入存量证书为主入口，批量上传为兜底，点击云端 CTA 打开 Modal', async () => {
         const wrapper = await mountEmptyLedger()
         // 空态可见（台账 0 条）
