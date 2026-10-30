@@ -28,8 +28,10 @@
       </div>
     </div>
 
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
     <!-- 表格 -->
-    <el-table v-loading="loading" :data="domainList" stripe style="width: 100%">
+    <el-table v-else v-loading="loading" :data="domainList" stripe style="width: 100%">
       <el-table-column label="域名" min-width="200" show-overflow-tooltip>
         <template #default="{ row }">
           <span class="domain-link" @click="handleViewRecords(row)">{{ row?.domain_name || '-' }}</span>
@@ -79,7 +81,7 @@
       </el-table-column>
     </el-table>
 
-    <el-empty v-if="!loading && domainList.length === 0" description="暂无数据" />
+    <el-empty v-if="!errorInfo && !loading && domainList.length === 0" description="暂无数据" />
 
     <!-- 同步对话框 -->
     <el-dialog v-model="syncDialogVisible" title="同步 DNS" width="480px">
@@ -123,11 +125,15 @@ import { CLOUD_PROVIDERS, getProviderLabel } from '@/utils/constants'
 import { DNS_DOMAIN_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { List, Refresh, Search, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 import { onMounted, reactive, ref } from 'vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（useListError 统一封装）
+const { errorInfo, run } = useListError()
 const domainList = ref<DnsDomain[]>([])
 const total = ref(0)
 const page = ref(1)
@@ -143,20 +149,21 @@ const statusLabel = (status: string | undefined) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getDnsDomainsApi({
+    // 失败时由 useListError 置持久错误态（不再只弹 toast 后渲染「暂无数据」）
+    const res = await run(() => getDnsDomainsApi({
       keyword: keyword.value || undefined,
       provider: provider.value || undefined,
       offset: (page.value - 1) * pageSize.value,
       limit: pageSize.value,
-    })
+    }), '获取域名列表失败')
+    if (res === undefined) {
+      domainList.value = []
+      total.value = 0
+      return
+    }
     const data = (res as any).data || res
     domainList.value = (data?.items || data || []).filter((item: any) => item != null)
     total.value = data?.total || 0
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : '获取域名列表失败'
-    ElMessage.error(msg)
-    domainList.value = []
-    total.value = 0
   } finally {
     loading.value = false
   }
