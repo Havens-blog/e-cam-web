@@ -309,6 +309,20 @@ $navbar-height: 56px;
   flex-shrink: 0;
   gap: 20px;
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  /* 顶栏内容有约 964px 的硬性最小宽度（折叠钮+面包屑+平台导航+搜索 + 租户选择器+3 个图标按钮+头像+用户名），
+     而它的祖��� .main-area 是 overflow-x: hidden。实测视口窄于约 1246px 就开始溢出：
+       1024 视口 → 溢出 160px，右侧头像落到 x=1054~1094（视口只有 1024），用户菜单被裁掉且无法滚动抵达；
+       1180 → 溢出 4px；1280 及以上 → 0。
+     1024×768 / 1280×800 是很常见的运维屏，属真实可复现的可用性缺陷。
+     这里让顶栏自身可横向滚动：内容不溢出时不出现滚动条（桌面无影响），
+     溢出时所有控件都能通过横向滚动抵达，而不是被静默裁掉。 */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.navbar::-webkit-scrollbar {
+  height: 4px;
 }
 
 .navbar-left {
@@ -526,5 +540,21 @@ $navbar-height: 56px;
   font-weight: 500;
   color: var(--text-secondary);
   margin-left: 8px;
+}
+
+/* 手机窄屏（≤560）：顶栏在 326px 可用宽度里放不下全部控件（内容需 964px）。
+   这里隐藏四项「可在别处获得」的次要元素，把顶栏所需宽度从 964 压到约 366：
+   - 搜索框（240px）：手机上这个宽度的输入框本就不可用；
+   - 租户选择器（200px）：租户信息在个人/租户相关页面可见；
+   - 用户名（70px）：头像已能表达当前用户；
+   - 面包屑（88px）：当前页标题在正文 h1 里已有。
+   保留折叠钮、平台导航、3 个图标按钮与用户头像这些随时需要点的操作。 */
+@media (max-width: 560px) {
+  .navbar-search,
+  .tenant-selector,
+  .user-name,
+  .el-breadcrumb {
+    display: none;
+  }
 }
 </style>
