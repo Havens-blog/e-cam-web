@@ -154,7 +154,9 @@
     </div>
 
     <!-- 表格区域（无默认多选列） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -209,7 +211,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <el-pagination
         :current-page="pagination.page"
         :page-size="pagination.size"
@@ -238,6 +240,8 @@ import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExport
 import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
@@ -271,6 +275,8 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（对齐 #141）
+const errorInfo = ref<ErrorInfo | null>(null)
 const instances = ref<Asset[]>([])
 const detailVisible = ref(false)
 const currentInstance = ref<Asset | null>(null)
@@ -505,11 +511,13 @@ const fetchData = async () => {
     const res = await listSnapshotAssetsApi(buildListParams(pagination.page, pagination.size))
     instances.value = res.data?.items || []
     pagination.total = res.data?.total || 0
+    errorInfo.value = null
     // 同步刷新全局领域统计
     fetchSnapshotCounts()
   } catch (e) {
     console.error('获取快照列表失败:', e)
-    ElMessage.error('获取快照列表失败')
+    // 改为持久错误态（原为一次性 toast，表格随后显示「暂无数据」，误导用户以为真的没有快照）
+    errorInfo.value = handleApiError(e, '获取快照列表失败')
     instances.value = []
     pagination.total = 0
   } finally { loading.value = false }
