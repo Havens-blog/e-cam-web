@@ -27,6 +27,13 @@ function isValidTime(value: unknown): value is string | number {
     return trimmed !== '' && !trimmed.startsWith('0001-01-01')
 }
 
+/** operator_id 是否指向真实用户：空、空白、以及 "0"/0 都表示「无操作人」（服务间调用） */
+function hasRealOperatorId(id: unknown): boolean {
+    if (id === null || id === undefined) return false
+    const s = String(id).trim()
+    return s !== '' && s !== '0'
+}
+
 export function normalizeAuditLog(raw: RawAuditLog): AuditLog {
     const time = isValidTime(raw.operation_time)
         ? String(raw.operation_time)
@@ -35,7 +42,9 @@ export function normalizeAuditLog(raw: RawAuditLog): AuditLog {
     return {
         ...(raw as AuditLog),
         // 审计场景下「有 id 无名字」不能直接显示成 1，用 #id 明确这是标识而非人名
-        operator: raw.operator || raw.operator_name || (raw.operator_id ? `#${raw.operator_id}` : '-'),
+        // operator_id 为 "0"（或空）表示「无操作人」——这类行是服务间调用（user_agent 形如 Go-http-client）。
+        // 此前把 "0" 当有效 id，页面显示成 #0，看起来像真实用户 ID，属误导性审计展示。
+        operator: raw.operator || raw.operator_name || (hasRealOperatorId(raw.operator_id) ? `#${raw.operator_id}` : '-'),
         operation_time: time,
         // 云平台：后端只给 cloud_platform，页面模板读 provider（同根因，一并归一）
         provider: (raw.provider || raw.cloud_platform) as AuditLog['provider'],

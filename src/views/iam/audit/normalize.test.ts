@@ -34,6 +34,16 @@ describe('normalizeAuditLog', () => {
         expect(log.operation_time).toBe('2026-10-29 12:00:00')
     })
 
+    it('operator_id 为 "0"（服务间调用）时不显示 #0，回落 -', () => {
+        const log = normalizeAuditLog({ id: 1, operator_id: '0', operator_name: '' } as never)
+        expect(log.operator).toBe('-')
+    })
+
+    it('operator_id 为真实 id 且无名时仍显示 #id', () => {
+        const log = normalizeAuditLog({ id: 1, operator_id: '42', operator_name: '' } as never)
+        expect(log.operator).toBe('#42')
+    })
+
     it('缺失字段时用 - 兜底', () => {
         const log = normalizeAuditLog({ id: 1 } as never)
         expect(log.operator).toBe('-')
