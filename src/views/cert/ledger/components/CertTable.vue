@@ -18,6 +18,7 @@
         <el-select
           v-model="hostingFilter"
           class="toolbar-select"
+          placeholder="托管状态：全部"
           aria-label="筛选托管状态"
           @change="emitFilters"
         >
@@ -28,6 +29,7 @@
         <el-select
           v-model="daysFilter"
           class="toolbar-select"
+          placeholder="剩余天数：全部"
           aria-label="筛选剩余天数"
           @change="emitFilters"
         >
