@@ -9,6 +9,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { aggregateLogsApi, diagnoseLogsApi, getLogSourcesApi, getLogTypesApi, searchLogsApi } from '@/api/logs'
 import type { LogSearchResponse, LogSource, LogTypeMeta } from '@/api/types/logs'
@@ -108,7 +109,7 @@ function searchResp(overrides: Partial<LogSearchResponse> = {}): LogSearchRespon
 async function mountPage(): Promise<VueWrapper> {
     const w = mount(LogsIndex, {
         global: {
-            plugins: [ElementPlus],
+            plugins: [ElementPlus, createPinia()],
             // el-table 的 key-render-helper 在 happy-dom 下 MutationObserver 崩溃(#destroyed),
             // 本页状态断言不涉及表格行渲染,直接 stub 掉
             stubs: { LogStats: true, LogDetailDrawer: true, ElTooltip: true, ElTable: true },
@@ -415,7 +416,7 @@ describe('LogsIndex(明细按云·账号折叠分组,组头含条数/耗时)', (
         searchApi.mockResolvedValueOnce(groupedResp())
         const w = mount(LogsIndex, {
             global: {
-                plugins: [ElementPlus],
+                plugins: [ElementPlus, createPinia()],
                 stubs: {
                     LogStats: true,
                     LogDetailDrawer: true,
@@ -449,7 +450,7 @@ describe('LogsIndex(TopN 下钻:图点击 → 字段筛选重查,可清除)', ()
         searchApi.mockResolvedValue(searchResp())
         const w = mount(LogsIndex, {
             global: {
-                plugins: [ElementPlus],
+                plugins: [ElementPlus, createPinia()],
                 stubs: { LogStats: LogStatsDrillStub, LogDetailDrawer: true, ElTooltip: true, ElTable: true },
             },
         })
