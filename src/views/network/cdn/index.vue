@@ -159,7 +159,9 @@
     </div>
 
     <!-- 表格区域（无多选列；首列加速域名 + 等宽 ID 副行） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -226,7 +228,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination-bar">
+    <div v-if="!errorInfo" class="pagination-bar">
       <el-pagination
         :current-page="pagination.page"
         :page-size="pagination.size"
@@ -294,6 +296,8 @@ import {
 import { ArrowLeft, ArrowRight, Box, CircleCheck, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CdnCostPanel from './components/CdnCostPanel.vue'
@@ -350,6 +354,8 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（对齐 #141/#144）
+const errorInfo = ref<ErrorInfo | null>(null)
 
 // 筛选条件（字段搜索栏映射到后端实测有效参数）
 const filters = reactive({
@@ -639,11 +645,13 @@ const fetchData = async () => {
     const res = await listCDNAssetsApi(buildListParams(pagination.page, pagination.size))
     cdnList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
+    errorInfo.value = null
     // 同步刷新全局领域统计
     fetchCdnCounts()
   } catch (error: any) {
     console.error('获取CDN列表失败:', error)
-    ElMessage.error(error.message || '获取CDN列表失败')
+    // 改为持久错误态（原为一次性 toast，表格随后显示「暂无数据」，误导用户以为真的没有域名）
+    errorInfo.value = handleApiError(error, '获取CDN列表失败')
     cdnList.value = []
     pagination.total = 0
   } finally {
