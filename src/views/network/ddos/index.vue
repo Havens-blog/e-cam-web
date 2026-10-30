@@ -1034,18 +1034,24 @@ onMounted(() => {
   flex-direction: column;
   min-height: 0;
   background: var(--bg-elevated);
+  /* 唯一滚动容器：表头与表体一起横向滚动，避免「表头不动、表体动」的列错位 */
+  overflow: auto;
 }
 
 .table-header {
   flex-shrink: 0;
+  /* 表头随 wrapper 一起横向滚动，纵向吸附在顶部；不再自己裁剪内容 */
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .table-body {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
   min-height: 0;
 }
 
