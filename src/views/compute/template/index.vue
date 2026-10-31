@@ -965,6 +965,18 @@ html.dark .btn-secondary:hover {
 
 /* TEMPLATE_MOBILE_NO_OVERFLOW：窄屏下模板页三处溢出（390 卡片撑出 78px、360 搜索框 280px、规格项 102px） */
 @media (max-width: 768px) {
+  /* 页头：.page-header 是 display:flex + space-between 的单行，左侧标题块与右侧动作组抢宽度，
+     390px 下标题只分到 72px，「📋 主机模板管理」被折成 3 行（iter127 实测）。
+     让页头换行、标题块独占一行。 */
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .page-header > div {
+    flex: 1 0 100%;
+  }
+
   /* 卡片头部：窄屏下 info 会被压到 0 宽（模板名消失），4 个操作按钮被 overflow:hidden 裁掉。
      让头部换行、信息区独占一行、按钮组右对齐。 */
   .template-card-header {

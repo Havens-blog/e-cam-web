@@ -271,6 +271,18 @@ defineExpose({
     gap: 12px;
   }
 
+  /* 窄屏（≤768px）：与 DomainTable 同构 —— 单行 flex + space-between 下工具条撑到 412px，
+     父 .page-container 是 overflow:hidden，内容被裁而非可滚动（iter127）。允许换行。 */
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .toolbar-left {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+    }
+  }
+
   .toolbar-right {
     display: flex;
     align-items: center;

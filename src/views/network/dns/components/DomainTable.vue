@@ -258,6 +258,20 @@ defineExpose({ refresh: fetchData })
     gap: 12px;
   }
 
+  /* 窄屏（≤768px）：工具条是单行 flex + space-between，左侧搜索框与下拉不换行，
+     实测整行撑到 412px（视口 390px），把 .dns-page 的 scrollWidth 顶到 657px 而
+     父 .page-container 是 overflow:hidden → 内容被裁掉而非可滚动（iter127）。
+     允许换行并让左右两组各自独占一行。 */
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .toolbar-left {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+    }
+  }
+
   .toolbar-right {
     display: flex;
     align-items: center;

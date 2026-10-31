@@ -231,6 +231,18 @@ defineExpose({ refresh: fetchStats })
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   margin-bottom: 20px;
+
+  /* 窄屏（≤560px）：4 列在 390px 下每列仅约 78px，卡片内容（图标 + 数字 + 描述）撑不进去，
+     实测列宽被迫变成 86 / 106 / 294 / 0px，整行右边界冲到 634px（视口 390px）。
+     降为单列让每张卡拿到整行宽度。
+
+     断点只到 560px 而不是 768px：768px 时 4 列每列约 139px 本来就装得下，
+     那里真正的溢出源是上方 .table-toolbar（已由内容驱动的 flex-wrap 修掉），
+     不应把统计卡也一起降列 —— 固定断点开得过宽只是把问题挪到别处。 */
+  @media (max-width: 560px) {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 12px;
+  }
 }
 
 .stat-card {
