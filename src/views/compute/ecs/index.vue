@@ -403,7 +403,7 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 }
 
 // 获取实例列表
-const fetchInstances = async () => {
+const fetchInstances = async (withCounts = false) => {
   loading.value = true
   try {
     const res = await listECSAssetsApi(buildListParams(pagination.page, pagination.size))
@@ -412,7 +412,9 @@ const fetchInstances = async () => {
     pagination.total = responseData.total || 0
     errorInfo.value = null
     // 同步刷新全局状态统计
-    fetchStatusCounts()
+    // 全局计数与页码无关：翻页/改页大小/改筛选只重拉列表，避免每次翻页多发 3 个计数请求
+    // 仅「首屏 / 手动刷新 / 增删改后」需要同步计数（资源数量确实变了）
+    if (withCounts) fetchStatusCounts()
   } catch (error: any) {
     console.error('获取实例列表失败:', error)
     // 保留 errorInfo 让页面持续显示错误态与重试入口；不再只靠瞬时 toast + 清空列表
@@ -427,7 +429,7 @@ const fetchInstances = async () => {
 
 // 刷新
 const handleRefresh = () => {
-  fetchInstances()
+  fetchInstances(true)
 }
 
 /** 导出「全部数据」：按当前筛选分页拉取全量（主题A compute-1 F-H2），供 ExportDialog 调用 */
@@ -575,7 +577,7 @@ const handleSubmit = async () => {
     await formRef.value.submit()
     ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
     dialogVisible.value = false
-    fetchInstances()
+    fetchInstances(true)
   } catch {
     ElMessage.error('操作失败')
   } finally {
@@ -603,7 +605,7 @@ onMounted(() => {
     searchConditions.value.push({ field: 'asset_name', value: s, displayValue: s })
   }
   fetchModels()
-  fetchInstances()
+  fetchInstances(true)
   loadAvailableTagKeys()
 })
 
