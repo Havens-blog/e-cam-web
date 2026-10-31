@@ -12,15 +12,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ eipCounts.total }}</span>
+            <span class="stat-num">{{ statText(eipCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已绑定</span>
-            <span class="stat-num blue">{{ eipCounts.bound }}</span>
+            <span class="stat-num blue">{{ statText(eipCounts.bound) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">未绑定</span>
-            <span class="stat-num">{{ eipCounts.unbound }}</span>
+            <span class="stat-num">{{ statText(eipCounts.unbound) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">带宽告警</span>
@@ -28,7 +28,7 @@
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ eipCounts.error }}</span>
+            <span class="stat-num red">{{ statText(eipCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -312,6 +312,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 EIP_STATUS_LABELS */
 // 绑定族涵盖后端归一后的 canonical(in_use)与历史原始值(InUse/Attached/BIND/BIND_ENI)
@@ -441,6 +442,8 @@ const EIP_COUNTS_PAGE_SIZE = 1000
 const EIP_COUNTS_MAX_PAGES = 10
 
 const eipCounts = reactive({ total: 0, bound: 0, unbound: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchEipCounts = async () => {
   try {
@@ -463,8 +466,10 @@ const fetchEipCounts = async () => {
     eipCounts.bound = bound
     eipCounts.unbound = unbound
     eipCounts.error = error
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取EIP统计失败')
   }
 }
