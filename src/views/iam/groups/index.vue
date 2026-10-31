@@ -304,6 +304,7 @@ import { deleteGroupApi, listGroupsApi } from '@/api'
 import type { ListGroupsParams, PermissionGroup } from '@/api/types/iam'
 import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { CLOUD_PROVIDERS } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { formatDateTime } from '@/utils/format'
@@ -334,7 +335,7 @@ import SyncGroupsDialog from './components/SyncGroupsDialog.vue'
 
 const loading = ref(false)
 const groups = ref<PermissionGroup[]>([])
-const errorInfo = ref<any>(null)
+const errorInfo = ref<ErrorInfo | null>(null)
 const apiUrl = ref('/api/v1/cam/iam/groups')
 
 const dialogVisible = ref(false)
@@ -428,7 +429,10 @@ const fetchGroups = async () => {
       pagination.total = 0
     }
   } catch (error: any) {
-    errorInfo.value = { message: error.message || '获取用户组列表失败', code: error.code }
+    // 走项目统一的错误处理器（与 iam/users、accounts 一致）：
+    // 它会把网络失败映射成「网络连接失败」、HTTP 状态码映射成中文，
+    // 而不是把 axios 的英文原文（如 Network Error）原样显示给用户。
+    errorInfo.value = handleApiError(error, '获取用户组列表失败')
   } finally {
     loading.value = false
   }
