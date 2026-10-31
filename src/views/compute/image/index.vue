@@ -839,6 +839,29 @@ onMounted(() => {
   .page-title {
     flex: 1 0 100%;
   }
+
+  /* 窄屏隐藏条数摘要：与下方分页栏「共 N 条」重复，且此处会被挤成一字一行（iter117） */
+  .page-info {
+    display: none;
+  }
+
+  /* tab 在窄屏不折行（「自定义镜像」曾被压到 3 行），改为整条横向滚动（iter117） */
+  .tab-item {
+    white-space: nowrap;
+  }
+
+  .tabs,
+  .tab-bar,
+  [class*="tab-list"] {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  /* 统计卡标签不折行：390px 下卡宽 60px、标签 4-5 字约 44-55px 本可一行，
+     但无 white-space 约束会被折成两行（「监控异常」→「监控异」/「常」）（iter117/T5） */
+  .stat-label {
+    white-space: nowrap;
+  }
 }
 
 
