@@ -169,6 +169,7 @@ import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFi
 import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { resolveErrorMessage } from '@/utils/error-handler';
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -235,7 +236,7 @@ const fetchNasMetrics = async () => {
     await nextTick()
     renderNasChart()
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : '查询容量指标失败'
+    const msg = resolveErrorMessage(error, '查询容量指标失败')
     metricsError.value = `容量指标查询失败: ${msg}`
   } finally {
     metricsLoading.value = false
