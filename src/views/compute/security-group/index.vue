@@ -565,7 +565,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 24px;
+  // 窄屏允许换行：否则标题被兄弟元素挤到几十像素宽，中文一字一行竖排（iter116）
+  flex-wrap: wrap;
 }
+
+@media (max-width: 560px) {
+  .page-title-row {
+    gap: 12px;
+  }
+
+  /* 标题在窄屏独占一行且不参与压缩，避免中文一字一行竖排（iter116） */
+  .page-title {
+    flex: 1 0 100%;
+  }
+}
+
 
 .page-title {
   font-size: 18px;
