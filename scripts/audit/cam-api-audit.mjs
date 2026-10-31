@@ -15,12 +15,17 @@
  *
  * 用法：
  *   ECAM_BASE=http://localhost:8888 ECAM_COOKIE='ecmdb-token-key=...' node scripts/audit/cam-api-audit.mjs
- *   # 仅跑某一类：加 --only=secrets|filters|paging
+ *   # 仅跑某一类：加 --only=secrets|filters|paging|details|invalid|limits|leaks
  *
  * 退出码：0 = 全部通过；1 = 存在疑似问题（需人工确认）；2 = 环境/鉴权不可用。
  */
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 const BASE = (process.env.ECAM_BASE || 'http://localhost:8888').replace(/\/$/, '')
+const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'api')
 const COOKIE = process.env.ECAM_COOKIE || ''
 const only = (process.argv.find((a) => a.startsWith('--only=')) || '').split('=')[1]
 
@@ -261,6 +266,102 @@ async function auditLimits() {
     return { rows, bad: 0, warnings }
 }
 
+/**
+ * 存储/实现痕迹泄露审计。
+ *
+ * 【为什么单列一项】2026-10-31 实测：对 59 个"含路径参数的只读端点"用**必然不存在的 id** 探测，
+ * 50 个正确回 404、6 个 200，但有 3 个回 **500 且响应体里直接是存储原文**：
+ *   {"code":500,"msg":"mongo: no documents in result"}          ← /alert/channels/{id}、/alert/rules/{id}
+ *   {"code":500,"msg":"get budget: mongo: no documents in result"} ← /budget/{id}/progress
+ * ⇒ 只看状态码会以为"3 个 500"，而真正的问题是**把存储实现细节回给了调用方**（同时语义也应 404）。
+ * 该类缺陷已在 service 层按"mongo.ErrNoDocuments → 领域错误"修复（#234/#238），本检查用于**回归**。
+ *
+ * 【端点来源】不硬编码清单，而是从 `src/api/*.ts` 派生（与设置/参数同源，避免"猜路径"）：
+ * 只取**含 ${...} 路径参数**、且**调用方法是 GET**的 url（写操作不探），参数统一替换为 999999。
+ */
+const LEAK_MARKERS = [
+    ['mongo', /mongo:/i],
+    ['ErrNoDocuments', /ErrNoDocuments/],
+    ['BSON', /\bBSON\b/],
+    ['collection', /\bcollection\b/i],
+    ['sql', /\b(sql|SQLSTATE|pq:)\b/],
+    ['redis', /\bredis\b/i],
+    ['panic', /\bpanic\b/i],
+    ['goroutine', /goroutine\s+\d+/],
+    ['goStack', /\.go:\d+/],
+    ['dial', /dial tcp/i],
+    ['dns', /no such host/i],
+    ['connRefused', /connection refused/i],
+    ['ctxCanceled', /context canceled/i],
+    ['dupKey', /duplicate key/i],
+]
+const READ_METHODS = new Set(['get'])
+const WRITE_HINTS = /(delete|retry|sync|confirm|execute|rollback|cancel|apply|bind|batch|create|update|submit|toggle)/i
+
+/** 从 src/api/*.ts 派生只读、含路径参数的端点（${...} → 999999）。 */
+export function deriveLeakCandidates() {
+    const eps = new Set()
+    let files = []
+    try {
+        files = readdirSync(API_DIR).filter((f) => f.endsWith('.ts') && !f.includes('.test.'))
+    } catch (e) {
+        console.error(`[leaks] 无法读取 ${API_DIR}：${e.message}（请在 e-cam-web 仓库根目录运行）`)
+        return []
+    }
+    for (const file of files) {
+        const src = readFileSync(join(API_DIR, file), 'utf8')
+        const re = /url:\s*`\$\{API_SERVICE\.CAM\}([^`]+)`/g
+        for (let m = re.exec(src); m; m = re.exec(src)) {
+            const raw = m[1]
+            if (!raw.includes('${')) continue // 只探详情类（含路径参数）
+            if (WRITE_HINTS.test(raw)) continue // 无参数的写操作提示词，先排除
+            // 方法判定：向前找最近的 instance.<method>（api 层写法为 instance.get<T>({ url: ... })）
+            const before = src.slice(Math.max(0, m.index - 160), m.index)
+            const mm = [...before.matchAll(/instance\.([a-z]+)\s*</g)].pop()
+            const method = (mm && mm[1]) || 'get'
+            if (!READ_METHODS.has(method.toLowerCase())) continue
+            eps.add('/api/v1/cam' + raw.replace(/\$\{[^}]+\}/g, '999999'))
+        }
+    }
+    return [...eps].sort()
+}
+
+async function auditLeaks() {
+    const rows = []
+    let bad = 0
+    const candidates = deriveLeakCandidates()
+    if (!candidates.length) {
+        return { rows: [{ check: '(派生端点)', status: '-', result: '⚠ 未能从 src/api 派生候选端点，请确认运行目录' }], bad: 0 }
+    }
+    for (const path of candidates) {
+        const { status, text } = await get(path)
+        // 只报告命中的**痕迹名**，不回显原文（证据里不应出现响应体内容）
+        const hits = LEAK_MARKERS.filter(([, re]) => re.test(text)).map(([n]) => n)
+        // 规则 2：HTTP 200 但响应体 code 非成功（0/200）—— 状态码与业务码**相反错位**。
+        // 实测：GET /api/v1/cam/templates/999999 → 200 {"code":404030,"msg":"vm template not found"}
+        // 只按 HTTP 判成功的客户端会把"不存在"当成成功；该缺陷与"5xx 泄露"同族（契约错位）。
+        let codeMismatch = false
+        if (status === 200) {
+            try {
+                const j = JSON.parse(text)
+                if (j && typeof j.code === 'number' && j.code !== 0 && j.code !== 200) codeMismatch = true
+            } catch { /* 非 JSON 不判定 */ }
+        }
+        if (hits.length || codeMismatch) bad++
+        const okText = status === 404 ? '✓ 404（语义正确）' : status === 200 ? '✓ 200' : `✓ ${status}`
+        rows.push({
+            check: path.replace('/api/v1/cam', ''),
+            status,
+            result: hits.length
+                ? `⚠ 响应体含存储/实现痕迹: ${hits.join(',')}`
+                : codeMismatch
+                    ? '⚠ HTTP 200 但响应体是错误码（状态码与业务码错位）'
+                    : okText,
+        })
+    }
+    return { rows, bad, candidates: candidates.length }
+}
+
 async function main() {
     // 鉴权探活
     const probe = await get('/api/v1/cam/cloud-accounts?offset=0&limit=1')
@@ -277,6 +378,7 @@ async function main() {
     if (!only || only === 'details') { const r = await auditDetails(); print('详情接口可用性', r.rows); failures += r.bad }
     if (!only || only === 'invalid') { const r = await auditInvalidInput(); print('非法输入健壮性(不得 5xx)', r.rows); failures += r.bad }
     if (!only || only === 'limits') { const r = await auditLimits(); print('分页上限保护', r.rows); warnings += r.warnings }
+    if (!only || only === 'leaks') { const r = await auditLeaks(); print(`存储痕迹泄露(候选 ${r.candidates ?? '-'} 个只读详情端点)`, r.rows); failures += r.bad }
 
     const warnPart = warnings ? `，另 ${warnings} 项已知未决警告（不阻塞）` : ''
     console.log(`\n结论: ${failures === 0 ? '全部通过' : `${failures} 项需人工确认`}${warnPart}`)
