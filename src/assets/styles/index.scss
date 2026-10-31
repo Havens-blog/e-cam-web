@@ -175,3 +175,21 @@ input, textarea {
 
 // 导入页面级主题样式
 @import './pages-dark.scss';
+
+/* 统计卡行（.stats-badges）在窄屏允许换行。
+ *
+ * 背景（真实缺陷，390 视口实测）：该行是 display:flex 且不换行、不可横向滚动，
+ * 全仓有 24 个页面各自定义一份同名样式。窄屏下整行溢出后被页面容器裁掉 ——
+ * 实测 /cam/compute/snapshot 的「定时快照」卡露出 0px、/cam/compute/ecs 的「异常」卡露出 0px，
+ * 即用户完全看不到，也无法滚动抵达（文档无横向滚动条）。
+ *
+ * 24 份 scoped 副本的优先级高于此全局规则，故此处必须 !important；
+ * 正确做法是把该行样式收敛为一个公共组件/样式，已记录为后续项。
+ */
+@media (max-width: 560px) {
+  .stats-badges {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+    margin-left: 0 !important;
+  }
+}
