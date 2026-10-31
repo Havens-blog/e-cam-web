@@ -186,28 +186,38 @@ input, textarea {
  * 24 份 scoped 副本的优先级高于此全局规则，故此处必须 !important；
  * 正确做法是把该行样式收敛为一个公共组件/样式，已记录为后续项。
  */
+/* 统计卡行（.stats-badges）与操作条（.action-bar）：允许换行，不依赖断点。
+ *
+ * 为什么不用 @media：这两类元素在**全仓各有 24 份同名 scoped 样式**，形状一致
+ * （display:flex; 不换行）。窄屏时整行溢出后被页面容器裁掉，且文档无横向滚动条 ——
+ * 内容既看不到也够不到。实测（真实浏览器）：
+ *   /cam/compute/snapshot 390px：「定时快照」卡 [411..481] 露出 0px；
+ *   /cam/compute/ecs     390px：「标签」按钮 [356..428] 仅露 34px，
+ *                                「本页20条 / 共3518条」[428..548] 露出 0px；
+ *   /cam/network/eip     768px 与 900px：条数摘要分别超出 33px / 更宽，仍被裁。
+ *
+ * 关键在于**不能用媒体查询做断点**：EIP 操作条按钮最多（10 个），
+ * 实测直到 1024px 才装得下 —— 任何固定断点都只是把裁切边界挪到别处。
+ * flex-wrap: wrap 是内容驱动的：宽屏装得下仍是单行（外观不变），装不下才换行。
+ *
+ * 24 份 scoped 副本优先级高于全局规则，故用 !important；
+ * 正解是把这两类收敛为公共样式，已记录为后续项。 */
+.stats-badges,
+.action-bar {
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+}
+
+/* 两组内部也要能换行，否则单组自身仍会溢出 */
+.action-bar > * {
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+  min-width: 0 !important;
+}
+
+/* 窄屏下去掉统计卡行的 auto 外边距，避免换行后右侧留白不均 */
 @media (max-width: 560px) {
-  /* 操作条（.action-bar）：全仓 24 个页面各有一份同名样式，形状一致
-   * （display:flex; justify-content:space-between; 不换行）。
-   * 390 视口实测：整条溢出后被页面容器裁掉 ——
-   *   ECS 的「标签」按钮 [356..428] 只露出 34px（宽 72px）；
-   *   「本页20条 / 共3518条」[428..548] 完全在屏外，露出 0px。
-   * 同 .stats-badges：scoped 副本优先级高于全局规则，故用 !important。 */
-  .action-bar {
-    flex-wrap: wrap !important;
-    row-gap: 8px !important;
-  }
-
-  /* 操作条内左右两组也要能换行，否则单组自身仍会超出 */
-  .action-bar > * {
-    flex-wrap: wrap !important;
-    row-gap: 8px !important;
-    min-width: 0 !important;
-  }
-
   .stats-badges {
-    flex-wrap: wrap !important;
-    row-gap: 8px !important;
     margin-left: 0 !important;
   }
 }
