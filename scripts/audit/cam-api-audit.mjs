@@ -310,17 +310,28 @@ export function deriveLeakCandidates() {
     }
     for (const file of files) {
         const src = readFileSync(join(API_DIR, file), 'utf8')
-        const re = /url:\s*`\$\{API_SERVICE\.CAM\}([^`]+)`/g
-        for (let m = re.exec(src); m; m = re.exec(src)) {
-            const raw = m[1]
-            if (!raw.includes('${')) continue // 只探详情类（含路径参数）
-            if (WRITE_HINTS.test(raw)) continue // 无参数的写操作提示词，先排除
-            // 方法判定：向前找最近的 instance.<method>（api 层写法为 instance.get<T>({ url: ... })）
-            const before = src.slice(Math.max(0, m.index - 160), m.index)
-            const mm = [...before.matchAll(/instance\.([a-z]+)\s*</g)].pop()
-            const method = (mm && mm[1]) || 'get'
-            if (!READ_METHODS.has(method.toLowerCase())) continue
-            eps.add('/api/v1/cam' + raw.replace(/\$\{[^}]+\}/g, '999999'))
+        // 两种常见写法都要覆盖：
+        //   ① url: `${API_SERVICE.CAM}/...`
+        //   ② const BASE = '/cam/xxx' 之后的 url: `${BASE}/...`
+        // 【教训】只认 ① 会漏掉 logs.ts / dns.ts 两个模块的全部端点（本轮补上，覆盖 41→更多候选）。
+        const baseMatch = src.match(/const BASE = ['"]([^'"]+)['"]/)
+        // [pattern, 前缀] 两元组：CAM 写法直接给全路径，BASE 写法给的是**相对后缀**（如 /types、/export/${id}），需补 BASE 前缀
+        const patterns = [[/url:\s*`\$\{API_SERVICE\.CAM\}([^`]+)`/g, '']]
+        if (baseMatch) {
+            patterns.push([/url:\s*`\$\{BASE\}([^`]*)`/g, baseMatch[1]])
+        }
+        for (const [re, prefix] of patterns) {
+            for (let m = re.exec(src); m; m = re.exec(src)) {
+                const raw = prefix + m[1]
+                if (!raw.includes('${')) continue // 只探详情类（含路径参数）
+                if (WRITE_HINTS.test(raw)) continue // 含写操作提示词，先排除
+                // 方法判定：向前找最近的 instance.<method>（api 层写法为 instance.get<T>({ url: ... })）
+                const before = src.slice(Math.max(0, m.index - 160), m.index)
+                const mm = [...before.matchAll(/instance\.([a-z]+)\s*</g)].pop()
+                const method = (mm && mm[1]) || 'get'
+                if (!READ_METHODS.has(method.toLowerCase())) continue
+                eps.add('/api/v1/cam' + raw.replace(/\$\{[^}]+\}/g, '999999'))
+            }
         }
     }
     return [...eps].sort()
