@@ -187,6 +187,24 @@ input, textarea {
  * 正确做法是把该行样式收敛为一个公共组件/样式，已记录为后续项。
  */
 @media (max-width: 560px) {
+  /* 操作条（.action-bar）：全仓 24 个页面各有一份同名样式，形状一致
+   * （display:flex; justify-content:space-between; 不换行）。
+   * 390 视口实测：整条溢出后被页面容器裁掉 ——
+   *   ECS 的「标签」按钮 [356..428] 只露出 34px（宽 72px）；
+   *   「本页20条 / 共3518条」[428..548] 完全在屏外，露出 0px。
+   * 同 .stats-badges：scoped 副本优先级高于全局规则，故用 !important。 */
+  .action-bar {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+
+  /* 操作条内左右两组也要能换行，否则单组自身仍会超出 */
+  .action-bar > * {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+    min-width: 0 !important;
+  }
+
   .stats-badges {
     flex-wrap: wrap !important;
     row-gap: 8px !important;
