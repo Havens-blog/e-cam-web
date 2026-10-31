@@ -9,15 +9,15 @@
       <div class="stats-badges">
         <div class="stat-badge" :class="{ active: !activeStatFilter }" @click="emit('stat-click', '')">
           <span class="stat-label">总数</span>
-          <span class="stat-num">{{ totalCount }}</span>
+          <span class="stat-num">{{ statsFailed ? '—' : totalCount }}</span>
         </div>
         <div class="stat-badge" :class="{ active: activeStatFilter === 'running' }" @click="emit('stat-click', 'running')">
           <span class="stat-label">运行中</span>
-          <span class="stat-num blue">{{ runningCount }}</span>
+          <span class="stat-num blue">{{ statsFailed ? '—' : runningCount }}</span>
         </div>
         <div class="stat-badge" :class="{ active: activeStatFilter === 'stopped' }" @click="emit('stat-click', 'stopped')">
           <span class="stat-label">关机</span>
-          <span class="stat-num">{{ stoppedCount }}</span>
+          <span class="stat-num">{{ statsFailed ? '—' : stoppedCount }}</span>
         </div>
         <div class="stat-badge">
           <span class="stat-label">监控异常</span>
@@ -55,6 +55,12 @@ defineProps<{
   stoppedCount: number
   /** 当前激活的状态筛选（'' = 全部），用于卡片高亮 */
   activeStatFilter: string
+  /**
+   * 全局状态计数是否取失败：失败时卡片显示「—」。
+   * 计数是全局口径，与当前页/筛选无关；请求失败却显示上一次的数字（或 0），
+   * 会让用户把"取不到"当成"确实这么多 / 确实为 0"。
+   */
+  statsFailed?: boolean
 }>()
 
 const emit = defineEmits<{
