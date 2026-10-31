@@ -68,7 +68,9 @@
           <div ref="allocationChartRef" class="chart-content"></div>
         </div>
 
-        <div class="allocation-table-card">
+        <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+        <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchTree" />
+        <div v-else class="allocation-table-card">
           <el-table
             :data="treeData"
             v-loading="treeLoading"
@@ -267,6 +269,8 @@ import echarts from '@/utils/echarts'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 // ==================== Tab 状态 ====================
 
@@ -453,6 +457,8 @@ const treeDimType = ref('provider')
 const treePeriod = ref((() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })())
 const treeData = ref<any[]>([])
 const treeSummary = ref({ total: 0, count: 0 })
+// 分摊视图请求失败：呈现持久错误态 + 重试，而不是渲染成「暂无数据」（含金额，误导性更强）
+const { errorInfo, run } = useListError()
 const chartType = ref<'bar' | 'pie'>('bar')
 const allocationChartRef = ref<HTMLElement>()
 let allocationChart: any = null
@@ -463,11 +469,12 @@ const MAX_CHART_ITEMS = 10
 const fetchTree = async () => {
   treeLoading.value = true
   try {
-    const res = await getAllocationTreeApi({
+    const res = await run(() => getAllocationTreeApi({
       dim_type: treeDimType.value,
       root_id: '',
       period: treePeriod.value
-    })
+    }), '获取分摊视图失败')
+    if (res === undefined) return
     const data = (res as any).data || res
     const children = data?.children || (Array.isArray(data) ? data : [])
     const totalAmount = data?.total_amount || children.reduce((s: number, c: any) => s + (c.total_amount || 0), 0)
@@ -475,8 +482,6 @@ const fetchTree = async () => {
     treeData.value = children.map((item: any) => mapTreeNode(item, totalAmount))
     treeSummary.value = { total: totalAmount, count: treeData.value.length }
     nextTick(renderAllocationChart)
-  } catch (e: any) {
-    ElMessage.error(e.message || '获取分摊视图失败')
   } finally {
     treeLoading.value = false
   }
