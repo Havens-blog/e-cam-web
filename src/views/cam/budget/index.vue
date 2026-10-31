@@ -10,7 +10,9 @@
     />
 
     <!-- 预算规则列表 -->
-    <div class="budget-table-card">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchBudgets" />
+    <div v-else class="budget-table-card">
       <el-table
         :data="budgetList"
         v-loading="loading || progressLoadingAll"
@@ -261,10 +263,14 @@ import {
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 // ==================== 列表状态 ====================
 
 const loading = ref(false)
+// 预算列表请求失败：呈现持久错误态 + 重试（含金额，误导性更强）
+const { errorInfo, run } = useListError()
 const budgetList = ref<BudgetRule[]>([])
 /** 预算 id -> 消耗进度（列表直接展示，避免必须点开抽屉才发现超支） */
 const progressMap = ref<Record<number, BudgetProgress>>({})
@@ -274,18 +280,21 @@ const progressLoadingAll = ref(false)
 let progressBatchSeq = 0
 const PROGRESS_CONCURRENCY = 4
 
-const fetchBudgets = async () => {
-  loading.value = true
-  try {
-    const res = await listBudgetsApi()
-    const data = (res as any).data || res
-    budgetList.value = data?.items || []
-  } catch (e: any) {
-    ElMessage.error(e.message || '获取预算列表失败')
-  } finally {
-    loading.value = false
+  const fetchBudgets = async () => {
+    loading.value = true
+    try {
+      // 失败时由 useListError 置持久错误态（不再只弹 toast 后渲染空表）
+      const res = await run(() => listBudgetsApi(), '获取预算列表失败')
+      if (res === undefined) {
+        budgetList.value = []
+        return
+      }
+      const data = (res as any).data || res
+      budgetList.value = data?.items || []
+    } finally {
+      loading.value = false
+    }
   }
-}
 
 // 批量取各预算进度：单项失败只影响该行，不阻断列表
 const fetchProgress = async (rules: BudgetRule[] = budgetList.value) => {
