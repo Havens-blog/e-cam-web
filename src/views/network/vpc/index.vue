@@ -12,23 +12,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ vpcCounts.total }}</span>
+            <span class="stat-num">{{ statText(vpcCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">可用</span>
-            <span class="stat-num blue">{{ vpcCounts.available }}</span>
+            <span class="stat-num blue">{{ statText(vpcCounts.available) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">默认VPC</span>
-            <span class="stat-num">{{ vpcCounts.default }}</span>
+            <span class="stat-num">{{ statText(vpcCounts.default) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">创建中</span>
-            <span class="stat-num orange">{{ vpcCounts.pending }}</span>
+            <span class="stat-num orange">{{ statText(vpcCounts.pending) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ vpcCounts.error }}</span>
+            <span class="stat-num red">{{ statText(vpcCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -304,6 +304,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/OK 全为成功族；状态文案走 fieldLabels 单源 VPC_STATUS_LABELS */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'OK', 'ok', '正常'].includes(status || '')
@@ -443,6 +444,8 @@ const VPC_COUNTS_PAGE_SIZE = 1000
 const VPC_COUNTS_MAX_PAGES = 10
 
 const vpcCounts = reactive({ total: 0, available: 0, default: 0, pending: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchVpcCounts = async () => {
   try {
@@ -468,8 +471,10 @@ const fetchVpcCounts = async () => {
     vpcCounts.default = defaultCount
     vpcCounts.pending = pending
     vpcCounts.error = error
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取VPC统计失败')
   }
 }

@@ -13,15 +13,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ eniCounts.total }}</span>
+            <span class="stat-num">{{ statText(eniCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">使用中</span>
-            <span class="stat-num blue">{{ eniCounts.use }}</span>
+            <span class="stat-num blue">{{ statText(eniCounts.use) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">可用</span>
-            <span class="stat-num">{{ eniCounts.available }}</span>
+            <span class="stat-num">{{ statText(eniCounts.available) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">绑定率</span>
@@ -29,7 +29,7 @@
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ eniCounts.error }}</span>
+            <span class="stat-num red">{{ statText(eniCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -298,6 +298,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EniDetailDrawer from './components/EniDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域 in_use/available/deleting 全覆盖；其余变体为历史映射族防御 */
@@ -439,6 +440,8 @@ const ENI_COUNTS_PAGE_SIZE = 1000
 const ENI_COUNTS_MAX_PAGES = 10
 
 const eniCounts = reactive({ total: 0, use: 0, available: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchEniCounts = async () => {
   try {
@@ -461,8 +464,10 @@ const fetchEniCounts = async () => {
     eniCounts.use = use
     eniCounts.available = available
     eniCounts.error = error
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取弹性网卡统计失败')
   }
 }

@@ -12,23 +12,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ vswitchCounts.total }}</span>
+            <span class="stat-num">{{ statText(vswitchCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">可用</span>
-            <span class="stat-num blue">{{ vswitchCounts.available }}</span>
+            <span class="stat-num blue">{{ statText(vswitchCounts.available) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">默认子网</span>
-            <span class="stat-num">{{ vswitchCounts.default }}</span>
+            <span class="stat-num">{{ statText(vswitchCounts.default) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">创建中</span>
-            <span class="stat-num orange">{{ vswitchCounts.pending }}</span>
+            <span class="stat-num orange">{{ statText(vswitchCounts.pending) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ vswitchCounts.error }}</span>
+            <span class="stat-num red">{{ statText(vswitchCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -306,6 +306,7 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
 import VpcDetailDrawer from '../vpc/components/VpcDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/ACTIVE 全为成功族 */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'ACTIVE', 'active', '可用'].includes(status || '')
@@ -455,6 +456,8 @@ const VSWITCH_COUNTS_PAGE_SIZE = 1000
 const VSWITCH_COUNTS_MAX_PAGES = 10
 
 const vswitchCounts = reactive({ total: 0, available: 0, default: 0, pending: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchVSwitchCounts = async () => {
   try {
@@ -480,8 +483,10 @@ const fetchVSwitchCounts = async () => {
     vswitchCounts.default = defaultCount
     vswitchCounts.pending = pending
     vswitchCounts.error = error
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取交换机统计失败')
   }
 }
