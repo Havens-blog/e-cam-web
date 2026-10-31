@@ -90,7 +90,9 @@
             @delete="handleDelete"
           />
         </template>
-        <el-empty v-else description="暂无任务" />
+        <!-- 加载中不显示「暂无任务」：数据未回时渲染空态，用户会误读成「确实没有任务」，
+             且空态插图会与 loading 圈叠在一起（iter114 实测截图已确认） -->
+        <el-empty v-else-if="!loading" description="暂无任务" />
       </div>
 
       <!-- 分页 -->

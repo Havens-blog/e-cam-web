@@ -5,6 +5,7 @@
       <el-tab-pane label="按资产" name="asset">
         <el-table
           :data="assetCosts"
+          :empty-text="loading ? ' ' : '暂无数据'"
           stripe
           style="width: 100%"
           max-height="400px"
@@ -44,6 +45,7 @@
       <el-tab-pane label="按区域" name="region">
         <el-table
           :data="regionCostList"
+          :empty-text="loading ? ' ' : '暂无数据'"
           stripe
           style="width: 100%"
           max-height="400px"
@@ -73,6 +75,8 @@ import { computed, ref } from 'vue'
 interface Props {
   assetCosts: AssetCost[]
   regionCosts: Record<string, number>
+  /** 父级数据加载中：此时 el-table 的「暂无数据」是假结论（数据还没回来），需要清空 */
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
