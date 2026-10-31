@@ -411,7 +411,15 @@ export const accountFormRules = {
     environment: [{ required: true, message: '请选择环境', trigger: 'change' }],
     access_key_id: [{ required: true, message: '请输入Access Key ID', trigger: 'blur' }],
     access_key_secret: [{ required: true, message: '请输入Access Key Secret', trigger: 'blur' }],
-    region: [{ required: true, message: '请输入区域', trigger: 'blur' }]
+    /**
+     * 区域：表单绑定的是 **regions（多选数组）**（`views/accounts/form.vue` 的
+     * `el-form-item prop="regions"` + `v-model="formData.regions"`），而不是单数 `region`。
+     *
+     * 修复前这里挂的是 `region` 规则 —— 该键**没有任何输入绑定**，等于"区域不校验"：
+     * 用户不选区域即可提交 ⇒ 创建接口因 SDK 的 `Regions binding:"required,min=1"` 返回 400，
+     * 错误只能在提交后由后端抛出（而不是表单内提示）。
+     */
+    regions: [{ required: true, message: '请至少选择一个区域', trigger: 'change' }]
 }
 
 // ==================== 错误码映射 ====================
