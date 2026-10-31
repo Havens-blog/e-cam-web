@@ -68,6 +68,8 @@ const FILTER_CASES = [
     ['任务 type', '/api/v1/cam/tasks?offset=0&limit=5', `&type=${BOGUS}`, 'types/task.ts ListTasksParams.type'],
     ['IAM 用户 keyword', '/api/v1/cam/iam/users?page=1&size=5', `&keyword=${BOGUS}`, 'types/iam.ts ListUsersParams.keyword'],
     ['审计日志 operation_type', '/api/v1/cam/audit/logs?offset=0&limit=5', `&operation_type=${BOGUS}`, 'views/audit/logs 筛选区 operation_type'],
+    // 证书台账：筛选参数名是 **search**（不是 keyword），出处 types/cert.ts ListCertsParams.search；实测 87→0
+    ['证书台账 search', '/api/v1/certs?page=1&pageSize=5', `&search=${BOGUS}`, 'types/cert.ts ListCertsParams.search'],
 ]
 
 /** 分页用例：参数形态按各接口前端真实约定（offset/limit 或 page/size） */
@@ -77,6 +79,8 @@ const PAGING_CASES = [
     ['任务', '/api/v1/cam/tasks?offset=0&limit=5', '/api/v1/cam/tasks?offset=5&limit=5', 'id'],
     ['DNS 域名', '/api/v1/cam/dns/domains?offset=0&limit=5', '/api/v1/cam/dns/domains?offset=5&limit=5', 'domain_name'],
     ['审计日志(offset/limit)', '/api/v1/cam/audit/logs?offset=0&limit=5', '/api/v1/cam/audit/logs?offset=5&limit=5', 'id'],
+    // 证书台账：分页参数是 **page/pageSize**（不是 offset/limit），出处 types/cert.ts ListCertsParams；实测 87 条
+    ['证书台账(page/pageSize)', '/api/v1/certs?page=1&pageSize=5', '/api/v1/certs?page=2&pageSize=5', ''],
 ]
 
 async function get(path) {
