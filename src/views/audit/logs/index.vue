@@ -7,22 +7,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总记录</span>
+            <!-- 总记录是全局口径（响应 total），下面四项是当前页 20 行的分布，标签已注明「本页」 -->
             <span class="stat-num">{{ total }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">成功</span>
+            <span class="stat-label">本页成功</span>
             <span class="stat-num green">{{ successCount }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">部分成功</span>
+            <span class="stat-label">本页部分成功</span>
             <span class="stat-num orange">{{ partialCount }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">失败</span>
+            <span class="stat-label">本页失败</span>
             <span class="stat-num red">{{ failCount }}</span>
           </div>
           <div class="stat-badge">
-            <span class="stat-label">慢请求</span>
+            <span class="stat-label">本页慢请求</span>
             <span class="stat-num orange">{{ slowCount }}</span>
           </div>
         </div>
@@ -180,6 +181,8 @@ const opTypeOptions = computed(() => {
   return list
 })
 
+// 以下四项统计的是「当前页 20 行」的分布，不是全局 —— 因此卡片标签必须写「本页」；
+// 与「总记录」（全局 total）同排时，不加限定会被读成「7411 条里只有 7 条成功」。
 const successCount = computed(() => logList.value.filter(l => l.result === 'success').length)
 const partialCount = computed(() => logList.value.filter(l => l.result === 'partial').length)
 const failCount = computed(() => logList.value.filter(l => l.result === 'failed').length)
