@@ -172,6 +172,33 @@ export function parseError(error: any): ErrorInfo {
 }
 
 /**
+ * 英文传输层错误文案（axios / fetch 的原生英文），需要翻成中文再展示。
+ *
+ * 背景（iter103 在 DataTable 内首次实现，iter129 提取为共享）：
+ * 直接把 `error.message` 显示给用户时，网络不可达会显示 axios 原文「Network Error」、
+ * HTTP 失败会显示「Request failed with status code 500」—— 在中文化产品里属明确缺陷。
+ * 但既有契约是「显示错误自身的 message」（有单测断言 `new Error('网络超时')` 原样展示），
+ * 所以**只翻译这些已知的英文传输层文案**，其余 message 一律保持原样。
+ */
+export const TRANSPORT_ERROR_EN =
+    /^(Network Error|Failed to fetch|Load failed|Request failed with status code \d+|timeout of \d+ms exceeded)$/
+
+/**
+ * 解析可直接展示的错误文案：英文传输层错误走 parseError 翻成中文，其余保留原 message。
+ *
+ * @param error 捕获到的错误
+ * @param fallback 既不是 Error 也没有 message 时的兜底文案
+ */
+export function resolveErrorMessage(error: unknown, fallback?: string): string {
+    const raw = error instanceof Error ? error.message : ''
+    if (raw && TRANSPORT_ERROR_EN.test(raw.trim())) {
+        // parseError 对「无 response」的错误统一给出「网络连接失败」+ 检查网络的建议
+        return parseError(error).message || raw
+    }
+    return raw || fallback || ''
+}
+
+/**
  * 处理 API 错误
  */
 export function handleApiError(error: any, defaultMessage?: string): ErrorInfo {
