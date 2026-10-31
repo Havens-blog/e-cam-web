@@ -86,6 +86,51 @@ async function get(path) {
 }
 
 /**
+ * 只读 **POST 查询**（不改数据，但与 GET 一样必须"看响应体"）。
+ *
+ * 【为什么不自动派生】POST 的 body 必须**符合契约**才有意义（否则只会拿到 400，检查等于空转），
+ * 而 body 形态无法从 url 推断 ⇒ 这里**显式列出**，并在每项标注前端出处与必填字段。
+ * 【收录原则】只收**只读**语义（search/aggregate/diagnose/analyze 之类）；任何写操作一律不收。
+ * 【新增前必做】到 `src/api/<module>.ts` 核对必填字段与语义；不确定就不收。
+ */
+const POST_QUERY_CASES = [
+    {
+        label: '日志检索 logs/search(waf,1h)',
+        path: '/api/v1/cam/logs/search',
+        // 出处：src/api/logs.ts searchLogsApi + types/logs.ts LogSearchRequest{log_type,start_time,end_time}
+        body: () => ({ log_type: 'waf', start_time: Date.now() - 3600 * 1000, end_time: Date.now() }),
+    },
+]
+
+async function postJson(path, body) {
+    const res = await fetch(BASE + path, {
+        method: 'POST',
+        headers: { cookie: COOKIE, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+    })
+    const text = await res.text()
+    return { status: res.status, text }
+}
+
+/**
+ * 统一的响应体判据（GET 与只读 POST 共用）：
+ *  ① 存储/实现痕迹：响应体不得出现 mongo:/BSON/collection/sql/redis/panic/goroutine/.go:NN/dial tcp 等；
+ *  ② 状态码与业务码错位：HTTP 200 但响应体 code 非 0/200。
+ * 只返回**命中的痕迹名**，不回显响应体原文（证据里不应出现响应体内容）。
+ */
+function judgeResponse(status, text) {
+    const hits = LEAK_MARKERS.filter(([, re]) => re.test(text)).map(([n]) => n)
+    let codeMismatch = false
+    if (status === 200) {
+        try {
+            const j = JSON.parse(text)
+            if (j && typeof j.code === 'number' && j.code !== 0 && j.code !== 200) codeMismatch = true
+        } catch { /* 非 JSON 不判定 */ }
+    }
+    return { hits, codeMismatch }
+}
+
+/**
  * 取 data 中的条目数组。
  * 【教训】不同接口键名不同：资产用 `items`、任务用 `tasks`、资源模型用 `models`、
  * 部分接口直接返回数组。只认 items/list 会把"键名不同"误判成"空列表"（实测踩过 tasks、models）。
@@ -347,18 +392,7 @@ async function auditLeaks() {
     }
     for (const path of candidates) {
         const { status, text } = await get(path)
-        // 只报告命中的**痕迹名**，不回显原文（证据里不应出现响应体内容）
-        const hits = LEAK_MARKERS.filter(([, re]) => re.test(text)).map(([n]) => n)
-        // 规则 2：HTTP 200 但响应体 code 非成功（0/200）—— 状态码与业务码**相反错位**。
-        // 实测：GET /api/v1/cam/templates/999999 → 200 {"code":404030,"msg":"vm template not found"}
-        // 只按 HTTP 判成功的客户端会把"不存在"当成成功；该缺陷与"5xx 泄露"同族（契约错位）。
-        let codeMismatch = false
-        if (status === 200) {
-            try {
-                const j = JSON.parse(text)
-                if (j && typeof j.code === 'number' && j.code !== 0 && j.code !== 200) codeMismatch = true
-            } catch { /* 非 JSON 不判定 */ }
-        }
+        const { hits, codeMismatch } = judgeResponse(status, text)
         if (hits.length || codeMismatch) bad++
         const okText = status === 404 ? '✓ 404（语义正确）' : status === 200 ? '✓ 200' : `✓ ${status}`
         rows.push({
@@ -369,6 +403,23 @@ async function auditLeaks() {
                 : codeMismatch
                     ? '⚠ HTTP 200 但响应体是错误码（状态码与业务码错位）'
                     : okText,
+        })
+    }
+    // 只读 POST 查询：同一套判据（它们不改数据，但同样可能泄露/错位）
+    for (const c of POST_QUERY_CASES) {
+        const { status, text } = await postJson(c.path, c.body())
+        const { hits, codeMismatch } = judgeResponse(status, text)
+        if (hits.length || codeMismatch) bad++
+        rows.push({
+            check: `[POST] ${c.label}`,
+            status,
+            result: hits.length
+                ? `⚠ 响应体含存储/实现痕迹: ${hits.join(',')}`
+                : codeMismatch
+                    ? '⚠ HTTP 200 但响应体是错误码（状态码与业务码错位）'
+                    : status === 200
+                        ? '✓ 200 且响应体干净'
+                        : `✓ ${status}`,
         })
     }
     return { rows, bad, candidates: candidates.length }
