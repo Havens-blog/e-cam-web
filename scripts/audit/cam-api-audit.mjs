@@ -100,6 +100,18 @@ const POST_QUERY_CASES = [
         // 出处：src/api/logs.ts searchLogsApi + types/logs.ts LogSearchRequest{log_type,start_time,end_time}
         body: () => ({ log_type: 'waf', start_time: Date.now() - 3600 * 1000, end_time: Date.now() }),
     },
+    {
+        label: '日志聚合 logs/aggregate(waf,1h)',
+        path: '/api/v1/cam/logs/aggregate',
+        // 出处：types/logs.ts LogAggregateRequest（必填同上三字段；dimension/metric 可选，留空走默认维度与 count）
+        body: () => ({ log_type: 'waf', start_time: Date.now() - 3600 * 1000, end_time: Date.now() }),
+    },
+    {
+        label: 'WAF 流量诊断 logs/diagnose(waf,1h)',
+        path: '/api/v1/cam/logs/diagnose',
+        // 出处：types/logs.ts LogDiagnoseRequest；契约注明**仅 waf 类型**（SLB/CDN 返回明确错误），故固定 waf
+        body: () => ({ log_type: 'waf', start_time: Date.now() - 3600 * 1000, end_time: Date.now() }),
+    },
 ]
 
 async function postJson(path, body) {
