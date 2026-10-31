@@ -248,7 +248,7 @@ import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExport
 import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import { useListError } from '@/composables/useListError'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -283,8 +283,8 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
-// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（对齐 #141）
-const errorInfo = ref<ErrorInfo | null>(null)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（useListError 统一封装）
+const { errorInfo, run } = useListError()
 const instances = ref<Asset[]>([])
 const detailVisible = ref(false)
 const currentInstance = ref<Asset | null>(null)
@@ -516,18 +516,20 @@ const buildListParams = (page: number, size: number) => ({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listSnapshotAssetsApi(buildListParams(pagination.page, pagination.size))
+    // 失败时由 useListError 置持久错误态（不再手写 set/clear）
+    const res = await run(
+      () => listSnapshotAssetsApi(buildListParams(pagination.page, pagination.size)),
+      '获取快照列表失败',
+    )
+    if (res === undefined) {
+      instances.value = []
+      pagination.total = 0
+      return
+    }
     instances.value = res.data?.items || []
     pagination.total = res.data?.total || 0
-    errorInfo.value = null
     // 同步刷新全局领域统计
     fetchSnapshotCounts()
-  } catch (e) {
-    console.error('获取快照列表失败:', e)
-    // 改为持久错误态（原为一次性 toast，表格随后显示「暂无数据」，误导用户以为真的没有快照）
-    errorInfo.value = handleApiError(e, '获取快照列表失败')
-    instances.value = []
-    pagination.total = 0
   } finally { loading.value = false }
 }
 
