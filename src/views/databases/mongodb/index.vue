@@ -11,15 +11,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ statusCounts.total }}</span>
+            <span class="stat-num">{{ statText(statusCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">运行中</span>
-            <span class="stat-num blue">{{ statusCounts.running }}</span>
+            <span class="stat-num blue">{{ statText(statusCounts.running) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已停止</span>
-            <span class="stat-num">{{ statusCounts.stopped }}</span>
+            <span class="stat-num">{{ statText(statusCounts.stopped) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">监控异常</span>
@@ -157,7 +157,9 @@
     </div>
 
     <!-- 表格区域（无默认多选列） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchInstances" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -274,6 +276,9 @@ import { useRoute } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import MongodbDetailDrawer from './components/MongodbDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
+import { useStatText } from '@/composables/useStatText'
 
 /** 共享导出配置：字段沿用原 stub availableFields，取值走通用映射（asset_id/asset_name 直取、provider 归一、其余 attributes[key]） */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -312,6 +317,9 @@ const pagination = reactive({ page: 1, size: 20, total: 0 })
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径）
 const statusCounts = reactive({ total: 0, running: 0, stopped: 0 })
+// 列表失败 → 持久错误态 + 重试；统计失败 → 卡片显示「—」而不是 0
+const { errorInfo, run } = useListError()
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const defaultColumnSettings: ColumnConfig[] = [
   { key: 'status', label: '状态', width: 90, visible: true },
@@ -503,17 +511,19 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const res = await listMongoDBAssetsApi(buildListParams(pagination.page, pagination.size))
+    const res = await run(() => listMongoDBAssetsApi(buildListParams(pagination.page, pagination.size)), '获取MongoDB列表失败')
+    if (res === undefined) {
+      // 列表都没取到，统计同样未知（不能显示 0）
+      markStatsFailed()
+      instances.value = []
+      pagination.total = 0
+      return
+    }
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
     // 同步刷新全局状态统计
     fetchStatusCounts()
-  } catch (error) {
-    console.error('获取MongoDB列表失败:', error)
-    ElMessage.error('获取MongoDB列表失败')
-    instances.value = []
-    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -529,7 +539,9 @@ const fetchStatusCounts = async () => {
     statusCounts.total = (totalRes.data as any)?.total || 0
     statusCounts.running = (runningRes.data as any)?.total || 0
     statusCounts.stopped = (stoppedRes.data as any)?.total || 0
+    markStatsOk()
   } catch {
+    markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     ElMessage.error('获取MongoDB状态统计失败')
   }
