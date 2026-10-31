@@ -7,7 +7,7 @@
         </div>
         <div class="card-info">
           <div class="card-title">当月成本（截至第{{ summary.elapsed_days || new Date().getDate() }}天）</div>
-          <div class="card-value">{{ formatCost(summary.current_month_amount) }}</div>
+          <div class="card-value">{{ moneyText(summary.current_month_amount) }}</div>
         </div>
       </div>
     </el-col>
@@ -18,7 +18,7 @@
         </div>
         <div class="card-info">
           <div class="card-title">上月总成本</div>
-          <div class="card-value">{{ formatCost(summary.last_month_amount) }}</div>
+          <div class="card-value">{{ moneyText(summary.last_month_amount) }}</div>
         </div>
       </div>
     </el-col>
@@ -30,10 +30,13 @@
         <div class="card-info">
           <div class="card-title">环比变化（同期对比）</div>
           <div class="card-value" :style="{ color: changeColor }">
-            <span v-if="summary.mom_change_percent > 0">+</span>
-            {{ summary.mom_change_percent.toFixed(1) }}%
-            <el-icon v-if="summary.mom_change_percent > 0" class="change-icon"><Top /></el-icon>
-            <el-icon v-else-if="summary.mom_change_percent < 0" class="change-icon"><Bottom /></el-icon>
+            <template v-if="failed">—</template>
+            <template v-else>
+              <span v-if="summary.mom_change_percent > 0">+</span>
+              {{ summary.mom_change_percent.toFixed(1) }}%
+              <el-icon v-if="summary.mom_change_percent > 0" class="change-icon"><Top /></el-icon>
+              <el-icon v-else-if="summary.mom_change_percent < 0" class="change-icon"><Bottom /></el-icon>
+            </template>
           </div>
         </div>
       </div>
@@ -49,7 +52,12 @@ import { computed } from 'vue';
 
 const props = defineProps<{
   summary: CostSummary
+  /** 概览接口是否失败：失败时卡片显示「—」而不是 ¥0.00（后者等于宣称"本月没花钱"） */
+  failed?: boolean
 }>()
+
+/** 金额：失败 → 「—」；正常 → formatCost */
+const moneyText = (v: number) => (props.failed ? '—' : formatCost(v))
 
 const changeColor = computed(() => {
   if (props.summary.mom_change_percent > 0) return '#EF4444'
