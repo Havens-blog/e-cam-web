@@ -49,7 +49,7 @@
         <div class="total-cost-card">
           <StatCard
             title="总成本"
-            :value="formatCost(costAnalysis?.total_cost || 0)"
+            :value="loading ? '—' : formatCost(costAnalysis?.total_cost || 0)"
             icon="Money"
             icon-color="#10B981"
             :subtitle="`${filters.provider ? getProviderLabel(filters.provider) : '所有云厂商'} - 最近${filters.days}天`"
@@ -67,6 +67,7 @@
           <CostBreakdown
             :asset-costs="costAnalysis?.asset_costs || []"
             :region-costs="costAnalysis?.region_costs || {}"
+            :loading="loading"
           />
         </div>
 

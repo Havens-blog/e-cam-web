@@ -59,7 +59,9 @@
 
     <!-- 表格 -->
     <div v-else class="table-card">
-      <el-table :data="logList" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
+      <!-- 加载中把 el-table 自带空态文案清掉：否则「暂无数据」会与 loading 圈同时出现，
+           用户会误读成「确实没有审计日志」（iter114 实测截图已确认） -->
+      <el-table :data="logList" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable>
           <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
         </el-table-column>
