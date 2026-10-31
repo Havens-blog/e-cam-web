@@ -794,6 +794,34 @@ onMounted(() => {
   .page-title {
     flex: 1 0 100%;
   }
+
+  /* 窄屏隐藏条数摘要：与下方分页栏「共 N 条」重复，且此处会被挤成一字一行（iter117） */
+  .page-info {
+    display: none;
+  }
+
+  /* 运营条在窄屏换行：4 个指标 + 说明挤在一行时，标签会被压到 20px 宽、
+     「文件系统」折 4 行、「读采集指标表」折 6 行（iter117 实测） */
+  .ops-card {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .ops-metric-label,
+  .ops-metric-value {
+    white-space: nowrap;
+  }
+
+  .ops-note {
+    flex: 1 0 100%;
+    margin-left: 0;
+  }
+
+  /* 统计卡标签不折行：390px 下卡宽 60px、标签 4-5 字约 44-55px 本可一行，
+     但无 white-space 约束会被折成两行（「监控异常」→「监控异」/「常」）（iter117/T5） */
+  .stat-label {
+    white-space: nowrap;
+  }
 }
 
 

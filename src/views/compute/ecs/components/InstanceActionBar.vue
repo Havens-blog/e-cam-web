@@ -247,6 +247,13 @@ const clearTagFilter = () => {
   }
 }
 
+/* 窄屏隐藏条数摘要：与下方分页栏「共 N 条」重复，且此处会被挤成一字一行（iter117） */
+@media (max-width: 560px) {
+  .page-info {
+    display: none;
+  }
+}
+
 // 标签筛选面板
 .tag-filter-panel {
   display: flex;
