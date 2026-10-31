@@ -11,15 +11,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ statusCounts.total }}</span>
+            <span class="stat-num">{{ statText(statusCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">运行中</span>
-            <span class="stat-num blue">{{ statusCounts.running }}</span>
+            <span class="stat-num blue">{{ statText(statusCounts.running) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已停止</span>
-            <span class="stat-num">{{ statusCounts.stopped }}</span>
+            <span class="stat-num">{{ statText(statusCounts.stopped) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">监控异常</span>
@@ -271,6 +271,7 @@ import { useRoute } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EsDetailDrawer from './components/EsDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 共享导出配置：字段沿用原 stub 字段清单（key 对齐 attributes 实际字段名），取值走通用映射 */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -310,6 +311,8 @@ const pagination = reactive({ page: 1, size: 20, total: 0 })
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径）
 const statusCounts = reactive({ total: 0, running: 0, stopped: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const defaultColumnSettings: ColumnConfig[] = [
   { key: 'status', label: '状态', width: 90, visible: true },
@@ -526,7 +529,9 @@ const fetchStatusCounts = async () => {
     statusCounts.total = (totalRes.data as any)?.total || 0
     statusCounts.running = (runningRes.data as any)?.total || 0
     statusCounts.stopped = (stoppedRes.data as any)?.total || 0
+    markStatsOk()
   } catch {
+    markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     ElMessage.error('获取Elasticsearch状态统计失败')
   }
