@@ -18,6 +18,7 @@ node scripts/audit/cam-api-audit.mjs
 ... node scripts/audit/cam-api-audit.mjs --only=details    # 详情接口可用性
 ... node scripts/audit/cam-api-audit.mjs --only=invalid    # 非法输入不得 5xx
 ... node scripts/audit/cam-api-audit.mjs --only=limits     # 分页上限保护(警告类)
+... node scripts/audit/cam-api-audit.mjs --only=leaks      # 存储痕迹泄露(候选端点从 src/api 派生)
 ```
 
 退出码：`0` 全通过 ｜ `1` 有疑似问题（**需人工确认**）｜ `2` 环境/鉴权不可用。
@@ -33,6 +34,7 @@ node scripts/audit/cam-api-audit.mjs
 | 详情接口可用性 | 列表首条的标识能打开详情且非空；**详情 handler 常滞后于列表** |
 | 非法输入健壮性 | 非法/越界查询值应 4xx 正确拒绝或 200 容错；**5xx 记为失败** |
 | 分页上限保护 | 超大 `limit` 不应一次性返回全量；**>1000 条/页 记为警告**（未决） |
+| 存储痕迹泄露 | 对**派生**的只读详情端点用不存在 id 探测，响应体**不得**出现 `mongo:`/`sql`/`redis`/`panic`/`.go:NN` 等存储或实现痕迹；**命中即失败** |
 
 ## 已知未决项（警告，不阻塞）
 
