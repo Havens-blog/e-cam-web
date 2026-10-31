@@ -13,23 +13,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ cdnCounts.total }}</span>
+            <span class="stat-num">{{ statText(cdnCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">在线</span>
-            <span class="stat-num blue">{{ cdnCounts.online }}</span>
+            <span class="stat-num blue">{{ statText(cdnCounts.online) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">离线</span>
-            <span class="stat-num">{{ cdnCounts.offline }}</span>
+            <span class="stat-num">{{ statText(cdnCounts.offline) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">HTTPS 开启</span>
-            <span class="stat-num">{{ cdnCounts.https }}</span>
+            <span class="stat-num">{{ statText(cdnCounts.https) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">证书</span>
-            <span class="stat-num">{{ cdnCounts.cert }}</span>
+            <span class="stat-num">{{ statText(cdnCounts.cert) }}</span>
           </div>
         </div>
       </div>
@@ -312,6 +312,7 @@ import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测统一值域仅 online(566)/offline(31)/InProgress(1) 三值（2026-09-24 全量 598 条探查）；
@@ -437,6 +438,8 @@ const CDN_COUNTS_PAGE_SIZE = 1000
 const CDN_COUNTS_MAX_PAGES = 10
 
 const cdnCounts = reactive({ total: 0, online: 0, offline: 0, https: 0, cert: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchCdnCounts = async () => {
   try {
@@ -463,8 +466,10 @@ const fetchCdnCounts = async () => {
     cdnCounts.offline = offline
     cdnCounts.https = https
     cdnCounts.cert = cert
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取CDN统计失败')
   }
 }
