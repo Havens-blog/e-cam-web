@@ -237,21 +237,22 @@ async function auditInvalidInput() {
 /**
  * 分页上限保护：超大 limit 不应一次性返回全量（实测 limit=999999 返回 5228/7360 条、4.5–6.4MB）。
  *
- * 判定与处置说明：这是**已确认存在**的健壮性风险（绕过分页、放大内存/带宽），
- * 但修复需后端在多处 handler 加钳制（`limit` 读取点分布于 25 个文件），属**未决事项**，
- * 故此处只作**警告**（不计失败），保持可见与可回归；决策后再改为失败判据。
- * 参考：前端当前最大只请求 200（limit/pageSize），故加合理上限对现有客户端零影响。
+ * 【状态更新 2026-10-31】单页上限已在后端**铺开**：`internal/shared/paging`（MaxLimit=1000）统一钳制，
+ * 27 个 `limit` 解析点接入；`internal/cert` 因 depcheck 的"可抽取模块零跨域出向"规则改用**模块内实现**
+ * （数值与 shared 保持一致）。实测本检查的三条用例现在都返回 **1000 条/页**。
+ * ⇒ 因此本检查**从"警告"升级为"失败判据"**：一旦哪个模块再退回"一页上万条"，审计直接判红。
+ * 参考：前端当前最大只请求 200（limit/pageSize），故 1000 的上限对现有客户端零影响。
  */
 const LIMIT_CASES = [
     ['资产 DISK', '/api/v1/cam/assets/disk?offset=0&limit=999999'],
     ['审计日志', '/api/v1/cam/audit/logs?offset=0&limit=999999'],
     ['资产 ECS', '/api/v1/cam/assets/ecs?offset=0&limit=100000'],
 ]
-const LIMIT_ITEM_THRESHOLD = 1000 // 一页超过此条数视为"疑似缺少上限保护"
+const LIMIT_ITEM_THRESHOLD = 1000 // 一页超过此条数视为"缺少上限保护"（失败，不再是警告）
 
 async function auditLimits() {
     const rows = []
-    let warnings = 0
+    let bad = 0
     for (const [label, path] of LIMIT_CASES) {
         const { status, text } = await get(path)
         let n = 0
@@ -260,10 +261,10 @@ async function auditLimits() {
         } catch { /* 解析失败按 0 计 */ }
         const kb = Math.round(text.length / 1024)
         const risky = status === 200 && n > LIMIT_ITEM_THRESHOLD
-        if (risky) warnings++
-        rows.push({ check: label, status, result: risky ? `⚠ 缺少上限保护：一页返回 ${n} 条 / ${kb}KB（已知未决项）` : `✓ 一页 ${n} 条 / ${kb}KB` })
+        if (risky) bad++
+        rows.push({ check: label, status, result: risky ? `⚠ 缺少上限保护：一页返回 ${n} 条 / ${kb}KB（应被钳制到 ${LIMIT_ITEM_THRESHOLD}）` : `✓ 一页 ${n} 条 / ${kb}KB` })
     }
-    return { rows, bad: 0, warnings }
+    return { rows, bad }
 }
 
 /**
@@ -388,7 +389,7 @@ async function main() {
     if (!only || only === 'paging') { const r = await auditPaging(); print('分页是否生效', r.rows); failures += r.bad }
     if (!only || only === 'details') { const r = await auditDetails(); print('详情接口可用性', r.rows); failures += r.bad }
     if (!only || only === 'invalid') { const r = await auditInvalidInput(); print('非法输入健壮性(不得 5xx)', r.rows); failures += r.bad }
-    if (!only || only === 'limits') { const r = await auditLimits(); print('分页上限保护', r.rows); warnings += r.warnings }
+    if (!only || only === 'limits') { const r = await auditLimits(); print('分页上限保护', r.rows); failures += r.bad }
     if (!only || only === 'leaks') { const r = await auditLeaks(); print(`存储痕迹泄露(候选 ${r.candidates ?? '-'} 个只读详情端点)`, r.rows); failures += r.bad }
 
     const warnPart = warnings ? `，另 ${warnings} 项已知未决警告（不阻塞）` : ''
