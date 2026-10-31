@@ -212,6 +212,11 @@
                   <template #default="{ row }">{{ row.attributes?.description || '-' }}</template>
                 </el-table-column>
               </el-table>
+              <div v-else-if="securityError" class="empty-tab">
+                <el-icon :size="48"><WarningFilled /></el-icon>
+                <p>安全组列表加载失败</p>
+                <el-button size="small" @click="loadSecurityGroups">重试</el-button>
+              </div>
               <div v-else class="empty-tab">
                 <el-icon :size="48"><Lock /></el-icon>
                 <p>暂无安全组数据</p>
@@ -250,6 +255,11 @@
                   </template>
                 </el-table-column>
               </el-table>
+              <div v-else-if="subnetError" class="empty-tab">
+                <el-icon :size="48"><WarningFilled /></el-icon>
+                <p>IP子网列表加载失败</p>
+                <el-button size="small" @click="loadSubnets">重试</el-button>
+              </div>
               <div v-else class="empty-tab">
                 <el-icon :size="48"><Share /></el-icon>
                 <p>暂无子网数据</p>
@@ -299,7 +309,7 @@ import { listSecurityGroupAssetsApi, listVSwitchAssetsApi } from '@/api/asset'
 import type { Asset } from '@/api/types/asset'
 import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
-import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share } from '@element-plus/icons-vue'
+import { ArrowDown, Close, Connection, Document, Lock, PriceTag, Refresh, Share, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
@@ -327,14 +337,19 @@ const activeTab = ref('detail')
 // 安全组数据
 const securityGroups = ref<Asset[]>([])
 const securityLoading = ref(false)
+// 加载失败标记：失败时清空数组会让 tab 落到「暂无安全组数据」，
+// 与「真的没有安全组」无法区分（T1 同族缺陷在抽屉内的重演）。故单独记失败态并渲染错误提示 + 重试。
+const securityError = ref(false)
 
 // 子网数据
 const subnets = ref<Asset[]>([])
+const subnetError = ref(false)
 const subnetLoading = ref(false)
 
 async function loadSecurityGroups() {
   if (!props.instance) return
   securityLoading.value = true
+  securityError.value = false
   try {
     const res = await listSecurityGroupAssetsApi({
       vpc_id: props.instance.asset_id,
@@ -345,9 +360,11 @@ async function loadSecurityGroups() {
     const data = (res as unknown as { data: { items: Asset[] } }).data || res
     securityGroups.value = (data as { items?: Asset[] }).items || []
   } catch (error: any) {
-    // N2-001：安全组列表加载失败不再静默吞错，保留清空逻辑的同时给出可见反馈
+    // N2-001：安全组列表加载失败不再静默吞错，保留清空逻辑的同时给出**持久**可见反馈
+    // （只发 toast 的话，3 秒后 tab 会落到「暂无安全组数据」，用户会以为真的没有）
     ElMessage.error(error?.message || '加载安全组列表失败')
     securityGroups.value = []
+    securityError.value = true
   } finally {
     securityLoading.value = false
   }
@@ -356,6 +373,7 @@ async function loadSecurityGroups() {
 async function loadSubnets() {
   if (!props.instance) return
   subnetLoading.value = true
+  subnetError.value = false
   try {
     const res = await listVSwitchAssetsApi({
       vpc_id: props.instance.asset_id,
@@ -366,9 +384,10 @@ async function loadSubnets() {
     const data = (res as unknown as { data: { items: Asset[] } }).data || res
     subnets.value = (data as { items?: Asset[] }).items || []
   } catch (error: any) {
-    // N2-002：IP子网列表加载失败不再静默吞错，保留清空逻辑的同时给出可见反馈
+    // N2-002：IP子网列表加载失败同上，改为持久错误态 + 重试
     ElMessage.error(error?.message || '加载IP子网列表失败')
     subnets.value = []
+    subnetError.value = true
   } finally {
     subnetLoading.value = false
   }
