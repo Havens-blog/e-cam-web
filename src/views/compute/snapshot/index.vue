@@ -11,23 +11,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ snapshotCounts.total }}</span>
+            <span class="stat-num">{{ statText(snapshotCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">正常</span>
-            <span class="stat-num blue">{{ snapshotCounts.normal }}</span>
+            <span class="stat-num blue">{{ statText(snapshotCounts.normal) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">手动创建</span>
-            <span class="stat-num">{{ snapshotCounts.user }}</span>
+            <span class="stat-num">{{ statText(snapshotCounts.user) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">自动创建</span>
-            <span class="stat-num">{{ snapshotCounts.auto }}</span>
+            <span class="stat-num">{{ statText(snapshotCounts.auto) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">定时快照</span>
-            <span class="stat-num">{{ snapshotCounts.timer }}</span>
+            <span class="stat-num">{{ statText(snapshotCounts.timer) }}</span>
           </div>
         </div>
       </div>
@@ -322,6 +322,11 @@ const SNAPSHOT_COUNTS_PAGE_SIZE = 1000
 const SNAPSHOT_COUNTS_MAX_PAGES = 10
 
 const snapshotCounts = reactive({ total: 0, normal: 0, user: 0, auto: 0, timer: 0 })
+// 统计接口失败时卡片显示「—」而不是 0：列表仍能正常显示 N 行，
+// 若卡片写 0 会与下方数据自相矛盾（用户看到「总数 0」却有 20 条记录）。
+const statsFailed = ref(false)
+const STAT_UNKNOWN = '—'
+const statText = (n: number) => (statsFailed.value ? STAT_UNKNOWN : String(n))
 
 /** 成功族状态判定：各厂商成功值不同（无统一值），行内状态展示与状态标计数按同组关键词归一 */
 const isSnapshotSuccess = (status?: string) => {
@@ -354,8 +359,11 @@ const fetchSnapshotCounts = async () => {
     snapshotCounts.user = user
     snapshotCounts.auto = auto
     snapshotCounts.timer = timer
+    statsFailed.value = false
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    // 统计失败：卡片显示「—」而非 0（列表仍可能是正常 N 行，写 0 会自相矛盾）
+    statsFailed.value = true
     ElMessage.error('获取快照统计失败')
   }
 }
