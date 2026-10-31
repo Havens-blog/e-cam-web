@@ -113,7 +113,9 @@
       </el-card>
 
       <!-- 日志列表 -->
-      <el-card class="table-card" shadow="never">
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="loadAuditLogs" />
+      <el-card v-else class="table-card" shadow="never">
         <el-table
           v-loading="loading"
           :data="logList"
@@ -209,6 +211,8 @@ import { onMounted, reactive, ref } from 'vue'
 import ExportDialog from './components/ExportDialog.vue'
 import LogDetailDialog from './components/LogDetailDialog.vue'
 import ReportDialog from './components/ReportDialog.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 // 筛选条件
 const filters = reactive({
@@ -233,6 +237,8 @@ const pagination = reactive({
 // 日志列表
 const logList = ref<AuditLog[]>([])
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 
 // 对话框
 const detailDialogVisible = ref(false)
@@ -254,13 +260,15 @@ const loadAuditLogs = async () => {
       page: pagination.page,
       size: pagination.size
     }
-    const res = await listAuditLogsApi(params)
+    const res = await run(() => listAuditLogsApi(params), '加载审计日志失败')
+    if (res === undefined) {
+      logList.value = []
+      pagination.total = 0
+      return
+    }
     // 后端字段与表格绑定不一致（operator_name vs operator、ctime vs operation_time），统一归一
     logList.value = normalizeAuditLogs((res.data.data ?? res.data.logs ?? []) as never)
     pagination.total = res.data.total || 0
-  } catch (error) {
-    console.error('加载审计日志失败:', error)
-    ElMessage.error('加载审计日志失败')
   } finally {
     loading.value = false
   }
