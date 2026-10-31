@@ -11,15 +11,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ statusCounts.total }}</span>
+            <span class="stat-num">{{ statText(statusCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">使用中</span>
-            <span class="stat-num blue">{{ statusCounts.inUse }}</span>
+            <span class="stat-num blue">{{ statText(statusCounts.inUse) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">可用</span>
-            <span class="stat-num">{{ statusCounts.available }}</span>
+            <span class="stat-num">{{ statText(statusCounts.available) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">监控异常</span>
@@ -336,6 +336,7 @@ import {
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import DiskDetailDrawer from './components/DiskDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 共享导出取值:S-Hard 使用率/IOPS/吞吐一律来自指标表(disk_id 去重代表行);无指标数据导出空串,不回退资产表快照 */
 const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
@@ -378,6 +379,8 @@ const pagination = reactive({ page: 1, size: 20, total: 0 })
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径；状态值沿用本页既有筛选值域）
 const statusCounts = reactive({ total: 0, inUse: 0, available: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const defaultColumnSettings = [
   { key: 'status', label: '状态', width: 90, visible: true },
@@ -666,8 +669,10 @@ const fetchStatusCounts = async () => {
     statusCounts.total = (totalRes.data as any)?.total || 0
     statusCounts.inUse = ((inUseRes.data as any)?.total || 0) + ((inUseHyphenRes.data as any)?.total || 0)
     statusCounts.available = (availableRes.data as any)?.total || 0
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取云盘状态统计失败')
   }
 }
