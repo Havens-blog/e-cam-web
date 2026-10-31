@@ -12,23 +12,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ classCounts.total }}</span>
+            <span class="stat-num">{{ statText(classCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">标准存储</span>
-            <span class="stat-num blue">{{ classCounts.standard }}</span>
+            <span class="stat-num blue">{{ statText(classCounts.standard) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">低频存储</span>
-            <span class="stat-num">{{ classCounts.ia }}</span>
+            <span class="stat-num">{{ statText(classCounts.ia) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">归档存储</span>
-            <span class="stat-num">{{ classCounts.archive }}</span>
+            <span class="stat-num">{{ statText(classCounts.archive) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">冷归档存储</span>
-            <span class="stat-num">{{ classCounts.coldArchive }}</span>
+            <span class="stat-num">{{ statText(classCounts.coldArchive) }}</span>
           </div>
         </div>
       </div>
@@ -331,6 +331,7 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import OssDetailDrawer from './components/OssDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { useStatText } from '@/composables/useStatText'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化）；
  *  S-Hard：存储量/对象数一律来自指标表(bucket_name 去重代表行),无指标数据导出空串,不回退资产表快照 */
@@ -386,6 +387,8 @@ const pagination = reactive({ page: 1, size: 20, total: 0 })
 // 全局存储类型统计（从后端获取，非当前页；主机页同款口径；OSS 无 status 属性/ListOSSParams 无 status 参数，
 // 按领域以存储类型分布派生，storage_class 为后端精确匹配筛选——实测 Standard=374/IA=80/Archive=145/ColdArchive=3）
 const classCounts = reactive({ total: 0, standard: 0, ia: 0, archive: 0, coldArchive: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const defaultColumnSettings: ColumnConfig[] = [
   { key: 'storage_class', label: '存储类型', width: 90, visible: true },
@@ -683,7 +686,9 @@ const fetchClassCounts = async () => {
     classCounts.ia = iaRes.data?.total || 0
     classCounts.archive = archiveRes.data?.total || 0
     classCounts.coldArchive = coldArchiveRes.data?.total || 0
+    markStatsOk()
   } catch {
+    markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     ElMessage.error('获取OSS存储类型统计失败')
   }

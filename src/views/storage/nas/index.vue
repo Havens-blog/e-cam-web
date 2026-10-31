@@ -11,15 +11,15 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ statusCounts.total }}</span>
+            <span class="stat-num">{{ statText(statusCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">运行中</span>
-            <span class="stat-num blue">{{ statusCounts.running }}</span>
+            <span class="stat-num blue">{{ statText(statusCounts.running) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已停止</span>
-            <span class="stat-num">{{ statusCounts.stopped }}</span>
+            <span class="stat-num">{{ statText(statusCounts.stopped) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">监控异常</span>
@@ -330,6 +330,7 @@ import {
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import NasDetailDrawer from './components/NasDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 等价搬运（零漂移）；metric-map 额外 prop 以闭包捕获 fsMetricMap 等价替代（不新增共享组件 prop）；
  * 状态文案改用 fieldLabels 单源 NAS_STATUS_LABELS（含小写真实值域，导出与列展示同口径） */
@@ -381,6 +382,8 @@ const pagination = reactive({ page: 1, size: 20, total: 0 })
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径；状态值用后端精确匹配的真实小写值域）
 const statusCounts = reactive({ total: 0, running: 0, stopped: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const defaultColumnSettings: ColumnConfig[] = [
   { key: 'status', label: '状态', width: 80, visible: true },
@@ -673,7 +676,9 @@ const fetchStatusCounts = async () => {
     statusCounts.total = totalRes.data?.total || 0
     statusCounts.running = runningRes.data?.total || 0
     statusCounts.stopped = stoppedRes.data?.total || 0
+    markStatsOk()
   } catch {
+    markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     ElMessage.error('获取NAS状态统计失败')
   }
