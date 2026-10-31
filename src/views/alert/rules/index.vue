@@ -31,7 +31,9 @@
       </div>
     </div>
 
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <el-table :data="list" v-loading="loading" stripe style="width: 100%">
         <el-table-column prop="name" label="规则名称" min-width="180" />
         <el-table-column prop="type" label="告警类型" width="130">
@@ -98,9 +100,13 @@ import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 const list = ref<AlertRule[]>([])
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 const total = ref(0)
 const page = ref(1)
 const pageSize = 20
@@ -122,11 +128,14 @@ const fetchData = async () => {
   try {
     const params: any = { offset: (page.value - 1) * pageSize, limit: pageSize }
     if (filterType.value) params.type = filterType.value
-    const res = await listRulesApi(params)
+    const res = await run(() => listRulesApi(params), '加载失败')
+    if (res === undefined) {
+      list.value = []
+      total.value = 0
+      return
+    }
     list.value = (res as any).data?.items || []
     total.value = (res as any).data?.total || 0
-  } catch (e: any) {
-    ElMessage.error(e.message || '加载失败')
   } finally {
     loading.value = false
   }
