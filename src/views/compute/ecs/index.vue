@@ -7,6 +7,7 @@
       :running-count="runningCount"
       :stopped-count="stoppedCount"
       :active-stat-filter="activeStatFilter"
+      :stats-failed="statsFailed"
       @stat-click="handleStatBadgeClick"
     />
 
@@ -128,6 +129,7 @@ import InstanceSearchBar from './components/InstanceSearchBar.vue'
 import InstanceTable from './components/InstanceTable.vue'
 // 纯展示格式化函数与 SearchCondition 类型已迁至同目录 utils.ts（单源复用）
 import type { SearchCondition } from './utils'
+import { useStatText } from '@/composables/useStatText'
 
 const route = useRoute()
 const router = useRouter()
@@ -329,6 +331,9 @@ const pageTitle = computed(() => {
 const dialogTitle = computed(() => (isEdit.value ? '编辑实例' : '创建实例'))
 
 // 全局状态统计（从后端获取，非当前页）
+// 计数取失败时卡片显示「—」，而不是沿用上一次的数字（会被读成"确实这么多"）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statsFailed } = useStatText()
+
 const totalCount = ref(0)
 const runningCount = ref(0)
 const stoppedCount = ref(0)
@@ -346,7 +351,9 @@ const fetchStatusCounts = async () => {
     totalCount.value = totalData.total || 0
     runningCount.value = runningData.total || 0
     stoppedCount.value = stoppedData.total || 0
+    markStatsOk()
   } catch {
+    markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     ElMessage.error('获取实例状态统计失败')
   }
