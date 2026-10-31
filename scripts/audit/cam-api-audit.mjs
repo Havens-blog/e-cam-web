@@ -70,6 +70,8 @@ const FILTER_CASES = [
     ['审计日志 operation_type', '/api/v1/cam/audit/logs?offset=0&limit=5', `&operation_type=${BOGUS}`, 'views/audit/logs 筛选区 operation_type'],
     // 证书台账：筛选参数名是 **search**（不是 keyword），出处 types/cert.ts ListCertsParams.search；实测 87→0
     ['证书台账 search', '/api/v1/certs?page=1&pageSize=5', `&search=${BOGUS}`, 'types/cert.ts ListCertsParams.search'],
+    // 网络 EIP：同为 ListAssetsParams.name；实测 365→0
+    ['网络 EIP name', '/api/v1/cam/assets/eip?offset=0&limit=5', `&name=${BOGUS}`, 'types/asset.ts ListAssetsParams.name'],
 ]
 
 /** 分页用例：参数形态按各接口前端真实约定（offset/limit 或 page/size） */
@@ -81,6 +83,9 @@ const PAGING_CASES = [
     ['审计日志(offset/limit)', '/api/v1/cam/audit/logs?offset=0&limit=5', '/api/v1/cam/audit/logs?offset=5&limit=5', 'id'],
     // 证书台账：分页参数是 **page/pageSize**（不是 offset/limit），出处 types/cert.ts ListCertsParams；实测 87 条
     ['证书台账(page/pageSize)', '/api/v1/certs?page=1&pageSize=5', '/api/v1/certs?page=2&pageSize=5', ''],
+    // 网络资源：实测 EIP 365 条 / LB 785 条（均足以判定第 1/2 页不同）
+    ['网络 EIP', '/api/v1/cam/assets/eip?offset=0&limit=5', '/api/v1/cam/assets/eip?offset=5&limit=5', 'asset_id'],
+    ['网络 LB', '/api/v1/cam/assets/lb?offset=0&limit=5', '/api/v1/cam/assets/lb?offset=5&limit=5', 'asset_id'],
 ]
 
 async function get(path) {
