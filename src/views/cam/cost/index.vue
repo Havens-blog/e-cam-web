@@ -17,7 +17,7 @@
     />
 
     <!-- 成本概览卡片 -->
-    <CostSummaryCards :summary="summary" />
+    <CostSummaryCards :summary="summary" :failed="summaryFailed" />
 
     <!-- 图表区域 -->
     <el-row :gutter="16" class="charts-row">
@@ -127,6 +127,9 @@ const currentGranularity = ref<'daily' | 'weekly' | 'monthly'>('daily')
 
 // ==================== 数据状态 ====================
 
+// 概览接口失败：卡片显示「—」而不是 ¥0.00（后者等于宣称"本月没花钱"）
+const summaryFailed = ref(false)
+
 const summary = reactive<CostSummary>({
   current_month_amount: 0,
   last_month_amount: 0,
@@ -167,7 +170,9 @@ const fetchSummary = async () => {
     const res = await getCostSummaryApi(buildFilterParams())
     const data = (res as any).data || res
     Object.assign(summary, data)
+    summaryFailed.value = false
   } catch (e: any) {
+    summaryFailed.value = true
     ElMessage.error(e.message || '获取成本概览失败')
   }
 }
