@@ -42,7 +42,20 @@
           <el-icon class="ops-warn-icon" :size="18"><WarningFilled /></el-icon>
           <div class="ops-warn-text">
             <div class="ops-warn-title">OSS 指标采集异常,存储量数据可能不完整</div>
-            <div class="ops-warn-detail">{{ opsWarnDetail }}</div>
+            <div class="ops-warn-detail">
+              <span>{{ opsWarnDetail }}</span>
+              <!-- 原始技术报错默认折叠：一条报文可达 1200+ 字符，直接铺开会把提示条撑到 200px+ -->
+              <span
+                v-if="opsWarnRaw"
+                class="ops-warn-toggle"
+                role="button"
+                tabindex="0"
+                @click="opsWarnExpanded = !opsWarnExpanded"
+                @keydown.enter.prevent="opsWarnExpanded = !opsWarnExpanded"
+                @keydown.space.prevent="opsWarnExpanded = !opsWarnExpanded"
+              >{{ opsWarnExpanded ? '收起详情' : '查看详情' }}</span>
+            </div>
+            <pre v-if="opsWarnExpanded && opsWarnRaw" class="ops-warn-raw">{{ opsWarnRaw }}</pre>
           </div>
           <el-button size="small" type="warning" plain @click="fetchOpsCard">重试</el-button>
         </template>
@@ -397,6 +410,11 @@ const OSS_TOP_MAX_PAGES = 20
 const opsState = ref<OssCardState>('empty')
 const opsSummary = ref<OssCardSummary>({ totalStorageSize: 0, totalObjectCount: 0, bucketCount: 0 })
 const opsWarnDetail = ref('')
+// 采集失败的**原始技术报错**（含云厂商限流码 / request_id / 内网 IP 等长文本）。
+// 与 opsWarnDetail 分开存：详情行只放「谁失败了几次」这种人话摘要，
+// 原始报文默认折叠、由用户点「查看详情」才展开（与 PR #153 云盘页一致）。
+const opsWarnRaw = ref('')
+const opsWarnExpanded = ref(false)
 const opsAsOf = ref('')
 /** Top 全量项(供运营条聚合 + 列表行存储量/对象数列取指标值) */
 const opsTopItems = ref<OSSTopItem[]>([])
@@ -429,9 +447,17 @@ const fetchOpsCard = async () => {
   opsState.value = deriveOssCardState({ topFailed, itemCount: items.length, failures })
   opsSummary.value = summarizeOssTop(items)
   opsAsOf.value = items.reduce((acc, it) => (it.latest?.date && it.latest.date > acc ? it.latest.date : acc), '')
+  // 摘要行只保留人话：谁失败了几次。原始报文另存 opsWarnRaw，默认折叠。
   opsWarnDetail.value = failures
-    .map(f => `${f.provider}(账号 ${f.account_id})失败 ${f.error_count} 次${f.last_error ? `:${f.last_error}` : ''}`)
-    .join(';')
+    .map(f => `${f.provider}(账号 ${f.account_id})失败 ${f.error_count} 次`)
+    .join('；')
+  // 原始报文按「提供方(账号)」分行，便于展开后逐条阅读
+  opsWarnRaw.value = failures
+    .filter(f => f.last_error)
+    .map(f => `[${f.provider}(账号 ${f.account_id})] ${f.last_error}`)
+    .join('\n')
+  // 每次重新拉取都收起，避免保留上一次的展开状态
+  opsWarnExpanded.value = false
 }
 
 /** 近 7 天增速(%):总最新容量 vs 总近 7 天均值(比率口径,合计后再相比,不逐桶平均) */
@@ -839,6 +865,36 @@ onMounted(() => {
     .ops-warn-icon { color: #d97706; }
     .ops-warn-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
     .ops-warn-detail { font-size: 12px; color: var(--text-tertiary); word-break: break-all; }
+
+    // 原始报文的展开入口：链接式，不抢视觉权重
+    .ops-warn-toggle {
+      margin-left: 8px;
+      font-size: 12px;
+      color: #d97706;
+      cursor: pointer;
+      user-select: none;
+      text-decoration: underline;
+
+      &:hover { color: color-mix(in srgb, #d97706 80%, #fff); }
+      &:focus-visible { outline: 2px solid #d97706; outline-offset: 2px; }
+    }
+
+    // 展开后的原始报文：等宽、限高滚动，避免再次把提示条撑高
+    .ops-warn-raw {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      max-height: 120px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-tertiary);
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
   }
 
   &.empty {
