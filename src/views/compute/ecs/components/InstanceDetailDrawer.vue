@@ -286,6 +286,7 @@
             <div v-else-if="relationsError" class="empty-tab">
               <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
               <p>关联资源加载失败，请刷新重试</p>
+              <el-button size="small" @click="fetchRelations">重试</el-button>
             </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
@@ -358,6 +359,7 @@
             <div v-else-if="relationsError" class="empty-tab">
               <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
               <p>关联资源加载失败，请刷新重试</p>
+              <el-button size="small" @click="fetchRelations">重试</el-button>
             </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
@@ -416,6 +418,7 @@
             <div v-else-if="relationsError" class="empty-tab">
               <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
               <p>关联资源加载失败，请刷新重试</p>
+              <el-button size="small" @click="fetchRelations">重试</el-button>
             </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
@@ -473,6 +476,7 @@
             <div v-else-if="relationsError" class="empty-tab">
               <el-icon :size="48" class="empty-error"><WarningFilled /></el-icon>
               <p>关联资源加载失败，请刷新重试</p>
+              <el-button size="small" @click="fetchRelations">重试</el-button>
             </div>
             <div v-else class="empty-tab">
               <el-icon :size="48"><Document /></el-icon>
