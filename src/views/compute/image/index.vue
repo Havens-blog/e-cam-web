@@ -298,7 +298,7 @@ import { fetchAllRows } from '@/utils/exportAll'
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting, Upload } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
-import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
+import { useListError } from '@/composables/useListError'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -392,8 +392,8 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
-// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（对齐 #141/#144/#146）
-const errorInfo = ref<ErrorInfo | null>(null)
+// 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（useListError 统一封装）
+const { errorInfo, run } = useListError()
 const activeTab = ref('all')
 
 // 筛选条件（字段搜索栏映射到后端实测有效参数：
@@ -732,26 +732,28 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
   return params
 }
 
-const fetchData = async () => {
-  loading.value = true
-  try {
-    const res = await listImageAssetsApi(buildListParams(pagination.page, pagination.size))
-    imageList.value = res.data?.items || []
-    pagination.total = res.data?.total || 0
-    errorInfo.value = null
-    // 同步刷新全局领域统计与动态选项
-    fetchImageStats()
-    fetchImageCounts()
-  } catch (error: any) {
-    console.error('获取镜像列表失败:', error)
-    // 改为持久错误态（原为一次性 toast，表格随后显示「暂无数据」，误导用户以为真的没有镜像）
-    errorInfo.value = handleApiError(error, '获取镜像列表失败')
-    imageList.value = []
-    pagination.total = 0
-  } finally {
-    loading.value = false
+  const fetchData = async () => {
+    loading.value = true
+    try {
+      // 失败时由 useListError 置持久错误态（不再手写 set/clear）
+      const res = await run(
+        () => listImageAssetsApi(buildListParams(pagination.page, pagination.size)),
+        '获取镜像列表失败',
+      )
+      if (res === undefined) {
+        imageList.value = []
+        pagination.total = 0
+        return
+      }
+      imageList.value = res.data?.items || []
+      pagination.total = res.data?.total || 0
+      // 同步刷新全局领域统计与动态选项
+      fetchImageStats()
+      fetchImageCounts()
+    } finally {
+      loading.value = false
+    }
   }
-}
 
 /** 导出「全部数据」：按当前筛选分页拉取全量（共享 fetchAllRows 工具），供 AssetExportDialog 调用 */
 const fetchAllExportRows = async (onProgress?: (fetched: number, total: number) => void): Promise<Asset[]> =>
