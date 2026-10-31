@@ -21,23 +21,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ wafCounts.total }}</span>
+            <span class="stat-num">{{ statText(wafCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">正常</span>
-            <span class="stat-num blue">{{ wafCounts.active }}</span>
+            <span class="stat-num blue">{{ statText(wafCounts.active) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已暂停</span>
-            <span class="stat-num">{{ wafCounts.suspended }}</span>
+            <span class="stat-num">{{ statText(wafCounts.suspended) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">待接入</span>
-            <span class="stat-num orange">{{ wafCounts.pending }}</span>
+            <span class="stat-num orange">{{ statText(wafCounts.pending) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ wafCounts.error }}</span>
+            <span class="stat-num red">{{ statText(wafCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -344,6 +344,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域仅 active(160)/suspended(252)/pending(13) 三值（2026-09-24 全量 425 条探查，全小写）；
@@ -527,6 +528,8 @@ const WAF_COUNTS_PAGE_SIZE = 1000
 const WAF_COUNTS_MAX_PAGES = 10
 
 const wafCounts = reactive({ total: 0, active: 0, suspended: 0, pending: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchWafCounts = async () => {
   try {
@@ -555,11 +558,13 @@ const fetchWafCounts = async () => {
     wafCounts.suspended = suspended
     wafCounts.pending = pending
     wafCounts.error = error
+    markStatsOk()
     regionOptions.value = Object.entries(regionCounts)
       .map(([value, count]) => ({ label: value, value, count }))
       .sort((a, b) => b.count - a.count)
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取WAF统计失败')
   }
 }

@@ -11,23 +11,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ sgCounts.total }}</span>
+            <span class="stat-num">{{ statText(sgCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">企业级</span>
-            <span class="stat-num blue">{{ sgCounts.enterprise }}</span>
+            <span class="stat-num blue">{{ statText(sgCounts.enterprise) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">普通</span>
-            <span class="stat-num">{{ sgCounts.normal }}</span>
+            <span class="stat-num">{{ statText(sgCounts.normal) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">未关联VPC</span>
-            <span class="stat-num orange">{{ sgCounts.noVpc }}</span>
+            <span class="stat-num orange">{{ statText(sgCounts.noVpc) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">无规则</span>
-            <span class="stat-num orange">{{ sgCounts.noRule }}</span>
+            <span class="stat-num orange">{{ statText(sgCounts.noRule) }}</span>
           </div>
         </div>
       </div>
@@ -249,6 +249,7 @@ import { useRoute } from 'vue-router'
 import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SecurityGroupDetailDrawer from './components/SecurityGroupDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -307,6 +308,8 @@ const SG_COUNTS_PAGE_SIZE = 1000
 const SG_COUNTS_MAX_PAGES = 10
 
 const sgCounts = reactive({ total: 0, enterprise: 0, normal: 0, noVpc: 0, noRule: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchSgCounts = async () => {
   try {
@@ -332,8 +335,10 @@ const fetchSgCounts = async () => {
     sgCounts.normal = normal
     sgCounts.noVpc = noVpc
     sgCounts.noRule = noRule
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取安全组统计失败')
   }
 }

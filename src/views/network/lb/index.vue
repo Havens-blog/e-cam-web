@@ -12,23 +12,23 @@
         <div class="stats-badges">
           <div class="stat-badge">
             <span class="stat-label">总数</span>
-            <span class="stat-num">{{ lbCounts.total }}</span>
+            <span class="stat-num">{{ statText(lbCounts.total) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">运行中</span>
-            <span class="stat-num blue">{{ lbCounts.running }}</span>
+            <span class="stat-num blue">{{ statText(lbCounts.running) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">已停止</span>
-            <span class="stat-num">{{ lbCounts.stopped }}</span>
+            <span class="stat-num">{{ statText(lbCounts.stopped) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">公网</span>
-            <span class="stat-num orange">{{ lbCounts.internet }}</span>
+            <span class="stat-num orange">{{ statText(lbCounts.internet) }}</span>
           </div>
           <div class="stat-badge">
             <span class="stat-label">异常</span>
-            <span class="stat-num red">{{ lbCounts.error }}</span>
+            <span class="stat-num red">{{ statText(lbCounts.error) }}</span>
           </div>
         </div>
       </div>
@@ -313,6 +313,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import LbDetailDrawer from './components/LbDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { useStatText } from '@/composables/useStatText'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 LB_STATUS_LABELS */
 const isRunningStatus = (status?: string) => ['Active', 'active', 'ACTIVE', 'running', 'Running'].includes(status || '')
@@ -489,6 +490,8 @@ const LB_COUNTS_PAGE_SIZE = 1000
 const LB_COUNTS_MAX_PAGES = 10
 
 const lbCounts = reactive({ total: 0, running: 0, stopped: 0, internet: 0, error: 0 })
+// 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
+const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
 const fetchLbCounts = async () => {
   try {
@@ -514,8 +517,10 @@ const fetchLbCounts = async () => {
     lbCounts.stopped = stopped
     lbCounts.internet = internet
     lbCounts.error = error
+    markStatsOk()
   } catch {
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
+    markStatsFailed()
     ElMessage.error('获取负载均衡统计失败')
   }
 }
