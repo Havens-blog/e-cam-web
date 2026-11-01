@@ -134,7 +134,8 @@ import { getChangeSummaryApi, listAssetChangesApi } from '@/api/audit'
 import { Document, Refresh, Right, WarningFilled } from '@element-plus/icons-vue'
 import { getProviderLabel } from '@/utils/constants'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
@@ -146,6 +147,19 @@ const pageSize = 20
 const summary = ref<ChangeSummary | null>(null)
 const summaryLoadError = ref(false)
 const summaryFilter = reactive({ model_uid: '', provider: '' })
+
+// 筛选同步 URL（iter139）：此前 assetId 与汇总筛选都只存在内存里，
+// 刷新页面 / 分享链接 / 从变更详情返回都会丢，运维得重输。
+// 注意：同一页有两个实例（assetId 是「查询模式开关」，summaryFilter 是汇总筛选），
+// 所以 composable 必须「只增删自己的 key」，不能重建整个 query（iter139 已修）。
+const urlAssetId = reactive<Record<string, string | undefined>>({ assetId: assetId.value || undefined })
+useUrlFilters(urlAssetId)
+watch(assetId, (v) => { urlAssetId.assetId = v || undefined })
+useUrlFilters(summaryFilter)
+// URL 回填后先落到各自的 ref/对象，再取数（否则页面显示与数据不一致）
+if (urlAssetId.assetId && !assetId.value) {
+    assetId.value = String(urlAssetId.assetId)
+}
 
 const modelLabel = (uid: string) => {
   const m: Record<string, string> = {
@@ -236,7 +250,11 @@ const handleRefresh = () => {
   else fetchSummary()
 }
 
-onMounted(() => fetchSummary())
+onMounted(() => {
+  // 若 URL 带 assetId（刷新/分享/返回），应直接进入变更列表模式而不是只拉汇总
+  if (assetId.value) void fetchChanges()
+  else void fetchSummary()
+})
 </script>
 
 <style lang="scss" scoped>
