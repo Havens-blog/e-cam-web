@@ -22,6 +22,8 @@ export interface CloudUser {
     /** 后端 /iam/users 未返回账号名（只给 cloud_account_id/provider）；展示请用 @/utils/display-fallbacks.userAccountLabel */
   cloud_account_name?: string
     email: string
+    /** 接口实际返回的是 user_groups（与 #137 的读侧口径一致）；permission_groups 为历史字段 */
+    user_groups?: PermissionGroup[]
     permission_groups: PermissionGroup[]
     groups?: PermissionGroup[]
     tenant_id: string
@@ -152,7 +154,8 @@ export interface CreateUserRequest {
     user_type: CloudUserType
     cloud_account_id: number
     email: string
-    permission_groups: number[]
+    /** 后端 CreateUserVO 的字段名是 `user_groups`（此前误写 `permission_groups` ⇒ 组分配被静默丢弃） */
+    user_groups: number[]
     tenant_id?: string
 }
 
@@ -160,7 +163,8 @@ export interface UpdateUserRequest {
     display_name?: string
     email?: string
     status?: CloudUserStatus
-    permission_groups?: number[]
+    /** 同 CreateUserRequest：后端字段名是 user_groups */
+    user_groups?: number[]
 }
 
 export interface BatchAssignRequest {

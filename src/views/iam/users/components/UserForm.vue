@@ -98,6 +98,7 @@
 import { createUserApi, listCloudAccountsApi, listGroupsApi, updateUserApi } from '@/api'
 import type { CloudUser } from '@/api/types/iam'
 import { getProviderLabel, USER_STATUS, USER_TYPES } from '@/utils/constants'
+import { userPermissionGroups } from '@/utils/display-fallbacks'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -172,7 +173,7 @@ const initFormData = () => {
     formData.cloud_account_id = props.user.cloud_account_id
     formData.email = props.user.email
     formData.status = props.user.status
-    formData.permission_groups = props.user.permission_groups?.map((g) => g.id) || []
+    formData.permission_groups = userPermissionGroups(props.user).map((g) => g.id)
   }
 }
 
@@ -187,7 +188,7 @@ const submit = async () => {
       display_name: formData.display_name,
       email: formData.email,
       status: formData.status,
-      permission_groups: formData.permission_groups,
+      user_groups: formData.permission_groups,
     })
   } else {
     await createUserApi({
@@ -196,7 +197,7 @@ const submit = async () => {
       user_type: formData.user_type,
       cloud_account_id: formData.cloud_account_id!,
       email: formData.email,
-      permission_groups: formData.permission_groups,
+      user_groups: formData.permission_groups,
     })
   }
 }
