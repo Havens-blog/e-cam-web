@@ -44,12 +44,23 @@ export function useUrlFilters<T extends FilterRecord>(
   watch(
     () => Object.keys(filters).map((k) => `${k}=${filters[k] ?? ''}`).join('&'),
     () => {
+      // 只在**现有 query 上增删自己这几个 key**，不能从零重建：
+      // ① 同页可能有多个 useUrlFilters 实例（如 audit/changes：assetId + summaryFilter），
+      //    各自重建会互相清空；
+      // ② 页面可能还带别的参数（如 cert 页的 `?from=ledger`），重建会把它们丢掉。
       const query: Record<string, string> = {}
+      for (const [k, v] of Object.entries(route.query)) {
+        if (typeof v === 'string') query[k] = v
+      }
       for (const key of Object.keys(filters)) {
         if (omit.has(key)) continue
         const raw = filters[key]
         const v = raw === undefined ? '' : String(raw)
-        if (v !== '') query[key] = v
+        if (v !== '') {
+          query[key] = v
+        } else {
+          delete query[key]
+        }
       }
       // 与现有 query 比对，避免无意义的 replace
       const cur = route.query as Record<string, unknown>
