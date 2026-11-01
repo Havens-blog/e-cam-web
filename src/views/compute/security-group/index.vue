@@ -156,7 +156,9 @@
     </div>
 
     <!-- 表格区域（无默认多选列） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -250,6 +252,8 @@ import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SecurityGroupDetailDrawer from './components/SecurityGroupDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -275,6 +279,8 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 const instances = ref<Asset[]>([])
 const detailVisible = ref(false)
 const currentInstance = ref<Asset | null>(null)
@@ -497,7 +503,8 @@ const buildListParams = (page: number, size: number) => ({
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listSecurityGroupAssetsApi(buildListParams(pagination.page, pagination.size))
+    const res = await run(() => listSecurityGroupAssetsApi(buildListParams(pagination.page, pagination.size)), '获取列表失败')
+    if (res === undefined) return
     instances.value = res.data?.items || []
     pagination.total = res.data?.total || 0
     // 同步刷新全局领域统计

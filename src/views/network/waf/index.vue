@@ -167,7 +167,9 @@
       </div>
 
       <!-- 表格区域（无多选列；首列实例名 + 等宽 ID 副行） -->
-      <div class="table-wrapper">
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+      <div v-else class="table-wrapper">
         <div class="table-header">
           <table class="data-table">
             <thead>
@@ -345,6 +347,8 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域仅 active(160)/suspended(252)/pending(13) 三值（2026-09-24 全量 425 条探查，全小写）；
@@ -434,6 +438,8 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 const activeTab = ref('instances')
 
 // 筛选条件（字段搜索栏映射到后端实测有效参数：
@@ -741,7 +747,8 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listWAFAssetsApi(buildListParams(pagination.page, pagination.size))
+    const res = await run(() => listWAFAssetsApi(buildListParams(pagination.page, pagination.size)), '获取列表失败')
+    if (res === undefined) return
     wafList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
     // 同步刷新全局领域统计

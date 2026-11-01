@@ -157,7 +157,9 @@
     </div>
 
     <!-- 表格区域（无默认多选列） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchInstances" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -272,6 +274,8 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import EsDetailDrawer from './components/EsDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 /** 共享导出配置：字段沿用原 stub 字段清单（key 对齐 attributes 实际字段名），取值走通用映射 */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -300,6 +304,8 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 const instances = ref<Asset[]>([])
 const detailDrawerVisible = ref(false)
 const detailInstance = ref<Asset | null>(null)
@@ -503,7 +509,8 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 const fetchInstances = async () => {
   loading.value = true
   try {
-    const res = await listElasticsearchAssetsApi(buildListParams(pagination.page, pagination.size))
+    const res = await run(() => listElasticsearchAssetsApi(buildListParams(pagination.page, pagination.size)), '获取列表失败')
+    if (res === undefined) return
     const data = res.data as any
     instances.value = data?.items || data?.data || []
     pagination.total = data?.total || 0
