@@ -98,10 +98,11 @@ import type { AlertRule, AlertRuleType } from '@/api/alert'
 import { deleteRuleApi, listRulesApi, toggleRuleApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, reactive, watch} from 'vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const list = ref<AlertRule[]>([])
 const loading = ref(false)
@@ -111,6 +112,15 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = 20
 const filterType = ref<AlertRuleType | ''>('')
+
+// 类型筛选同步 URL（iter137）：此前 URL 不带条件，刷新/返回后筛选丢失。
+const urlFilters = reactive<Record<string, string | undefined>>({ type: filterType.value || undefined })
+useUrlFilters(urlFilters)
+watch(filterType, (v) => { urlFilters.type = v || undefined })
+// URL 回填后把值写回 filterType（首次挂载时可能已有 ?type=）
+if (urlFilters.type && urlFilters.type !== filterType.value) {
+  filterType.value = urlFilters.type as typeof filterType.value
+}
 const showForm = ref(false)
 const editData = ref<AlertRule | null>(null)
 

@@ -83,10 +83,11 @@ import type { AlertChannel, ChannelType } from '@/api/alert'
 import { deleteChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, reactive, watch} from 'vue'
 import ChannelFormDialog from './components/ChannelFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const list = ref<AlertChannel[]>([])
 const loading = ref(false)
@@ -96,6 +97,15 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = 20
 const filterType = ref<ChannelType | ''>('')
+
+// 类型筛选同步 URL（iter137）：此前 URL 不带条件，刷新/返回后筛选丢失。
+const urlFilters = reactive<Record<string, string | undefined>>({ type: filterType.value || undefined })
+useUrlFilters(urlFilters)
+watch(filterType, (v) => { urlFilters.type = v || undefined })
+// URL 回填后把值写回 filterType（首次挂载时可能已有 ?type=）
+if (urlFilters.type && urlFilters.type !== filterType.value) {
+  filterType.value = urlFilters.type as typeof filterType.value
+}
 const showForm = ref(false)
 const editData = ref<AlertChannel | null>(null)
 
