@@ -180,6 +180,7 @@ import {
   getProviderLabel,
 } from '@/utils/constants'
 import { formatCost, formatJSON, formatTime } from '@/utils/formatters'
+import { resolveErrorMessage } from '@/utils/error-handler'
 import { Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
@@ -219,7 +220,10 @@ const fetchAssetDetail = async () => {
     const { data } = await getAssetDetailApi(id)
     asset.value = data
   } catch (error: any) {
-    ElMessage.error(error.message || '获取资产详情失败')
+    // 直接拼 error.message 会把 axios 英文原文（Network Error / Request failed with status code N）
+    // 显示给用户 —— 详情页随后 router.back() 离开，用户只来得及看到这条 toast，中文可读性更重要。
+    // 走共享 resolveErrorMessage：只翻译已知英文传输层文案，其它 message 原样保留（iter133）。
+    ElMessage.error(resolveErrorMessage(error, '获取资产详情失败'))
     router.back()
   } finally {
     loading.value = false
