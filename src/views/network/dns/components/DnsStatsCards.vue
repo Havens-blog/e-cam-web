@@ -251,6 +251,10 @@ defineExpose({ refresh: fetchStats })
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s;
+  /* 网格项必须允许收缩：卡片里 .stat-desc 是 nowrap + ellipsis，
+     其 min-content 会把 1fr 列顶到 294px，而容器只有 214px → 整卡溢出 80px、
+     .stat-desc 右边界冲到 393px（视口 390px）。min-width:0 让 ellipsis 正常生效（iter138）。 */
+  min-width: 0;
 
   &:hover {
     transform: translateY(-2px);
@@ -296,6 +300,14 @@ defineExpose({ refresh: fetchStats })
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-bottom: 20px;
+
+  /* 窄屏（≤560px）：固定 2 列时每张图表卡只剩约 97px，
+     「云厂商域名分布」被折成 3 行、「记录类型分布」2 行（iter138 实测）。
+     改单列让图表标题与图本身都有足宽。 */
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 .chart-card {
