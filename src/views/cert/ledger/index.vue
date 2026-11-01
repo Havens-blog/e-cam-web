@@ -62,7 +62,7 @@
 
       <!-- Populated：统计卡 + 表格 -->
       <template v-else>
-        <StatsCards :stats="stats" :stats-error="statsError" />
+        <StatsCards :stats="stats" :stats-error="statsError" :retry="refreshAll" />
         <CertTable
           class="table-block"
           :rows="rows"

@@ -1,6 +1,9 @@
 <template>
   <div class="stats-grid" role="group" aria-label="台账统计">
-    <div v-if="statsError" class="stats-error" role="status">统计暂不可用，请刷新页面重试</div>
+    <div v-if="statsError" class="stats-error" role="status">
+      <span>统计暂不可用</span>
+      <el-button v-if="retry" link type="primary" size="small" @click="retry">重试</el-button>
+    </div>
     <div class="stat-card">
       <div class="stat-label">完整托管</div>
       <div class="stat-value">{{ stats?.complete ?? '—' }}</div>
@@ -40,6 +43,12 @@ defineProps<{
     stats: CertStats | null
     /** 统计请求失败标记：与「-」占位一并呈现行内错误提示，避免被误读为数据为零 */
     statsError?: boolean
+    /**
+     * 统计失败时的重试回调（由父组件传入 refreshAll）。
+     * 此前文案写着「请刷新页面重试」但**没有任何重试入口**，用户只能手动刷新浏览器、
+     * 丢掉筛选与滚动位置（iter134 实测：断 /api/v1/certs/stats 后全页 retryBtns 为空）。
+     */
+    retry?: () => void
 }>()
 </script>
 
@@ -58,6 +67,11 @@ defineProps<{
   grid-column: 1 / -1;
   font-size: 13px;
   color: var(--cert-error, #ee0000);
+  /* 文案与重试按钮同行：窄屏允许换行，按钮不参与收缩 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .stat-card {
