@@ -76,17 +76,17 @@
           </div>
         </div>
         <div class="col-groups">
-          <template v-if="user.permission_groups && user.permission_groups.length > 0">
+          <template v-if="groupsOf(user).length > 0">
             <div class="groups-list">
               <span
-                v-for="group in user.permission_groups.slice(0, 2)"
+                v-for="group in groupsOf(user).slice(0, 2)"
                 :key="group.id"
                 class="group-tag"
               >
                 {{ group.name }}
               </span>
-              <span v-if="user.permission_groups.length > 2" class="group-more">
-                +{{ user.permission_groups.length - 2 }}
+              <span v-if="groupsOf(user).length > 2" class="group-more">
+                +{{ groupsOf(user).length - 2 }}
               </span>
             </div>
           </template>
@@ -147,6 +147,7 @@
 import type { CloudUser } from '@/api/types/iam'
 import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel, getUserTypeLabel } from '@/utils/constants'
+import { userPermissionGroups } from '@/utils/display-fallbacks'
 import { Delete, Edit, FolderAdd, MoreFilled, Plus, UserFilled, View } from '@element-plus/icons-vue'
 import { formatTime, getAvatarText, getSafeUserStatus, getStatusClass, getUserTypeClass } from '../utils'
 
@@ -166,6 +167,12 @@ const props = defineProps<{
   /** 已选用户（父组件 selectedUsers）：本组件据此计算每行是否选中 */
   selectedUsers: CloudUser[]
 }>()
+
+/**
+ * 行的用户组：接口实际返回 `user_groups`（历史字段 `permission_groups` 兜底）。
+ * 此前模板直接读 `user.permission_groups` ⇒ 明明有组也显示为空。
+ */
+const groupsOf = (user: CloudUser) => userPermissionGroups(user)
 
 const emit = defineEmits<{
   /** 表头全选/取消全选，透传 el-checkbox 的值 */

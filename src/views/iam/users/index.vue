@@ -184,6 +184,7 @@ import {
   getUserTypeLabel,
 } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
+import { userPermissionGroups } from '@/utils/display-fallbacks'
 import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -246,7 +247,7 @@ const totalPages = computed(() => Math.ceil(pagination.total / pagination.size) 
 
 // 统计数据
 const activeUserCount = computed(() => users.value.filter(u => u.status === 'active').length)
-const groupedUserCount = computed(() => users.value.filter(u => u.permission_groups && u.permission_groups.length > 0).length)
+const groupedUserCount = computed(() => users.value.filter(u => userPermissionGroups(u).length > 0).length)
 const disabledUserCount = computed(() => users.value.filter(u => u.status !== 'active').length)
 
 // 选择相关（isSelected 已随列表模板下沉到 components/UserTable.vue）
@@ -610,7 +611,8 @@ const exportConfig: ExportFieldConfig<CloudUser> = {
       case 'provider':
         return getProviderLabel(user.provider) || '-'
       case 'permission_groups':
-        return user.permission_groups?.map((g) => g.name).join(', ') || '-'
+        // 导出列键沿用 permission_groups 以保持表头稳定；取值走 helper（接口字段实为 user_groups）
+        return userPermissionGroups(user).map((g) => g.name).join(', ') || '-'
       default:
         return (user as any)[field] || '-'
     }

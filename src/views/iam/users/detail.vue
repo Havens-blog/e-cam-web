@@ -111,6 +111,7 @@ import type { CloudUser } from '@/api/types/iam'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
 import { USER_STATUS } from '@/utils/constants'
+import { userPermissionGroups } from '@/utils/display-fallbacks'
 import { Delete, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, ref } from 'vue'
@@ -225,7 +226,7 @@ const handleSubmitStatus = async () => {
 // 管理权限组
 const handleManageGroups = (user: CloudUser) => {
   currentUser.value = user
-  selectedGroups.value = user.permission_groups.map(g => g.id)
+  selectedGroups.value = userPermissionGroups(user).map((g) => g.id)
   groupsDialogVisible.value = true
   fetchPermissionGroups()
 }
@@ -248,7 +249,7 @@ const handleSubmitGroups = async () => {
   try {
     submitting.value = true
     await updateUserApi(currentUser.value.id, {
-      permission_groups: selectedGroups.value
+      user_groups: selectedGroups.value
     })
     ElMessage.success('权限组修改成功')
     groupsDialogVisible.value = false
