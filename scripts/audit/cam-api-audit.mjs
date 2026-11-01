@@ -350,10 +350,13 @@ const LEAK_MARKERS = [
     ['mongo', /mongo:/i],
     ['ErrNoDocuments', /ErrNoDocuments/],
     ['BSON', /\bBSON\b/],
-    ['collection', /\bcollection\b/i],
+    // 【2026-11-01 实测误报后移除】原 marker `/\bcollection\b/i` 过宽：在 `/logs/search`（WAF 日志检索）上
+    // 命中的是**日志内容里的真实业务 URL**（`uri: "/api/collections/officeRecommend/projects?..."`），
+    // 属日志数据而非存储痕迹。真正的 mongo 泄露仍由 `mongo:` / `BSON` / `.go:NN` 覆盖（历次真实泄露皆命中其中之一）。
     ['sql', /\b(sql|SQLSTATE|pq:)\b/],
     ['redis', /\bredis\b/i],
-    ['panic', /\bpanic\b/i],
+    // 收窄为 `panic:`（Go 崩溃栈的固定前缀），避免与业务文案中的 "panic" 一词混淆
+    ['panic', /panic:/],
     ['goroutine', /goroutine\s+\d+/],
     ['goStack', /\.go:\d+/],
     ['dial', /dial tcp/i],
