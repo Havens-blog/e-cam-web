@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { listTemplatesApi } from '@/api/iam'
@@ -126,6 +127,17 @@ const pageSize = ref(TEMPLATE_PAGE_SIZE)
 
 const filters = reactive<TemplateListFilters>({ keyword: '', category: '', isBuiltIn: '' })
 const hasFilters = computed(() => Boolean((filters.keyword || '').trim() || filters.category || filters.isBuiltIn !== ''))
+
+// 筛选同步 URL（iter140）：此前筛选只在内存里，刷新 / 分享 / 进模板详情后返回都会丢。
+// isBuiltIn 是 `boolean | ''`（不是字符串），所以必须给 codec —— 否则 'true' 会被当成字符串塞进布尔字段。
+useUrlFilters(filters, {
+    codec: {
+        isBuiltIn: {
+            encode: (v) => (v === '' || v === undefined ? '' : String(v)),
+            decode: (s) => (s === 'true' ? true : s === 'false' ? false : ''),
+        },
+    },
+})
 
 // 分类下拉走数据字典（constants.ts 里的同名映射已 @deprecated，避免两处口径漂移）。
 // 注意：getDictOptions 本身返回 Ref，模板里自动解包，**不要**再包一层 computed。
