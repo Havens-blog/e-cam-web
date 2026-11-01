@@ -134,10 +134,17 @@ const commandPaletteVisible = ref(false)
   transition: background-color 0.3s ease;
 }
 
-// 窄屏：收紧页面边距，把空间让给内容（配合侧边栏自动折叠）
+// 窄屏：**不**收紧 .main-content 的水平 padding。
+// 原因：各业务页统一用 margin: -24px 做"出血"贴边（抵消这里的 padding），
+// 若窄屏把 padding 改成 12px，出血量就比 padding 多 12px —— 页面每侧各溢出 12px，
+// 被 .main-area 的 overflow: hidden 裁掉（实测 390 视口：页面容器 [52..402] 而主区 [64..390]；
+// 页面内搜索框继承同样的溢出，右边界被切）。
+// 保持 24px 时页面宽度恰好等于主区宽度：既不溢出，可用宽度也没有减少
+// （页面本来就靠负边距吃满主区，padding 变小并不会让内容变宽）。
 @media (max-width: 768px) {
   .main-content {
-    padding: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
 }
 

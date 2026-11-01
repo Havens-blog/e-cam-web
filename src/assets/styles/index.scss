@@ -221,3 +221,18 @@ input, textarea {
     margin-left: 0 !important;
   }
 }
+
+/* 搜索输入框容器（.search-input-wrap）：全仓 20 个页面各有一份 scoped 样式，
+ * 形状一致 —— width: 320px + flex-shrink: 0，即「固定 320px 且拒绝收缩」。
+ *
+ * 实测（390 视口，真实浏览器）：父级 .search-row 只有 286px 宽，
+ * 而该元素坚持 320px 且 flex-shrink: 0，于是右边界到 404px，被视口裁掉 14px。
+ *
+ * 改成「可收缩 + 上限 320px」：宽屏时父级够宽，仍取 320px（外观不变）；
+ * 窄屏时收缩到父级宽度，不再溢出。scoped 副本优先级更高，故用 !important。 */
+.search-input-wrap {
+  width: 100% !important;
+  max-width: 320px !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
