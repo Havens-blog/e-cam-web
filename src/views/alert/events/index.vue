@@ -131,6 +131,7 @@ import type { DataTableColumn, DataTableDensity } from '@/components/DataTable/t
 import PageContainer from '@/components/PageContainer/index.vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const PAGE_SIZE = 20
 
@@ -143,6 +144,9 @@ interface EventFilters {
 }
 
 const filters = reactive<EventFilters>({ type: '', severity: '', status: '' })
+
+// 筛选同步 URL（iter137）：此前 URL 不带条件，刷新/返回后筛选丢失。
+useUrlFilters(filters)
 
 // ==================== 列表（DataTable fetch 模式：三态由组件内置承载） ====================
 
