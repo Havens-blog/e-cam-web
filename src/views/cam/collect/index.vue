@@ -192,6 +192,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters } from './filters'
 import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
 import { buildCollectLogCsv, exportFileName, EXPORT_MAX_ROWS } from './export'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -213,6 +214,25 @@ const filters = reactive<{ account_id?: number; status?: CollectLogStatus }>({
   account_id: undefined,
   status: undefined
 })
+
+// 列表筛选同步 URL（iter151）：account_id / status 此前只存在内存里，
+// 刷新、分享链接、或从详情返回时筛选丢失。
+// account_id 是 number | undefined，必须给 codec（否则读回 '3' 会当字符串塞进数字字段）；
+// status 是字符串联合类型，走默认编码。
+// **注意**：collectDateRange（开始/结束日期）不参与同步 —— 它是「执行采集」的入参，
+// 不是列表筛选条件（见文件里 start_date/end_date 那段请求参数组装）。
+useUrlFilters(filters, {
+  codec: {
+    account_id: {
+      encode: (v) => (v === undefined || v === '' ? '' : String(v)),
+      decode: (s) => {
+        const n = Number(s)
+        return Number.isFinite(n) ? n : undefined
+      },
+    },
+  },
+})
+
 const filtersActive = computed(() => hasActiveFilters(filters))
 /** 渲染用「当前时间」：每次日志拉取成功刷新，驱动「已运行 X分YY秒」更新 */
 const nowMs = ref(Date.now())
