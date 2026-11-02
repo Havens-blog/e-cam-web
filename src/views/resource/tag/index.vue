@@ -79,7 +79,9 @@
       </div>
 
       <!-- Tag Table -->
-      <div class="table-wrap">
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="loadTags" />
+      <div v-else class="table-wrap">
         <el-table
           ref="tableRef"
           :data="tagList.filter(item => item != null)"
@@ -195,6 +197,8 @@ import TagPolicyPanel from './components/TagPolicyPanel.vue'
 import TagResourceDrawer from './components/TagResourceDrawer.vue'
 import TagRulePanel from './components/TagRulePanel2.vue'
 import StatCard from '@/components/StatCard.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 // 周趋势文案/色调:后端快照基线(7 天前),无基线时 trend 缺省不展示
 const weekTrendText = (n?: number) => {
@@ -253,19 +257,22 @@ const remediateResources = ref<ComplianceResult[]>([])
 const remediatePolicyName = ref('')
 const remediateRequiredKeys = ref<string[]>([])
 const bindResourceRefs = ref<ResourceRef[]>([])
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 
 // Load tags
 const loadTags = async () => {
   tableLoading.value = true
   try {
-    const res = await listTagsApi({
+    const res = await run(() => listTagsApi({
       key: filters.keyword || undefined,
       value: filters.keyword || undefined,
       provider: filters.provider || undefined,
       resource_type: filters.resource_type || undefined,
       offset: (currentPage.value - 1) * pageSize.value,
       limit: pageSize.value,
-    })
+    }), '获取标签列表失败')
+    if (res === undefined) return
     tagList.value = res.data?.items || []
     tagTotal.value = res.data?.total || 0
   } catch {
