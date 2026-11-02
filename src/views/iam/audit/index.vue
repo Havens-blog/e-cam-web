@@ -213,6 +213,7 @@ import LogDetailDialog from './components/LogDetailDialog.vue'
 import ReportDialog from './components/ReportDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 // 筛选条件
 const filters = reactive({
@@ -223,6 +224,12 @@ const filters = reactive({
   start_time: '',
   end_time: ''
 })
+
+// 筛选同步 URL（iter151）：六个字段此前只存在内存里，刷新页面、分享链接、
+// 或从审计详情返回时全部丢失（实测：设了操作人关键词后行数变化，URL 一个字都不变）。
+// 六个字段都是字符串（含 start_time/end_time），直接用默认编码即可。
+// 注意 dateRange（UI 用的 Date 数组）不参与同步 —— 它只是 start_time/end_time 的界面载体。
+useUrlFilters(filters)
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null)
