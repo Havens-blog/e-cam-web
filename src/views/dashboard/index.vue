@@ -618,6 +618,12 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    /* 窄屏（iter145 实测 390px）：header 只有 196px，右侧 el-select（109px）占掉一半，
+       左侧 h2「即将过期资源」只剩 87px（6 字 @16px 需 ~96px）→ 被折成 2 行。
+       允许换行，并把标题排除在收缩之外。
+       注：同区域「产品成本 TOP10（2026年10月）」18 字 @16px 需 ~250px，折 2 行属正常，不算缺陷。 */
+    flex-wrap: wrap;
+    gap: 8px;
 
     /* 分区标题由 h3 提升为 h2（修标题跳级），样式同步，视觉不变 */
 
@@ -626,6 +632,8 @@ onUnmounted(() => {
       font-weight: 600;
       color: var(--text-primary);
       margin: 0;
+      /* 不参与收缩：换行后仍保持单行 */
+      flex-shrink: 0;
     }
   }
 }

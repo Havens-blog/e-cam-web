@@ -279,12 +279,26 @@ async function handleItemStatusChange(item: DictItem, status: string) {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+
+  /* 窄屏（iter145 实测 390px）：容器内容区仅 278px，而 .dict-sidebar 固定 320px（min 280px），
+     两栏并排根本放不下 → 整个 .dict-layout 内容宽 397px、右侧被裁掉看不到。
+     小屏改为纵向堆叠：侧栏占满一行，主区落到下一行。 */
+  @media (max-width: 560px) {
+    flex-direction: column;
+    overflow: visible;
+  }
 }
 
 .dict-sidebar {
   width: 320px;
   min-width: 280px;
   flex-shrink: 0;
+
+  /* 窄屏：不再固定宽度，改为占满可用宽度（配合上面的纵向堆叠） */
+  @media (max-width: 560px) {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .dict-main {

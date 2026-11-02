@@ -7,12 +7,15 @@
 
     <el-card class="filter-card">
       <el-form :inline="true">
+        <!-- 窄屏（iter145 实测 390px）：下方 el-select 原先硬编码 width:400px，
+             而内容区仅 278px → 右边界冲到 555px，整块被裁掉、选项看不到也点不到。
+             已改为 width:100%; max-width:400px。 -->
         <el-form-item label="选择云账号">
           <el-select
             v-model="selectedAccounts"
             multiple
             placeholder="请选择要对比的云账号（2-4个）"
-            style="width: 400px"
+            style="width: 100%; max-width: 400px; overflow: hidden"
             :max-collapse-tags="2"
             collapse-tags
             collapse-tags-tooltip
@@ -536,6 +539,49 @@ onMounted(() => {
 <style scoped lang="scss">
 .permission-compare-page {
   padding: 20px;
+
+  /* 窄屏（iter145 实测 390px）：`.el-form--inline` 下每个 form-item 只有 126px，
+     里面再扣掉 label 之后 el-select 只剩 44px —— 而占位文案「请选择要对比的云账号（2-4个）」
+     需要 203px，于是文字直接溢出到视口外（right=426 > 390）。
+     小屏改为**纵向堆叠**：form-item 占满整行、label 与控件各占一行，控件才有足够宽度。 */
+  @media (max-width: 560px) {
+    .el-form--inline {
+      .el-form-item {
+        display: flex;
+        width: 100%;
+        margin-right: 0;
+      }
+
+      .el-form-item__content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* 控件占满剩余宽度（不再依赖内联 max-width 硬编码） */
+      .el-select {
+        width: 100% !important;
+        max-width: none !important;
+      }
+
+      /* 占位文案「请选择要对比的云账号（2-4个）」自然宽 203px，
+         而窄屏下 select 盒只有 ~114px。EP 默认不裁剪这层 span，
+         文字会溢出到视口外（实测 right=426 > 390）。这里补上裁剪 + 省略号。
+         注意：EP 内部元素不带本组件的 data-v 属性，scoped 样式必须用 :deep() 才能命中。 */
+      :deep(.el-select__selection),
+      :deep(.el-select__selected-item) {
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      :deep(.el-select__placeholder),
+      :deep(.el-select__selected-item > span) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+    }
+  }
 
   .filter-card {
     margin-bottom: 20px;

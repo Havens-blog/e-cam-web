@@ -268,11 +268,18 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 窄屏（iter145 实测 390px）：容器仅 278px，而 __fields 里 3 个 select 固定宽合计 440px，
+     第三个（状态）右边界冲到 504px → 完全看不到、也无法操作。允许换行。 */
+  flex-wrap: wrap;
+  gap: 8px;
 
   &__fields {
     display: flex;
     align-items: center;
     gap: 8px;
+    /* 一行放不下就折到下一行，而不是溢出到视口外 */
+    flex-wrap: wrap;
+    min-width: 0;
   }
 }
 
