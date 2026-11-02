@@ -20,6 +20,7 @@
       :available-tag-keys="availableTagKeys"
       :page-count="instances.length"
       :total="pagination.total"
+      :loading="loading"
       @add="handleAdd"
       @refresh="handleRefresh"
       @open-export="exportDialogVisible = true"
