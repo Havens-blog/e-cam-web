@@ -94,7 +94,7 @@
       </el-form>
     </div>
     <div class="filters-right">
-      <el-button size="small" circle @click="$emit('refresh')" title="刷新">
+      <el-button size="small" circle :loading="props.loading" @click="$emit('refresh')" title="刷新">
         <el-icon><Refresh /></el-icon>
       </el-button>
     </div>
@@ -123,6 +123,8 @@ const serviceTypeOptions = getDictOptions('service_type')
 
 const props = defineProps<{
   modelValue: CostFilterValues
+  /** 父页面数据加载中：用于禁用刷新按钮，避免连点重复请求 */
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{

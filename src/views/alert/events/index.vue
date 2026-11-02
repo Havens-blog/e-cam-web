@@ -53,7 +53,7 @@
             <el-option label="已静默" value="silenced" />
           </el-select>
         </div>
-        <el-button size="small" circle title="刷新" @click="refresh">
+        <el-button size="small" circle title="刷新" :loading="refreshing" @click="refreshByClick">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>
@@ -216,8 +216,24 @@ const fetchEvents = async (): Promise<AlertEvent[]> => {
 }
 
 /** 重拉当前页（筛选变更/刷新/翻页/轮询共用；等价旧页 fetchData） */
+// 连点/轮询保护：refresh() 委托给 DataTable 内部的 refresh（返回 Promise），
+// 在途时直接忽略新的触发，避免同一次刷新被并发执行多遍。
+const refreshing = ref(false)
+
+/** 筛选变化 / 30s 轮询走这里：不丢弃任何一次触发（连续改筛选时必须拉到最终条件） */
 const refresh = () => {
   void tableRef.value?.refresh()
+}
+
+/** 仅「刷新」按钮走这里：在途时忽略重复点击，避免一次刷新被连点执行多遍 */
+const refreshByClick = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    await tableRef.value?.refresh()
+  } finally {
+    refreshing.value = false
+  }
 }
 
 // ==================== 30s 轮询（等价旧页 pollTimer） ====================
