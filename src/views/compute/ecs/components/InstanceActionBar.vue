@@ -93,7 +93,7 @@
     </div>
     <div class="action-right">
       <span class="page-info">本页{{ pageCount }}条 / 共{{ total }}条</span>
-      <el-button size="small" circle @click="emit('refresh')" title="刷新">
+      <el-button size="small" circle :loading="loading" @click="emit('refresh')" title="刷新">
         <el-icon><Refresh /></el-icon>
       </el-button>
       <el-button size="small" circle @click="emit('open-export')" title="导出">
@@ -164,6 +164,8 @@ const props = defineProps<{
   pageCount: number
   /** 总数（文案「共 N 条」） */
   total: number
+  /** 列表加载中：用于禁用刷新按钮，避免连点产生重复请求 */
+  loading?: boolean
 }>()
 
 // 标签键搜索：纯 UI 过滤状态，不参与请求参数
