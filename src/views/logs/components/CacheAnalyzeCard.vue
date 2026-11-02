@@ -448,6 +448,9 @@ async function copyOptimizations() {
 .cache-toggle {
     display: flex;
     align-items: center;
+    /* 窄屏（iter144 实测 390px）：标题「缓存分析」与右侧长提示「点击展开 · …」同行竞争，
+       标题只分到 18px 被折成 4 行。允许换行，让提示整段落到下一行。 */
+    flex-wrap: wrap;
     gap: 6px;
     width: 100%;
     padding: 6px 8px;
@@ -463,6 +466,8 @@ async function copyOptimizations() {
 }
 .toggle-title {
     font-weight: 600;
+    /* 不参与收缩：换行后仍保持单行（iter144） */
+    flex-shrink: 0;
 }
 .toggle-hint {
     color: var(--el-text-color-secondary);

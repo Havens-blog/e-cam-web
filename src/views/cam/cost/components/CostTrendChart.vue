@@ -146,11 +146,16 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    /* 窄屏（iter144）：与 CostDistributionChart 同一模式，允许换行 + 标题不收缩。 */
+    flex-wrap: wrap;
+    gap: 8px;
 
     .chart-title {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-primary);
+      /* 不参与收缩：换行后仍保持单行 */
+      flex-shrink: 0;
     }
   }
 

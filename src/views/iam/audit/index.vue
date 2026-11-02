@@ -382,8 +382,15 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    /* 窄屏（iter144 实测 390px）：右侧动作占位后，标题「审计日志」只分到 54px 被折成 2 行。
+       允许换行 + 左侧不参与收缩。 */
+    flex-wrap: wrap;
+    gap: 12px;
 
     .header-left {
+      /* 不参与收缩：换行后标题与副标题仍保持正常宽度 */
+      flex-shrink: 0;
+      min-width: 0;
       .page-title {
         margin: 0 0 8px 0;
         font-size: 20px;

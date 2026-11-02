@@ -435,9 +435,16 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  /* 窄屏（iter144 实测 390px）：右侧动作组占 293px，左侧 .page-header-left 只分到 30px，
+     标题「🏷️ 标签管理」被折成 5 行。允许换行 + 左侧不参与收缩。 */
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .page-header-left {
+  /* 不参与收缩：换行后标题仍保持单行（iter144） */
+  flex-shrink: 0;
+
   h1 {
     font-size: 22px;
     font-weight: 700;
