@@ -416,6 +416,10 @@ onUnmounted(() => {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  /* 窄屏（iter143 实测 390px）：单行 flex 下标题「探测结果」只分到 68px 被折成 2 行，
+     右侧 .page-sub 是长句（每域最近一次 TLS 拨测（含 DNS 源子域名））。
+     允许换行 + 标题不参与收缩，让副标题整行落到下一行。 */
+  flex-wrap: wrap;
 }
 
 .page-title {
@@ -423,6 +427,8 @@ onUnmounted(() => {
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
+  /* 标题不收缩：换行后仍保持单行 */
+  flex-shrink: 0;
 }
 
 .page-sub {
