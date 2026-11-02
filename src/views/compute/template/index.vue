@@ -227,7 +227,8 @@ import { getProviderLabel } from '@/utils/constants'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Loading, Monitor, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRouter } from 'vue-router'
 import { formatTemplateTime } from './format'
 import ProvisionDialog from './components/ProvisionDialog.vue'
@@ -245,6 +246,23 @@ const pageSize = ref(12)
 const searchName = ref('')
 const filterProvider = ref('')
 const activeTab = ref('all')
+
+// 筛选同步 URL（iter149）：searchName / filterProvider / activeTab 此前只存在内存里，
+// 刷新、分享链接、或从详情/弹窗返回时筛选与页签全部丢失（实测：输入关键词后行数变化，URL 不变）。
+// 三者都是字符串，用默认编码即可；activeTab 作为「当前视图」也一并同步。
+const urlFilters = reactive<Record<string, string | undefined>>({
+  search: searchName.value || undefined,
+  provider: filterProvider.value || undefined,
+  tab: activeTab.value || undefined,
+})
+useUrlFilters(urlFilters)
+watch(searchName, (v) => { urlFilters.search = v || undefined })
+watch(filterProvider, (v) => { urlFilters.provider = v || undefined })
+watch(activeTab, (v) => { urlFilters.tab = v || undefined })
+// URL 回填后同步到各自的 ref（setup 阶段完成，早于 onMounted 的 loadTemplates）
+if (urlFilters.search && !searchName.value) searchName.value = String(urlFilters.search)
+if (urlFilters.provider && !filterProvider.value) filterProvider.value = String(urlFilters.provider)
+if (urlFilters.tab && !activeTab.value) activeTab.value = String(urlFilters.tab)
 const showCreateForm = ref(false)
 const editingTemplate = ref<VMTemplate | null>(null)
 const showProvisionDialog = ref(false)
