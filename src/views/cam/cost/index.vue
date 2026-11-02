@@ -10,6 +10,7 @@
 
     <!-- 筛选器 -->
     <CostFilters
+      :loading="distributionLoading || trendLoading"
       :model-value="filters"
       @update:model-value="handleFiltersUpdate"
       @search="handleSearch"
