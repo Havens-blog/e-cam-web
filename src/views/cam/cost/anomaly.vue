@@ -135,15 +135,26 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 // ==================== Tab 状态 ====================
 
 const activeTab = ref('anomalies')
 
+// 当前页签同步 URL（iter153）：此前切到「优化建议」页签后 URL 不变，
+// 刷新 / 分享链接 / 从建议详情返回都会掉回「异常事件」。
+const urlTab = reactive<Record<string, string | undefined>>({ tab: activeTab.value || undefined })
+useUrlFilters(urlTab)
+watch(activeTab, (v) => { urlTab.tab = v || undefined })
+if (urlTab.tab) activeTab.value = String(urlTab.tab)
+
 // ==================== 异常事件 ====================
 
 const anomalyFilter = reactive({ severity: '' })
+// 异常事件的严重程度筛选同步 URL（'sev'）
+useUrlFilters(anomalyFilter, {})
+
 const anomalies = ref<CostAnomaly[]>([])
 const anomalyLoading = ref(false)
 const detecting = ref(false)
@@ -198,6 +209,11 @@ const handleTriggerDetection = async () => {
 // ==================== 优化建议 ====================
 
 const recFilter = reactive({ type: '' })
+// 优化建议的建议类型筛选同步 URL。
+// 页面上已有 urlTab（tab）与 anomalyFilter（severity）两个实例 ——
+// useUrlFilters 每个实例只增删自己的 key，互不干扰（见 S51）。
+useUrlFilters(recFilter, {})
+
 const recommendations = ref<Recommendation[]>([])
 const recLoading = ref(false)
 
