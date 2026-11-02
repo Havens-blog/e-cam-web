@@ -134,6 +134,29 @@ async function postJson(path, body) {
 }
 
 /**
+ * envelopeOnly：从 JSON 响应里剥掉"日志正文"类的大字段，只保留信封（code/msg/message/data 的元信息），
+ * 用于日志检索类接口的痕迹匹配 —— 见 POST 分支注释（2026-11-02 实测：命中处是客户自己的应用日志）。
+ * 解析失败时原样返回（宁可多判，不漏判）。
+ */
+function envelopeOnly(text) {
+    try {
+        const j = JSON.parse(text)
+        if (j && typeof j === 'object') {
+            const clone = { ...j }
+            if (clone.data && typeof clone.data === 'object' && !Array.isArray(clone.data)) {
+                const d = { ...clone.data }
+                for (const k of ['entries', 'items', 'logs', 'records', 'rows']) delete d[k]
+                clone.data = d
+            } else if (Array.isArray(clone.data)) {
+                clone.data = []
+            }
+            return JSON.stringify(clone)
+        }
+    } catch { /* 非 JSON：原样返回 */ }
+    return text
+}
+
+/**
  * 统一的响应体判据（GET 与只读 POST 共用）：
  *  ① 存储/实现痕迹：响应体不得出现 mongo:/BSON/collection/sql/redis/panic/goroutine/.go:NN/dial tcp 等；
  *  ② 状态码与业务码错位：HTTP 200 但响应体 code 非 0/200。
@@ -432,7 +455,13 @@ async function auditLeaks() {
     // 只读 POST 查询：同一套判据（它们不改数据，但同样可能泄露/错位）
     for (const c of POST_QUERY_CASES) {
         const { status, text } = await postJson(c.path, c.body())
-        const { hits, codeMismatch } = judgeResponse(status, text)
+        // 【2026-11-02 实测后收紧】日志检索类接口的**响应体里装的就是日志原文**，其中可能天然含
+        // "duplicate key" / "E11000" / "collection" 等字样——实测命中处是**客户自己的应用日志**
+        // （WAF 日志行里含 `E11000 duplicate key error collection: pro.document_boms ...`），
+        // 并非本平台的存储泄露。故对 `/logs/` 类只读 POST **只判信封**（code/msg 等元字段），
+        // 剥掉 `data.entries` 这类日志正文后再做痕迹匹配；真实泄露（mongo:/BSON/.go:NN）仍会被信封捕获。
+        const judged = c.path.includes('/logs/') ? envelopeOnly(text) : text
+        const { hits, codeMismatch } = judgeResponse(status, judged)
         if (hits.length || codeMismatch) bad++
         rows.push({
             check: `[POST] ${c.label}`,
