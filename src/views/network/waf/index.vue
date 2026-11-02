@@ -888,8 +888,13 @@ onMounted(() => {
 .tab-nav {
   display: flex;
   gap: 4px;
+  /* 窄屏（iter144 实测 390px）：三个 tab 挤在一行，「实例列表 797」只分到 84px 被折成 4 行。
+     允许换行，并按内容收缩（tab 自身不再被压缩）。 */
+  flex-wrap: wrap;
 
   .tab-item {
+    /* 不参与收缩：换行后仍保持单行 */
+    flex-shrink: 0;
     padding: 6px 16px;
     font-size: 14px;
     color: var(--text-secondary);

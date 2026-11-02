@@ -1031,10 +1031,15 @@ onMounted(async () => {
     display: flex;
     align-items: baseline;
     gap: 12px;
+    /* 窄屏（iter144 实测 390px）：单行 flex 下标题「日志查询」只分到 34px 被折成 4 行。
+       允许换行，让副标题落到下一行。 */
+    flex-wrap: wrap;
 }
 .page-title {
     margin: 0;
     font-size: 20px;
+    /* 标题不参与收缩：换行后仍保持单行 */
+    flex-shrink: 0;
 }
 .page-sub {
     color: var(--el-text-color-secondary);

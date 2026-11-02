@@ -173,11 +173,17 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    /* 窄屏（iter144 实测 390px）：右侧操作占位后，标题「成本分布」只分到 16px 被折成 4 行。
+       允许换行 + 标题不参与收缩。 */
+    flex-wrap: wrap;
+    gap: 8px;
 
     .chart-title {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-primary);
+      /* 不参与收缩：换行后仍保持单行 */
+      flex-shrink: 0;
     }
   }
 
