@@ -25,7 +25,7 @@
           <el-option label="资源过期" value="expiration" />
           <el-option label="安全组变更" value="security_group" />
         </el-select>
-        <el-button size="small" circle @click="fetchData" title="刷新">
+        <el-button size="small" circle :loading="loading" @click="fetchData" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>

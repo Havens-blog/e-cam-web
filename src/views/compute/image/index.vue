@@ -65,7 +65,7 @@
       </div>
       <div class="action-right">
         <span class="page-info">本页{{ imageList.length }}条 / 共{{ pagination.total }}条</span>
-        <el-button size="small" circle @click="fetchData" title="刷新">
+        <el-button size="small" circle :loading="loading" @click="fetchData" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
         <el-button size="small" circle @click="exportDialogVisible = true" title="导出">
