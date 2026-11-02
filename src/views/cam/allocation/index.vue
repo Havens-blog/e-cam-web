@@ -271,6 +271,7 @@ import { ElMessage } from 'element-plus'
 import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 // ==================== Tab 状态 ====================
 
@@ -462,6 +463,28 @@ const { errorInfo, run } = useListError()
 const chartType = ref<'bar' | 'pie'>('bar')
 const allocationChartRef = ref<HTMLElement>()
 let allocationChart: any = null
+
+// 视图状态同步 URL（iter153）：当前页签 / 分摊维度 / 月份 / 图表类型此前只存在内存里，
+// 刷新、分享链接、或从规则弹窗返回时全部丢失（实测：切到「分摊规则」页签、把维度改成「按产品类别」，
+// 页签与图表确实切换了，但 URL 一个字都不变）。
+// 这四项是「当前视图」而不是「筛选条件」，用单独的 urlView 桥接，不改动原 ref 的语义。
+const urlView = reactive<Record<string, string | undefined>>({
+  tab: activeTab.value || undefined,
+  dim: treeDimType.value || undefined,
+  period: treePeriod.value || undefined,
+  chart: chartType.value || undefined,
+})
+useUrlFilters(urlView)
+watch(activeTab, (v) => { urlView.tab = v || undefined })
+watch(treeDimType, (v) => { urlView.dim = v || undefined })
+watch(treePeriod, (v) => { urlView.period = v || undefined })
+watch(chartType, (v) => { urlView.chart = v || undefined })
+// URL 回填（在 setup 阶段完成，早于 onMounted 里的首次 fetchTree）
+if (urlView.tab) activeTab.value = String(urlView.tab)
+if (urlView.dim) treeDimType.value = String(urlView.dim)
+if (urlView.period) treePeriod.value = String(urlView.period)
+if (urlView.chart === 'pie' || urlView.chart === 'bar') chartType.value = urlView.chart
+
 
 const CHART_COLORS = ['#7170FF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#14B8A6']
 const MAX_CHART_ITEMS = 10
