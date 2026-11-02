@@ -16,7 +16,7 @@
             v-model="collectForm.account_id"
             placeholder="选择云账号"
             filterable
-            style="width: 200px"
+            style="width: 100%; max-width: 200px"
           >
             <el-option
               v-for="a in accountOptions"
@@ -35,7 +35,7 @@
             end-placeholder="结束日期"
             value-format="YYYY-MM-DD"
             :shortcuts="dateShortcuts"
-            style="width: 280px"
+            style="width: 100%; max-width: 280px"
           />
         </el-form-item>
         <el-form-item>
@@ -95,7 +95,7 @@
           aria-label="按账号筛选"
           clearable
           filterable
-          style="width: 200px"
+          style="width: 100%; max-width: 200px"
           @change="handleFilterChange"
         >
           <el-option
@@ -110,7 +110,7 @@
           placeholder="全部状态"
           aria-label="按状态筛选"
           clearable
-          style="width: 140px"
+          style="width: 100%; max-width: 140px"
           @change="handleFilterChange"
         >
           <el-option label="运行中" value="running" />
@@ -630,11 +630,18 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    /* 窄屏（iter145 实测 390px）：单行 flex 下标题组只分到很少宽度，
+       「共 2058 条」被压到 37px 折成 3 行。允许换行。 */
+    flex-wrap: wrap;
+    gap: 8px;
 
     .section-title-group {
       display: flex;
       align-items: baseline;
       gap: 10px;
+      /* 允许换行 + 不参与收缩，让计数整块落到下一行而不是被压窄 */
+      flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .section-title {
