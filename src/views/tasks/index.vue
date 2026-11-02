@@ -5,7 +5,7 @@
       <div class="page-title-row">
         <h1 class="page-title">任务管理</h1>
         <div class="page-actions">
-          <el-button size="small" circle @click="refreshAll" title="刷新">
+          <el-button size="small" circle :loading="loading" @click="refreshAll" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
         </div>

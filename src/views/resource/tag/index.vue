@@ -13,7 +13,7 @@
         <el-button @click="showBatchDialog = true">
           📦 批量操作
         </el-button>
-        <el-button circle @click="handleRefresh" title="刷新">
+        <el-button circle :loading="tableLoading" @click="handleRefresh" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>

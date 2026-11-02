@@ -56,7 +56,7 @@
         <div class="section-actions">
           <span v-if="lastLoadedAt" class="last-loaded">更新于 {{ formatDateTime(lastLoadedAt) }}</span>
           <el-button size="small" :loading="exporting" @click="exportLogs">导出 CSV</el-button>
-          <el-button size="small" circle @click="refreshLogs" title="刷新">
+          <el-button size="small" circle :loading="logsLoading" @click="refreshLogs" title="刷新">
             <el-icon><Refresh /></el-icon>
           </el-button>
         </div>

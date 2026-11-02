@@ -59,7 +59,7 @@
         </el-select>
       </div>
       <div class="action-right">
-        <el-button size="small" circle @click="handleRefresh" title="刷新">
+        <el-button size="small" circle :loading="changesLoading" @click="handleRefresh" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>

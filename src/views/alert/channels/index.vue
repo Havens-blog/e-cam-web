@@ -25,7 +25,7 @@
           <el-option label="飞书" value="feishu" />
           <el-option label="邮件" value="email" />
         </el-select>
-        <el-button size="small" circle @click="fetchData" title="刷新">
+        <el-button size="small" circle :loading="loading" @click="fetchData" title="刷新">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>
