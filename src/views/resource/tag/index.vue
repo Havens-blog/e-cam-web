@@ -199,6 +199,7 @@ import TagRulePanel from './components/TagRulePanel2.vue'
 import StatCard from '@/components/StatCard.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 // 周趋势文案/色调:后端快照基线(7 天前),无基线时 trend 缺省不展示
 const weekTrendText = (n?: number) => {
@@ -241,6 +242,11 @@ const filters = reactive<TagFilterValues>({
   provider: '',
   resource_type: '',
 })
+
+// 筛选同步 URL（iter149）：此前 keyword / provider / resource_type 只存在内存里，
+// 刷新页面、分享链接、或从抽屉/详情返回时筛选全部丢失（实测：筛完 20 行→0 行，URL 不变）。
+// 三个字段都是字符串，直接用默认编码即可。
+useUrlFilters(filters)
 
 // Drawer state
 const showResourceDrawer = ref(false)
