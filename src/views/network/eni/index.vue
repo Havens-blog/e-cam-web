@@ -449,22 +449,44 @@ const eniCounts = reactive({ total: 0, use: 0, available: 0, error: 0 })
 // 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
 const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
+/**
+ * 全量扫描统计（使用中/可用/异常）。
+ *
+ * 并发拉取（受限），而非串行：实测 7 页串行耗时约 1.2s，这段等待卡住顶部统计卡。
+ * 计数与取回顺序无关，故可安全并发；请求数量、参数与统计口径完全不变。
+ * 并发上限保守（5）—— 每页 1000 条，过高并发会加重后端负担。
+ */
+const ENI_COUNTS_CONCURRENCY = 5
 const fetchEniCounts = async () => {
   try {
-    let use = 0
-    let available = 0
-    let error = 0
-    let total = 0
-    for (let page = 1; page <= ENI_COUNTS_MAX_PAGES; page++) {
+    const fetchPage = async (page: number) => {
       const res = await listENIAssetsApi({ limit: ENI_COUNTS_PAGE_SIZE, offset: (page - 1) * ENI_COUNTS_PAGE_SIZE })
-      const items = res.data?.items || []
-      total = res.data?.total ?? total
-      for (const it of items) {
-        if (isUseStatus(it.status)) use++
-        else if (isAvailableStatus(it.status)) available++
-        else if (!isPendingStatus(it.status)) error++ // 未知状态计入异常（当前值域下恒为 0，防御未来新增异常态）
+      return { items: res.data?.items || [], total: res.data?.total ?? 0 }
+    }
+
+    const first = await fetchPage(1)
+    let total = first.total
+    const all = [...first.items]
+    const pages = first.items.length < ENI_COUNTS_PAGE_SIZE
+      ? 1
+      : Math.min(ENI_COUNTS_MAX_PAGES, Math.ceil((total || 0) / ENI_COUNTS_PAGE_SIZE))
+
+    const rest: number[] = []
+    for (let page = 2; page <= pages; page++) rest.push(page)
+    for (let i = 0; i < rest.length; i += ENI_COUNTS_CONCURRENCY) {
+      const batch = rest.slice(i, i + ENI_COUNTS_CONCURRENCY)
+      const results = await Promise.all(batch.map((page) => fetchPage(page)))
+      for (const r of results) {
+        total = r.total || total
+        all.push(...r.items)
       }
-      if (items.length < ENI_COUNTS_PAGE_SIZE) break
+    }
+
+    let use = 0, available = 0, error = 0
+    for (const it of all) {
+      if (isUseStatus(it.status)) use++
+      else if (isAvailableStatus(it.status)) available++
+      else if (!isPendingStatus(it.status)) error++
     }
     eniCounts.total = total
     eniCounts.use = use
@@ -472,7 +494,6 @@ const fetchEniCounts = async () => {
     eniCounts.error = error
     markStatsOk()
   } catch {
-    // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
     markStatsFailed()
     ElMessage.error('获取弹性网卡统计失败')
   }
