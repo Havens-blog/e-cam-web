@@ -629,3 +629,30 @@ onMounted(() => {
   }
 }
 </style>
+
+<style lang="scss">
+/* 窄屏页头修复（iter146 实测 390px）
+   背景：本页页头用外部包 @haven/ui 的 <ManagerHeader>，其内部是单行 flex：
+   .header-left 被右侧动作按钮挤到只剩 60px，而 h1.manager-title「预算管理」
+   4 个字在 20px 字号下需要约 80px → 被折成 2 行。
+   外部包本仓改不到，这里用**非 scoped** 样式在页面级覆盖（本仓已有同类先例，
+   如 cert/changes/index.vue）。只在 ≤560px 生效，宽屏完全不受影响。 */
+@media (max-width: 560px) {
+  .manager-header {
+    flex-wrap: wrap;
+
+    .header-left {
+      /* 不参与收缩：换行后标题仍保持单行 */
+      flex-shrink: 0;
+      min-width: 0;
+    }
+
+    .manager-title {
+      /* 标题本身也不收缩，并禁止在字内换行 */
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+  }
+}
+</style>
+
