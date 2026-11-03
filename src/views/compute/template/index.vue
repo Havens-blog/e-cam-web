@@ -224,6 +224,7 @@ import { createTemplateApi, deleteTemplateApi, listTemplatesApi } from '@/api/te
 import type { CloudAccount } from '@/api/types/account'
 import type { VMTemplate } from '@/api/types/template'
 import { getProviderLabel } from '@/utils/constants'
+import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Loading, Monitor, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -354,8 +355,19 @@ async function loadTemplates() {
       limit: pageSize.value
     })
     const data = res?.data
+    const newTotal = data?.total || 0
+    // 页码收敛（iter168）：删除当前页最后一条时，currentPage 不变 → 请求到空页。
+    // 搜索/筛选已各自重置到第 1 页（handleSearch/handleFilterChange），这里只需处理删除场景。
+    const fixedPage = clampPageAfterTotalChange(currentPage.value, newTotal, pageSize.value)
+    if (fixedPage !== currentPage.value) {
+      currentPage.value = fixedPage
+      templates.value = []
+      total.value = newTotal
+      await loadTemplates()
+      return
+    }
     templates.value = data?.items || []
-    total.value = data?.total || 0
+    total.value = newTotal
   } catch {
     ElMessage.error('加载模板列表失败')
   } finally {

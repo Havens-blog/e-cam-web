@@ -135,6 +135,7 @@
 import { getDnsRecordsApi } from '@/api/dns'
 import type { DnsRecord } from '@/api/types/dns'
 import { DNS_LINE_LABELS, DNS_RECORD_SOURCE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import { formatWeight } from '../format'
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
@@ -187,8 +188,20 @@ const fetchData = async () => {
       limit: pageSize.value,
     })
     const data = (res as any).data || res
-    recordList.value = (data?.items || data || []).filter((item: any) => item != null)
-    total.value = data?.total || 0
+    const items = (data?.items || data || []).filter((item: any) => item != null)
+    const newTotal = data?.total || 0
+    // 页码收敛（iter168）：切换域名 / 改关键词或类型筛选后记录数可能变少，
+    // page 不变 → 请求到空页，用户看到「空表 + 页码没变」。
+    const fixedPage = clampPageAfterTotalChange(page.value, newTotal, pageSize.value)
+    if (fixedPage !== page.value) {
+      page.value = fixedPage
+      recordList.value = []
+      total.value = newTotal
+      await fetchData()
+      return
+    }
+    recordList.value = items
+    total.value = newTotal
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : '获取解析记录失败'
     ElMessage.error(msg)
