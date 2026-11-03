@@ -304,6 +304,8 @@ import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } 
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VSwitchDetailDrawer from './components/VSwitchDetailDrawer.vue'
@@ -387,6 +389,48 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  region: undefined,
+  vpc_id: undefined,
+  zone: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region as string, displayValue: String(filters.region) })
+  if (filters.vpc_id) searchConditions.value.push({ field: 'vpc_id', value: filters.vpc_id as string, displayValue: String(filters.vpc_id) })
+  if (filters.zone) searchConditions.value.push({ field: 'zone', value: filters.zone as string, displayValue: String(filters.zone) })
+}
+
+// URL 回填 → filters / page
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider | ''
+if (urlState.region) filters.region = urlState.region
+if (urlState.vpc_id) filters.vpc_id = urlState.vpc_id
+if (urlState.zone) filters.zone = urlState.zone
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL
+watch(
+  () => [filters.keyword, filters.provider, filters.region, filters.vpc_id, filters.zone, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.region = filters.region || undefined
+    urlState.vpc_id = filters.vpc_id || undefined
+    urlState.zone = filters.zone || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const vswitchList = ref<Asset[]>([])
@@ -778,6 +822,8 @@ const formatTime = (time: number | string | undefined) => {
 const route = useRoute()
 
 onMounted(() => {
+  // 恢复筛选标签（该函数引用 searchConditions，须在其声明之后调用）
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   // VPC 详情「子网管理」跳入：带 query.vpc_id 时预填所属VPC条件（以 chip 呈现可移除，无 query 直达零改动）
   const queryVpcId = route.query.vpc_id

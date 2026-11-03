@@ -301,6 +301,8 @@ import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } 
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
@@ -377,6 +379,44 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  region: undefined,
+  status: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region as string, displayValue: String(filters.region) })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status as string, displayValue: String(filters.status) })
+}
+
+// URL 回填 → filters / page
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider | ''
+if (urlState.region) filters.region = urlState.region
+if (urlState.status) filters.status = urlState.status
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删掉该 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.region, filters.status, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.region = filters.region || undefined
+    urlState.status = filters.status || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const vpcList = ref<Asset[]>([])
@@ -743,6 +783,8 @@ const formatTime = (time: number | string | undefined) => {
 const route = useRoute()
 
 onMounted(() => {
+  // 恢复筛选标签（该函数引用 searchConditions，须在 all-declare 之后调用）
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   const s = route.query.search
   if (typeof s === 'string' && s) {
