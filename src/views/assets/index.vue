@@ -122,8 +122,8 @@
 
     <!-- 发现资产对话框 -->
     <el-dialog v-model="discoverDialogVisible" title="发现资产" width="500px">
-      <el-form :model="discoverForm" label-width="100px">
-        <el-form-item label="云厂商" required>
+      <el-form ref="discoverFormRef" :model="discoverForm" :rules="discoverRules" label-width="100px">
+        <el-form-item label="云厂商" prop="provider">
           <el-select
             v-model="discoverForm.provider"
             placeholder="请选择云厂商"
@@ -137,7 +137,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="区域" required>
+        <el-form-item label="区域" prop="region">
           <el-input v-model="discoverForm.region" placeholder="例如: cn-beijing" />
         </el-form-item>
       </el-form>
@@ -151,8 +151,8 @@
 
     <!-- 同步资产对话框 -->
     <el-dialog v-model="syncDialogVisible" title="同步资产" width="600px">
-      <el-form :model="syncForm" label-width="100px">
-        <el-form-item label="云厂商" required>
+      <el-form ref="syncFormRef" :model="syncForm" :rules="syncRules" label-width="100px">
+        <el-form-item label="云厂商" prop="provider">
           <el-select
             v-model="syncForm.provider"
             placeholder="请选择云厂商"
@@ -364,6 +364,7 @@ import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
 import { formatCost, formatTime } from '@/utils/formatters'
 import { Delete, Edit, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -611,10 +612,9 @@ const handleDiscover = () => {
 
 // 提交发现
 const submitDiscover = async () => {
-  if (!discoverForm.provider || !discoverForm.region) {
-    ElMessage.warning('请填写完整信息')
-    return
-  }
+  // 字段级校验（iter161）：错误标红并显示在对应字段下方
+  const dValid = await discoverFormRef.value?.validate().catch(() => false)
+  if (!dValid) return
 
   discovering.value = true
   try {
@@ -644,6 +644,18 @@ const syncForm = reactive({
   regions: [] as string[],
 })
 
+// 字段级校验（iter161）：这三个表单原来都用 required 星号 + 手工 if 检查，
+// 空提交只弹游离 toast；其中「请填写完整信息」同时覆盖 discoverForm 的云厂商与区域，用户不知缺哪个。
+const discoverFormRef = ref<FormInstance>()
+const discoverRules = reactive<FormRules>({
+  provider: [{ required: true, message: '请选择云厂商', trigger: 'change' }],
+  region: [{ required: true, message: '请选择区域', trigger: 'change' }],
+})
+const syncFormRef = ref<FormInstance>()
+const syncRules = reactive<FormRules>({
+  provider: [{ required: true, message: '请选择云厂商', trigger: 'change' }],
+})
+
 // 同步资产
 const handleSync = () => {
   syncForm.provider = ''
@@ -654,10 +666,9 @@ const handleSync = () => {
 
 // 提交同步
 const submitSync = async () => {
-  if (!syncForm.provider) {
-    ElMessage.warning('请选择云厂商')
-    return
-  }
+  // 字段级校验（iter161）
+  const sValid = await syncFormRef.value?.validate().catch(() => false)
+  if (!sValid) return
 
   syncing.value = true
   try {

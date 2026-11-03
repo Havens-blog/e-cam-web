@@ -171,14 +171,14 @@
 
     <!-- Create/Edit Policy Dialog -->
     <el-dialog v-model="showPolicyDialog" :title="editingPolicy ? '📋 编辑标签策略' : '📋 创建标签策略'" width="600px" :destroy-on-close="true">
-      <el-form label-position="top">
-        <el-form-item label="策略名称" required>
+      <el-form ref="policyFormRef" :model="policyForm" :rules="policyRules" label-position="top">
+        <el-form-item label="策略名称" prop="name">
           <el-input v-model="policyForm.name" placeholder="如：基础标签规范" />
         </el-form-item>
         <el-form-item label="策略描述">
           <el-input v-model="policyForm.description" placeholder="描述策略的用途和目标" />
         </el-form-item>
-        <el-form-item label="必填标签键" required>
+        <el-form-item label="必填标签键" prop="required_keys">
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px">
             <el-tag
               v-for="key in policyForm.required_keys"
@@ -268,6 +268,7 @@ import type { ComplianceResult, TagPolicy, Violation } from '@/api/types/tag'
 import { getProviderLabel } from '@/utils/constants'
 import { fetchAllRows } from '@/utils/exportAll'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
 
@@ -296,6 +297,21 @@ const policyForm = reactive({
   required_keys: [] as string[],
   key_value_constraints: {} as Record<string, string[]>,
   resource_types: [] as string[],
+})
+
+// 字段级校验（iter161）：原来两个字段只写 required（仅画星号、不校验），
+// 提交时只弹游离 toast（「请输入策略名称」/「请至少添加一个必填标签键」），字段不标红。
+const policyFormRef = ref<FormInstance>()
+const policyRules = reactive<FormRules>({
+  name: [{ required: true, message: '请输入策略名称', trigger: 'blur' }],
+  required_keys: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (_r, v: string[], cb) =>
+        v && v.length > 0 ? cb() : cb(new Error('请至少添加一个必填标签键')),
+    },
+  ],
 })
 
 // Compliance
@@ -452,14 +468,9 @@ const removeConstraintValue = (key: string, val: string) => {
 }
 
 const handlePolicySubmit = async () => {
-  if (!policyForm.name.trim()) {
-    ElMessage.warning('请输入策略名称')
-    return
-  }
-  if (policyForm.required_keys.length === 0) {
-    ElMessage.warning('请至少添加一个必填标签键')
-    return
-  }
+  // 字段级校验（iter161）：错误标红并显示在对应字段下方，不再只弹游离 toast
+  const valid = await policyFormRef.value?.validate().catch(() => false)
+  if (!valid) return
 
   policySubmitting.value = true
   try {
