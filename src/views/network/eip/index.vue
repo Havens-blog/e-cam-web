@@ -309,6 +309,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useListError } from '@/composables/useListError'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
@@ -372,12 +374,61 @@ const filters = reactive({
   instance_id: '',
 })
 
+
 // 分页
 const pagination = reactive({
   page: 1,
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters，alert/*、audit/* 等 10 页已采用）：
+// 此前只存在内存里，刷新页面 / 分享链接 / 从详情返回都会丢，运维得重挑一遍。
+// buildListParams 只用 filters（searchConditions 在查询前映射进 filters），
+// 所以 URL 只存 filters + page；恢复后反向重建 searchConditions 以显示筛选标签。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  region: undefined,
+  status: undefined,
+  ip_address: undefined,
+  instance_id: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.ip_address) searchConditions.value.push({ field: 'ip_address', value: filters.ip_address, displayValue: filters.ip_address })
+  if (filters.instance_id) searchConditions.value.push({ field: 'instance_id', value: filters.instance_id, displayValue: filters.instance_id })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status, displayValue: filters.status })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider, displayValue: filters.provider })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region, displayValue: filters.region })
+}
+
+// URL 回填 → filters
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider | ''
+if (urlState.region) filters.region = urlState.region
+if (urlState.status) filters.status = urlState.status
+if (urlState.ip_address) filters.ip_address = urlState.ip_address
+if (urlState.instance_id) filters.instance_id = urlState.instance_id
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删掉该 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.region, filters.status, filters.ip_address, filters.instance_id, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.region = filters.region || undefined
+    urlState.status = filters.status || undefined
+    urlState.ip_address = filters.ip_address || undefined
+    urlState.instance_id = filters.instance_id || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const eipList = ref<Asset[]>([])
@@ -763,6 +814,9 @@ const formatTime = (time: number | string | undefined) => {
 const route = useRoute()
 
 onMounted(() => {
+  // URL 回填的筛选标签须在此重建：该函数引用 searchConditions，而它声明在 setup 靠后，
+  // 顶层直接调用会命中暂时性死区（实测报错，且仅当 URL 带参数时才触发）。
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   const s = route.query.search
   if (typeof s === 'string' && s) {
