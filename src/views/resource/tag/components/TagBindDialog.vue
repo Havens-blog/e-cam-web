@@ -1,8 +1,8 @@
 <template>
   <el-dialog v-model="visible" title="🏷️ 添加标签" width="600px" :destroy-on-close="true" @close="handleClose">
-    <el-form ref="formRef" :model="form" label-position="top">
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
-        <el-form-item label="云厂商" required>
+        <el-form-item label="云厂商" prop="provider">
           <el-select v-model="form.provider" placeholder="请选择云厂商" style="width: 100%" @change="handleProviderChange">
             <el-option label="阿里云" value="aliyun" />
             <el-option label="AWS" value="aws" />
@@ -11,19 +11,19 @@
             <el-option label="火山引擎" value="volcano" />
           </el-select>
         </el-form-item>
-        <el-form-item label="云账号" required>
+        <el-form-item label="云账号" prop="account_id">
           <el-select v-model="form.account_id" placeholder="请选择云账号" style="width: 100%">
             <el-option v-for="acc in accountOptions" :key="acc.value" :label="acc.label" :value="acc.value" />
           </el-select>
         </el-form-item>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
-        <el-form-item label="区域" required>
+        <el-form-item label="区域" prop="region">
           <el-select v-model="form.region" placeholder="请选择区域" style="width: 100%" filterable>
             <el-option v-for="r in regionOptions" :key="r.value" :label="r.label" :value="r.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="资源类型" required>
+        <el-form-item label="资源类型" prop="resource_type">
           <el-select v-model="form.resource_type" placeholder="请选择资源类型" style="width: 100%">
             <el-option label="ECS" value="ecs" />
             <el-option label="RDS" value="rds" />
@@ -33,7 +33,7 @@
           </el-select>
         </el-form-item>
       </div>
-      <el-form-item label="选择资源" required>
+      <el-form-item label="选择资源" prop="resource_ids">
         <div class="resource-select-area">
           <el-tag
             v-for="rid in form.resource_ids"
@@ -51,7 +51,7 @@
           />
         </div>
       </el-form-item>
-      <el-form-item label="标签" required>
+      <el-form-item label="标签" prop="tags">
         <div v-for="(pair, idx) in form.tags" :key="idx" class="tag-input-group">
           <el-input v-model="pair.key" placeholder="标签键 (如: env)" />
           <el-input v-model="pair.value" placeholder="标签值 (如: production)" />
@@ -77,6 +77,7 @@ import { listCloudAccountsApi } from '@/api';
 import type { CloudAccount } from '@/api/types/account';
 import { PROVIDER_CONFIGS } from '@/utils/constants';
 import { ElMessage } from 'element-plus';
+import type { FormInstance, FormRules } from 'element-plus';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -103,6 +104,44 @@ const form = reactive({
   resource_type: '',
   resource_ids: [] as string[],
   tags: [{ key: '', value: '' }] as { key: string; value: string }[],
+})
+
+// 字段级校验（iter160）：原来 6 个字段都只写 required（仅画星号、不校验），
+// 空提交时只弹一条「请填写完整的资源信息」——而这句话覆盖 provider/region/resource_type 三个字段，
+// 用户根本不知道缺哪个；字段也不会标红。
+const formRef = ref<FormInstance>()
+const rules = reactive<FormRules>({
+  provider: [{ required: true, message: '请选择云厂商', trigger: 'change' }],
+  account_id: [
+    {
+      required: true,
+      message: '请选择云账号',
+      trigger: 'change',
+      // account_id 是数字，0 表示未选（不能只靠 required 判定）
+      validator: (_r, v, cb) => (v ? cb() : cb(new Error('请选择云账号'))),
+    },
+  ],
+  region: [{ required: true, message: '请选择区域', trigger: 'change' }],
+  resource_type: [{ required: true, message: '请选择资源类型', trigger: 'change' }],
+  resource_ids: [
+    {
+      required: true,
+      message: '请至少选择一个资源',
+      trigger: 'change',
+      validator: (_r, v: string[], cb) => (v && v.length > 0 ? cb() : cb(new Error('请至少选择一个资源'))),
+    },
+  ],
+  tags: [
+    {
+      required: true,
+      message: '请至少填写一组有效的标签键值对',
+      trigger: 'change',
+      validator: (_r, v: { key: string; value: string }[], cb) =>
+        v && v.some((t) => t.key.trim() && t.value.trim())
+          ? cb()
+          : cb(new Error('请至少填写一组有效的标签键值对')),
+    },
+  ],
 })
 
 const accountOptions = ref<{ value: number; label: string }[]>([])
@@ -154,24 +193,12 @@ const removeTagPair = (idx: number) => {
 }
 
 const handleSubmit = async () => {
-  // Validate
-  if (!form.provider || !form.region || !form.resource_type) {
-    ElMessage.warning('请填写完整的资源信息')
-    return
-  }
-  if (!form.account_id) {
-    ElMessage.warning('请选择云账号')
-    return
-  }
-  if (form.resource_ids.length === 0) {
-    ElMessage.warning('请至少选择一个资源')
-    return
-  }
+  // 字段级校验（iter160）：错误直接标红并显示在对应字段下方，不再只弹一条笼统 toast。
+  // 原来那句「请填写完整的资源信息」同时覆盖 provider / region / resource_type 三个字段，
+  // 用户无法判断缺哪一个。
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
   const validTags = form.tags.filter(t => t.key.trim() && t.value.trim())
-  if (validTags.length === 0) {
-    ElMessage.warning('请至少填写一组有效的标签键值对')
-    return
-  }
 
   submitting.value = true
   try {
