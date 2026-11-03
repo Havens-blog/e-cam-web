@@ -37,6 +37,10 @@ export interface AuditLogParams {
     end_time?: number
     offset?: number
     limit?: number
+    /** 排序字段（后端白名单：ctime / duration_ms），不传等价 ctime */
+    sort_by?: 'ctime' | 'duration_ms'
+    /** 排序方向，不传等价 desc */
+    order?: 'asc' | 'desc'
 }
 
 /** 审计报告 */

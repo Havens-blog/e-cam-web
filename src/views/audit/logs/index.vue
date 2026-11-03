@@ -62,8 +62,8 @@
     <div v-else class="table-card">
       <!-- 加载中把 el-table 自带空态文案清掉：否则「暂无数据」会与 loading 圈同时出现，
            用户会误读成「确实没有审计日志」（iter114 实测截图已确认） -->
-      <el-table :data="logList" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
-        <el-table-column prop="ctime" label="时间" width="170" sortable>
+      <el-table :data="logList" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @sort-change="handleSortChange" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
+        <el-table-column prop="ctime" label="时间" width="170" sortable="custom">
           <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
         </el-table-column>
         <el-table-column prop="operator_name" label="操作人" width="100">
@@ -93,7 +93,7 @@
             <span :class="['status-code', row.status_code >= 400 ? 'error' : 'ok']">{{ row.status_code }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="duration_ms" label="耗时" width="90" align="right" sortable>
+        <el-table-column prop="duration_ms" label="耗时" width="90" align="right" sortable="custom">
           <template #default="{ row }"><span :class="['duration', durationLevel(row.duration_ms)]">{{ formatDuration(row.duration_ms) }}</span></template>
         </el-table-column>
         <el-table-column prop="client_ip" label="来源IP" width="130" show-overflow-tooltip />
@@ -150,6 +150,10 @@ import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resul
 const { loadDict, getDictOptions } = useDictionary()
 
 const loading = ref(false)
+// 服务端排序：审计日志共 7000+ 条，客户端排序只会排当前页 20 行（会误导用户），
+// 故两列改为 sortable="custom"，由后端按白名单字段排序。
+const sortBy = ref<'' | 'ctime' | 'duration_ms'>('')
+const sortOrder = ref<'' | 'asc' | 'desc'>('')
 // 请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）。
 // 此前 catch 只弹 3 秒 toast，表格保持空 → el-table 自带空态会把「请求失败」显示成「暂无数据」。
 const errorInfo = ref<ErrorInfo | null>(null)
@@ -198,6 +202,10 @@ async function fetchLogs() {
     if (filters.api_path) params.api_path = filters.api_path
     if (filters.http_method) params.http_method = filters.http_method
     if (filters.operation_type) params.operation_type = filters.operation_type
+if (sortBy.value) {
+      params.sort_by = sortBy.value
+      params.order = sortOrder.value || 'desc'
+    }
     if (resultFilter.value === 'success') params.status_code = 200
     if (resultFilter.value === 'fail') params.status_code = 500
     if (dateRange.value) {
@@ -221,6 +229,20 @@ async function fetchLogs() {
 }
 
 // 筛选条件变更/点击查询：重置页码到第 1 页，避免新结果集从旧页码的 offset 开始
+/** 表头排序：写回 sortBy/sortOrder 并回到第 1 页（否则会从旧页码的 offset 开始，结果错位） */
+function handleSortChange({ prop, order }: { prop: string; order: string | null }) {
+  const allowed = ['ctime', 'duration_ms']
+  if (!order || !allowed.includes(prop)) {
+    sortBy.value = ''
+    sortOrder.value = ''
+  } else {
+    sortBy.value = prop as 'ctime' | 'duration_ms'
+    sortOrder.value = order === 'ascending' ? 'asc' : 'desc'
+  }
+  page.value = 1
+  fetchLogs()
+}
+
 function handleFilterChange() {
   page.value = 1
   fetchLogs()
