@@ -223,7 +223,6 @@ describe('AC1 页面骨架与页头（旧页路径 1-4）', () => {
     })
 
     it('发现资产对话框：必填校验提示，填写后提交跳转任务详情', async () => {
-        const warnSpy = vi.spyOn(ElMessage, 'warning').mockImplementation((() => ({ close: () => {} })) as never)
         const successSpy = vi.spyOn(ElMessage, 'success').mockImplementation((() => ({ close: () => {} })) as never)
         const { wrapper, router } = await mountPage()
         await buttonWithText(wrapper, '发现资产')!.trigger('click')
@@ -231,11 +230,14 @@ describe('AC1 页面骨架与页头（旧页路径 1-4）', () => {
         expect(dialog.exists()).toBe(true)
         expect(dialog.find('.dialog-stub__title').text()).toBe('发现资产')
 
-        // 空表单提交 → 必填警告
+        // 空表单提交 → 字段级校验错误（iter161：原先只弹游离 toast，现在错误落在字段上）
         const emptySubmit = dialog.findAll('button').find((button) => button.text().includes('开始发现'))
         await emptySubmit!.trigger('click')
         await flushPromises()
-        expect(warnSpy).toHaveBeenCalled()
+        // 不再依赖 toast：断言表单项被标记为错误（云厂商 / 区域 两项必填）
+        expect(dialog.findAll('.el-form-item.is-error').length).toBeGreaterThan(0)
+        // 提交未被放行（没有发出请求）
+        expect(submitDiscoverAssetsTaskApi).not.toHaveBeenCalled()
 
         // 填写云厂商 + 区域后提交 → 任务提示 + 跳转
         await dialog.findAllComponents({ name: 'ElSelect' })[0]!.vm.$emit('update:modelValue', 'aws')
@@ -248,7 +250,6 @@ describe('AC1 页面骨架与页头（旧页路径 1-4）', () => {
     })
 
     it('同步资产对话框：提交成功跳转任务详情；未选云厂商时拦截', async () => {
-        const warnSpy = vi.spyOn(ElMessage, 'warning').mockImplementation((() => ({ close: () => {} })) as never)
         const { wrapper, router } = await mountPage()
         await buttonWithText(wrapper, '同步资产')!.trigger('click')
         const dialog = wrapper.find('.dialog-stub')
@@ -257,7 +258,9 @@ describe('AC1 页面骨架与页头（旧页路径 1-4）', () => {
         const submit = dialog.findAll('button').find((button) => button.text().includes('开始同步'))
         await submit!.trigger('click')
         await flushPromises()
-        expect(warnSpy).toHaveBeenCalled()
+        // iter161：改字段级校验后不再弹 toast，改为断言「云厂商」被标记为错误且未发请求
+        expect(dialog.findAll('.el-form-item.is-error').length).toBeGreaterThan(0)
+        expect(submitSyncAssetsTaskApi).not.toHaveBeenCalled()
 
         await dialog.findAllComponents({ name: 'ElSelect' })[0]!.vm.$emit('update:modelValue', 'aws')
         await submit!.trigger('click')
