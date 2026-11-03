@@ -153,7 +153,9 @@
     </div>
 
     <!-- 表格区域（无多选列；首列实例名 + 等宽 ID 副行） -->
-    <div class="table-wrapper">
+    <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
+    <div v-else class="table-wrapper">
       <div class="table-header">
         <table class="data-table">
           <thead>
@@ -302,6 +304,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import DdosDetailDrawer from './components/DdosDetailDrawer.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 /**
  * DDoS 状态族判定（状态点色调 + 全局统计共用同一函数，family 口径单源）。
@@ -399,6 +403,8 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示「暂无数据」）
+const { errorInfo, run } = useListError()
 
 // 筛选条件（字段搜索栏映射到后端筛选参数：
 // name LIKE 匹配 asset_name+asset_id；status/edition/provider/region 精确匹配）
@@ -496,7 +502,7 @@ const fetchDdosCounts = async () => {
     let total = 0
     const regionCounts: Record<string, number> = {}
     for (let page = 1; page <= DDOS_COUNTS_MAX_PAGES; page++) {
-      const res = await listDDOSAssetsApi({ limit: DDOS_COUNTS_PAGE_SIZE, offset: (page - 1) * DDOS_COUNTS_PAGE_SIZE })
+      const res = await listDDOSAssetsApi(buildListParams(pagination.page, pagination.size))
       const items = res.data?.items || []
       total = res.data?.total ?? total
       for (const it of items) {
@@ -692,7 +698,8 @@ const buildListParams = (page: number, size: number): Record<string, any> => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await listDDOSAssetsApi(buildListParams(pagination.page, pagination.size))
+    const res = await run(() => listDDOSAssetsApi(buildListParams(pagination.page, pagination.size)), '获取DDoS列表失败')
+    if (res === undefined) return
     ddosList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
     // 同步刷新全局领域统计

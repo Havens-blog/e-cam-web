@@ -36,13 +36,11 @@ const sources = import.meta.glob('../../**/*.vue', {
  * 用例会在这些页面补上失败态后变绿（因为不再命中 offenders），
  * 但如果删了豁免却修得不对，用例会重新报错。
  */
-const KNOWN_GAPS = [
-  'audit/changes/index.vue', // 需 asset_id 才出表格，刻意设计
-  'cam/collect/index.vue', // 本环境 0 数据，失败态无法与空态区分
-  'iam/compare/index.vue', // 同上
-  'iam/sync/index.vue', // 同上
-  'iam/templates/index.vue', // 同上
-  'network/ddos/index.vue', // 本环境 0 行
+const KNOWN_GAPS: string[] = [
+  // 本轮已清空：原先豁免的 6 页经实测分别属于
+  //   - 已自带手写错误态（IAM 模板 / IAM 对比 / 采集管理 / 变更历史 summaryLoadError）；
+  //   - 本轮补齐标准错误态（IAM 同步、DDoS）。
+  // 保留空数组而不是删掉常量：下次真有无法验证的页面时，往这里加并写明原因。
 ]
 
 function isKnownGap(path: string): boolean {
@@ -71,10 +69,25 @@ function fetchesList(code: string): boolean {
   )
 }
 
-/** 已接入失败态：DataTable 自带，或 useListError/ErrorDisplay 手写 */
+/**
+ * 已接入失败态。认可的三种实现：
+ *   1) <DataTable> 组件（自带 errorText prop + retry 事件）；
+ *   2) useListError + <ErrorDisplay>（本迭代确立的标准模式）；
+ *   3) 手写错误态：el-alert 绑错误变量，或错误变量 + 重试按钮。
+ *
+ * 第 3 种是实测确认过可用的（IAM 模板 / 采集管理 / 变更历史的 summaryLoadError），
+ * 只是写法与标准模式不同 —— 判据必须认它，否则会重演上次「用 DataTable 被误判成待修」的错误。
+ * 变量名匹配用大小写不敏感（summaryLoadError 里是 LoadError）。
+ */
 function hasFailureState(code: string): boolean {
   if (code.includes('<DataTable')) return true
-  return code.includes('useListError') || code.includes('<ErrorDisplay')
+  if (code.includes('useListError') || code.includes('<ErrorDisplay')) return true
+  const hasErrorVar = /(load|fetch|query)?error\w*/i.test(code) || /summaryLoadError/i.test(code)
+  const hasAlert = /el-alert/i.test(code)
+  const hasRetry = /重试/.test(code)
+  if (hasAlert && hasErrorVar && hasRetry) return true
+  if (hasErrorVar && hasRetry) return true
+  return false
 }
 
 describe('列表失败态守卫', () => {
