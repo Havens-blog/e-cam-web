@@ -50,7 +50,7 @@
         <el-button @click="handleReset" plain>重置</el-button>
         <el-button type="primary" @click="handleFilterChange">查询</el-button>
         <el-divider direction="vertical" />
-        <el-tooltip content="导出 CSV"><el-button :icon="Download" circle @click="handleExport" /></el-tooltip>
+        <el-tooltip content="导出 CSV"><el-button :icon="Download" circle :loading="exporting" :disabled="exporting" @click="handleExport" /></el-tooltip>
         <el-tooltip content="刷新"><el-button :icon="Refresh" circle @click="handleRefresh" /></el-tooltip>
       </div>
     </div>
@@ -150,6 +150,9 @@ import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resul
 const { loadDict, getDictOptions } = useDictionary()
 
 const loading = ref(false)
+// 导出是长操作（实测 7582 行约 1MB）：无加载态时连点会重复拉全量，
+// 实测三次点击 = 三个 export 请求。故加独立状态并在在途时忽略重复点击。
+const exporting = ref(false)
 // 服务端排序：审计日志共 7000+ 条，客户端排序只会排当前页 20 行（会误导用户），
 // 故两列改为 sortable="custom"，由后端按白名单字段排序。
 const sortBy = ref<'' | 'ctime' | 'duration_ms'>('')
@@ -268,6 +271,8 @@ function handleRefresh() {
 }
 
 async function handleExport() {
+  if (exporting.value) return
+  exporting.value = true
   try {
     const params: AuditLogParams & { format?: 'csv' | 'json' } = { format: 'csv' }
     if (filters.api_path) params.api_path = filters.api_path
@@ -287,7 +292,11 @@ async function handleExport() {
     URL.revokeObjectURL(url)
     ElMessage.success('导出成功')
   } catch (e: any) {
+    // 导出失败：toast 提示（导出是一次性动作，无需持久错误块），
+    // 但必须复位 exporting —— 否则按钮会永久卡在 loading。
     showApiError(e, '导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 
