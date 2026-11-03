@@ -118,8 +118,8 @@
       :close-on-click-modal="false"
       class="modern-dialog"
     >
-      <el-form label-width="100px">
-        <el-form-item label="选择用户组" required>
+      <el-form ref="batchAssignFormRef" :model="batchAssignModel" :rules="batchAssignRules" label-width="100px">
+        <el-form-item label="选择用户组" prop="groupIds">
           <el-select
             v-model="selectedGroupIds"
             multiple
@@ -188,7 +188,8 @@ import { userPermissionGroups } from '@/utils/display-fallbacks'
 import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 import SyncUsersDialog from './components/SyncUsersDialog.vue'
 import UserBatchBar from './components/UserBatchBar.vue'
 import UserDetailDrawer from './components/UserDetailDrawer.vue'
@@ -219,6 +220,23 @@ const users = ref<CloudUser[]>([])
 const selectedUsers = ref<CloudUser[]>([])
 const permissionGroups = ref<any[]>([])
 const selectedGroupIds = ref<number[]>([])
+
+// 字段级校验（iter163）：「选择用户组」原来只写 required（仅画星号、不校验），
+// 确认时只弹游离 toast「请选择用户组」，字段不标红。
+// selectedGroupIds 是独立 ref（不在 form 对象里），用桥接对象 + watch 接到 rules 上。
+const batchAssignFormRef = ref<FormInstance>()
+const batchAssignModel = reactive<{ groupIds: number[] }>({ groupIds: [] })
+const batchAssignRules = reactive<FormRules>({
+  groupIds: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (_r, v: number[], cb) =>
+        v && v.length > 0 ? cb() : cb(new Error('请选择用户组')),
+    },
+  ],
+})
+watch(selectedGroupIds, (v) => { batchAssignModel.groupIds = v }, { deep: true })
 
 const filters = reactive({
   keyword: '' as string,
@@ -499,10 +517,9 @@ const handleBatchAssign = () => {
 }
 
 const handleConfirmBatchAssign = async () => {
-  if (selectedGroupIds.value.length === 0) {
-    ElMessage.warning('请选择用户组')
-    return
-  }
+  // 字段级校验（iter163）：错误标红并显示在字段下方，不再只弹游离 toast
+  const valid = await batchAssignFormRef.value?.validate().catch(() => false)
+  if (!valid) return
 
   batchAssigning.value = true
   try {
