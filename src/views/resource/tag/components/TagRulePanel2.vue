@@ -34,11 +34,11 @@
       <el-empty v-if="rules.length === 0 && !loading" description="暂无自动打标规则" />
     </div>
     <el-dialog v-model="showDialog" :title="editingRule ? '编辑自动打标规则' : '创建自动打标规则'" width="650px" :destroy-on-close="true">
-      <el-form label-position="top">
-        <el-form-item label="规则名称" required><el-input v-model="form.name" placeholder="如：生产环境资源打标" /></el-form-item>
+      <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
+        <el-form-item label="规则名称" prop="name"><el-input v-model="form.name" placeholder="如：生产环境资源打标" /></el-form-item>
         <el-form-item label="规则描述"><el-input v-model="form.description" placeholder="描述规则的用途" /></el-form-item>
         <el-form-item label="条件逻辑"><el-radio-group v-model="form.logic"><el-radio value="and">全部匹配 (AND)</el-radio><el-radio value="or">任一匹配 (OR)</el-radio></el-radio-group></el-form-item>
-        <el-form-item label="匹配条件" required>
+        <el-form-item label="匹配条件" prop="conditions">
           <div v-for="(cond, idx) in form.conditions" :key="idx" class="condition-row">
             <el-select v-model="cond.field" placeholder="字段" style="width: 130px"><el-option label="资源名称" value="asset_name" /><el-option label="资源ID" value="asset_id" /><el-option label="资源类型" value="model_uid" /><el-option label="云厂商" value="provider" /><el-option label="区域" value="region" /><el-option label="云账号" value="account_name" /></el-select>
             <el-select v-model="cond.operator" placeholder="操作" style="width: 100px"><el-option label="包含" value="contains" /><el-option label="等于" value="equals" /><el-option label="前缀" value="prefix" /><el-option label="后缀" value="suffix" /><el-option label="正则" value="regex" /></el-select>
@@ -47,7 +47,7 @@
           </div>
           <el-button type="primary" link size="small" style="margin-top: 4px" @click="addCondition">+ 添加条件</el-button>
         </el-form-item>
-        <el-form-item label="打标内容" required>
+        <el-form-item label="打标内容" prop="tagPairs">
           <div v-for="(pair, idx) in form.tagPairs" :key="idx" class="condition-row">
             <el-input v-model="pair.key" placeholder="标签键" style="flex: 1" />
             <el-input v-model="pair.value" placeholder="标签值" style="flex: 1" />
@@ -131,6 +131,7 @@ import { createRuleApi, deleteRuleApi, executeRulesApi, listRulesApi, previewRul
 import type { RuleCondition, RuleExecuteResult, TagRule } from '@/api/types/tag'
 import { DeleteFilled, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 const loading = ref(false)
@@ -153,6 +154,33 @@ const form = reactive({
   conditions: [{ field: 'asset_name', operator: 'contains', value: '' }] as RuleCondition[],
   tagPairs: [{ key: '', value: '' }],
   priority: 10,
+})
+
+// 字段级校验（iter160）：原来三个字段只写 required（仅画星号），提交时只弹游离 toast，
+// 字段不标红 —— 用户不知道是名称没填、还是条件/标签没填。
+const formRef = ref<FormInstance>()
+const formRules = reactive<FormRules>({
+  name: [{ required: true, message: '请输入规则名称', trigger: 'blur' }],
+  conditions: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (_r, v: { field: string; operator: string; value: string }[], cb) =>
+        v && v.some((c) => c.field && c.operator && c.value.trim())
+          ? cb()
+          : cb(new Error('请至少添加一个有效条件')),
+    },
+  ],
+  tagPairs: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (_r, v: { key: string; value: string }[], cb) =>
+        v && v.some((t) => t.key.trim() && t.value.trim())
+          ? cb()
+          : cb(new Error('请至少填写一组标签')),
+    },
+  ],
 })
 const loadRules = async () => {
   loading.value = true
@@ -180,11 +208,11 @@ const removeCondition = (idx: number) => { if (form.conditions.length > 1) form.
 const addTagPair = () => { form.tagPairs.push({ key: '', value: '' }) }
 const removeTagPair = (idx: number) => { if (form.tagPairs.length > 1) form.tagPairs.splice(idx, 1) }
 const handleSubmit = async () => {
-  if (!form.name.trim()) { ElMessage.warning('请输入规则名称'); return }
+  // 字段级校验（iter160）：错误标红并显示在对应字段下方
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
   const vc = form.conditions.filter(c => c.field && c.operator && c.value.trim())
-  if (vc.length === 0) { ElMessage.warning('请至少添加一个有效条件'); return }
   const vt = form.tagPairs.filter(t => t.key.trim() && t.value.trim())
-  if (vt.length === 0) { ElMessage.warning('请至少填写一组标签'); return }
   const tags: Record<string, string> = {}
   vt.forEach(t => { tags[t.key.trim()] = t.value.trim() })
   submitting.value = true
