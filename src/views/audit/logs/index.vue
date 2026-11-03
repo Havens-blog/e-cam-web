@@ -50,8 +50,8 @@
         <el-button @click="handleReset" plain>重置</el-button>
         <el-button type="primary" @click="handleFilterChange">查询</el-button>
         <el-divider direction="vertical" />
-        <el-tooltip content="导出 CSV"><el-button :icon="Download" circle :loading="exporting" :disabled="exporting" @click="handleExport" /></el-tooltip>
-        <el-tooltip content="刷新"><el-button :icon="Refresh" circle @click="handleRefresh" /></el-tooltip>
+        <el-tooltip content="导出 CSV"><el-button :icon="Download" circle title="导出 CSV" aria-label="导出审计日志 CSV" :loading="exporting" :disabled="exporting" @click="handleExport" /></el-tooltip>
+          <el-tooltip content="刷新"><el-button :icon="Refresh" circle title="刷新" aria-label="刷新列表" :loading="loading" :disabled="loading" @click="handleRefresh" /></el-tooltip>
       </div>
     </div>
 
