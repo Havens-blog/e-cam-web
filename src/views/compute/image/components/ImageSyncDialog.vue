@@ -5,8 +5,8 @@
     width="600px"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <el-form :model="syncForm" label-width="100px">
-      <el-form-item label="云厂商" required>
+    <el-form ref="formRef" :model="syncForm" :rules="rules" label-width="100px">
+      <el-form-item label="云厂商" prop="provider">
         <el-select v-model="syncForm.provider" placeholder="请选择云厂商" style="width: 100%" @change="handleProviderChange">
           <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
         </el-select>
@@ -28,6 +28,7 @@
 import { submitSyncAssetsTaskApi } from '@/api'
 import { CLOUD_PROVIDERS, PROVIDER_CONFIGS } from '@/utils/constants'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -38,7 +39,16 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const syncing = ref(false)
+const formRef = ref<FormInstance>()
 const syncForm = reactive({ provider: '', regions: [] as string[] })
+
+// 字段级校验（iter157 修复）：原来只有 `<el-form-item required>`，它仅渲染必填星号、
+// **不做任何校验**；提交时空表单只弹一条游离 toast「请选择云厂商」，
+// 字段既不标红也不显示错误文案，用户得自己从 toast 反推是哪个字段。
+// 改为标准 rules，让错误就地显示在「云厂商」下方并自动标红。
+const rules = reactive<FormRules>({
+  provider: [{ required: true, message: '请选择云厂商', trigger: 'change' }],
+})
 
 const regionOptions = computed(() => {
   if (!syncForm.provider) return []
@@ -48,20 +58,22 @@ const regionOptions = computed(() => {
 
 const handleProviderChange = () => {
   syncForm.regions = []
+  // 选了厂商就清掉必填错误，避免错误文案挂在已修好的字段上
+  formRef.value?.clearValidate('provider')
 }
 
 watch(() => props.visible, (val) => {
   if (val) {
     syncForm.provider = ''
     syncForm.regions = []
+    formRef.value?.clearValidate()
   }
 })
 
 const handleSubmit = async () => {
-  if (!syncForm.provider) {
-    ElMessage.warning('请选择云厂商')
-    return
-  }
+  // 先走字段级校验：不通过则错误自动显示在对应字段下方，不再弹游离 toast
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
   syncing.value = true
   try {
     const { data } = await submitSyncAssetsTaskApi({
