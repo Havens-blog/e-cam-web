@@ -343,6 +343,8 @@ import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import WafDetailDrawer from './components/WafDetailDrawer.vue'
@@ -460,6 +462,49 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+// 注意本页名称字段是 name（对应条件字段 name），与 eip 的 keyword 不同。
+const urlState = reactive<Record<string, string | undefined>>({
+  name: undefined,
+  provider: undefined,
+  status: undefined,
+  edition: undefined,
+  region: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.name) searchConditions.value.push({ field: 'name', value: filters.name, displayValue: filters.name })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status as string, displayValue: String(filters.status) })
+  if (filters.edition) searchConditions.value.push({ field: 'edition', value: filters.edition as string, displayValue: String(filters.edition) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region as string, displayValue: String(filters.region) })
+}
+
+// URL 回填 → filters / page
+if (urlState.name) filters.name = urlState.name
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider | ''
+if (urlState.status) filters.status = urlState.status
+if (urlState.edition) filters.edition = urlState.edition
+if (urlState.region) filters.region = urlState.region
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.name, filters.provider, filters.status, filters.edition, filters.region, pagination.page].join('|'),
+  () => {
+    urlState.name = filters.name || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.status = filters.status || undefined
+    urlState.edition = filters.edition || undefined
+    urlState.region = filters.region || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const wafList = ref<Asset[]>([])
@@ -821,6 +866,8 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
 onMounted(() => {
+  // 恢复筛选标签（该函数引用 searchConditions，须在其声明之后调用）
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
   const s = route.query.search
