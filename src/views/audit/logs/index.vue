@@ -62,7 +62,7 @@
     <div v-else class="table-card">
       <!-- 加载中把 el-table 自带空态文案清掉：否则「暂无数据」会与 loading 圈同时出现，
            用户会误读成「确实没有审计日志」（iter114 实测截图已确认） -->
-      <el-table :data="logList" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @sort-change="handleSortChange" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
+      <el-table :data="logList" :default-sort="defaultSort" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @sort-change="handleSortChange" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable="custom">
           <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
         </el-table-column>
@@ -144,7 +144,8 @@ import { formatAuditTime } from './format'
 import { CircleCheck, CircleClose, Download, Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { showApiError } from '@/api/request'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resultLabel as presentResultLabel } from './presenters'
 
 const { loadDict, getDictOptions } = useDictionary()
@@ -157,6 +158,23 @@ const exporting = ref(false)
 // 故两列改为 sortable="custom"，由后端按白名单字段排序。
 const sortBy = ref<'' | 'ctime' | 'duration_ms'>('')
 const sortOrder = ref<'' | 'asc' | 'desc'>('')
+
+// el-table 的排序箭头由组件内部状态驱动：URL 恢复 sortBy/sortOrder 后必须
+// 同步给 default-sort，否则数据是排过序的、表头却没有任何标记（用户看不出来，
+// 且再点一次会按"未排序"的假定走 asc→desc，与预期不符）。
+// el-table 的排序箭头由组件内部状态驱动：URL 恢复 sortBy/sortOrder 后必须
+// 同步给 default-sort，否则数据排过序、表头却没有标记（用户看不出来，
+// 且再点一次会按"未排序"的假定走 asc→desc，与预期不符）。
+// 注意 TableSort.order 只接受 ascending/descending，无排序时必须给 {} 而非 null。
+// 无排序时返回 undefined —— Element Plus 的 Sort 要求 prop/order 都非空，
+// 不能用一个"空对象"表达未排序，否则类型与运行时都不对。
+const defaultSort = computed<{ prop: string; order: 'ascending' | 'descending' } | undefined>(() => {
+  if (!sortBy.value) return undefined
+  return {
+    prop: sortBy.value,
+    order: sortOrder.value === 'asc' ? 'ascending' : 'descending',
+  }
+})
 // 请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）。
 // 此前 catch 只弹 3 秒 toast，表格保持空 → el-table 自带空态会把「请求失败」显示成「暂无数据」。
 const errorInfo = ref<ErrorInfo | null>(null)
@@ -174,6 +192,53 @@ const filters = reactive<AuditLogParams>({
   http_method: '',
   operation_type: '',
 })
+
+// 筛选/排序/页码同步 URL（沿用项目既有 useUrlFilters，alert/* 与 audit/changes 已采用）：
+// 此前它们只存在内存里，刷新页面、分享链接、从详情返回都会丢，运维得重输一遍。
+const urlState = reactive<Record<string, string | undefined>>({
+  api_path: undefined,
+  http_method: undefined,
+  operation_type: undefined,
+  result: undefined,
+  start: undefined,
+  end: undefined,
+  sort_by: undefined,
+  order: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// URL 回填 → 落到各自的 ref/对象（先落状态再取数，否则页面显示与数据不一致）
+if (urlState.api_path) filters.api_path = urlState.api_path
+if (urlState.http_method) filters.http_method = urlState.http_method
+if (urlState.operation_type) filters.operation_type = urlState.operation_type
+if (urlState.result) resultFilter.value = urlState.result
+if (urlState.start && urlState.end) dateRange.value = [Number(urlState.start), Number(urlState.end)]
+if (urlState.sort_by === 'ctime' || urlState.sort_by === 'duration_ms') sortBy.value = urlState.sort_by
+if (urlState.order === 'asc' || urlState.order === 'desc') sortOrder.value = urlState.order
+if (urlState.page && Number(urlState.page) > 0) page.value = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删掉对应 key）
+watch(
+  () => [
+    filters.api_path, filters.http_method, filters.operation_type,
+    resultFilter.value,
+    dateRange.value ? dateRange.value[0] : '',
+    dateRange.value ? dateRange.value[1] : '',
+    sortBy.value, sortOrder.value, page.value,
+  ].join('|'),
+  () => {
+    urlState.api_path = filters.api_path || undefined
+    urlState.http_method = filters.http_method || undefined
+    urlState.operation_type = filters.operation_type || undefined
+    urlState.result = resultFilter.value || undefined
+    urlState.start = dateRange.value && dateRange.value[0] != null ? String(dateRange.value[0]) : undefined
+    urlState.end = dateRange.value && dateRange.value[1] != null ? String(dateRange.value[1]) : undefined
+    urlState.sort_by = sortBy.value || undefined
+    urlState.order = sortOrder.value || undefined
+    urlState.page = page.value > 1 ? String(page.value) : undefined
+  },
+)
 
 const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 const opTypes = getDictOptions('operation_type')
