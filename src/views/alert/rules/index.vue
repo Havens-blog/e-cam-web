@@ -96,6 +96,7 @@
 <script setup lang="ts">
 import type { AlertRule, AlertRuleType } from '@/api/alert'
 import { deleteRuleApi, listRulesApi, toggleRuleApi } from '@/api/alert'
+import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref, reactive, watch} from 'vue'
@@ -144,8 +145,20 @@ const fetchData = async () => {
       total.value = 0
       return
     }
-    list.value = (res as any).data?.items || []
-    total.value = (res as any).data?.total || 0
+    const items = (res as any).data?.items || []
+    const newTotal = (res as any).data?.total || 0
+    // 页码收敛（iter167）：删除当前页最后一条 / 筛选后结果变少时，
+    // 原来 page 不变 → 请求到空页，用户看到「空列表 + 页码没变」，以为数据都没了。
+    const fixedPage = clampPageAfterTotalChange(page.value, newTotal, pageSize)
+    if (fixedPage !== page.value) {
+      page.value = fixedPage
+      list.value = []
+      total.value = newTotal
+      await fetchData()
+      return
+    }
+    list.value = items
+    total.value = newTotal
   } finally {
     loading.value = false
   }
