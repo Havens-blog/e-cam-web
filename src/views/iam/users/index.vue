@@ -189,6 +189,7 @@ import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { buildBatchAssignSuccessText } from './components/batchAssignSuccessText'
 import type { FormInstance, FormRules } from 'element-plus'
 import SyncUsersDialog from './components/SyncUsersDialog.vue'
 import UserBatchBar from './components/UserBatchBar.vue'
@@ -527,7 +528,8 @@ const handleConfirmBatchAssign = async () => {
       user_ids: selectedUsers.value.map((u) => u.id),
       group_ids: selectedGroupIds.value,
     })
-    ElMessage.success('批量分配成功')
+    // 成功提示说明影响范围（iter165）：原来固定「批量分配成功」，看不出动了多少人、加到几个组。
+    ElMessage.success(buildBatchAssignSuccessText(selectedUsers.value.length, selectedGroupIds.value.length))
     batchAssignDialogVisible.value = false
     fetchUsers()
   } catch (error: any) {
