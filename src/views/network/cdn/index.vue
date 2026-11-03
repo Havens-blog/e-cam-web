@@ -308,6 +308,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useListError } from '@/composables/useListError'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import CdnCostPanel from './components/CdnCostPanel.vue'
 import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
@@ -383,6 +385,53 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+// 注：本页名称字段是 filters.name（对应条件字段 domain_name），与 eip 的 keyword 不同。
+const urlState = reactive<Record<string, string | undefined>>({
+  name: undefined,
+  provider: undefined,
+  status: undefined,
+  business_type: undefined,
+  service_area: undefined,
+  https_enabled: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.name) searchConditions.value.push({ field: 'domain_name', value: filters.name, displayValue: filters.name })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status as string, displayValue: String(filters.status) })
+  if (filters.business_type) searchConditions.value.push({ field: 'business_type', value: filters.business_type as string, displayValue: String(filters.business_type) })
+  if (filters.service_area) searchConditions.value.push({ field: 'service_area', value: filters.service_area as string, displayValue: String(filters.service_area) })
+  if (filters.https_enabled) searchConditions.value.push({ field: 'https_enabled', value: filters.https_enabled as string, displayValue: String(filters.https_enabled) })
+}
+
+// URL 回填 → filters / page
+if (urlState.name) filters.name = urlState.name
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider | ''
+if (urlState.status) filters.status = urlState.status
+if (urlState.business_type) filters.business_type = urlState.business_type
+if (urlState.service_area) filters.service_area = urlState.service_area
+if (urlState.https_enabled) filters.https_enabled = urlState.https_enabled
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.name, filters.provider, filters.status, filters.business_type, filters.service_area, filters.https_enabled, pagination.page].join('|'),
+  () => {
+    urlState.name = filters.name || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.status = filters.status || undefined
+    urlState.business_type = filters.business_type || undefined
+    urlState.service_area = filters.service_area || undefined
+    urlState.https_enabled = filters.https_enabled || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const cdnList = ref<Asset[]>([])
@@ -746,6 +795,8 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
 onMounted(() => {
+  // 恢复筛选标签（该函数引用 searchConditions，须在其声明之后调用）
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
   const s = route.query.search
