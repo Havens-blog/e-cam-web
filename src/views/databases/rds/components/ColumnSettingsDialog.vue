@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="自定义列" width="480px" @update:model-value="$emit('update:visible', $event)" @closed="handleClosed">
+  <el-dialog :model-value="visible" title="自定义列" width="480px" :close-on-click-modal="false" @update:model-value="$emit('update:visible', $event)" @closed="handleClosed">
     <div class="column-settings">
       <div class="settings-header">
         <span>固定列：名称、操作</span>
