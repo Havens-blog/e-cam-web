@@ -66,7 +66,9 @@
     </div>
 
     <!-- 变更记录表格 -->
-    <div class="table-wrapper" v-if="assetId">
+    <!-- 错误态：查询失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="assetId && errorInfo" :error-info="errorInfo" @retry="fetchChanges" />
+    <div v-else-if="assetId" class="table-wrapper">
       <el-table :data="changeList" v-loading="changesLoading" stripe style="width: 100%" row-key="id">
         <el-table-column prop="ctime" label="变更时间" width="170">
           <template #default="{ row }">{{ formatTs(row.ctime) }}</template>
@@ -136,10 +138,14 @@ import { getProviderLabel } from '@/utils/constants'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
 const changesLoading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（此前仅弹 toast，失败会被渲染成「暂无数据」）
+const { errorInfo, run } = useListError()
 const changesTotal = ref(0)
 const page = ref(1)
 const pageSize = 20
@@ -219,10 +225,11 @@ const fetchChanges = async () => {
   if (!assetId.value.trim()) return
   changesLoading.value = true
   try {
-    const res = await listAssetChangesApi(assetId.value.trim(), {
+    const res = await run(() => listAssetChangesApi(assetId.value.trim(), {
       offset: (page.value - 1) * pageSize,
       limit: pageSize,
-    })
+    }), '查询变更历史失败')
+    if (res === undefined) return
     const data = (res as any).data
     changeList.value = data?.items || data?.data?.items || []
     changesTotal.value = data?.total || data?.data?.total || 0
