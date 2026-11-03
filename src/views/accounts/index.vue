@@ -121,8 +121,8 @@
             <el-icon v-if="!batchSyncing"><Refresh /></el-icon>
             {{ batchSyncing ? '同步中...' : '批量同步' }}
           </el-button>
-          <el-button @click="handleRefresh">
-            导出
+          <el-button :loading="refreshing" @click="handleRefresh">
+            {{ refreshing ? '刷新中...' : '刷新' }}
           </el-button>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>
@@ -541,12 +541,22 @@ const fetchAccounts = async () => {
 }
 
 // 事件处理
-const handleRefresh = () => {
-  cacheManager.clear('cloud-accounts')
-  fetchAccounts()
+const handleRefresh = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    cacheManager.clear('cloud-accounts')
+    await fetchAccounts()
+  } finally {
+    refreshing.value = false
+  }
 }
 
 // 批量同步
+// 「刷新」：清缓存后重取列表。原按钮文案误写为「导出」（实际从不产生文件），
+// 现改为如实的「刷新」并加加载态，避免用户以为会下载东西。
+const refreshing = ref(false)
+
 const batchSyncing = ref(false)
 const handleBatchSync = async () => {
   const activeAccounts = accounts.value.filter(a => a.status === 'active')
