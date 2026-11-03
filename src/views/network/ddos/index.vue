@@ -252,7 +252,7 @@
     </div>
 
     <!-- 同步对话框（WAF 同款同步实例能力，asset_types 切 ddos） -->
-    <el-dialog v-model="syncDialogVisible" title="同步DDoS实例" width="600px">
+    <el-dialog v-model="syncDialogVisible" title="同步DDoS实例" width="600px" :close-on-click-modal="false">
       <el-form ref="syncFormRef" :model="syncForm" :rules="syncRules" label-width="100px">
         <el-form-item label="云厂商" prop="provider">
           <el-select v-model="syncForm.provider" placeholder="请选择云厂商" style="width: 100%">
