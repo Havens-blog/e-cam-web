@@ -84,6 +84,7 @@ import { deleteChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, reactive, watch} from 'vue'
+import { clampPageAfterTotalChange } from './clampPage'
 import ChannelFormDialog from './components/ChannelFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
@@ -130,8 +131,21 @@ const fetchData = async () => {
       total.value = 0
       return
     }
-    list.value = (res as any).data?.items || []
-    total.value = (res as any).data?.total || 0
+    const items = (res as any).data?.items || []
+    const newTotal = (res as any).data?.total || 0
+    // 页码收敛（iter166）：删除当前页最后一条 / 筛选后结果变少时，
+    // 原来 page 不变 → 请求到空页，用户看到「空列表 + 页码没变」，以为数据都没了。
+    const fixedPage = clampPageAfterTotalChange(page.value, newTotal, pageSize)
+    if (fixedPage !== page.value) {
+      page.value = fixedPage
+      list.value = []
+      total.value = newTotal
+      // 用修正后的页码重取，避免渲染一帧空列表
+      await fetchData()
+      return
+    }
+    list.value = items
+    total.value = newTotal
   } finally {
     loading.value = false
   }
