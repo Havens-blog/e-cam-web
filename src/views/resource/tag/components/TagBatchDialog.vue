@@ -1,7 +1,7 @@
 <template>
   <el-dialog v-model="visible" :title="dialogTitle" width="600px" :destroy-on-close="true" @close="handleClose">
-    <el-form label-position="top">
-      <el-form-item v-if="mode === 'normal'" label="操作类型" required>
+    <el-form ref="batchFormRef" :model="batchModel" :rules="batchRules" label-position="top">
+      <el-form-item v-if="mode === 'normal'" label="操作类型" prop="batchType">
         <el-radio-group v-model="batchType" size="large">
           <el-radio-button value="bind">批量打标</el-radio-button>
           <el-radio-button value="unbind">批量解绑</el-radio-button>
@@ -82,7 +82,7 @@
 
       <!-- Normal mode -->
       <template v-else>
-        <el-form-item label="标签" required>
+        <el-form-item label="标签" prop="tagPairs">
           <template v-if="batchType === 'bind'">
             <div v-for="(pair, idx) in tagPairs" :key="idx" class="tag-input-group">
               <el-input v-model="pair.key" placeholder="标签键" />
@@ -133,8 +133,9 @@
 <script setup lang="ts">
 import { bindTagsApi, unbindTagsApi } from '@/api/tag';
 import type { BatchResult, ComplianceResult, ResourceRef, TagSummary } from '@/api/types/tag';
+import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, reactive } from 'vue';
 
 interface TagPair { key: string; value: string; locked?: boolean }
 
@@ -160,6 +161,33 @@ watch(visible, (v) => { emit('update:modelValue', v) })
 const batchType = ref<'bind' | 'unbind'>('bind')
 const tagPairs = ref<TagPair[]>([{ key: '', value: '' }])
 const unbindKeys = ref([''])
+
+// 字段级校验（iter162）：原来「操作类型」「标签」只写 required（仅画星号、不校验），
+// 空提交只弹游离 toast，字段不标红；且校验顺序先查「目标资源」（来自 props、无星号），
+// 导致用户永远看不到字段级错误。
+// 说明：目标资源来自父组件选择（props.selectedResources），**不是表单字段**，
+// 无法用 rule 表达，保留其 toast 是合理的 —— 但改为**先做字段校验、再做这个前置条件**。
+const batchFormRef = ref<FormInstance>()
+const batchModel = reactive<{ batchType: 'bind' | 'unbind'; tagPairs: TagPair[]; unbindKeys: string[] }>({
+  batchType: 'bind',
+  tagPairs: [{ key: '', value: '' }],
+  unbindKeys: [''],
+})
+const batchRules = reactive<FormRules>({
+  tagPairs: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (_r, v: TagPair[], cb) =>
+        v && v.some((t) => t.key.trim() && t.value.trim())
+          ? cb()
+          : cb(new Error('请至少填写一组有效的标签键值对')),
+    },
+  ],
+})
+watch(batchType, (v) => { batchModel.batchType = v })
+watch(tagPairs, (v) => { batchModel.tagPairs = v }, { deep: true })
+watch(unbindKeys, (v) => { batchModel.unbindKeys = v }, { deep: true })
 const submitting = ref(false)
 const result = ref<BatchResult | null>(null)
 
@@ -261,6 +289,11 @@ const handleRemediateSubmit = async () => {
 }
 
 const handleNormalSubmit = async () => {
+  // 先做字段级校验（iter162）：这样用户先看到「标签」等字段的标红提示。
+  // 「目标资源」来自 props（父组件选择）、不是表单字段，无法用 rule 表达，保留其提示，
+  // 但放在字段校验之后 —— 否则字段错误永远显示不出来。
+  const valid = await batchFormRef.value?.validate().catch(() => false)
+  if (!valid) return
   if (props.selectedResources.length === 0) {
     ElMessage.warning('请先选择资源')
     return
