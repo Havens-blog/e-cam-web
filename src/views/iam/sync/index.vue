@@ -105,7 +105,9 @@
       </el-card>
 
       <!-- 任务列表 -->
-      <el-card class="table-card" shadow="never">
+      <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
+      <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="loadSyncTasks" />
+      <el-card v-else class="table-card" shadow="never">
         <el-table
           v-loading="loading"
           :data="taskList"
@@ -231,6 +233,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import TaskDetailDrawer from './components/TaskDetailDrawer.vue'
 import TaskFormDialog from './components/TaskFormDialog.vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 // 筛选条件
 const filters = reactive({
@@ -250,6 +254,8 @@ const pagination = reactive({
 // 任务列表
 const taskList = ref<SyncTask[]>([])
 const loading = ref(false)
+// 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
+const { errorInfo, run } = useListError()
 
 // 云账号列表
 const cloudAccounts = ref<CloudAccount[]>([])
@@ -274,7 +280,8 @@ const loadSyncTasks = async () => {
       page: pagination.page,
       size: pagination.size
     }
-    const res = await listSyncTasksApi(params)
+    const res = await run(() => listSyncTasksApi(params), '加载同步任务列表失败')
+    if (res === undefined) return
     taskList.value = res.data.data ?? res.data.tasks ?? []
     pagination.total = res.data.total || 0
 
