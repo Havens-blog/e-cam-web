@@ -249,8 +249,8 @@
 
     <!-- 同步对话框（原 ManagerHeader 同步实例，能力保留） -->
     <el-dialog v-model="syncDialogVisible" title="同步弹性网卡" width="600px">
-      <el-form :model="syncForm" label-width="100px">
-        <el-form-item label="云厂商" required>
+      <el-form ref="syncFormRef" :model="syncForm" :rules="syncRules" label-width="100px">
+        <el-form-item label="云厂商" prop="provider">
           <el-select v-model="syncForm.provider" placeholder="请选择云厂商" style="width: 100%">
             <el-option v-for="p in CLOUD_PROVIDERS" :key="p.value" :label="p.label" :value="p.value" />
           </el-select>
@@ -295,6 +295,7 @@ import { ENI_STATUS_LABELS, ENI_TYPE_LABELS, labelOfLenient } from '@/utils/fiel
 import { ArrowLeft, ArrowRight, Box, Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
@@ -726,15 +727,16 @@ const handleViewDetail = (row: Asset) => {
 }
 
 const handleSync = () => {
+  syncFormRef.value?.clearValidate()
   syncForm.provider = ''
   syncDialogVisible.value = true
 }
 
 const submitSync = async () => {
-  if (!syncForm.provider) {
-    ElMessage.warning('请选择云厂商')
-    return
-  }
+  // 字段级校验（iter158）：原来 required 只画星号、不触发校验，
+  // 空提交时错误只以游离 toast 出现、字段不标红。改为标准 rules。
+  const valid = await syncFormRef.value?.validate().catch(() => false)
+  if (!valid) return
   syncing.value = true
   try {
     const { data } = await submitSyncAssetsTaskApi({ provider: syncForm.provider, asset_types: ['eni'] })
@@ -776,6 +778,13 @@ onMounted(() => {
     searchKeyword.value = s
   }
   fetchData()
+})
+
+// 同步弹窗的字段级校验（iter158）：provider 必填。
+// 原来只写 <el-form-item required>（仅画星号、不校验），空提交时错误只以游离 toast 出现。
+const syncFormRef = ref<FormInstance>()
+const syncRules = reactive<FormRules>({
+  provider: [{ required: true, message: '请选择云厂商', trigger: 'change' }],
 })
 </script>
 
