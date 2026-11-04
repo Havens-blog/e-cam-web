@@ -26,7 +26,11 @@
           >
             <td class="col-name">
               <div class="name-cell">
-                <span class="instance-name" @click.stop="emit('view-detail', item)">
+                <span
+                  class="instance-name"
+                  :title="item.asset_name || item.asset_id"
+                  @click.stop="emit('view-detail', item)"
+                >
                   {{ item.asset_name || item.asset_id }}
                 </span>
                 <el-icon v-if="item.attributes?.is_locked" class="lock-icon"><Lock /></el-icon>

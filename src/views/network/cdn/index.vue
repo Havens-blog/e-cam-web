@@ -183,7 +183,7 @@
                   <span class="instance-name" @click.stop="handleViewDetail(item)">{{ extractDomainName(item) }}</span>
                 </div>
                 <!-- asset_id 实测恒等于域名（598 行全量），仅在两者不同时出副行避免整列重复 -->
-                <div v-if="item.asset_id && item.asset_id !== extractDomainName(item)" class="cell-sub">{{ item.asset_id }}</div>
+                <div v-if="item.asset_id && item.asset_id !== extractDomainName(item)" class="cell-sub" :title="item.asset_id">{{ item.asset_id }}</div>
               </td>
               <td v-for="col in visibleColumns" :key="col.key" :style="{ width: col.width + 'px' }">
                 <template v-if="col.key === 'status'">
