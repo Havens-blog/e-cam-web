@@ -328,6 +328,8 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import ExportGroupsDialog from './components/ExportGroupsDialog.vue'
 import GroupDetailDrawer from './components/GroupDetailDrawer.vue'
 import GroupForm from './components/GroupForm.vue'
@@ -356,6 +358,31 @@ const pagination = reactive({
   size: 20,
   total: 0
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters）：
+// 本页真实筛选是 filters.provider/keyword + pagination.page；
+// filters 里的 page/size 是冗余字段（fetchGroups 里被 pagination 覆盖），不纳入 URL。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// URL 回填 → filters / pagination
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider as NonNullable<ListGroupsParams['provider']>
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.keyword, filters.provider, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 计算属性
 const dialogTitle = computed(() => isEdit.value ? '编辑用户组' : '创建用户组')
