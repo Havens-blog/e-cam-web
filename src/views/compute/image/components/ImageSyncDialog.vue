@@ -3,6 +3,7 @@
     :model-value="visible"
     title="同步镜像"
     width="600px"
+    :close-on-click-modal="false"
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-form ref="formRef" :model="syncForm" :rules="rules" label-width="100px">

@@ -3,6 +3,7 @@
     :model-value="visible"
     :title="isEdit ? '编辑解析记录' : '添加解析记录'"
     width="560px"
+    :close-on-click-modal="false"
     @update:model-value="$emit('update:visible', $event)"
     @close="handleClose"
   >
