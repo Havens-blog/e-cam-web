@@ -94,6 +94,7 @@ import {
     updateDictItemStatusApi,
     updateDictTypeApi
 } from '@/api/dictionary'
+import { showApiError } from '@/api/request'
 import type {
     CreateDictItemReq,
     CreateDictTypeReq,
@@ -162,8 +163,9 @@ async function handleTypeFormSubmit(data: CreateDictTypeReq | UpdateDictTypeReq)
     typeFormVisible.value = false
     typeListRef.value?.loadTypes()
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : '操作失败'
-    ElMessage.error(msg)
+    // 请求层已弹过提示（如 403「权限不足」）时不再重复弹一条英文原文，
+    // 否则两条 toast 会同时出现、且后一条把前一条中文盖住。
+    showApiError(e, '操作失败')
   } finally {
     typeSubmitting.value = false
   }
@@ -186,8 +188,7 @@ async function handleDeleteType(type: DictType) {
     typeListRef.value?.loadTypes()
   } catch (e: unknown) {
     if (e !== 'cancel') {
-      const msg = e instanceof Error ? e.message : '删除失败'
-      ElMessage.error(msg)
+      showApiError(e, '删除失败')
     }
   }
 }
@@ -207,8 +208,7 @@ async function handleItemFormSubmit(data: CreateDictItemReq | UpdateDictItemReq)
     itemFormVisible.value = false
     itemTableRef.value?.loadItems()
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : '操作失败'
-    ElMessage.error(msg)
+    showApiError(e, '操作失败')
   } finally {
     itemSubmitting.value = false
   }
@@ -227,8 +227,7 @@ async function handleDeleteItem(item: DictItem) {
     itemTableRef.value?.loadItems()
   } catch (e: unknown) {
     if (e !== 'cancel') {
-      const msg = e instanceof Error ? e.message : '删除失败'
-      ElMessage.error(msg)
+      showApiError(e, '删除失败')
     }
   }
 }
@@ -239,8 +238,7 @@ async function handleItemStatusChange(item: DictItem, status: string) {
     ElMessage.success(`已${status === 'enabled' ? '启用' : '禁用'}`)
     itemTableRef.value?.loadItems()
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : '操作失败'
-    ElMessage.error(msg)
+    showApiError(e, '操作失败')
   }
 }
 </script>
