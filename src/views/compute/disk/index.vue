@@ -319,6 +319,8 @@ import { DISK_CATEGORY_LABELS, DISK_STATUS_LABELS } from '@/utils/fieldLabels'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute } from 'vue-router'
 import {
   deriveDiskCardState,
@@ -376,6 +378,48 @@ const columnSettingsVisible = ref(false)
 
 const filters = reactive({ keyword: '', provider: '', status: '', disk_type: '', region: '' })
 const pagination = reactive({ page: 1, size: 20, total: 0 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  status: undefined,
+  disk_type: undefined,
+  region: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status as string, displayValue: String(filters.status) })
+  if (filters.disk_type) searchConditions.value.push({ field: 'disk_type', value: filters.disk_type as string, displayValue: String(filters.disk_type) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region as string, displayValue: String(filters.region) })
+}
+
+// URL 回填 → filters / page（缺这步会出现"urlState 有值但查询不变、无标签"）
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.status) filters.status = urlState.status
+if (urlState.disk_type) filters.disk_type = urlState.disk_type
+if (urlState.region) filters.region = urlState.region
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.status, filters.disk_type, filters.region, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.status = filters.status || undefined
+    urlState.disk_type = filters.disk_type || undefined
+    urlState.region = filters.region || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径；状态值沿用本页既有筛选值域）
 const statusCounts = reactive({ total: 0, inUse: 0, available: 0 })
@@ -747,6 +791,8 @@ const initColumnSettings = () => {
 }
 
 onMounted(() => {
+  // 恢复筛选标签（引用 searchConditions，须在其声明之后；缺这步标签不显示）
+  rebuildConditionsFromFilters()
   initColumnSettings()
   // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
   const s = route.query.search
