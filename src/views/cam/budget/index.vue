@@ -223,6 +223,10 @@
               >
                 移除
               </el-button>
+              <span
+                v-if="form.thresholds.length <= 1"
+                class="max-hint"
+              >至少保留 1 个阈值</span>
             </div>
             <el-button link type="primary" size="small" @click="addThreshold">+ 添加阈值</el-button>
           </div>
