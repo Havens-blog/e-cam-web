@@ -183,6 +183,10 @@
               :disabled="ruleForm.dimension_combos.length <= 1"
               @click="removeCombo(ci)"
             >移除</el-button>
+            <span
+              v-if="ruleForm.dimension_combos.length <= 1"
+              class="max-hint"
+            >至少保留 1 个组合</span>
           </div>
 
           <el-form-item label="归属单元">
