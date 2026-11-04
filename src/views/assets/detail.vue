@@ -131,7 +131,7 @@
     </div>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑资产" width="500px">
+    <el-dialog v-model="editDialogVisible" title="编辑资产" width="500px" :close-on-click-modal="false">
       <el-form :model="editForm" label-width="100px">
         <el-form-item label="资产名称">
           <el-input v-model="editForm.asset_name" placeholder="请输入资产名称" />
