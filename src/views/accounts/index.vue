@@ -370,6 +370,8 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import AccountCardView from './components/AccountCardView.vue'
 import AccountDetailDrawer from './components/AccountDetailDrawer.vue'
 import AccountListView from './components/AccountListView.vue'
@@ -412,6 +414,37 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+// 本页无「条件 chips」，是直接 v-model 绑定 + searchKeyword 本地过滤，故 URL 只存这几个字段。
+const urlState = reactive<Record<string, string | undefined>>({
+  q: undefined,
+  provider: undefined,
+  environment: undefined,
+  status: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// URL 回填 → 本地搜索词 / filters / page（先落状态再取数）
+if (urlState.q) searchKeyword.value = urlState.q
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.environment) filters.environment = urlState.environment
+if (urlState.status) filters.status = urlState.status
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [searchKeyword.value, filters.provider, filters.environment, filters.status, pagination.page].join('|'),
+  () => {
+    urlState.q = searchKeyword.value || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.environment = filters.environment || undefined
+    urlState.status = filters.status || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 const syncForm = reactive({
   accountId: 0,
