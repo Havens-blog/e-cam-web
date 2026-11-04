@@ -119,7 +119,9 @@
           </el-button>
           <el-button :loading="batchSyncing" @click="handleBatchSync">
             <el-icon v-if="!batchSyncing"><Refresh /></el-icon>
-            {{ batchSyncing ? '同步中...' : '批量同步' }}
+            <!-- iter189：原来按钮只写「同步中...」，而那条 ElMessage 的进度是硬编码的 "0/N" 永不更新，
+                 用户面对可能几分钟的同步完全看不到进展。改为直接显示已处理数。 -->
+            {{ batchSyncing ? `同步中 ${syncDone}/${syncTotal}` : '批量同步' }}
           </el-button>
           <el-button :loading="refreshing" @click="handleRefresh">
             {{ refreshing ? '刷新中...' : '刷新' }}
@@ -591,6 +593,9 @@ const handleRefresh = async () => {
 const refreshing = ref(false)
 
 const batchSyncing = ref(false)
+// 批量同步进度（iter189）：供按钮文案实时显示「同步中 N/M」
+const syncDone = ref(0)
+const syncTotal = ref(0)
 const handleBatchSync = async () => {
   const activeAccounts = accounts.value.filter(a => a.status === 'active')
   if (activeAccounts.length === 0) {
@@ -612,12 +617,11 @@ const handleBatchSync = async () => {
   let successCount = 0
   let failCount = 0
 
-  const syncMsg = ElMessage({
-    type: 'info',
-    message: `正在同步 0/${activeAccounts.length} 个账号...`,
-    duration: 0,
-    showClose: true,
-  })
+  // 进度改由按钮文案展示（syncDone/syncTotal）。
+  // 原来这里用一条 ElMessage 显示「正在同步 0/N」，但 MessageHandler 只暴露 close()、
+  // 无法更新文案，那个 0 是硬编码字面量 —— 面对可能几分钟的同步，用户永远看不到进展。
+  syncDone.value = 0
+  syncTotal.value = activeAccounts.length
 
   for (const account of activeAccounts) {
     try {
@@ -625,10 +629,11 @@ const handleBatchSync = async () => {
       successCount++
     } catch {
       failCount++
+    } finally {
+      syncDone.value++
     }
   }
 
-  syncMsg.close()
   batchSyncing.value = false
 
   if (failCount === 0) {
