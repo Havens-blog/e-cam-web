@@ -116,7 +116,7 @@ import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { CHARGE_TYPE_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { getProviderLabel } from '@/utils/constants'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
@@ -561,13 +561,11 @@ const handleAction = (command: string, instance: Asset) => {
 // 删除实例
 const handleDelete = async (instance: Asset) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除实例"${instance.asset_name || instance.asset_id}"吗？`,
-      '确认删除',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
-    )
-    // TODO: 新API暂不支持删除操作
+    // iter187：删除接口未开放。原先是「先弹确认框 → 确认后提示暂未开放」，
+    // 用户白走一次确认流程；现入口已改为 disabled + title，这里只保留兜底守卫，
+    // 不再弹确认框（避免万一有其他调用方时又出现「确认了却什么也没发生」）。
     ElMessage.warning('删除功能暂未开放')
+    void instance
     detailDrawerVisible.value = false
   } catch (error: any) {
     if (error !== 'cancel') {

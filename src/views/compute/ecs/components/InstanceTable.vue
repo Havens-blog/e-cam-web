@@ -137,7 +137,9 @@
                   <el-dropdown-menu>
                     <el-dropdown-item command="view">查看详情</el-dropdown-item>
                     <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                    <el-dropdown-item command="delete" divided>
+                    <!-- iter187：删除接口尚未开放（原来点了会弹确认框、确认后才提示「暂未开放」），
+                         改为与仓内其他未实现功能一致的「入口禁用 + title」。 -->
+                    <el-dropdown-item command="delete" divided disabled title="删除功能暂未开放">
                       <span class="danger-text">删除</span>
                     </el-dropdown-item>
                   </el-dropdown-menu>
