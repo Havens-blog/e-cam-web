@@ -3,6 +3,7 @@
     :model-value="visible"
     title="基于模板创建云主机"
     width="480px"
+    :close-on-click-modal="false"
     @close="handleClose"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
