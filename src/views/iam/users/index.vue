@@ -99,17 +99,13 @@
     />
 
     <!--
-      批量分配用户组对话框（保持原内联实现，未复用既有的 BatchAssignDialog.vue）
+      批量分配用户组对话框（内联实现）
 
-      为什么不复用 components/BatchAssignDialog.vue：该文件虽已存在且全仓零引用，但与本内联版
-      存在多处实质性差异，强行接入会改变行为：
-        1. 提交 payload 不同：本内联版提交 { user_ids, group_ids }；
-           BatchAssignDialog 额外发送 mode（append/replace）——会改变后端语义；
-        2. 用户组列表解析口径不同：父组件用 data.data，其组件内用 data.groups ?? data.data；
-        3. 错误处理路径不同：本内联版走项目统一的 logError + handleApiError（结构化上报），
-           其组件用 console.error + ElMessage，会丢失结构化错误上报；
-        4. 成功后的行为不同：本内联版立即关闭并刷新列表，其组件延迟 1.5s 并展示结果面板。
-      结论：按「有任何不一致就不强行复用」的原则保持原样，不改动 BatchAssignDialog.vue。
+      历史：components/BatchAssignDialog.vue 曾是同一功能的另一份实现，全仓零引用，
+      且与本内联版有 4 处实质性差异（提交时多传 mode 会改变后端语义、用户组解析口径不同、
+      错误上报丢失结构化日志、成功后延迟 1.5s 展示结果面板），因此从未被复用。
+      该文件已于 2026-11-04 删除（它内部还含伪造的逐用户进度与硬编码成功/失败数）。
+      以下 4 条差异仍是有价值的记录 —— 若将来要重新抽取共享组件，需逐条覆盖。
     -->
     <el-dialog
       v-model="batchAssignDialogVisible"
