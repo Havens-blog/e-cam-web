@@ -237,7 +237,7 @@
                   <el-icon class="bucket-icon"><Folder /></el-icon>
                   <span class="instance-name" @click.stop="handleViewDetail(item)">{{ item.asset_name || item.asset_id }}</span>
                 </div>
-                <div class="cell-sub">{{ item.asset_id }}</div>
+                <div class="cell-sub" :title="item.asset_id">{{ item.asset_id }}</div>
               </td>
               <td v-for="col in visibleColumns" :key="col.key" :style="{ width: col.width + 'px' }">
                 <template v-if="col.key === 'storage_class'">{{ getStorageClassText(item.attributes?.storage_class) }}</template>
