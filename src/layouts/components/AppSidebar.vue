@@ -39,7 +39,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 // 展开的子菜单 - 默认展开资产列表
-const expandedMenus = ref<string[]>(['assets', 'service-tree'])
+const expandedMenus = ref<string[]>(['assets'])
 
 // 当前悬停的三级菜单父项
 const hoveredFlyout = ref<string | null>(null)
