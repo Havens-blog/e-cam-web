@@ -119,6 +119,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import InstanceDetailDrawer from './components/InstanceDetailDrawer.vue'
@@ -227,6 +228,50 @@ const tagFilterVisible = ref(false)
 // 已生效的搜索条件：与搜索栏子组件 v-model 双向绑定
 // （统计卡片点击 handleStatBadgeClick 也会增删 status 条件，故仍留在页面层）
 const searchConditions = ref<SearchCondition[]>([])
+
+/**
+ * URL 状态（iter193）。
+ *
+ * 背景：12 个资源列表页里 **11 个**都通过 `useUrlFilters` 把搜索条件写进 URL（刷新保留、链接可分享），
+ * 唯独本页（主机列表，也是最常用的）没有 —— 同一套「输入搜索内容，回车添加条件」的交互，
+ * 用户在这里复制链接给同事，对方打开看到的是**未筛选的全量列表**。
+ *
+ * 实现照搬 `network/vpc/index.vue` 的成熟模式：urlState ←→ filters 双向同步，
+ * 再由 filters 反推回 `searchConditions`（只为还原标签 UI，查询仍以 filters 为准）。
+ */
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  private_ip: undefined,
+  public_ip: undefined,
+  status: undefined,
+  provider: undefined,
+  region: undefined,
+  instance_type: undefined,
+  charge_type: undefined,
+  vpc_id: undefined,
+  os_type: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI）。
+// 注意：keyword 反推为 asset_name —— 原始条件可能来自 asset_id / host_name，
+// 这里无法区分（URL 只存了值），与 vpc 页的处理保持一致。
+const rebuildConditionsFromFilters = () => {
+  const push = (field: string, value: string) => {
+    if (value) searchConditions.value.push({ field, value, displayValue: value })
+  }
+  push('asset_name', filters.keyword)
+  push('private_ip', filters.private_ip)
+  push('public_ip', filters.public_ip)
+  push('status', filters.status)
+  push('provider', filters.provider)
+  push('region', filters.region)
+  push('instance_type', filters.instance_type)
+  push('charge_type', filters.charge_type)
+  push('vpc_id', filters.vpc_id)
+  push('os_type', filters.os_type)
+}
 
 const applySearchConditions = () => {
   // 先清除所有搜索相关的筛选
@@ -610,10 +655,48 @@ onMounted(() => {
     // 搜索框在子组件内（独立缓冲），通过 conditions 注入 chip 才能看到关键字
     searchConditions.value.push({ field: 'asset_name', value: s, displayValue: s })
   }
+  // URL 回填 → filters（iter193）：必须在首屏请求之前，否则会先拉一页未筛选的数据
+  if (urlState.keyword) filters.keyword = urlState.keyword
+  if (urlState.private_ip) filters.private_ip = urlState.private_ip
+  if (urlState.public_ip) filters.public_ip = urlState.public_ip
+  if (urlState.status) filters.status = urlState.status
+  if (urlState.provider) filters.provider = urlState.provider
+  if (urlState.region) filters.region = urlState.region
+  if (urlState.instance_type) filters.instance_type = urlState.instance_type
+  if (urlState.charge_type) filters.charge_type = urlState.charge_type
+  if (urlState.vpc_id) filters.vpc_id = urlState.vpc_id
+  if (urlState.os_type) filters.os_type = urlState.os_type
+  if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+  // filters → 标签（仅还原 UI，避免「URL 有值但看不到已生效的条件」）
+  rebuildConditionsFromFilters()
+
   fetchModels()
   fetchInstances(true)
   loadAvailableTagKeys()
 })
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删掉该 key）。iter193
+watch(
+  () => [
+    filters.keyword, filters.private_ip, filters.public_ip, filters.status, filters.provider,
+    filters.region, filters.instance_type, filters.charge_type, filters.vpc_id, filters.os_type,
+    pagination.page,
+  ],
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.private_ip = filters.private_ip || undefined
+    urlState.public_ip = filters.public_ip || undefined
+    urlState.status = filters.status || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.region = filters.region || undefined
+    urlState.instance_type = filters.instance_type || undefined
+    urlState.charge_type = filters.charge_type || undefined
+    urlState.vpc_id = filters.vpc_id || undefined
+    urlState.os_type = filters.os_type || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+  { deep: false },
+)
 
 watch(
   () => route.params.uid,
