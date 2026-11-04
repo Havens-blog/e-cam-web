@@ -301,6 +301,8 @@ import { ElMessage } from 'element-plus'
 import { useListError } from '@/composables/useListError'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute, useRouter } from 'vue-router'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import ImageDetailDrawer from './components/ImageDetailDrawer.vue'
@@ -417,6 +419,60 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  name: undefined,
+  account_id: undefined,
+  architecture: undefined,
+  os_type: undefined,
+  platform: undefined,
+  provider: undefined,
+  region: undefined,
+  image_owner_alias: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.name) searchConditions.value.push({ field: 'name', value: filters.name, displayValue: filters.name })
+  if (filters.account_id) searchConditions.value.push({ field: 'account_id', value: String(filters.account_id), displayValue: String(filters.account_id) })
+  if (filters.architecture) searchConditions.value.push({ field: 'architecture', value: String(filters.architecture), displayValue: String(filters.architecture) })
+  if (filters.os_type) searchConditions.value.push({ field: 'os_type', value: String(filters.os_type), displayValue: String(filters.os_type) })
+  if (filters.platform) searchConditions.value.push({ field: 'platform', value: String(filters.platform), displayValue: String(filters.platform) })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: String(filters.provider), displayValue: String(filters.provider) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: String(filters.region), displayValue: String(filters.region) })
+  if (filters.image_owner_alias) searchConditions.value.push({ field: 'image_owner_alias', value: String(filters.image_owner_alias), displayValue: String(filters.image_owner_alias) })
+}
+
+// URL 回填 → filters / page（缺这步会出现"urlState 有值但查询不变、无标签"）
+if (urlState.name) filters.name = urlState.name
+if (urlState.account_id) filters.account_id = urlState.account_id
+if (urlState.architecture) filters.architecture = urlState.architecture
+if (urlState.os_type) filters.os_type = urlState.os_type
+if (urlState.platform) filters.platform = urlState.platform
+if (urlState.provider) filters.provider = urlState.provider as CloudProvider
+if (urlState.region) filters.region = urlState.region
+if (urlState.image_owner_alias) filters.image_owner_alias = urlState.image_owner_alias
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.name, filters.account_id, filters.architecture, filters.os_type, filters.platform, filters.provider, filters.region, filters.image_owner_alias, pagination.page].join('|'),
+  () => {
+    urlState.name = filters.name || undefined
+    urlState.account_id = filters.account_id || undefined
+    urlState.architecture = filters.architecture || undefined
+    urlState.os_type = filters.os_type || undefined
+    urlState.platform = filters.platform || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.region = filters.region || undefined
+    urlState.image_owner_alias = filters.image_owner_alias || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 数据列表
 const imageList = ref<Asset[]>([])
@@ -794,6 +850,8 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
 onMounted(() => {
+  // 恢复筛选标签（引用 searchConditions，须在其声明之后；缺这步标签不显示）
+  rebuildConditionsFromFilters()
   loadColumnSettings()
   // H-03：全局搜索/实例详情「查看资产」带 query.search 跳入时预填关键词
   const s = route.query.search
