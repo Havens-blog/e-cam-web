@@ -1,4 +1,5 @@
 import vue from '@vitejs/plugin-vue'
+import { existsSync, readdirSync } from 'fs'
 import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
@@ -7,6 +8,29 @@ import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
 import type { ComponentResolver } from 'unplugin-vue-components'
+
+/**
+ * 收集 element-plus 各组件的按需样式入口（`element-plus/es/components/<name>/style/css`）。
+ *
+ * 【为什么需要】`unplugin-vue-components` + `ElementPlusResolver` 会在**每个页面首次访问时**
+ * 才 import 该页用到的组件样式。Vite 的依赖预构建一旦发现"新依赖"，就会重新打包，并让
+ * 引用旧 hash 的产物请求返回 **504 Outdated Optimize Dep** —— 表现为部分页面偶发空白。
+ * 把全部组件的样式入口静态写进 `optimizeDeps.include`，启动时一次性预构建完毕，
+ * 运行期不再触发重新预构建，也就不会再出现这类 504。
+ *
+ * 【为什么动态扫描而不是硬编码】element-plus 组件增删随版本变化，硬编码列表会漂移；
+ * 直接读 node_modules 目录可自适应，且用 existsSync 逐个校验 `style/css.mjs` 是否存在
+ * （121 个组件里有 4 个没有该入口，写进 include 会导致解析失败）。
+ */
+function elementPlusStyleEntries(): string[] {
+  const compDir = resolve(__dirname, 'node_modules/element-plus/es/components')
+  if (!existsSync(compDir)) return []
+
+  return readdirSync(compDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && existsSync(resolve(compDir, d.name, 'style/css.mjs')))
+    .map((d) => `element-plus/es/components/${d.name}/style/css`)
+    .sort()
+}
 
 /**
  * 平台共享组件（@haven/ui）：模板中直接写 <IconFont> / <ManagerHeader> /
@@ -179,6 +203,8 @@ export default defineConfig(({ mode }) => {
         'echarts',
         'axios',
         'dayjs',
+        // element-plus 各组件按需样式的入口：提前预构建，避免运行期发现新依赖后重构建引发 504
+        ...elementPlusStyleEntries(),
       ],
     },
 
