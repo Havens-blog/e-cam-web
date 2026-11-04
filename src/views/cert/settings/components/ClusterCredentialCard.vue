@@ -52,7 +52,7 @@
     </table>
 
     <!-- 从云端拉取：选账号 → 列 ACK 集群 → 勾选拉取登记 -->
-    <el-dialog v-model="fetchVisible" title="从云端拉取集群凭证" width="640px" align-center class="cert-modal">
+    <el-dialog v-model="fetchVisible" title="从云端拉取集群凭证" width="640px" align-center class="cert-modal" :close-on-click-modal="false">
       <div class="fetch-step">
         <label class="field-label" for="fetch-account-select">阿里云账号</label>
         <el-select
@@ -130,7 +130,7 @@
     </el-dialog>
 
     <!-- 手动登记：粘贴 kubeconfig -->
-    <el-dialog v-model="manualVisible" title="手动登记集群凭证" width="560px" align-center class="cert-modal">
+    <el-dialog v-model="manualVisible" title="手动登记集群凭证" width="560px" align-center class="cert-modal" :close-on-click-modal="false">
       <div class="manual-form">
         <label class="field-label" for="manual-cluster-name">集群名（唯一）</label>
         <el-input id="manual-cluster-name" v-model="manualName" placeholder="如 cluster-a" />

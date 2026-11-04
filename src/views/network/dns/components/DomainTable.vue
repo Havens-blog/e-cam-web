@@ -84,7 +84,7 @@
     <el-empty v-if="!errorInfo && !loading && domainList.length === 0" description="暂无数据" />
 
     <!-- 同步对话框 -->
-    <el-dialog v-model="syncDialogVisible" title="同步 DNS" width="480px">
+    <el-dialog v-model="syncDialogVisible" title="同步 DNS" width="480px" :close-on-click-modal="false">
       <el-form :model="syncForm" label-width="100px">
         <el-form-item label="云厂商">
           <el-select v-model="syncForm.provider" placeholder="全部云厂商（留空同步全部）" style="width: 100%" clearable>
