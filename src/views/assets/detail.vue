@@ -5,7 +5,7 @@
       :subtitle="asset?.asset_name || ''"
       :show-refresh-button="false"
       :show-back-button="true"
-      @back="router.back()"
+      @back="handleBack"
     >
       <template #actions>
         <el-button @click="handleEdit">
@@ -19,7 +19,21 @@
       </template>
     </ManagerHeader>
 
-    <div v-loading="loading" class="detail-content">
+    <!-- 加载失败态：留在本页，给原因 + 重试 + 返回列表（iter183 / T11） -->
+    <el-result
+      v-if="loadError && !loading"
+      icon="warning"
+      title="资产加载失败"
+      :sub-title="loadError"
+      class="detail-error"
+    >
+      <template #extra>
+        <el-button type="primary" @click="fetchAssetDetail">重试</el-button>
+        <el-button @click="router.push('/assets')">返回资产列表</el-button>
+      </template>
+    </el-result>
+
+    <div v-else v-loading="loading" class="detail-content">
       <el-row :gutter="20">
         <!-- 基本信息卡片 -->
         <el-col :span="12">
@@ -198,6 +212,17 @@ const editDialogVisible = ref(false)
 
 // 数据
 const asset = ref<Asset | null>(null)
+/**
+ * 加载失败态（iter183 / T11）。
+ *
+ * 原来的做法：失败 → toast 一句 → `router.back()`。
+ * 但本页 `/assets/:id` **没有站内入口**（全仓无链接指向它，只能直接输 URL 打开），
+ * 此时浏览器**没有可回退的历史** → `router.back()` 会跳出本应用（落到 /console/workbench），
+ * 用户既看不到是哪个资产出错，也没有重试机会。
+ *
+ * 现在改为：**留在本页**，展示错误原因 + 「重试」+「返回资产列表」两个按钮。
+ */
+const loadError = ref<string | null>(null)
 
 // 编辑表单
 const editForm = reactive({
@@ -206,25 +231,38 @@ const editForm = reactive({
   cost: 0,
 })
 
+/**
+ * 安全返回（iter183 / T11）。
+ *
+ * 本页是**孤儿路由**（全仓无链接指向 `/assets/:id`），直接输 URL 打开时浏览器没有可回退的历史，
+ * 此时 `router.back()` 会把用户**推出整个应用**（落到 /console/workbench）。
+ * 改为：有历史才 back，否则落到资产列表。
+ */
+const handleBack = () => {
+  if (window.history.length > 1) router.back()
+  else router.push('/assets')
+}
+
 // 获取资产详情
 const fetchAssetDetail = async () => {
   const id = Number(route.params.id)
   if (!id) {
-    ElMessage.error('资产ID无效')
-    router.back()
+    // 不跳走：URL 里的 id 非法是可解释的错误，留在本页提示即可
+    loadError.value = '资产 ID 无效，请检查链接是否正确'
+    loading.value = false
     return
   }
 
   loading.value = true
+  loadError.value = null
   try {
     const { data } = await getAssetDetailApi(id)
     asset.value = data
   } catch (error: any) {
-    // 直接拼 error.message 会把 axios 英文原文（Network Error / Request failed with status code N）
-    // 显示给用户 —— 详情页随后 router.back() 离开，用户只来得及看到这条 toast，中文可读性更重要。
-    // 走共享 resolveErrorMessage：只翻译已知英文传输层文案，其它 message 原样保留（iter133）。
-    ElMessage.error(resolveErrorMessage(error, '获取资产详情失败'))
-    router.back()
+    // 不跳走（见 loadError 注释）。文案走共享 resolveErrorMessage：
+    // 只翻译已知英文传输层文案，其它 message 原样保留（iter133）。
+    loadError.value = resolveErrorMessage(error, '获取资产详情失败')
+    asset.value = null
   } finally {
     loading.value = false
   }
