@@ -58,11 +58,21 @@ describe('导航菜单契约', () => {
         expect(dangling, `以下菜单项没有对应本地路由，也不是跨应用外开: ${dangling.join(', ')}`).toEqual([])
     })
 
-    it('服务树三条菜单必须指向 e-cmdb-web（回归锚点，防止改回本仓路径）', () => {
-        const serviceTree = withPath.filter((i) => i.key.startsWith('service-tree-'))
-        expect(serviceTree.length).toBeGreaterThan(0)
-        for (const item of serviceTree) {
-            expect(item.path, `${item.key} 应指向跨应用的 /cmdb/service-tree*`).toMatch(/^\/cmdb\/service-tree(\/|$)/)
+    it('服务树已迁入 CMDB，导航栏不得再出现该入口（回归锚点，防止回潮）', () => {
+        // 服务树的页面/路由早在迁移时就已搬到独立应用 e-cmdb-web；此前后因"本仓仍有菜单项"
+        // 长期产生死链，先改为 `/cmdb/service-tree*` 跨应用外开过渡。现按需求收尾：
+        // 入口统一由 CMDB 应用承载，本仓**不再保留任何服务树菜单项**（与 topology/alert/cmdb 一致）。
+        const keys = allItems.map((i) => i.key)
+        for (const k of ['service-tree', 'service-tree-main', 'service-tree-envs', 'service-tree-rules']) {
+            expect(keys, `导航仍存在已迁移入口: ${k}`).not.toContain(k)
+        }
+        const titles = allItems.map((i) => i.title)
+        expect(titles, '导航仍存在"服务树"标题').not.toContain('服务树')
+
+        // 同时确认：没有把本仓路由误指向已迁出路径
+        const paths = withPath.map((i) => i.path)
+        for (const p of ['/service-tree', '/service-tree/environments', '/service-tree/rules']) {
+            expect(paths, `导航仍指向已迁出路径: ${p}`).not.toContain(p)
         }
     })
 
