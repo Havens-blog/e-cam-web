@@ -567,5 +567,49 @@ $navbar-height: 56px;
   .el-breadcrumb {
     display: none;
   }
+
+  /* 390px 实测（iter174）：隐藏上述三项后仍溢出 40px ——
+     而溢出的 40px 恰好等于 .navbar 左右 padding（各 20px）。
+     表现：头像落在 right=410（视口 390），只露出 12/32px 的一条边。
+     虽然 .navbar 的 overflow-x:auto 让它能横向滚动抵达（点得开菜单），
+     但「头像只露出一条边」看起来像坏了，且用户无从得知要横向滚。
+     这里把间距收窄，让内容真正装进 390px，不再需要横向滚动：
+       padding 20→12（省 16px）、gap 20→12（省 8px）
+       左侧 gap 16→12（省 4px）、右侧 gap 12→8（省 8px）
+     合计省 36px，配合上面的省略已足够；留 4px 余量以适配 375/360 等更窄视口。 */
+  .navbar {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  .navbar-left {
+    gap: 12px;
+  }
+
+  .navbar-left :deep(.el-breadcrumb) {
+    /* padding/gap 收窄后若仍不够，面包屑已在上面隐藏，这里只是兜底 */
+    min-width: 0;
+  }
+
+  .navbar-right {
+    gap: 8px;
+  }
+}
+
+/* 超窄屏（≤375）：360px 实测（iter174）内容仍需 326px，而 navbar 只有 296px（360−64 侧栏），
+   差 30px。此时唯一还能整块省下的是「平台导航」的文字（占 106px，其中文字约 70px）：
+   只保留 Grid 图标后约 34px，省 72px，360/375 都能装下。
+   平台导航**功能不变**（点图标照样弹出面板），只去掉文字标签。 */
+@media (max-width: 375px) {
+  .platform-nav-trigger {
+    /* 只留图标：文字与箭头隐藏 */
+    span,
+    .trigger-arrow {
+      display: none;
+    }
+
+    padding: 0 6px;
+    gap: 0;
+  }
 }
 </style>
