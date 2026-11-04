@@ -52,7 +52,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="$emit('edit', instance)">编辑</el-dropdown-item>
-                    <el-dropdown-item divided @click="$emit('delete', instance)">
+                    <!-- iter187：同 InstanceTable，删除接口未开放，入口直接禁用并说明。 -->
+                    <el-dropdown-item divided disabled title="删除功能暂未开放">
                       <span class="danger-text">删除</span>
                     </el-dropdown-item>
                   </el-dropdown-menu>
