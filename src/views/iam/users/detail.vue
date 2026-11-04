@@ -51,6 +51,7 @@
       v-model="statusDialogVisible"
       title="修改用户状态"
       width="400px"
+      :close-on-click-modal="false"
     >
       <el-form label-width="80px">
         <el-form-item label="状态">
@@ -77,6 +78,7 @@
       v-model="groupsDialogVisible"
       title="管理权限组"
       width="500px"
+      :close-on-click-modal="false"
     >
       <el-form label-width="100px">
         <el-form-item label="权限组">

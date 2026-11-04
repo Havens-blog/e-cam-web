@@ -526,7 +526,7 @@
     </div>
 
     <!-- 保存模板对话框 -->
-    <el-dialog v-model="showSaveTemplateDialog" title="保存为模板" width="420px">
+    <el-dialog v-model="showSaveTemplateDialog" title="保存为模板" width="420px" :close-on-click-modal="false">
       <el-form label-width="80px">
         <el-form-item label="模板名称">
           <el-input v-model="templateName" placeholder="请输入模板名称" />
