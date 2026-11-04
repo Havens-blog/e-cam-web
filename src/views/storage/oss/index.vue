@@ -30,6 +30,10 @@
             <span class="stat-label">冷归档存储</span>
             <span class="stat-num">{{ statText(classCounts.coldArchive) }}</span>
           </div>
+          <div class="stat-badge">
+            <span class="stat-label">未分类</span>
+            <span class="stat-num">{{ statText(classCounts.unclassified) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -429,8 +433,10 @@ watch(
 )
 
 // 全局存储类型统计（从后端获取，非当前页；主机页同款口径；OSS 无 status 属性/ListOSSParams 无 status 参数，
-// 按领域以存储类型分布派生，storage_class 为后端精确匹配筛选——实测 Standard=374/IA=80/Archive=145/ColdArchive=3）
-const classCounts = reactive({ total: 0, standard: 0, ia: 0, archive: 0, coldArchive: 0 })
+// 按领域以存储类型分布派生，storage_class 为后端精确匹配筛选。
+// 实测值域有两个大小写变体：Standard(阿里云)=385 / STANDARD(腾讯云·AWS)=310，另有未采集/空值 273。
+// 此前只查 'Standard'，导致 standard 桶漏掉大写 STANDARD 的 310 个，且空值 273 完全不入卡（总数对不上）。
+const classCounts = reactive({ total: 0, standard: 0, ia: 0, archive: 0, coldArchive: 0, unclassified: 0 })
 // 统计失败时卡片显示「—」而非 0（列表仍可能正常显示 N 行，写 0 会自相矛盾）
 const { markFailed: markStatsFailed, markOk: markStatsOk, statText } = useStatText()
 
@@ -739,18 +745,21 @@ const fetchClassCounts = async () => {
   try {
     // 全局口径（主机页同款）：后端 storage_class 为精确匹配，选项为实测真实值域
     // （883 条：Standard=374/IA=80/Archive=145/ColdArchive=3，另有厂商大写 STANDARD 与未采集值不计入分类标）
-    const [totalRes, standardRes, iaRes, archiveRes, coldArchiveRes] = await Promise.all([
+    const [totalRes, standardRes, standardUpperRes, iaRes, archiveRes, coldArchiveRes] = await Promise.all([
       listOSSAssetsApi({ limit: 1, offset: 0 }),
       listOSSAssetsApi({ storage_class: 'Standard', limit: 1, offset: 0 }),
+      listOSSAssetsApi({ storage_class: 'STANDARD', limit: 1, offset: 0 }),
       listOSSAssetsApi({ storage_class: 'IA', limit: 1, offset: 0 }),
       listOSSAssetsApi({ storage_class: 'Archive', limit: 1, offset: 0 }),
       listOSSAssetsApi({ storage_class: 'ColdArchive', limit: 1, offset: 0 }),
     ])
     classCounts.total = totalRes.data?.total || 0
-    classCounts.standard = standardRes.data?.total || 0
+    const standard = (standardRes.data?.total || 0) + (standardUpperRes.data?.total || 0)
+    classCounts.standard = standard
     classCounts.ia = iaRes.data?.total || 0
     classCounts.archive = archiveRes.data?.total || 0
     classCounts.coldArchive = coldArchiveRes.data?.total || 0
+    classCounts.unclassified = Math.max(0, classCounts.total - standard - classCounts.ia - classCounts.archive - classCounts.coldArchive)
     markStatsOk()
   } catch {
     markStatsFailed()
