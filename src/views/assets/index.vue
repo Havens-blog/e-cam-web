@@ -121,7 +121,7 @@
     </template>
 
     <!-- 发现资产对话框 -->
-    <el-dialog v-model="discoverDialogVisible" title="发现资产" width="500px">
+    <el-dialog v-model="discoverDialogVisible" title="发现资产" width="500px" :close-on-click-modal="false">
       <el-form ref="discoverFormRef" :model="discoverForm" :rules="discoverRules" label-width="100px">
         <el-form-item label="云厂商" prop="provider">
           <el-select
@@ -150,7 +150,7 @@
     </el-dialog>
 
     <!-- 同步资产对话框 -->
-    <el-dialog v-model="syncDialogVisible" title="同步资产" width="600px">
+    <el-dialog v-model="syncDialogVisible" title="同步资产" width="600px" :close-on-click-modal="false">
       <el-form ref="syncFormRef" :model="syncForm" :rules="syncRules" label-width="100px">
         <el-form-item label="云厂商" prop="provider">
           <el-select
@@ -215,7 +215,7 @@
     </el-dialog>
 
     <!-- 编辑资产对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑资产" width="500px">
+    <el-dialog v-model="editDialogVisible" title="编辑资产" width="500px" :close-on-click-modal="false">
       <el-form :model="editForm" label-width="100px">
         <el-form-item label="资产名称">
           <el-input v-model="editForm.asset_name" placeholder="请输入资产名称" />
