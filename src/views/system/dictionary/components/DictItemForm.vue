@@ -5,6 +5,7 @@
     width="500px"
     destroy-on-close
     @close="$emit('update:visible', false)"
+    :close-on-click-modal="false"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dict-form">
       <el-form-item label="值" prop="value">
