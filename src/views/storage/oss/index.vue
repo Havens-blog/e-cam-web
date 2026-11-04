@@ -315,6 +315,8 @@ import { getProviderLabel } from '@/utils/constants'
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Folder, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute } from 'vue-router'
 import {
   computeStorageGrowth,
@@ -383,6 +385,48 @@ const filters = reactive({
 })
 
 const pagination = reactive({ page: 1, size: 20, total: 0 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  storage_class: undefined,
+  acl: undefined,
+  region: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: String(filters.provider), displayValue: String(filters.provider) })
+  if (filters.storage_class) searchConditions.value.push({ field: 'storage_class', value: String(filters.storage_class), displayValue: String(filters.storage_class) })
+  if (filters.acl) searchConditions.value.push({ field: 'acl', value: String(filters.acl), displayValue: String(filters.acl) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: String(filters.region), displayValue: String(filters.region) })
+}
+
+// URL 回填 → filters / page（缺这步会出现"urlState 有值但查询不变、无标签"）
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.storage_class) filters.storage_class = urlState.storage_class
+if (urlState.acl) filters.acl = urlState.acl
+if (urlState.region) filters.region = urlState.region
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.storage_class, filters.acl, filters.region, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.storage_class = filters.storage_class || undefined
+    urlState.acl = filters.acl || undefined
+    urlState.region = filters.region || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 全局存储类型统计（从后端获取，非当前页；主机页同款口径；OSS 无 status 属性/ListOSSParams 无 status 参数，
 // 按领域以存储类型分布派生，storage_class 为后端精确匹配筛选——实测 Standard=374/IA=80/Archive=145/ColdArchive=3）
@@ -769,6 +813,8 @@ const initColumnSettings = () => {
 const route = useRoute()
 
 onMounted(() => {
+  // 恢复筛选标签（引用 searchConditions，须在其声明之后；缺这步标签不显示）
+  rebuildConditionsFromFilters()
   initColumnSettings()
   const s = route.query.search
   if (typeof s === 'string' && s) {
