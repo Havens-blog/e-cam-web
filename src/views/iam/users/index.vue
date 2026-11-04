@@ -185,6 +185,7 @@ import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import { logApiConfig, logError } from '@/utils/error-logger'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { buildBatchAssignSuccessText } from './components/batchAssignSuccessText'
 import type { FormInstance, FormRules } from 'element-plus'
 import SyncUsersDialog from './components/SyncUsersDialog.vue'
@@ -249,6 +250,36 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  user_type: undefined,
+  status: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// URL 回填 → filters / pagination（先落状态再取数）
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.user_type) filters.user_type = urlState.user_type
+if (urlState.status) filters.status = urlState.status
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.user_type, filters.status, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.user_type = filters.user_type || undefined
+    urlState.status = filters.status || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 计算属性
 const dialogTitle = computed(() => (isEdit.value ? '编辑用户' : '创建用户'))

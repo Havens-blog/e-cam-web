@@ -231,6 +231,8 @@ import {
 import { Plus, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import TaskDetailDrawer from './components/TaskDetailDrawer.vue'
 import TaskFormDialog from './components/TaskFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
@@ -250,6 +252,36 @@ const pagination = reactive({
   size: 20,
   total: 0
 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  task_type: undefined,
+  status: undefined,
+  cloud_account_id: undefined,
+  provider: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// URL 回填 → filters / pagination（先落状态再取数）
+if (urlState.task_type) filters.task_type = urlState.task_type
+if (urlState.status) filters.status = urlState.status
+if (urlState.cloud_account_id) filters.cloud_account_id = urlState.cloud_account_id
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.task_type, filters.status, filters.cloud_account_id, filters.provider, pagination.page].join('|'),
+  () => {
+    urlState.task_type = filters.task_type || undefined
+    urlState.status = filters.status || undefined
+    urlState.cloud_account_id = filters.cloud_account_id || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 任务列表
 const taskList = ref<SyncTask[]>([])
