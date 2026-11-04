@@ -156,6 +156,7 @@
       :title="isEdit ? '编辑分摊规则' : '创建分摊规则'"
       width="680px"
       destroy-on-close
+      :close-on-click-modal="false"
     >
       <el-form ref="ruleFormRef" :model="ruleForm" :rules="ruleFormRules" label-width="90px">
         <el-form-item label="规则名称" prop="name">
@@ -233,7 +234,7 @@
     </el-dialog>
 
     <!-- 默认分摊策略对话框 -->
-    <el-dialog v-model="defaultPolicyVisible" title="默认分摊策略" width="440px" destroy-on-close>
+    <el-dialog v-model="defaultPolicyVisible" title="默认分摊策略" width="440px" destroy-on-close :close-on-click-modal="false">
       <el-form :model="defaultPolicyForm" label-width="100px">
         <el-form-item label="兜底节点 ID">
           <el-input v-model="defaultPolicyForm.default_node_id" placeholder="请输入默认归属节点 ID" />

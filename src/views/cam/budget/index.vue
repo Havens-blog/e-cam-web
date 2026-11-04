@@ -160,6 +160,7 @@
       :title="isEdit ? '编辑预算规则' : '创建预算规则'"
       width="520px"
       destroy-on-close
+      :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="90px">
         <el-form-item label="预算名称" prop="name">
