@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="🏷️ 添加标签" width="600px" :destroy-on-close="true" @close="handleClose">
+  <el-dialog v-model="visible" title="🏷️ 添加标签" width="600px" :destroy-on-close="true" @close="handleClose" :close-on-click-modal="false">
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
         <el-form-item label="云厂商" prop="provider">

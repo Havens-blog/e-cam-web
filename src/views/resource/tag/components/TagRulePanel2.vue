@@ -33,7 +33,7 @@
       </div>
       <el-empty v-if="rules.length === 0 && !loading" description="暂无自动打标规则" />
     </div>
-    <el-dialog v-model="showDialog" :title="editingRule ? '编辑自动打标规则' : '创建自动打标规则'" width="650px" :destroy-on-close="true">
+    <el-dialog v-model="showDialog" :title="editingRule ? '编辑自动打标规则' : '创建自动打标规则'" width="650px" :destroy-on-close="true" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="规则名称" prop="name"><el-input v-model="form.name" placeholder="如：生产环境资源打标" /></el-form-item>
         <el-form-item label="规则描述"><el-input v-model="form.description" placeholder="描述规则的用途" /></el-form-item>
