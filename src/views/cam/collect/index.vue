@@ -170,7 +170,7 @@
           v-model:current-page="currentPage"
           :page-size="pageSize"
           :total="total"
-          layout="prev, pager, next"
+          layout="prev, pager, next, jumper"
           @current-change="handlePageChange"
         />
       </div>
