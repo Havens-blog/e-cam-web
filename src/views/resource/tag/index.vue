@@ -142,7 +142,7 @@
             v-model:current-page="currentPage"
             :page-size="pageSize"
             :total="tagTotal"
-            layout="prev, pager, next"
+            layout="prev, pager, next, jumper"
             @current-change="loadTags"
           />
         </div>
