@@ -318,6 +318,8 @@ import { NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '
 import { ArrowLeft, ArrowRight, Box, DataLine, Download, Plus, Refresh, Search, Setting, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { watch } from 'vue'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRoute } from 'vue-router'
 import {
   deriveNasCardState,
@@ -385,6 +387,52 @@ const filters = reactive({
 })
 
 const pagination = reactive({ page: 1, size: 20, total: 0 })
+
+// 筛选与页码同步 URL（沿用项目既有 useUrlFilters；模板见 network/eip）：
+// 此前只存在内存里，刷新 / 分享链接 / 从详情返回都会丢。
+const urlState = reactive<Record<string, string | undefined>>({
+  keyword: undefined,
+  provider: undefined,
+  file_system_type: undefined,
+  protocol_type: undefined,
+  status: undefined,
+  region: undefined,
+  page: undefined,
+})
+useUrlFilters(urlState)
+
+// filters → 筛选标签（仅还原 UI；查询仍以 filters 为准）
+const rebuildConditionsFromFilters = () => {
+  if (filters.keyword) searchConditions.value.push({ field: 'asset_name', value: filters.keyword, displayValue: filters.keyword })
+  if (filters.provider) searchConditions.value.push({ field: 'provider', value: filters.provider as string, displayValue: String(filters.provider) })
+  if (filters.file_system_type) searchConditions.value.push({ field: 'file_system_type', value: filters.file_system_type as string, displayValue: String(filters.file_system_type) })
+  if (filters.protocol_type) searchConditions.value.push({ field: 'protocol_type', value: filters.protocol_type as string, displayValue: String(filters.protocol_type) })
+  if (filters.status) searchConditions.value.push({ field: 'status', value: filters.status as string, displayValue: String(filters.status) })
+  if (filters.region) searchConditions.value.push({ field: 'region', value: filters.region as string, displayValue: String(filters.region) })
+}
+
+// URL 回填 → filters / page（缺这步会出现"urlState 有值但查询不变、无标签"）
+if (urlState.keyword) filters.keyword = urlState.keyword
+if (urlState.provider) filters.provider = urlState.provider
+if (urlState.file_system_type) filters.file_system_type = urlState.file_system_type
+if (urlState.protocol_type) filters.protocol_type = urlState.protocol_type
+if (urlState.status) filters.status = urlState.status
+if (urlState.region) filters.region = urlState.region
+if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+
+// 状态变化 → 写回 URL（空值置 undefined，composable 会删 key）
+watch(
+  () => [filters.keyword, filters.provider, filters.file_system_type, filters.protocol_type, filters.status, filters.region, pagination.page].join('|'),
+  () => {
+    urlState.keyword = filters.keyword || undefined
+    urlState.provider = filters.provider || undefined
+    urlState.file_system_type = filters.file_system_type || undefined
+    urlState.protocol_type = filters.protocol_type || undefined
+    urlState.status = filters.status || undefined
+    urlState.region = filters.region || undefined
+    urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+  },
+)
 
 // 全局状态统计（从后端获取，非当前页；主机页同款口径；状态值用后端精确匹配的真实小写值域）
 const statusCounts = reactive({ total: 0, running: 0, stopped: 0 })
@@ -761,6 +809,8 @@ const initColumnSettings = () => {
 const route = useRoute()
 
 onMounted(() => {
+  // 恢复筛选标签（引用 searchConditions，须在其声明之后；缺这步标签不显示）
+  rebuildConditionsFromFilters()
   initColumnSettings()
   const s = route.query.search
   if (typeof s === 'string' && s) {
