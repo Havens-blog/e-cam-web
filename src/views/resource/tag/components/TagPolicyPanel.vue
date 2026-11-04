@@ -170,7 +170,7 @@
     </div>
 
     <!-- Create/Edit Policy Dialog -->
-    <el-dialog v-model="showPolicyDialog" :title="editingPolicy ? '📋 编辑标签策略' : '📋 创建标签策略'" width="600px" :destroy-on-close="true">
+    <el-dialog v-model="showPolicyDialog" :title="editingPolicy ? '📋 编辑标签策略' : '📋 创建标签策略'" width="600px" :destroy-on-close="true" :close-on-click-modal="false">
       <el-form ref="policyFormRef" :model="policyForm" :rules="policyRules" label-position="top">
         <el-form-item label="策略名称" prop="name">
           <el-input v-model="policyForm.name" placeholder="如：基础标签规范" />

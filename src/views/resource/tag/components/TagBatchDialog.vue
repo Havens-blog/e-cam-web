@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="dialogTitle" width="600px" :destroy-on-close="true" @close="handleClose">
+  <el-dialog v-model="visible" :title="dialogTitle" width="600px" :destroy-on-close="true" @close="handleClose" :close-on-click-modal="false">
     <el-form ref="batchFormRef" :model="batchModel" :rules="batchRules" label-position="top">
       <el-form-item v-if="mode === 'normal'" label="操作类型" prop="batchType">
         <el-radio-group v-model="batchType" size="large">
