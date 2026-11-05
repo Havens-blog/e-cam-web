@@ -178,6 +178,7 @@ import { Close, Coin, Picture, PriceTag, Refresh } from '@element-plus/icons-vue
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { IMAGE_STATUS_LABELS, IMAGE_TYPE_LABELS } from '@/utils/fieldLabels'
+import { formatTime } from '@/utils/formatters'
 
 // 状态值 → 展示文案:共享 AssetStatusBadge 的 labels 映射,与列表页共用 utils/fieldLabels 单源
 const props = defineProps<{
@@ -220,13 +221,8 @@ const tagList = computed(() => {
   return []
 })
 
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  if (typeof time === 'string' && time.includes('-')) return time
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  if (isNaN(ts)) return time as string
-  return new Date(ts).toLocaleString('zh-CN')
-}
+// iter202：本地 formatTime 已删，改用中央 formatTime（统一 YYYY-MM-DD HH:mm:ss）。
+// 原实现有「已是格式化字符串则原样返回」的分支，dayjs 对这类字符串同样能正确解析。
 </script>
 
 <style scoped lang="scss">

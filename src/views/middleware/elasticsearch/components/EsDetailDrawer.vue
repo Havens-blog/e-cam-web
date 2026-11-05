@@ -71,7 +71,7 @@ import { ES_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
-import { formatTime } from '@/utils/formatters'
+import { formatTime, formatTime as formatDateTime } from '@/utils/formatters'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -82,8 +82,6 @@ const getStatusClass = (status?: string) => { if (!status) return ''; const s = 
 const getStatusText = (status?: string) => labelOfLenient(ES_STATUS_LABELS, status, status || '-')
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
-const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
-
 </script>
 
 <style scoped lang="scss">

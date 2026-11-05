@@ -338,6 +338,7 @@ import OssDetailDrawer from './components/OssDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { useStatText } from '@/composables/useStatText'
+import { formatTime as formatDateTime } from '@/utils/formatters'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 逐字搬运（零漂移，不在迁移中优化）；
  *  S-Hard：存储量/对象数一律来自指标表(bucket_name 去重代表行),无指标数据导出空串,不回退资产表快照 */
@@ -790,11 +791,6 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
-}
 
 /** 自定义列初始化:历史保存设置迁移——剔除已下线列,按默认标签回填(修复历史保存的错位标签),缺失列按默认补齐,保留用户的显隐/宽度设置 */
 const initColumnSettings = () => {

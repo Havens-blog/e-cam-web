@@ -378,6 +378,7 @@ import AccountCardView from './components/AccountCardView.vue'
 import AccountDetailDrawer from './components/AccountDetailDrawer.vue'
 import AccountListView from './components/AccountListView.vue'
 import AccountForm from './form.vue'
+import { formatTime } from '@/utils/formatters'
 
 // 状态
 const viewMode = ref<'card' | 'list'>('card')
@@ -568,7 +569,7 @@ const fetchAccounts = async () => {
       pagination.total = cached.data.total
       usingCache.value = true
       const timestamp = cacheManager.getTimestamp('cloud-accounts')
-      if (timestamp) cacheTime.value = timestamp.toLocaleString('zh-CN')
+      if (timestamp) cacheTime.value = formatTime(timestamp.getTime())
     }
   } finally {
     loading.value = false

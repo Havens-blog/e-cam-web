@@ -166,6 +166,7 @@ import { getProviderLabel, getUserStatus, getUserTypeLabel } from '@/utils/const
 import { userAccountLabel, userPermissionGroups as userGroups } from '@/utils/display-fallbacks'
 import { Delete, Document, Edit, Folder, FolderRemove } from '@element-plus/icons-vue'
 import { ref } from 'vue'
+import { formatTime as formatDateTime } from '@/utils/formatters'
 
 defineProps<{
   visible: boolean
@@ -209,10 +210,6 @@ const getStatusClass = (status: string | undefined) => {
   return map[status] || ''
 }
 
-const formatDateTime = (time: string | undefined) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped lang="scss">

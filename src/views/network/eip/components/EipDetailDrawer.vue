@@ -206,6 +206,7 @@ import { CHARGE_TYPE_LABELS, EIP_INSTANCE_TYPE_LABELS, EIP_STATUS_LABELS, labelO
 import { ArrowDown, Document, Position, PriceTag, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
+import { formatTime } from '@/utils/formatters'
 
 /** 状态文案走 fieldLabels 单源 EIP_STATUS_LABELS(与列表页同源)；色调映射保留在抽屉 */
 const statusTones: Record<string, string> = {
@@ -256,11 +257,7 @@ const tagList = computed(() => {
   return []
 })
 
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  return new Date(ts).toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime（统一 YYYY-MM-DD HH:mm:ss）
 
 const getTabName = (tab: string) => {
   const map: Record<string, string> = {

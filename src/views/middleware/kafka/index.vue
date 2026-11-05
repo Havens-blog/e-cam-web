@@ -281,6 +281,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime as formatDateTime, formatTime } from '@/utils/formatters'
 
 /** 共享导出配置：字段沿用原 stub 字段清单（key 对齐 attributes 实际字段名），取值走通用映射 */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -611,16 +612,6 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
-}
-
-const formatTime = (time?: number) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
 
 // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填关键词（无 query 直达零改动）
 const route = useRoute()

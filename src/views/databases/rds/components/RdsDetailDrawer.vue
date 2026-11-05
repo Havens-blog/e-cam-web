@@ -127,7 +127,7 @@ import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, RDS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
-import { formatNumber } from '@/utils/formatters';
+import { formatNumber, formatTime as formatDateTime, formatTime } from '@/utils/formatters';
 import { formatConnections, formatPercent, hasZeroException } from '@/views/databases/rds/rdsMetrics';
 import { ArrowDown, Close, DataLine, Document, WarningFilled } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
@@ -157,16 +157,6 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 
 const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
-}
-
-const formatTime = (time?: number) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
 
 // ===== 监控 tab:CPU/内存/磁盘使用率 + 连接数趋势(按需查询,读 ecam_rds_metric 指标表) =====
 // 与 NasDetailDrawer 指标 tab 同构;echarts 渲染在 canvas 上,CSS 变量不可用
