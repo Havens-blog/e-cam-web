@@ -314,6 +314,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime } from '@/utils/formatters'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/ACTIVE 全为成功族 */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'ACTIVE', 'active', '可用'].includes(status || '')
@@ -811,13 +812,7 @@ const getProviderName = (provider?: string): string => (provider ? getProviderLa
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 创建时间：attributes.creation_time 为 ISO 串（原样展示），顶层 create_time 为毫秒时间戳（格式化） */
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  if (typeof time === 'string' && time.includes('-')) return time
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  if (Number.isNaN(ts)) return '-'
-  return new Date(ts).toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime
 
 const route = useRoute()
 

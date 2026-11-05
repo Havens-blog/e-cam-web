@@ -138,6 +138,7 @@ import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { PROVIDER_CONFIGS, getProviderLabel } from '@/utils/constants'
 import { Close, Lock } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
+import { formatTime } from '@/utils/formatters'
 
 
 interface SecurityRule {
@@ -189,13 +190,7 @@ const tagList = computed(() => {
   return []
 })
 
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  if (typeof time === 'string' && time.includes('-')) return time
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  if (isNaN(ts)) return time as string
-  return new Date(ts).toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime
 </script>
 
 <style scoped lang="scss">

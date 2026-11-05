@@ -316,6 +316,7 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import EipDetailDrawer from './components/EipDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import { formatTime } from '@/utils/formatters'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 EIP_STATUS_LABELS */
 // 绑定族涵盖后端归一后的 canonical(in_use)与历史原始值(InUse/Attached/BIND/BIND_ENI)
@@ -804,11 +805,7 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
-const formatTime = (time: number | string | undefined) => {
-  if (!time) return '-'
-  const ts = typeof time === 'number' ? time : parseInt(time)
-  return new Date(ts).toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime
 
 // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填名称条件（以 chip 呈现可移除，无 query 直达零改动）
 const route = useRoute()
