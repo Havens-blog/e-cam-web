@@ -265,7 +265,9 @@ interface ColumnConfig { key: string; label: string; width?: number; visible: bo
 /** 共享导出取值：原本地 ExportDialog 内联取值逻辑逐字搬运（零漂移，不在迁移中优化） */
 const getExportValue: ExportFieldConfig['getValue'] = (i: Asset, key: string): string => {
   if (key === 'asset_id' || key === 'asset_name') return i[key] || ''
-  if (key === 'create_time') return i.create_time ? new Date(i.create_time).toLocaleString('zh-CN') : ''
+  // 导出值同样走中央 formatTime（iter201）：原来用 toLocaleString('zh-CN') 会导出成
+  // 2026/11/5 12:04:40，与界面/其他导出（连字符）不一致。
+  if (key === 'create_time') return i.create_time ? formatTime(i.create_time) : ''
   // status/provider/region 是 Asset 顶层字段，attributes 里恒空（compute-2 F-H4）；状态导出同样走单源文案防裸显英文
   if (key === 'status') return getStatusText(i.status || i.attributes?.status)
   if (key === 'provider') return i.provider || i.attributes?.provider || ''
