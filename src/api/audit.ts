@@ -144,3 +144,50 @@ export function getChangeSummaryApi(params?: {
         params,
     })
 }
+
+
+// ==================== 统一审计事件（跨域统一检索，P0） ====================
+
+/** 统一审计事件（与 e-common-go/auditlog.AuditEvent 的 JSON 契约一致） */
+export interface AuditEvent {
+	actor_type: string
+	actor_id: string
+	actor_name: string
+	at: number
+	tenant_id: number
+	client_ip?: string
+	user_agent?: string
+	service: string
+	domain: string
+	action: string
+	resource_type: string
+	resource_id?: string
+	resource_urn?: string
+	result: string
+	status_code?: number
+	duration_ms?: number
+	detail?: Record<string, unknown>
+}
+
+export interface AuditEventParams {
+	actor_id?: string
+	service?: string
+	domain?: string
+	action?: string
+	result?: string
+	resource_type?: string
+	resource_id?: string
+	start_time?: number
+	end_time?: number
+	offset?: number
+	limit?: number
+	order?: 'asc' | 'desc'
+}
+
+/** 跨域查询统一审计事件（GET /cam/audit/events） */
+export function listAuditEventsApi(params?: AuditEventParams) {
+	return instance.get<{ items: AuditEvent[]; total: number }>({
+		url: `${API_SERVICE.CAM}/audit/events`,
+		params,
+	})
+}
