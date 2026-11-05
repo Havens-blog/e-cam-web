@@ -76,6 +76,10 @@ export interface AssetChange {
 /** 资产变更查询参数 */
 export interface AssetChangeParams {
     field_name?: string
+    /** 资产模型UID（精确匹配，#418 后端能力） */
+    model_uid?: string
+    /** 变更来源（manual=手工 / sync_task=云同步，#418 后端能力） */
+    change_source?: string
     start_time?: number
     end_time?: number
     offset?: number
