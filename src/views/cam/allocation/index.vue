@@ -157,6 +157,7 @@
       width="680px"
       destroy-on-close
       :close-on-click-modal="false"
+      class="rule-dialog"
     >
       <el-form ref="ruleFormRef" :model="ruleForm" :rules="ruleFormRules" label-width="90px">
         <el-form-item label="规则名称" prop="name">
@@ -238,7 +239,7 @@
     </el-dialog>
 
     <!-- 默认分摊策略对话框 -->
-    <el-dialog v-model="defaultPolicyVisible" title="默认分摊策略" width="440px" destroy-on-close :close-on-click-modal="false">
+    <el-dialog v-model="defaultPolicyVisible" title="默认分摊策略" width="440px" destroy-on-close :close-on-click-modal="false" class="rule-dialog">
       <el-form :model="defaultPolicyForm" label-width="100px">
         <el-form-item label="兜底节点 ID">
           <el-input v-model="defaultPolicyForm.default_node_id" placeholder="请输入默认归属节点 ID" />
@@ -671,6 +672,23 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* iter216：矮屏（1280x720）下「创建分摊规则」弹窗会超出视口底部，
+   「取消 / 确定」按钮点不到（实测超出 51px，按钮 bottom=771 > 视口 720）。
+
+   做法：限制**弹窗整体**高度（而非只限 body）—— 因为 header + footer 还要占约 165px，
+   只限 body 会让总高仍然超窗。整体限高后，再由 body 内部滚动。 */
+/* 注意：el-dialog 会被 teleport 到 .el-overlay 下，**元素上不会带 scoped 的 data-v 属性**，
+   所以 scoped 选择器（.rule-dialog[data-v-xxx]）根本匹配不到 —— 必须用 :global。 */
+:global(.rule-dialog) {
+  margin-top: 5vh !important;
+  margin-bottom: 5vh !important;
+}
+
+:global(.rule-dialog .el-dialog__body) {
+  max-height: calc(90vh - 165px);
+  overflow-y: auto;
+}
+
 .allocation-tabs {
   :deep(.el-tabs__header) {
     margin-bottom: 16px;
