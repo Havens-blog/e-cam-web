@@ -108,6 +108,7 @@ import type { TableInstance } from 'element-plus'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { DataTableBatchAction, DataTableColumn, DataTableDensity, DataTableFetcher } from './types'
+import { looksTechnical, TECHNICAL_ERROR_FALLBACK } from '@/utils/technicalError'
 
 defineOptions({ name: 'DataTable', inheritAttrs: false })
 
@@ -215,6 +216,12 @@ function resolveErrorMessage(error: unknown, fallback?: string): string {
   if (raw && TRANSPORT_ERROR_EN.test(raw.trim())) {
     // parseError 对「无 response」的错误统一给出「网络连接失败」+ 检查网络的建议
     return parseError(error).message || raw
+  }
+  // iter219：后端返回的技术细节（SQL / 内网地址 / 堆栈）不该展示给运维用户 ——
+  // 实测 pq: / dial tcp 10.x / goroutine 都会被原样漏到界面上。
+  // 注意不动契约：中文消息（如「网络超时」）仍原样展示，见 DataTable.test.ts。
+  if (raw && looksTechnical(raw)) {
+    return TECHNICAL_ERROR_FALLBACK
   }
   return raw || fallback || ''
 }
