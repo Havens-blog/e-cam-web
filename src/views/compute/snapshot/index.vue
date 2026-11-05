@@ -258,6 +258,7 @@ import ColumnSettingsDialog from './components/ColumnSettingsDialog.vue'
 import SnapshotDetailDrawer from './components/SnapshotDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { SNAPSHOT_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { formatTime } from '@/utils/formatters'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -608,7 +609,6 @@ const getStatusClass = (status?: string) => {
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
-const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 
 onMounted(() => {
   // 恢复筛选标签（引用 searchConditions，须在其声明之后；缺这步标签不显示）

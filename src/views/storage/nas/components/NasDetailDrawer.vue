@@ -163,7 +163,7 @@ import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { CHARGE_TYPE_LABELS, NAS_FILE_SYSTEM_TYPE_LABELS, NAS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
-import { formatNumber } from '@/utils/formatters';
+import { formatNumber, formatTime as formatDateTime } from '@/utils/formatters';
 import { formatCapacityGB, formatUtilization, hasZeroException } from '@/views/storage/nas/nasMetrics';
 import { ArrowDown, Close, DataLine, Document, FolderOpened, PriceTag, WarningFilled } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
@@ -384,7 +384,6 @@ watch(() => props.visible, (val) => {
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const getChargeTypeText = (type?: string) => labelOfLenient(CHARGE_TYPE_LABELS, type)
-const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>
 
 <style lang="scss">

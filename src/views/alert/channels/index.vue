@@ -89,6 +89,7 @@ import ChannelFormDialog from './components/ChannelFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { formatTime } from '@/utils/formatters'
 
 const list = ref<AlertChannel[]>([])
 const loading = ref(false)
@@ -118,7 +119,6 @@ const channelTagType = (t: string) => {
   const m: Record<string, string> = { dingtalk: '', wecom: 'success', feishu: 'warning', email: 'info' }
   return (m[t] || '') as any
 }
-const formatTime = (t: string) => t ? new Date(t).toLocaleString('zh-CN') : '-'
 
 const fetchData = async () => {
   loading.value = true

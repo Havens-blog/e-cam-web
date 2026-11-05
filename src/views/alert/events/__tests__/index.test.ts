@@ -13,6 +13,7 @@ import { listEventsApi } from '@/api/alert'
 import type { AlertEvent } from '@/api/alert'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { formatTime } from '@/utils/formatters'
 import EventsPage from '../index.vue'
 
 vi.mock('@/api/alert', () => ({
@@ -255,7 +256,10 @@ describe('AC1 列结构与行渲染（旧页路径 4-5）', () => {
         expect(rows[0]!.text()).toContain('严重')
         expect(rows[0]!.text()).toContain('已发送')
         expect(rows[0]!.text()).toContain('monitor-core')
-        expect(rows[0]!.text()).toContain(new Date('2026-09-20T10:00:00Z').toLocaleString('zh-CN'))
+        // iter201：页面时间改用中央 formatTime（YYYY-MM-DD HH:mm:ss），
+        // 原来的 toLocaleString('zh-CN') 会渲染成 2026/9/20 18:00:00（斜杠、不补零），
+        // 与全站其余 6 个测试锁定的连字符格式不一致。
+        expect(rows[0]!.text()).toContain(formatTime('2026-09-20T10:00:00Z'))
         expect(rows[1]!.text()).toContain('同步失败')
         expect(rows[1]!.text()).toContain('警告')
         expect(rows[1]!.text()).toContain('发送失败')

@@ -67,6 +67,7 @@ import { Camera, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { SNAPSHOT_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
+import { formatTime } from '@/utils/formatters'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -78,7 +79,7 @@ const getStatusClass = (status?: string) => { if (!status) return ''; const s = 
 const getStatusText = (status?: string) => labelOfLenient(SNAPSHOT_STATUS_LABELS, (status || '').toLowerCase(), '-')
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
-const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
+
 </script>
 
 <style scoped lang="scss">

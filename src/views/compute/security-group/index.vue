@@ -256,6 +256,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime } from '@/utils/formatters'
 
 interface ColumnConfig { key: string; label: string; width?: number; visible: boolean }
 
@@ -579,7 +580,6 @@ const getSgRuleCount = (item: Asset) => (item.attributes?.ingress_rules?.length 
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
-const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 
 // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填搜索关键词（无 query 直达零改动）
 const route = useRoute()

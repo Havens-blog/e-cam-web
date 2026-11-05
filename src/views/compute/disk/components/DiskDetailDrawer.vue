@@ -109,6 +109,7 @@ import echarts from '@/utils/echarts';
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { resolveErrorMessage } from '@/utils/error-handler';
+import { formatTime } from '@/utils/formatters'
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -120,7 +121,6 @@ const getStatusText = (status?: string) => { if (!status) return '-'; return DIS
 const getDiskCategory = (category?: string) => { if (!category) return '-'; return DISK_CATEGORY_LABELS[category] || category }
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
-const formatTime = (time?: number) => time ? new Date(time).toLocaleString('zh-CN') : '-'
 
 // ===== 监控 tab:使用率/IOPS/吞吐趋势(按需查询,读 ecam_disk_metric 指标表) =====
 // 与 NasDetailDrawer 监控 tab 同构;echarts 渲染在 canvas 上,CSS 变量不可用
