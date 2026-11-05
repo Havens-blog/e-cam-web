@@ -127,7 +127,7 @@ import { getOssMetricsApi, type OSSBucketMetricsView, type OSSMetricPoint } from
 import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { safeTagType, getProviderLabel } from '@/utils/constants';
-import { formatNumber } from '@/utils/formatters';
+import { formatNumber, formatTime as formatDateTime } from '@/utils/formatters';
 import { formatCapacityGB, formatObjectCount, hasZeroException } from '@/views/storage/oss/ossMetrics';
 import { ArrowDown, Close, DataLine, Document, Folder, WarningFilled } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
@@ -332,7 +332,6 @@ watch(() => props.visible, (val) => {
 
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
-const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
 </script>
 
 <style scoped lang="scss">

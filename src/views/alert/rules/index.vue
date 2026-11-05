@@ -104,6 +104,7 @@ import RuleFormDialog from './components/RuleFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { formatTime } from '@/utils/formatters'
 
 const list = ref<AlertRule[]>([])
 const loading = ref(false)
@@ -132,7 +133,6 @@ const ruleTypeLabel = (t: string) => {
   }
   return m[t] || t
 }
-const formatTime = (t: string) => t ? new Date(t).toLocaleString('zh-CN') : '-'
 
 const fetchData = async () => {
   loading.value = true

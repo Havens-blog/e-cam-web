@@ -140,6 +140,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime as formatTs } from '@/utils/formatters'
 
 const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
@@ -184,8 +185,6 @@ const sourceLabel = (s: string) => {
   const m: Record<string, string> = { sync_task: '同步任务', manual: '手动修改', api: 'API调用' }
   return m[s] || s
 }
-
-const formatTs = (ts: number) => ts ? new Date(ts).toLocaleString('zh-CN') : '-'
 
 const parseValue = (val: string) => {
   if (!val || val === '""') return '-'

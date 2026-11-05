@@ -132,6 +132,7 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { formatTime } from '@/utils/formatters'
 
 const PAGE_SIZE = 20
 
@@ -196,7 +197,6 @@ const statusTagType = (s: string) => {
   const m: Record<string, string> = { pending: 'info', sent: 'success', failed: 'danger', silenced: 'warning' }
   return (m[s] || 'info') as 'info' | 'success' | 'danger' | 'warning'
 }
-const formatTime = (t: string) => (t ? new Date(t).toLocaleString('zh-CN') : '-')
 
 /** 事件拉取（挂载即由 DataTable 调起；分页与筛选在调用时读取最新值） */
 const fetchEvents = async (): Promise<AlertEvent[]> => {
