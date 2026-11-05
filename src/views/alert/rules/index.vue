@@ -105,6 +105,7 @@ import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { formatTime } from '@/utils/formatters'
+import { showApiError } from '@/api/request'
 
 const list = ref<AlertRule[]>([])
 const loading = ref(false)
@@ -171,7 +172,7 @@ const handleDelete = async (row: AlertRule) => {
     await deleteRuleApi(row.id)
     ElMessage.success('删除成功')
     fetchData()
-  } catch (e: any) { ElMessage.error(e.message || '删除失败') }
+  } catch (e: any) { showApiError(e, '删除失败') }
 }
 
 // 启停前守卫：禁用告警规则将停止该规则触发的告警通知，需二次确认；启用直接放行。
@@ -192,7 +193,7 @@ const handleToggle = async (row: AlertRule) => {
     ElMessage.success(row.enabled ? '已启用' : '已禁用')
   } catch (e: any) {
     row.enabled = !row.enabled
-    ElMessage.error(e.message || '操作失败')
+    showApiError(e, '操作失败')
   }
 }
 

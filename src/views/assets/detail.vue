@@ -201,6 +201,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AssetStatusBadge from '@/components/AssetStatusBadge.vue'
 import { ASSET_STATUS_LABELS } from '@/utils/fieldLabels'
+import { showApiError } from '@/api/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -296,7 +297,7 @@ const submitEdit = async () => {
     editDialogVisible.value = false
     fetchAssetDetail()
   } catch (error: any) {
-    ElMessage.error(error.message || '更新失败')
+    showApiError(error, '更新失败')
   } finally {
     updating.value = false
   }
@@ -322,7 +323,7 @@ const handleDelete = async () => {
     router.push('/assets')
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      showApiError(error, '删除失败')
     }
   }
 }

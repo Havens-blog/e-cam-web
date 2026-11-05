@@ -332,6 +332,7 @@ import {
     summarizeImportSession,
     summarizePreview,
 } from '../discovery'
+import { showApiError } from '@/api/request'
 
 /** 模板直接使用的常量（script setup 模板作用域） */
 const SNAPSHOT_STALE_DAYS = DISCOVERY_SNAPSHOT_STALE_DAYS
@@ -439,7 +440,7 @@ async function onConfirmImport() {
             startImportPolling()
         }
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '云端导入会话创建失败')
+        showApiError(err, '云端导入会话创建失败')
     } finally {
         importing.value = false
     }

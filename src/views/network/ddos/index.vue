@@ -309,6 +309,7 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import DdosDetailDrawer from './components/DdosDetailDrawer.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { showApiError } from '@/api/request'
 
 /**
  * DDoS 状态族判定（状态点色调 + 全局统计共用同一函数，family 口径单源）。
@@ -751,7 +752,7 @@ const fetchData = async () => {
     fetchDdosCounts()
   } catch (error: any) {
     console.error('获取DDoS列表失败:', error)
-    ElMessage.error(error.message || '获取DDoS列表失败')
+    showApiError(error, '获取DDoS列表失败')
     ddosList.value = []
     pagination.total = 0
   } finally {
@@ -790,7 +791,7 @@ const submitSync = async () => {
     syncDialogVisible.value = false
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交同步任务失败')
+    showApiError(error, '提交同步任务失败')
   } finally {
     syncing.value = false
   }

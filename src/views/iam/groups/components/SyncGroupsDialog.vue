@@ -103,6 +103,7 @@ import { listCloudAccountsApi, syncGroupsApi } from '@/api'
 import { getProviderLabel, safeTagType } from '@/utils/constants'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { computed, ref, watch } from 'vue'
+import { showApiError } from '@/api/request'
 
 interface Props {
   visible: boolean
@@ -251,7 +252,7 @@ const handleSubmit = async () => {
       errorMessage: error.message || '同步失败'
     }
 
-    ElMessage.error(error.message || '同步用户组失败')
+    showApiError(error, '同步用户组失败')
   } finally {
     syncing.value = false
   }

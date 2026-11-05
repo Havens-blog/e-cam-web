@@ -128,6 +128,7 @@ import {
     type NumericThresholdKey,
     type ThresholdsDraft,
 } from './format'
+import { showApiError } from '@/api/request'
 
 const SKELETON_DELAY_MS = 800
 
@@ -260,7 +261,7 @@ async function sendTestAlert() {
             ElMessage.error(res.reason ? `测试告警发送失败：${res.reason}` : '测试告警发送失败')
         }
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '测试告警发送失败')
+        showApiError(err, '测试告警发送失败')
     } finally {
         testing.value = false
     }
@@ -292,7 +293,7 @@ async function onRemoveExemption(domain: string) {
         ElMessage.success('豁免已移除，审计已记录')
         await refreshSettingsKeepDrafts()
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '移除失败，请重试')
+        showApiError(err, '移除失败，请重试')
         exemptionCard.value?.notifyRemoveResult(false)
     } finally {
         exemptionMutating.value = false

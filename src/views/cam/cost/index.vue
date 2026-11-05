@@ -91,7 +91,6 @@ import type {
 } from '@/api/types/finops'
 import { ManagerHeader } from '@haven/ui/ManagerHeader'
 import PageContainer from '@/components/PageContainer/index.vue'
-import { ElMessage } from 'element-plus'
 import {
   comparisonHint,
   formatChangePercent,
@@ -105,6 +104,7 @@ import CostFilters from './components/CostFilters.vue'
 import CostSummaryCards from './components/CostSummaryCards.vue'
 import CostTrendChart from './components/CostTrendChart.vue'
 import { formatCost } from '@/utils/formatters'
+import { showApiError } from '@/api/request'
 
 // ==================== 筛选状态 ====================
 
@@ -175,7 +175,7 @@ const fetchSummary = async () => {
     summaryFailed.value = false
   } catch (e: any) {
     summaryFailed.value = true
-    ElMessage.error(e.message || '获取成本概览失败')
+    showApiError(e, '获取成本概览失败')
   }
 }
 
@@ -189,7 +189,7 @@ const fetchDistribution = async () => {
     distributionData.value = (res as any).data || res || []
   } catch (e: any) {
     distributionData.value = []
-    ElMessage.error(e.message || '获取成本分布失败')
+    showApiError(e, '获取成本分布失败')
   } finally {
     distributionLoading.value = false
   }
@@ -205,7 +205,7 @@ const fetchTrend = async () => {
     trendData.value = (res as any).data || res || []
   } catch (e: any) {
     trendData.value = []
-    ElMessage.error(e.message || '获取成本趋势失败')
+    showApiError(e, '获取成本趋势失败')
   } finally {
     trendLoading.value = false
   }
@@ -217,7 +217,7 @@ const fetchComparison = async () => {
     yoyComparison.value = (res as any).data || res || null
   } catch (e: any) {
     yoyComparison.value = null
-    ElMessage.error(e.message || '获取成本对比数据失败')
+    showApiError(e, '获取成本对比数据失败')
   }
 }
 

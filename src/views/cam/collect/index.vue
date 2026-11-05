@@ -193,6 +193,7 @@ import { accountDisplayName, buildCollectLogQuery, clampPage, hasActiveFilters }
 import { formatCollectStartedAt, formatDateTime, formatElapsed, summarizeRunningLogs } from './format'
 import { buildCollectLogCsv, exportFileName, EXPORT_MAX_ROWS } from './export'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { showApiError } from '@/api/request'
 
 const collectForm = reactive({ account_id: undefined as number | undefined })
 const collectDateRange = ref<[string, string] | null>(null)
@@ -335,7 +336,7 @@ const handleCollect = async () => {
       if (!disposed) fetchLogs({ silent: true })
     }, 1000)
   } catch (e: any) {
-    ElMessage.error(e.message || '触发采集失败')
+    showApiError(e, '触发采集失败')
   } finally {
     collecting.value = false
   }

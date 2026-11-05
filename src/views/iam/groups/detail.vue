@@ -175,6 +175,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import GroupForm from './components/GroupForm.vue'
+import { showApiError } from '@/api/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -198,7 +199,7 @@ const fetchGroupDetail = async () => {
     members.value = []
   } catch (error: any) {
     console.error('获取权限组详情失败:', error)
-    ElMessage.error(error.message || '获取权限组详情失败')
+    showApiError(error, '获取权限组详情失败')
   } finally {
     loading.value = false
   }
@@ -231,7 +232,7 @@ const handleSubmitEdit = async () => {
     fetchGroupDetail()
   } catch (error: any) {
     console.error('更新权限组失败:', error)
-    ElMessage.error(error.message || '更新权限组失败')
+    showApiError(error, '更新权限组失败')
   } finally {
     submitting.value = false
   }
@@ -256,7 +257,7 @@ const handleDelete = async () => {
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('删除权限组失败:', error)
-      ElMessage.error(error.message || '删除权限组失败')
+      showApiError(error, '删除权限组失败')
     }
   }
 }

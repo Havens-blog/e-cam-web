@@ -237,6 +237,7 @@ import TaskDetailDrawer from './components/TaskDetailDrawer.vue'
 import TaskFormDialog from './components/TaskFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { showApiError } from '@/api/request'
 
 // 筛选条件
 const filters = reactive({
@@ -403,7 +404,7 @@ const handleRetry = async (task: SyncTask) => {
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('重试任务失败:', error)
-      ElMessage.error(error.message || '重试任务失败')
+      showApiError(error, '重试任务失败')
     }
   }
 }

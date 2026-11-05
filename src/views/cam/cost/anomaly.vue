@@ -154,6 +154,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { onMounted, reactive, ref, watch } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { showApiError } from '@/api/request'
 
 // ==================== Tab 状态 ====================
 
@@ -227,7 +228,7 @@ const handleTriggerDetection = async () => {
     ElMessage.success('异常检测已提交，请稍后刷新查看结果')
     setTimeout(() => fetchAnomalies(), 3000)
   } catch (e: any) {
-    ElMessage.error(e.message || '触发异常检测失败')
+    showApiError(e, '触发异常检测失败')
   } finally {
     detecting.value = false
   }

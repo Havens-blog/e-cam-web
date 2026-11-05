@@ -6,6 +6,7 @@ import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import type { RequestConfig, RequestInterceptors, ResponseData } from './types'
+import { looksTechnical, TECHNICAL_ERROR_FALLBACK } from '@/utils/technicalError'
 
 // 防止多个并发 401 请求重复跳转登录页
 let isRedirectingToLogin = false
@@ -69,7 +70,11 @@ export function showApiError(error: unknown, fallback = '操作失败') {
     // 取消不是错误：既不该提示，也不该借用 fallback 文案
     if (isCanceledError(error)) return
     if (isErrorNotified(error)) return
-    const message = error instanceof Error && error.message ? error.message : fallback
+    const raw = error instanceof Error && error.message ? error.message : ''
+    // iter220：后端返回的技术细节（SQL / 内网地址 / 堆栈）不该弹给运维用户 ——
+    // 实测 pq: duplicate key ... / dial tcp 10.x 都会被原样弹到 toast 上。
+    // 注意不动契约：中文业务消息仍原样展示（见 DataTable.test.ts）。
+    const message = raw && looksTechnical(raw) ? TECHNICAL_ERROR_FALLBACK : raw
     ElMessage.error(message || fallback)
 }
 

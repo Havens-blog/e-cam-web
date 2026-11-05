@@ -143,6 +143,7 @@ import {
   type TaskFilters,
   type TaskSummary,
 } from './taskFilters'
+import { showApiError } from '@/api/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -377,7 +378,7 @@ const handleCancel = async (task: Task) => {
     refreshAll()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '取消任务失败')
+      showApiError(error, '取消任务失败')
     }
   } finally {
     actionTaskId.value = ''
@@ -404,7 +405,7 @@ const handleDelete = async (task: Task) => {
     refreshAll()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除任务失败')
+      showApiError(error, '删除任务失败')
     }
   } finally {
     actionTaskId.value = ''

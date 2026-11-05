@@ -138,6 +138,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TaskProgress from './components/TaskProgress.vue'
 import TaskStatusBadge from './components/TaskStatusBadge.vue'
+import { showApiError } from '@/api/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -196,7 +197,7 @@ const fetchTaskDetail = async () => {
     const { data } = await getTaskDetailApi(taskId)
     task.value = data
   } catch (error: any) {
-    ElMessage.error(error.message || '获取任务详情失败')
+    showApiError(error, '获取任务详情失败')
     router.back()
   } finally {
     loading.value = false
@@ -220,7 +221,7 @@ const handleCancel = async () => {
     fetchTaskDetail()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '取消任务失败')
+      showApiError(error, '取消任务失败')
     }
   } finally {
     cancelling.value = false
@@ -248,7 +249,7 @@ const handleDelete = async () => {
     router.back()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      showApiError(error, '删除失败')
     }
   } finally {
     deleting.value = false

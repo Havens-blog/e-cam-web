@@ -73,6 +73,7 @@ import { createChannelApi, updateChannelApi } from '@/api/alert'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { reactive, ref, watch } from 'vue'
+import { showApiError } from '@/api/request'
 
 const props = defineProps<{
   modelValue: boolean
@@ -183,7 +184,7 @@ const handleSubmit = async () => {
     handleClose()
     emit('success')
   } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
+    showApiError(e, '操作失败')
   } finally {
     submitting.value = false
   }

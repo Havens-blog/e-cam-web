@@ -175,6 +175,7 @@ import { useUserStore } from '@/stores/user'
 import { Connection } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
+import { showApiError } from '@/api/request'
 
 interface Props {
   account?: CloudAccount | null
@@ -278,7 +279,7 @@ const testConnection = async () => {
       ElMessage.info('请先保存账号后再测试连接')
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '测试连接失败')
+    showApiError(error, '测试连接失败')
   } finally {
     testingConnection.value = false
   }

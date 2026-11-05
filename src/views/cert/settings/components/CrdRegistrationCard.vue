@@ -207,6 +207,7 @@ import { CertRequestError, createCrdRegistrationApi, deleteCrdRegistrationApi, l
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { EMPTY_CRD_FORM, mapCrdCreateError, validateCrdForm, type CrdFormState } from '../format'
+import { showApiError } from '@/api/request'
 
 const items = ref<CrdRegistration[]>([])
 const loading = ref(true)
@@ -292,7 +293,7 @@ async function submitRemove() {
         ElMessage.success('CRD 登记已删除，该 CRD 回归扫描盲区（审计已记录）')
         await load()
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '删除失败，请重试')
+        showApiError(err, '删除失败，请重试')
     } finally {
         removing.value = false
     }
