@@ -241,6 +241,33 @@ const pagination = reactive({
   total: 0
 })
 
+/**
+ * 每页条数的 URL 同步（iter206）。
+ *
+ * 本页已有 useUrlFilters(filters) 管六个筛选字段，但 **size 不在其中** ——
+ * 实测：34 行 → 改 50 → 64 行 → **刷新回 34 行**，用户每次都要重设。
+ * 与 iter205 修的 ECS 同一缺陷。此处用独立的 size 小对象同步，
+ * 理由：pagination 定义在 useUrlFilters(filters) 之后，且 total 不该进 URL。
+ *
+ * 约定：默认 20 不写进 URL。
+ */
+const PAGE_SIZE_CHOICES = [10, 20, 50, 100]
+const DEFAULT_PAGE_SIZE = 20
+const sizeState = reactive<{ size: string }>({ size: '' })
+useUrlFilters(sizeState)
+
+const nFromUrl = Number(sizeState.size)
+if (Number.isFinite(nFromUrl) && PAGE_SIZE_CHOICES.includes(nFromUrl)) {
+  pagination.size = nFromUrl
+}
+
+watch(
+  () => pagination.size,
+  (v) => {
+    sizeState.size = v !== DEFAULT_PAGE_SIZE ? String(v) : ''
+  },
+)
+
 // 日志列表
 const logList = ref<AuditLog[]>([])
 const loading = ref(false)
