@@ -504,7 +504,14 @@ const handlePolicySubmit = async () => {
 
 const handleDelete = async (policy: TagPolicy) => {
   try {
-    await ElMessageBox.confirm(`确定要删除策略"${policy.name}"吗？`, '删除策略', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确定要删除标签策略「${policy.name}」吗？\n\n` +
+        '这只是移除这条「标签策略」（必填标签键 / 键值约束 / 适用资源类型），\n' +
+        '「不会」删除任何已经打到资源上的标签。\n\n' +
+        '删除后，该策略覆盖的资源不再参与标签合规检查。',
+      '删除标签策略',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
   } catch {
     // user cancelled
     return
