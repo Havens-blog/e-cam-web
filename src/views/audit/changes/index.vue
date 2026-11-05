@@ -69,6 +69,23 @@
     <!-- 错误态：查询失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
     <ErrorDisplay v-if="assetId && errorInfo" :error-info="errorInfo" @retry="fetchChanges" />
     <div v-else-if="assetId" class="table-wrapper">
+      <!-- 列表筛选条：后端 /audit/changes 支持 change_source/model_uid（#418）与 field_name，
+           此前前端未透传（前后端能力不对齐）。选择/输入即重查并同步 URL。 -->
+      <div class="list-filter-bar">
+        <el-select v-model="listFilter.change_source" placeholder="全部来源" clearable size="small" style="width: 130px" @change="handleListFilterChange">
+          <el-option label="手工变更" value="manual" />
+          <el-option label="云同步" value="sync_task" />
+        </el-select>
+        <el-select v-model="listFilter.model_uid" placeholder="全部资源类型" clearable size="small" style="width: 140px" @change="handleListFilterChange">
+          <el-option label="虚拟机" value="cloud_vm" />
+          <el-option label="RDS" value="cloud_rds" />
+          <el-option label="Redis" value="cloud_redis" />
+          <el-option label="VPC" value="cloud_vpc" />
+          <el-option label="EIP" value="cloud_eip" />
+          <el-option label="云盘" value="cloud_disk" />
+        </el-select>
+        <el-input v-model="listFilter.field_name" placeholder="按字段名筛选" clearable size="small" style="width: 180px" @change="handleListFilterChange" />
+      </div>
       <el-table :data="changeList" v-loading="changesLoading" stripe style="width: 100%" row-key="id">
         <el-table-column prop="ctime" label="变更时间" width="170">
           <template #default="{ row }">{{ formatTs(row.ctime) }}</template>
@@ -163,6 +180,13 @@ const urlAssetId = reactive<Record<string, string | undefined>>({ assetId: asset
 useUrlFilters(urlAssetId)
 watch(assetId, (v) => { urlAssetId.assetId = v || undefined })
 useUrlFilters(summaryFilter)
+
+// 列表筛选（变更来源/字段名/资源类型）：后端 /audit/changes 早已支持
+// （change_source/model_uid 由 #418 补齐，field_name 为既有能力），此前前端未透传。
+// 独立 useUrlFilters 实例：挂载时自动从 URL 回填、变化时自动写回（只增删自己的 key）。
+const listFilter = reactive({ change_source: '', field_name: '', model_uid: '' })
+useUrlFilters(listFilter)
+
 // URL 回填后先落到各自的 ref/对象，再取数（否则页面显示与数据不一致）
 if (urlAssetId.assetId && !assetId.value) {
     assetId.value = String(urlAssetId.assetId)
@@ -225,6 +249,9 @@ const fetchChanges = async () => {
   changesLoading.value = true
   try {
     const res = await run(() => listAssetChangesApi(assetId.value.trim(), {
+      field_name: listFilter.field_name || undefined,
+      model_uid: listFilter.model_uid || undefined,
+      change_source: listFilter.change_source || undefined,
       offset: (page.value - 1) * pageSize,
       limit: pageSize,
     }), '查询变更历史失败')
@@ -237,6 +264,12 @@ const fetchChanges = async () => {
   } finally {
     changesLoading.value = false
   }
+}
+
+// 列表筛选变化：重置页码再查（避免沿用旧页码的 offset 落在新结果集中间页）
+const handleListFilterChange = () => {
+  page.value = 1
+  fetchChanges()
 }
 
 // 发起新查询：重置页码到第 1 页，避免沿用旧页码的 offset 落在新结果集中间页
@@ -371,6 +404,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.list-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
 .table-wrapper {
   flex: 1;
