@@ -251,6 +251,7 @@ const urlState = reactive<Record<string, string | undefined>>({
   vpc_id: undefined,
   os_type: undefined,
   page: undefined,
+  size: undefined,
 })
 useUrlFilters(urlState)
 
@@ -359,9 +360,13 @@ const handleFilterChange = () => {
   fetchInstances()
 }
 
+/** 每页条数可选项（iter205）：与模板 :page-sizes 一致，URL 还原时用它做合法性校验 */
+const PAGE_SIZE_CHOICES = [20, 50, 100]
+const DEFAULT_PAGE_SIZE = 20
+
 const pagination = reactive({
   page: 1,
-  size: 20,
+  size: DEFAULT_PAGE_SIZE,
   total: 0,
 })
 
@@ -667,6 +672,12 @@ onMounted(() => {
   if (urlState.vpc_id) filters.vpc_id = urlState.vpc_id
   if (urlState.os_type) filters.os_type = urlState.os_type
   if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
+  // 每页条数也还原（iter205）：此前只有 page 进了 URL，刷新后 size 回到默认 20，
+  // 用户「一页看 50 条」的习惯每次刷新都要重设。仅接受合法值，防 URL 被改成 0/负数/超大值。
+  const sizeFromUrl = Number(urlState.size)
+  if (Number.isFinite(sizeFromUrl) && PAGE_SIZE_CHOICES.includes(sizeFromUrl)) {
+    pagination.size = sizeFromUrl
+  }
   // filters → 标签（仅还原 UI，避免「URL 有值但看不到已生效的条件」）
   rebuildConditionsFromFilters()
 
@@ -680,7 +691,7 @@ watch(
   () => [
     filters.keyword, filters.private_ip, filters.public_ip, filters.status, filters.provider,
     filters.region, filters.instance_type, filters.charge_type, filters.vpc_id, filters.os_type,
-    pagination.page,
+    pagination.page, pagination.size,
   ],
   () => {
     urlState.keyword = filters.keyword || undefined
@@ -694,6 +705,8 @@ watch(
     urlState.vpc_id = filters.vpc_id || undefined
     urlState.os_type = filters.os_type || undefined
     urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
+    // 默认 20 不写进 URL（保持链接干净），非默认值才写
+    urlState.size = pagination.size !== DEFAULT_PAGE_SIZE ? String(pagination.size) : undefined
   },
   { deep: false },
 )
