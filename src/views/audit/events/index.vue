@@ -22,6 +22,7 @@
           <el-option label="操作审计" value="audit" />
           <el-option label="管理操作" value="operation" />
           <el-option label="认证安全" value="auth" />
+          <el-option label="资产变更" value="change" />
         </el-select>
         <el-select v-model="filters.result" placeholder="全部结果" clearable class="filter-select" @change="handleFilterChange">
           <el-option label="成功" value="success" />
@@ -38,6 +39,13 @@
         <el-input
           v-model="filters.actor_id"
           placeholder="操作者ID"
+          clearable
+          class="filter-input"
+          @change="handleFilterChange"
+        />
+        <el-input
+          v-model="filters.resource_type"
+          placeholder="资源类型（api/ecs/change_order…）"
           clearable
           class="filter-input"
           @change="handleFilterChange"
@@ -127,6 +135,7 @@ const urlState = reactive<Record<string, string | undefined>>({
   result: undefined,
   action: undefined,
   actor_id: undefined,
+  resource_type: undefined,
   start: undefined,
   end: undefined,
   page: undefined,
@@ -145,6 +154,7 @@ const filters = reactive({
   result: '',
   action: '',
   actor_id: '',
+  resource_type: '',
 })
 // 时间范围在 URL 里是 start/end 毫秒字符串；dateRange 是控件态
 const dateRange = ref<[string, string] | null>(null)
@@ -155,6 +165,7 @@ if (urlState.domain) filters.domain = urlState.domain
 if (urlState.result) filters.result = urlState.result
 if (urlState.action) filters.action = urlState.action
 if (urlState.actor_id) filters.actor_id = urlState.actor_id
+if (urlState.resource_type) filters.resource_type = urlState.resource_type
 if (urlState.start && urlState.end) dateRange.value = [urlState.start, urlState.end]
 if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlState.page)
 
@@ -162,6 +173,7 @@ if (urlState.page && Number(urlState.page) > 0) pagination.page = Number(urlStat
 watch(
   () => [
     filters.service, filters.domain, filters.result, filters.action, filters.actor_id,
+    filters.resource_type,
     dateRange.value?.[0] ?? '', dateRange.value?.[1] ?? '', pagination.page,
   ].join('|'),
   () => {
@@ -170,6 +182,7 @@ watch(
     urlState.result = filters.result || undefined
     urlState.action = filters.action || undefined
     urlState.actor_id = filters.actor_id || undefined
+    urlState.resource_type = filters.resource_type || undefined
     urlState.start = dateRange.value?.[0] || undefined
     urlState.end = dateRange.value?.[1] || undefined
     urlState.page = pagination.page > 1 ? String(pagination.page) : undefined
@@ -186,6 +199,7 @@ const buildParams = (): AuditEventParams => {
   if (filters.result) p.result = filters.result
   if (filters.action) p.action = filters.action
   if (filters.actor_id) p.actor_id = filters.actor_id
+  if (filters.resource_type) p.resource_type = filters.resource_type
   if (dateRange.value?.[0]) p.start_time = Number(dateRange.value[0])
   if (dateRange.value?.[1]) p.end_time = Number(dateRange.value[1])
   return p
@@ -225,6 +239,7 @@ const handleReset = () => {
   filters.result = ''
   filters.action = ''
   filters.actor_id = ''
+  filters.resource_type = ''
   dateRange.value = null
   pagination.page = 1
   fetchEvents()
