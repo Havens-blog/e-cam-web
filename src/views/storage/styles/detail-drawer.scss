@@ -199,4 +199,22 @@
   color: #909399;
 
   p { margin-top: 16px; }
+
+  /* iter212：占位 tab 分两级文字 —— 标题说「为什么空」，描述给出「去哪儿看」。
+     原先占位只有一句「{{ activeTab }} 功能开发中...」，会把内部 key 漏给用户且无信息量。 */
+  .empty-tab-title {
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #606266);
+  }
+
+  .empty-tab-desc {
+    max-width: 360px;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    color: #909399;
+  }
 }

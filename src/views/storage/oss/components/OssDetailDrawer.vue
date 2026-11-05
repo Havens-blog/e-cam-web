@@ -114,7 +114,8 @@
             </div>
           </template>
           <template v-else>
-            <div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p>{{ activeTab }} 功能开发中...</p></div>
+            <div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p class="empty-tab-title">{{ tabPlaceholder.title }}</p>
+            <p class="empty-tab-desc">{{ tabPlaceholder.desc }}</p></div>
           </template>
         </div>
       </template>
@@ -135,11 +136,15 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { OSS_ACL_LABELS, OSS_STORAGE_CLASS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { resolveErrorMessage } from '@/utils/error-handler';
+import { placeholderFor } from '@/composables/tabPlaceholders'
 
 const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
+
+/** 占位标签页的文案（iter212）：原先直接渲染 {{ activeTab }}，会把内部 key 漏给用户 */
+const tabPlaceholder = computed(() => placeholderFor(activeTab.value))
 
 /** 存储类型/ACL 文案走 fieldLabels 单源，小写键归一（aliyun=Standard、tencent/aws=STANDARD 同词），与列表/导出同口径 */
 const getStorageClassText = (type?: string) => labelOfLenient(OSS_STORAGE_CLASS_LABELS, (type || '').toLowerCase(), '-')

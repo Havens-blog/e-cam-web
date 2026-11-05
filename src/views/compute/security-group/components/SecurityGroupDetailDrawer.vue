@@ -90,7 +90,8 @@
               <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
             </el-table>
           </template>
-          <template v-else><div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p>{{ activeTab }} 功能开发中...</p></div></template>
+          <template v-else><div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p class="empty-tab-title">{{ tabPlaceholder.title }}</p>
+            <p class="empty-tab-desc">{{ tabPlaceholder.desc }}</p></div></template>
         </div>
       </template>
     </div>
@@ -102,14 +103,18 @@ import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { Close, Document, Lock } from '@element-plus/icons-vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { formatTime } from '@/utils/formatters'
+import { placeholderFor } from '@/composables/tabPlaceholders'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
+
+/** 占位标签页的文案（iter212）：原先直接渲染 {{ activeTab }}，会把内部 key 漏给用户 */
+const tabPlaceholder = computed(() => placeholderFor(activeTab.value))
 
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
