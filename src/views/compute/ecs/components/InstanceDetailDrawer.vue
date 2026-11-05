@@ -486,11 +486,14 @@
           </div>
         </template>
 
-        <!-- 其他标签页占位 -->
+        <!-- 其他标签页占位（iter211）：原先直接渲染 {{ activeTab }}，
+             用户会看到 "monitor 功能开发中..." / "alarm 功能开发中..." —— 把内部变量名漏到了界面上。
+             改为中文标签 + 说明「为什么空、去哪儿看」，避免只留一句无信息量的「开发中」。 -->
         <template v-else>
           <div class="empty-tab">
             <el-icon :size="48"><Document /></el-icon>
-            <p>{{ activeTab }} 功能开发中...</p>
+            <p class="empty-tab-title">{{ tabPlaceholder.title }}</p>
+            <p class="empty-tab-desc">{{ tabPlaceholder.desc }}</p>
           </div>
         </template>
       </div>
@@ -560,6 +563,44 @@ defineEmits<{
 }>()
 
 const activeTab = ref('detail')
+
+/**
+ * 占位 tab 的文案（iter211）。
+ *
+ * 这 5 个 tab 尚无实现（monitor / alarm / task / schedule / log），原先模板直接写
+ * `{{ activeTab }} 功能开发中...`，把**内部变量名**渲染给了用户，中文界面里出现
+ * "monitor 功能开发中..." 这种半英文文案。
+ * 这里改为中文名 + 一句「数据从哪来 / 去哪儿看」，让占位也有信息量。
+ */
+const TAB_PLACEHOLDER: Record<string, { title: string; desc: string }> = {
+  monitor: {
+    title: '监控图表暂未接入',
+    desc: '本页暂未接入该实例的监控时序数据。可前往云厂商控制台查看 CPU / 内存 / 网络曲线。',
+  },
+  alarm: {
+    title: '告警信息暂未接入',
+    desc: '本页暂未接入该实例的告警记录。可在「告警规则」中查看规则配置与触发情况。',
+  },
+  task: {
+    title: '任务记录暂未接入',
+    desc: '本页暂未接入该实例的异步任务列表。可在「任务列表」中按资源筛选查看。',
+  },
+  schedule: {
+    title: '定时任务暂未接入',
+    desc: '本页暂未接入该实例的定时任务。可在「任务列表」中查看调度计划。',
+  },
+  log: {
+    title: '操作日志暂未接入',
+    desc: '本页暂未接入该实例的操作日志。可在「操作审计」中按资源与时间检索。',
+  },
+}
+
+const tabPlaceholder = computed(() => {
+  const hit = TAB_PLACEHOLDER[activeTab.value]
+  if (hit) return hit
+  // 兜底：绝不把内部 key 直接显示给用户
+  return { title: '该标签页暂无内容', desc: '当前版本尚未提供此标签页的数据。' }
+})
 
 // 嵌套抽屉状态
 const nestedDrawerType = ref<'disk' | 'snapshot' | 'security-group' | 'vpc' | null>(null)
@@ -1029,6 +1070,23 @@ const closeNestedDrawer = () => {
   justify-content: center;
   height: 300px;
   color: var(--text-tertiary);
+
+  /* iter211：占位 tab 分两级文字 —— 标题说明「为什么空」，描述给出「去哪儿看」 */
+  .empty-tab-title {
+    margin: 12px 0 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .empty-tab-desc {
+    max-width: 380px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
 
   .empty-error {
     color: var(--el-color-danger, var(--el-color-danger));
