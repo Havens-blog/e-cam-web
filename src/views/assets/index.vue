@@ -365,8 +365,9 @@ import { formatCost, formatTime } from '@/utils/formatters'
 import { Delete, Edit, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 
 const router = useRouter()
 
@@ -429,6 +430,35 @@ const pagination = reactive({
   size: 20,
   total: 0,
 })
+
+/**
+ * 每页条数的 URL 同步（iter206）。
+ *
+ * 背景：本页原先没接 useUrlFilters，改「每页 20 → 50」后**刷新即回到 20**，
+ * 用户每次进来都要重设（实测：20 行 → 50 行 → 刷新回 20 行，URL 一个字不变）。
+ * 与 iter205 修的 ECS 是同一缺陷，但本页的分页对象定义在别处、且没有 urlState，
+ * 故用「独立 size 小对象 + 双向 watch」实现，避免改动既有筛选逻辑。
+ *
+ * 约定：默认 20 **不写进 URL**（保持链接干净，也避免分享链接改掉对方的每页条数）。
+ */
+const PAGE_SIZE_CHOICES = [10, 20, 50, 100]
+const DEFAULT_PAGE_SIZE = 20
+const sizeState = reactive<{ size: string }>({ size: '' })
+useUrlFilters(sizeState)
+
+// URL → pagination（挂载时 useUrlFilters 已回填 sizeState）
+const nFromUrl = Number(sizeState.size)
+if (Number.isFinite(nFromUrl) && PAGE_SIZE_CHOICES.includes(nFromUrl)) {
+  pagination.size = nFromUrl
+}
+
+// pagination → URL
+watch(
+  () => pagination.size,
+  (v) => {
+    sizeState.size = v !== DEFAULT_PAGE_SIZE ? String(v) : ''
+  },
+)
 
 const totalPages = computed(() => Math.ceil(pagination.total / pagination.size))
 
