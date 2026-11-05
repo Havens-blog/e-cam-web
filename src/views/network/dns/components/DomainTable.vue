@@ -31,7 +31,14 @@
     <!-- 错误态：请求失败时给持久说明 + 重试，而不是把失败渲染成「暂无数据」 -->
     <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchData" />
     <!-- 表格 -->
-    <el-table v-else v-loading="loading" :data="domainList" stripe style="width: 100%">
+    <el-table
+      v-else
+      v-loading="loading"
+      :data="domainList"
+      :empty-text="hasFilters ? ' ' : ' '"
+      stripe
+      style="width: 100%"
+    >
       <el-table-column label="域名" min-width="200" show-overflow-tooltip>
         <template #default="{ row }">
           <span class="domain-link" @click="handleViewRecords(row)">{{ row?.domain_name || '-' }}</span>
@@ -81,7 +88,11 @@
       </el-table-column>
     </el-table>
 
-    <el-empty v-if="!errorInfo && !loading && domainList.length === 0" description="暂无数据" />
+    <!-- 空态（iter203）：区分「筛选后无结果」与「本来就没有域名」，避免把筛选误读成系统为空 -->
+    <el-empty
+      v-if="!errorInfo && !loading && domainList.length === 0"
+      :description="hasFilters ? '没有符合条件的域名，试试调整搜索或云厂商筛选' : '暂无域名，可点击右上角「同步实例」拉取'"
+    />
 
     <!-- 同步对话框 -->
     <el-dialog v-model="syncDialogVisible" title="同步 DNS" width="480px" :close-on-click-modal="false">
@@ -127,7 +138,7 @@ import { List, Refresh, Search, Share } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -140,6 +151,8 @@ const page = ref(1)
 const pageSize = ref(20)
 const keyword = ref('')
 const provider = ref('')
+/** 是否有生效的筛选条件（iter203）：用于区分「筛选后无结果」与「本来就没有数据」 */
+const hasFilters = computed(() => Boolean(keyword.value.trim()) || Boolean(provider.value))
 let searchTimer: number | null = null
 
 const statusLabel = (status: string | undefined) => {
