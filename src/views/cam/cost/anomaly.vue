@@ -32,7 +32,15 @@
             </el-popconfirm>
           </div>
 
+          <!-- 错误态（iter198）：请求失败时持久显示原因 + 重试，而不是把失败渲染成「暂无数据」 -->
+          <ErrorDisplay
+            v-if="anomalyError"
+            :error-info="anomalyError"
+            @retry="fetchAnomalies"
+          />
+
           <el-table
+            v-else
             :data="anomalies"
             v-loading="anomalyLoading"
             :default-sort="{ prop: 'severity', order: 'descending' }"
@@ -82,7 +90,15 @@
             </el-select>
           </div>
 
+          <!-- 错误态（iter198）：同异常事件 -->
+          <ErrorDisplay
+            v-if="recError"
+            :error-info="recError"
+            @retry="fetchRecommendations"
+          />
+
           <el-table
+            v-else
             :data="recommendations"
             v-loading="recLoading"
             class="glass-table"
@@ -135,6 +151,7 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import { getProviderLabel } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { onMounted, reactive, ref, watch } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 
@@ -157,6 +174,14 @@ useUrlFilters(anomalyFilter, {})
 
 const anomalies = ref<CostAnomaly[]>([])
 const anomalyLoading = ref(false)
+/**
+ * 异常事件的加载错误（iter198）。
+ *
+ * 原先 catch 里只 `ElMessage.error` + `anomalies.value = []` —— toast 3 秒后消失，
+ * 表格随即显示「暂无数据」，用户会**误以为成本异常真的是 0 条**，而实际是请求失败。
+ * 改为像 ECS 那样持有 errorInfo，由 <ErrorDisplay> 渲染**持久**的错误态 + 重试入口。
+ */
+const anomalyError = ref<{ message: string; code?: string | number } | null>(null)
 const detecting = ref(false)
 
 const severityOrder: Record<string, number> = { critical: 3, warning: 2, info: 1 }
@@ -185,8 +210,10 @@ const fetchAnomalies = async () => {
     const res = await getCostAnomaliesApi(params)
     const data = (res as any).data || res
     anomalies.value = data?.items || []
+    anomalyError.value = null
   } catch (e: any) {
-    ElMessage.error(e.message || '获取异常事件失败')
+    // 不再只靠瞬时 toast：保留持久错误态，避免把「请求失败」渲染成「暂无数据」
+    anomalyError.value = { message: e?.message || '获取异常事件失败', code: e?.code }
     anomalies.value = []
   } finally {
     anomalyLoading.value = false
@@ -226,6 +253,9 @@ const recTypeLabel = (t: string) => {
   return map[t] || t
 }
 
+/** 优化建议的加载错误（iter198，同 anomalyError 的理由） */
+const recError = ref<{ message: string; code?: string | number } | null>(null)
+
 const fetchRecommendations = async () => {
   recLoading.value = true
   try {
@@ -234,8 +264,9 @@ const fetchRecommendations = async () => {
     const res = await getRecommendationsApi(params)
     const data = (res as any).data || res
     recommendations.value = data?.items || []
+    recError.value = null
   } catch (e: any) {
-    ElMessage.error(e.message || '获取优化建议失败')
+    recError.value = { message: e?.message || '获取优化建议失败', code: e?.code }
     recommendations.value = []
   } finally {
     recLoading.value = false
