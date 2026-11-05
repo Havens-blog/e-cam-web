@@ -317,6 +317,7 @@ import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSett
 import LbDetailDrawer from './components/LbDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import { formatTime } from '@/utils/formatters'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）；状态文案走 fieldLabels 单源 LB_STATUS_LABELS */
 const isRunningStatus = (status?: string) => ['Active', 'active', 'ACTIVE', 'running', 'Running'].includes(status || '')
@@ -868,11 +869,7 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
 /** 创建时间：attributes.creation_time 实测为 ISO 字符串（如 2026-09-23T02:55:17Z），本地时区展示 */
-const formatTime = (time: string | number | undefined) => {
-  if (!time) return '-'
-  const d = new Date(time)
-  return Number.isNaN(d.getTime()) ? String(time) : d.toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime（dayjs 对非法输入返回 'Invalid Date' 前会走空值分支）
 
 // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填名称条件（以 chip 呈现可移除，无 query 直达零改动）
 const route = useRoute()

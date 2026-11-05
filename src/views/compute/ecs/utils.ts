@@ -94,26 +94,12 @@ export const formatMemory = (memory: number | undefined): string => {
   return `${memory}MB`
 }
 
-export const formatDateTime = (dateStr: string | undefined): string => {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return dateStr
-  }
-}
+// iter202：改用中央 formatTime（统一 YYYY-MM-DD HH:mm:ss）。
+// 原实现用自定义 toLocaleString 选项（无秒），输出 2026/11/05 12:04，与全站不一致。
+export { formatTime as formatDateTime } from '@/utils/formatters'
 
-export const formatTime = (time: number | undefined): string => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
+// iter202：改用中央 formatTime（统一 YYYY-MM-DD HH:mm:ss）
+export { formatTime } from '@/utils/formatters'
 
 export const formatTags = (tags: Record<string, string> | undefined): string => {
   if (!tags || typeof tags !== 'object') return '-'
