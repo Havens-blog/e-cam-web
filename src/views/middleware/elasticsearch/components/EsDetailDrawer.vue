@@ -56,7 +56,8 @@
               </div>
             </div>
           </template>
-          <template v-else><div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p>{{ activeTab }} 功能开发中...</p></div></template>
+          <template v-else><div class="empty-tab"><el-icon :size="48"><Document /></el-icon><p class="empty-tab-title">{{ tabPlaceholder.title }}</p>
+            <p class="empty-tab-desc">{{ tabPlaceholder.desc }}</p></div></template>
         </div>
       </template>
     </div>
@@ -69,14 +70,18 @@ import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { ES_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels';
 import { Close, Document } from '@element-plus/icons-vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { formatTime, formatTime as formatDateTime } from '@/utils/formatters'
+import { placeholderFor } from '@/composables/tabPlaceholders'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
+
+/** 占位标签页的文案（iter212）：原先直接渲染 {{ activeTab }}，会把内部 key 漏给用户 */
+const tabPlaceholder = computed(() => placeholderFor(activeTab.value))
 
 const getStatusClass = (status?: string) => { if (!status) return ''; const s = status.toLowerCase(); if (['running', 'active'].includes(s)) return 'running'; if (['stopped', 'inactive'].includes(s)) return 'stopped'; return 'pending' }
 const getStatusText = (status?: string) => labelOfLenient(ES_STATUS_LABELS, status, status || '-')
