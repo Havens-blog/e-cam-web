@@ -367,7 +367,9 @@ describe('AC1 即将过期资源表（旧页路径 10-11）', () => {
         expect(rows[0]!.text()).toContain(getProviderLabel('aws'))
         expect(rows[1]!.text()).toContain('RDS')
         expect(rows[2]!.text()).toContain('Redis')
-        expect(rows[0]!.text()).toMatch(/\d{4}\/\d{1,2}\/\d{1,2}/)
+        // iter202：过期时间改用中央 formatTime（YYYY-MM-DD HH:mm:ss，连字符）。
+        // 原来的 /\d{4}\/\d{1,2}\/\d{1,2}/ 锁定了斜杠格式，与全站统一后的约定不符。
+        expect(rows[0]!.text()).toMatch(/\d{4}-\d{2}-\d{2}/)
     })
 
     it('剩余天数 tag 分级（danger/warning/info）与过期时间着色（expire-danger/expire-warning）', async () => {

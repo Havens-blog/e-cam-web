@@ -156,6 +156,7 @@ import { ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { formatTime } from '@/utils/formatters'
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -257,7 +258,7 @@ const formatNumber = (n: number) => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : 
 const formatExpireTime = (row: ExpiringAsset) => {
   // 到期时间由同步执行器写入 attributes.expired_time（勿改回 expire_time）
   const t = row.attributes?.expired_time
-  return t ? new Date(t).toLocaleString('zh-CN') : '-'
+  return t ? formatTime(t) : '-'
 }
 const daysLeft = (row: ExpiringAsset) => {
   const t = row.attributes?.expired_time

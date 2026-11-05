@@ -337,6 +337,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime as formatDateTime } from '@/utils/formatters'
 
 /** 共享导出取值：原本地 ExportDialog.getFieldValue 等价搬运（零漂移）；metric-map 额外 prop 以闭包捕获 fsMetricMap 等价替代（不新增共享组件 prop）；
  * 状态文案改用 fieldLabels 单源 NAS_STATUS_LABELS（含小写真实值域，导出与列展示同口径） */
@@ -777,11 +778,6 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 
 /** 云厂商展示名统一走 utils/constants 单源 */
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
-}
 
 /** 自定义列初始化:历史保存设置迁移——剔除已下线列,按默认标签回填(修复历史保存的错位标签),缺失列按默认补齐,保留用户的显隐/宽度设置 */
 const initColumnSettings = () => {

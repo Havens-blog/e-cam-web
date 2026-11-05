@@ -183,6 +183,7 @@ import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel } from '@/utils/constants'
 import { Box, Connection, Delete, Edit, Refresh } from '@element-plus/icons-vue'
 import { computed, ref } from 'vue'
+import { formatTime as formatDateTime } from '@/utils/formatters'
 
 const props = defineProps<{
   visible: boolean
@@ -264,10 +265,6 @@ const getEnvironmentLabel = (env: string) => {
   return map[env] || env || '-'
 }
 
-const formatDateTime = (time: string | undefined) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped lang="scss">

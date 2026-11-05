@@ -545,6 +545,7 @@ import { ArrowDown, Camera, Close, Coin, Connection, Document, Grid, Lock, Refre
 import { ElMessage } from 'element-plus';
 import { ref, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
+import { formatTime, formatTime as formatDateTime } from '@/utils/formatters'
 
 const props = defineProps<{
   visible: boolean
@@ -674,26 +675,8 @@ const getProviderName = (provider: string | undefined): string => (provider ? ge
 
 const getChargeTypeText = (chargeType: string | undefined): string => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
 
-const formatDateTime = (dateStr: string | undefined): string => {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return dateStr
-  }
-}
-
-const formatTime = (time: number | undefined) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
+// iter202：本地实现已删，改用中央 formatTime（统一 YYYY-MM-DD HH:mm:ss）。
+// 原版本用自定义 toLocaleString 选项（无秒），格式为 2026/11/05 12:04，与全站不一致。
 
 const formatMemory = (memory: number | undefined) => {
   if (!memory) return '-'

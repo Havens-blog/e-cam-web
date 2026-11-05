@@ -86,7 +86,7 @@ import { CHARGE_TYPE_LABELS, REDIS_STATUS_LABELS, labelOfLenient } from '@/utils
 import { ArrowDown, Close, Document } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
-import { formatTime } from '@/utils/formatters'
+import { formatTime, formatTime as formatDateTime } from '@/utils/formatters'
 
 defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -99,8 +99,6 @@ const getStatusText = (status?: string) => labelOfLenient(REDIS_STATUS_LABELS, s
 const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string) => (provider ? getProviderLabel(provider) : '-')
 const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
-const formatDateTime = (dateStr?: string) => { if (!dateStr) return '-'; try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr } }
-
 </script>
 
 <style scoped lang="scss">

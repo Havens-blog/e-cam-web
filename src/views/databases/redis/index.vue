@@ -281,6 +281,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { formatTime as formatDateTime, formatTime } from '@/utils/formatters'
 
 /** 共享导出配置：字段沿用原 stub availableFields，取值走通用映射（asset_id/asset_name 直取、provider 归一、其余 attributes[key]） */
 const getExportValue: ExportFieldConfig['getValue'] = (row, key) => {
@@ -613,16 +614,6 @@ const getPlatformIcon = (provider?: string) => getProviderIcon(provider || '')
 const getProviderName = (provider?: string): string => (provider ? getProviderLabel(provider) : '-')
 
 const getChargeTypeText = (chargeType?: string) => labelOfLenient(CHARGE_TYPE_LABELS, chargeType)
-
-const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  try { return new Date(dateStr).toLocaleString('zh-CN') } catch { return dateStr }
-}
-
-const formatTime = (time?: number) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN')
-}
 
 // H-03：实例详情「查看资产」带 query.search 跳入时，首载前预填关键词（无 query 直达零改动）
 const route = useRoute()
