@@ -38,7 +38,7 @@
               <span class="domain-rank" :class="`rank-${i + 1}`">{{ i + 1 }}</span>
               <span class="domain-name" :title="d.domain">{{ d.domain }}</span>
               <span v-if="d.is_estimate" class="domain-tag">估算</span>
-              <span class="domain-amount">¥{{ formatNumber(Math.round(d.amount_est)) }}</span>
+              <span class="domain-amount">{{ formatCost(d.amount_est) }}</span>
             </li>
           </ul>
         </section>
@@ -52,7 +52,7 @@ import {
   getCdnCostApi,
   type CDNCostView,
 } from '@/api/asset'
-import { formatNumber } from '@/utils/formatters'
+import { formatCost } from '@/utils/formatters'
 import echarts from '@/utils/echarts'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
@@ -118,7 +118,7 @@ const renderTrendChart = () => {
       textStyle: { color: '#d4d4d8', fontSize: 12 },
       formatter: (params: any) => {
         const p = params[0]
-        return `${p.axisValue}<br/>总成本: ¥${formatNumber(p.value)}`
+        return `${p.axisValue}<br/>总成本: ${formatCost(p.value)}`
       }
     },
     grid: { left: 56, right: 16, top: 16, bottom: 28 },
@@ -166,7 +166,7 @@ const renderAccountChart = () => {
       backgroundColor: TOOLTIP_BG,
       borderColor: SPLIT_LINE_COLOR,
       textStyle: { color: '#d4d4d8', fontSize: 12 },
-      formatter: (p: any) => `${p.name}<br/>¥${formatNumber(p.value)}(${p.percent}%)`
+      formatter: (p: any) => `${p.name}<br/>${formatCost(p.value)}(${p.percent}%)`
     },
     legend: {
       orient: 'vertical',

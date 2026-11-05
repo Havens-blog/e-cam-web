@@ -34,6 +34,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { Loading } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { formatCost } from '@/utils/formatters'
 
 const { loadDict, getDictLabel } = useDictionary()
 
@@ -104,7 +105,7 @@ const renderChart = () => {
     tooltip: {
       trigger: 'item',
       formatter: (params: any) => {
-        return `${params.name}<br/>¥${params.value.toFixed(2)} (${params.percent}%)`
+        return `${params.name}<br/>${formatCost(params.value)} (${params.percent}%)`
       }
     },
     legend: {

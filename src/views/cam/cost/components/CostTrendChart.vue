@@ -32,6 +32,7 @@ import type { CostTrendPoint } from '@/api/types/finops';
 import { Loading } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { formatCost } from '@/utils/formatters'
 
 const props = defineProps<{
   data: CostTrendPoint[]
@@ -66,7 +67,7 @@ const renderChart = () => {
       trigger: 'axis',
       formatter: (params: any) => {
         const p = params[0]
-        return `${p.axisValue}<br/>成本: ¥${p.value.toFixed(2)}`
+        return `${p.axisValue}<br/>成本: ${formatCost(p.value)}`
       }
     },
     grid: { left: 60, right: 24, top: 16, bottom: 32 },
