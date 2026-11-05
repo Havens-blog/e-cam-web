@@ -134,7 +134,7 @@
       <p>输入资产ID查看详细变更记录，或查看下方统计汇总</p>
     </div>
 
-    <div class="pagination-bar" v-if="assetId">
+    <div class="pagination-bar" v-if="assetId && !totalUnknown">
       <el-pagination
         v-model:current-page="page"
         :page-size="pageSize"
@@ -142,6 +142,18 @@
         layout="total, prev, pager, next"
         small
         @current-change="fetchChanges"
+      />
+    </div>
+    <!-- total=-1（Count 超时降级）：隐藏数字总数与页码，仅保留前后翻页按需加载 -->
+    <div class="pagination-bar" v-else-if="assetId && totalUnknown">
+      <span class="unknown-total-hint">总数统计超时，已按需加载，可用前后翻页浏览</span>
+      <el-pagination
+        :current-page="page"
+        :page-size="pageSize"
+        layout="prev, next"
+        small
+        @prev-click="page > 1 && (page--, fetchChanges())"
+        @next-click="page++, fetchChanges()"
       />
     </div>
   </div>
@@ -167,6 +179,9 @@ const { errorInfo, run } = useListError()
 const changesTotal = ref(0)
 const page = ref(1)
 const pageSize = 20
+// 后端降级契约：field_name 无索引，大表 Count 超时后 total=-1（列表仍有效）。
+// 此前 -1 直接进 el-pagination 渲染成「共 -1 条」且翻页器损坏。
+const totalUnknown = computed(() => changesTotal.value < 0)
 
 const summary = ref<ChangeSummary | null>(null)
 const summaryLoadError = ref(false)
@@ -424,7 +439,14 @@ onMounted(() => {
 .pagination-bar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   padding: 12px 20px;
+}
+.unknown-total-hint {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 .change-value {
   display: inline-block;
