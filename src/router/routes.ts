@@ -337,6 +337,15 @@ const routes: RouteRecordRaw[] = [
                     icon: 'List',
                 },
             },
+            {
+                path: '/audit/events',
+                name: 'AuditEvents',
+                component: () => import('@/views/audit/events/index.vue'),
+                meta: {
+                    title: '统一审计事件',
+                    icon: 'Document',
+                },
+            },
             // ==================== 数据字典路由 ====================
             {
                 path: '/system/dictionary',
