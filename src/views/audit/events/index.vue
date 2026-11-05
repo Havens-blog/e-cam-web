@@ -16,7 +16,9 @@
       <div class="filter-row">
         <el-select v-model="filters.service" placeholder="全部服务" clearable class="filter-select" @change="handleFilterChange">
           <el-option label="云管服务" value="e-cam-service" />
-          <el-option label="IAM 服务" value="e-iam" />
+          <!-- IAM 事件落 e-iam 自有库（e-iam#5/#6），联邦检索未接入前该选项必空；
+               禁用以免运维误以为筛选失效。联邦方案定稿后移除 disabled。 -->
+          <el-option label="IAM 服务（联邦待接入）" value="e-iam" disabled />
         </el-select>
         <el-select v-model="filters.domain" placeholder="全部业务域" clearable class="filter-select" @change="handleFilterChange">
           <el-option label="操作审计" value="audit" />
