@@ -86,6 +86,7 @@
           ref="tableRef"
           :data="tagList.filter(item => item != null)"
           v-loading="tableLoading"
+          :empty-text="hasFilters ? '没有符合条件的标签，试试调整筛选' : '暂无标签数据'"
           style="width: 100%"
           @selection-change="handleSelectionChange"
         >
@@ -247,6 +248,16 @@ const filters = reactive<TagFilterValues>({
 // 刷新页面、分享链接、或从抽屉/详情返回时筛选全部丢失（实测：筛完 20 行→0 行，URL 不变）。
 // 三个字段都是字符串，直接用默认编码即可。
 useUrlFilters(filters)
+
+/**
+ * 是否有生效的筛选（iter203）。
+ * 用于区分「筛选后无结果」与「本来就没有标签」——
+ * 实测：初始 20 行 → 搜一个不存在的词 → 0 行 → 原本文案只说「暂无数据」，
+ * 用户会以为**整个账号下没有任何标签**，实际只是筛选太窄。
+ */
+const hasFilters = computed(
+  () => Boolean(filters.keyword?.trim()) || Boolean(filters.provider) || Boolean(filters.resource_type),
+)
 
 // Drawer state
 const showResourceDrawer = ref(false)
