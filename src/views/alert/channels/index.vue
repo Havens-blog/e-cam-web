@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import type { AlertChannel, ChannelType } from '@/api/alert'
-import { deleteChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
+import { deleteChannelApi, getChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref, reactive, watch} from 'vue'
@@ -151,9 +151,16 @@ const fetchData = async () => {
   }
 }
 
-const handleEdit = (row: AlertChannel) => {
-  editData.value = row
-  showForm.value = true
+const handleEdit = async (row: AlertChannel) => {
+  // 列表接口已对 webhook 回调凭据脱敏（key 显示为 ***），
+  // 编辑需先拉取详情拿到完整 webhook 才能正确回填，否则会把 *** 当新值保存。
+  try {
+    const res = await getChannelApi(row.id)
+    editData.value = (res as any).data
+    showForm.value = true
+  } catch {
+    ElMessage.error('获取渠道详情失败')
+  }
 }
 
 const handleDelete = async (row: AlertChannel) => {
