@@ -162,7 +162,13 @@ const handleSelectionChange = (rows: TagResource[]) => {
 const handleBatchUnbind = async () => {
   if (selectedRows.value.length === 0) return
   try {
-    await ElMessageBox.confirm(`确定要解绑选中的 ${selectedRows.value.length} 个资源的标签吗？`, '批量解绑', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确定要为选中的 ${selectedRows.value.length} 个资源解绑标签「${props.tagKey}」吗？\n\n` +
+        '只移除这一个标签键，这些资源上的「其他标签」不受影响。\n' +
+        '解绑会同步到云平台，之后可用「绑定」重新加回。',
+      '批量解绑标签',
+      { type: 'warning', confirmButtonText: '解绑', cancelButtonText: '取消' },
+    )
   } catch {
     // user cancelled
     return

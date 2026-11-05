@@ -216,7 +216,7 @@ async function handleItemFormSubmit(data: CreateDictItemReq | UpdateDictItemReq)
 
 async function handleDeleteItem(item: DictItem) {
   try {
-    await ElMessageBox.confirm(`确定删除字典项「${item.label}」？`, '确认删除', {
+    await ElMessageBox.confirm(`确定删除字典项「${item.label}」？删除后不可恢复（同类型下其他字典项不受影响）。`, '确认删除', {
       type: 'warning',
       confirmButtonText: '删除',
       cancelButtonText: '取消',

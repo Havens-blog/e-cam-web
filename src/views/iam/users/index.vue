@@ -512,7 +512,10 @@ const handleAction = (command: string, user: CloudUser) => {
 const handleDelete = async (user: CloudUser) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除用户"${user.username}"吗？删除后将无法恢复。`,
+      `确定要删除用户「${user.username}」吗？\n\n` +
+        '这会从本平台移除该用户的记录（含其已同步的权限信息），删除后不可直接恢复；\n' +
+        '如该用户仍存在于云账号中，可再执行一次「同步用户」重新拉取。\n\n' +
+        '注意：本操作不会修改云平台上的实际用户。',
       '确认删除',
       { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     )
