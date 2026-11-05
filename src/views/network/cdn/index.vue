@@ -316,6 +316,7 @@ import CdnDetailDrawer from './components/CdnDetailDrawer.vue'
 import ColumnSettingsDialog, { type ColumnConfig } from './components/ColumnSettingsDialog.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
+import { showApiError } from '@/api/request'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测统一值域仅 online(566)/offline(31)/InProgress(1) 三值（2026-09-24 全量 598 条探查）；
@@ -760,7 +761,7 @@ const submitSync = async () => {
     syncDialogVisible.value = false
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交同步任务失败')
+    showApiError(error, '提交同步任务失败')
   } finally {
     syncing.value = false
   }

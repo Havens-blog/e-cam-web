@@ -101,6 +101,7 @@ import { ElMessage } from 'element-plus'
 import { computed, ref } from 'vue'
 import { copyText, truncateFingerprint } from '../../ledger/format'
 import { resolveReverseState, resourceIdLines } from '../format'
+import { showApiError } from '@/api/request'
 
 const query = ref('')
 const loading = ref(false)
@@ -121,7 +122,7 @@ async function run() {
         results.value = res.items
         searchedQuery.value = q
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '反向查询失败，请重试')
+        showApiError(err, '反向查询失败，请重试')
     } finally {
         loading.value = false
     }

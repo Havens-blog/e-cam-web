@@ -90,6 +90,7 @@ import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { formatTime } from '@/utils/formatters'
+import { showApiError } from '@/api/request'
 
 const list = ref<AlertChannel[]>([])
 const loading = ref(false)
@@ -169,7 +170,7 @@ const handleDelete = async (row: AlertChannel) => {
     ElMessage.success('删除成功')
     fetchData()
   } catch (e: any) {
-    ElMessage.error(e.message || '删除失败')
+    showApiError(e, '删除失败')
   }
 }
 
@@ -178,7 +179,7 @@ const handleTest = async (row: AlertChannel) => {
     await testChannelApi(row.id)
     ElMessage.success('测试消息已发送')
   } catch (e: any) {
-    ElMessage.error(e.message || '测试失败')
+    showApiError(e, '测试失败')
   }
 }
 

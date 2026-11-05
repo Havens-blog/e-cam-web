@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { generateAuditReportApi } from '@/api/iam'
-import { isErrorNotified } from '@/api/request'
+import { isErrorNotified, showApiError } from '@/api/request'
 import { toBackendDateTime } from '@/utils/epoch'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
@@ -212,7 +212,7 @@ const handleGenerate = async () => {
   } catch (error: any) {
     console.error('生成报告失败:', error)
     // 请求层已弹过提示（403/业务错误）时不再重复弹，避免两条完全重叠的 toast
-    if (!isErrorNotified(error)) ElMessage.error(error.message || '生成报告失败')
+    if (!isErrorNotified(error)) showApiError(error, '生成报告失败')
     progress.value = 0
     progressText.value = ''
   } finally {

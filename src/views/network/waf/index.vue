@@ -352,6 +352,7 @@ import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { showApiError } from '@/api/request'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。
  *  实测值域仅 active(160)/suspended(252)/pending(13) 三值（2026-09-24 全量 425 条探查，全小写）；
@@ -801,7 +802,7 @@ const fetchData = async () => {
     fetchWafCounts()
   } catch (error: any) {
     console.error('获取WAF列表失败:', error)
-    ElMessage.error(error.message || '获取WAF列表失败')
+    showApiError(error, '获取WAF列表失败')
     wafList.value = []
     pagination.total = 0
   } finally {
@@ -848,7 +849,7 @@ const submitSync = async () => {
     syncDialogVisible.value = false
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交同步任务失败')
+    showApiError(error, '提交同步任务失败')
   } finally {
     syncing.value = false
   }

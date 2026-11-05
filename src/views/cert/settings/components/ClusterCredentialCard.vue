@@ -176,6 +176,7 @@ import { CertRequestError } from '@/api/cert'
 import type { AliyunK8sCluster, K8sCredentialFetchResult, K8sCredentialItem } from '@/api/cert'
 import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
+import { showApiError } from '@/api/request'
 
 const emit = defineEmits<{ (e: 'changed'): void }>()
 
@@ -221,7 +222,7 @@ async function onScanNow() {
             ElMessage.info('扫描正在进行中，无需重复触发')
             return
         }
-        ElMessage.error(err instanceof Error ? err.message : '触发扫描失败')
+        showApiError(err, '触发扫描失败')
     } finally {
         scanning.value = false
     }
@@ -244,7 +245,7 @@ async function load() {
     try {
         creds.value = await listK8sCredentialsApi()
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '集群凭证列表获取失败')
+        showApiError(err, '集群凭证列表获取失败')
     } finally {
         loading.value = false
     }
@@ -280,7 +281,7 @@ async function loadClusters() {
         clusters.value = await listAliyunK8sClustersApi(fetchAccount.value)
         if (!clusters.value.length) ElMessage.info('该账号名下未发现 ACK 集群')
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '集群列表获取失败')
+        showApiError(err, '集群列表获取失败')
     } finally {
         clustersLoading.value = false
     }
@@ -308,7 +309,7 @@ async function onFetch() {
         await load()
         emit('changed')
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '拉取登记失败')
+        showApiError(err, '拉取登记失败')
     } finally {
         fetching.value = false
     }
@@ -330,7 +331,7 @@ async function onManualAdd() {
         await load()
         emit('changed')
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '登记失败')
+        showApiError(err, '登记失败')
     } finally {
         manualSaving.value = false
     }
@@ -343,7 +344,7 @@ async function onDelete(name: string) {
         await load()
         emit('changed')
     } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : '删除失败')
+        showApiError(err, '删除失败')
     }
 }
 

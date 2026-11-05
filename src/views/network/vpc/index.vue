@@ -309,6 +309,7 @@ import VpcDetailDrawer from './components/VpcDetailDrawer.vue'
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { useStatText } from '@/composables/useStatText'
 import { formatTime } from '@/utils/formatters'
+import { showApiError } from '@/api/request'
 
 /** 状态族判定（状态点色调 + 全局统计共用口径）。实测值域 Available/available/OK 全为成功族；状态文案走 fieldLabels 单源 VPC_STATUS_LABELS */
 const isAvailableStatus = (status?: string) => ['Available', 'available', 'OK', 'ok', '正常'].includes(status || '')
@@ -754,7 +755,7 @@ const submitSync = async () => {
     syncDialogVisible.value = false
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交同步任务失败')
+    showApiError(error, '提交同步任务失败')
   } finally {
     syncing.value = false
   }

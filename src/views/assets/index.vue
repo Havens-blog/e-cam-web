@@ -368,6 +368,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { showApiError } from '@/api/request'
 
 const router = useRouter()
 
@@ -592,7 +593,7 @@ const submitEdit = async () => {
     editDialogVisible.value = false
     void tableRef.value?.refresh()
   } catch (error: any) {
-    ElMessage.error(error.message || '更新失败')
+    showApiError(error, '更新失败')
   } finally {
     updating.value = false
   }
@@ -618,7 +619,7 @@ const handleDelete = async (asset: Asset) => {
     void tableRef.value?.refresh()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      showApiError(error, '删除失败')
     }
   }
 }
@@ -657,7 +658,7 @@ const submitDiscover = async () => {
     // 跳转到任务详情页面
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交任务失败')
+    showApiError(error, '提交任务失败')
   } finally {
     discovering.value = false
   }
@@ -712,7 +713,7 @@ const submitSync = async () => {
     // 跳转到任务详情页面
     router.push(`/tasks/${data.task_id}`)
   } catch (error: any) {
-    ElMessage.error(error.message || '提交同步任务失败')
+    showApiError(error, '提交同步任务失败')
   } finally {
     syncing.value = false
   }

@@ -170,6 +170,7 @@ import { useUrlFilters } from '@/composables/useUrlFilters'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { formatTime as formatTs } from '@/utils/formatters'
+import { showApiError } from '@/api/request'
 
 const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
@@ -275,7 +276,7 @@ const fetchChanges = async () => {
     changeList.value = data?.items || data?.data?.items || []
     changesTotal.value = data?.total || data?.data?.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '查询变更历史失败')
+    showApiError(e, '查询变更历史失败')
   } finally {
     changesLoading.value = false
   }

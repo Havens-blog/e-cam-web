@@ -270,6 +270,7 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { showApiError } from '@/api/request'
 
 // ==================== 列表状态 ====================
 
@@ -384,7 +385,7 @@ const openProgress = async (row: BudgetRule) => {
     }
   } catch (e: any) {
     if (seq !== progressSeq) return
-    if (!cached) ElMessage.error(e.message || '获取预算进度失败')
+    if (!cached) showApiError(e, '获取预算进度失败')
   } finally {
     if (seq === progressSeq) progressLoading.value = false
   }
@@ -465,7 +466,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     await fetchAll()
   } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
+    showApiError(e, '操作失败')
   } finally {
     submitting.value = false
   }
@@ -479,7 +480,7 @@ const handleDelete = async (id: number) => {
     ElMessage.success('删除成功')
     await fetchAll()
   } catch (e: any) {
-    ElMessage.error(e.message || '删除失败')
+    showApiError(e, '删除失败')
   }
 }
 

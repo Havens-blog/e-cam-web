@@ -182,6 +182,7 @@ import {
     recordValueText,
     type ProbeResultGroup,
 } from './format'
+import { showApiError } from '@/api/request'
 
 const rows = ref<CertProbeResult[]>([])
 const loading = ref(false)
@@ -335,7 +336,7 @@ async function triggerScan() {
             startPolling(baseline)
             return
         }
-        ElMessage.error(err instanceof Error ? err.message : '触发探测失败，请重试')
+        showApiError(err, '触发探测失败，请重试')
     }
 }
 
@@ -364,7 +365,7 @@ async function triggerRootScan(root: string, groupRows: CertProbeResult[]) {
             ElMessage.warning(`根域名 ${root} 下无可拨测目标（DNS 记录未同步或域名不存在）`)
             return
         }
-        ElMessage.error(err instanceof Error ? err.message : '触发探测失败，请重试')
+        showApiError(err, '触发探测失败，请重试')
     }
 }
 

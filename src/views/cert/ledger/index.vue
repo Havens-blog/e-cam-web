@@ -180,6 +180,7 @@ import {
     resolvePageState,
     type DeleteBlockedMeta,
 } from './format'
+import { showApiError } from '@/api/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -268,7 +269,7 @@ async function fetchList() {
         loadError.value = true
         // 已有数据的刷新失败不塌陷页面（resolvePageState 维持 populated），以 Toast 提示
         if (rows.value.length > 0) {
-            ElMessage.error(err instanceof Error ? err.message : '证书列表刷新失败')
+            showApiError(err, '证书列表刷新失败')
         }
     } finally {
         if (seq === fetchListSeq) {
@@ -288,7 +289,7 @@ async function fetchStats() {
         stats.value = null
         statsError.value = true
         console.error('[cert-ledger] 统计加载失败:', err)
-        ElMessage.error(err instanceof Error && err.message ? err.message : '统计加载失败')
+        showApiError(err, '统计加载失败')
     }
 }
 
@@ -383,7 +384,7 @@ async function confirmDelete() {
             deleteIntercept.summary = deleteBlockedSummary(err.meta as DeleteBlockedMeta | undefined)
             deleteIntercept.visible = true
         } else {
-            ElMessage.error(err instanceof Error ? err.message : '删除失败，请重试')
+            showApiError(err, '删除失败，请重试')
         }
     } finally {
         deleteConfirm.deleting = false

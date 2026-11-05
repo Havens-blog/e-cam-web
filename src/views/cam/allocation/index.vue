@@ -278,6 +278,7 @@ import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
+import { showApiError } from '@/api/request'
 
 // ==================== Tab 状态 ====================
 
@@ -300,7 +301,7 @@ const fetchRules = async () => {
     const data = (res as any).data || res
     ruleList.value = data?.items || []
   } catch (e: any) {
-    ElMessage.error(e.message || '获取分摊规则失败')
+    showApiError(e, '获取分摊规则失败')
   } finally {
     rulesLoading.value = false
   }
@@ -312,7 +313,7 @@ const handleDeleteRule = async (id: number) => {
     ElMessage.success('删除成功')
     fetchRules()
   } catch (e: any) {
-    ElMessage.error(e.message || '删除失败')
+    showApiError(e, '删除失败')
   }
 }
 
@@ -421,7 +422,7 @@ const handleSubmitRule = async () => {
     ruleDialogVisible.value = false
     fetchRules()
   } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
+    showApiError(e, '操作失败')
   } finally {
     submitting.value = false
   }
@@ -450,7 +451,7 @@ const handleSubmitDefaultPolicy = async () => {
     ElMessage.success('默认分摊策略已保存')
     defaultPolicyVisible.value = false
   } catch (e: any) {
-    ElMessage.error(e.message || '保存失败')
+    showApiError(e, '保存失败')
   } finally {
     policySubmitting.value = false
   }
@@ -544,7 +545,7 @@ const handleReallocate = async () => {
     ElMessage.success('分摊计算已提交，请稍后刷新查看结果')
     setTimeout(() => fetchTree(), 2000)
   } catch (e: any) {
-    ElMessage.error(e.message || '分摊计算失败')
+    showApiError(e, '分摊计算失败')
   } finally {
     reallocating.value = false
   }

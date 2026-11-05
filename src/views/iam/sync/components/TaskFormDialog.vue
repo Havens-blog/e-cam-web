@@ -116,6 +116,7 @@ import { SYNC_TASK_TYPES, getProviderLabel as getProviderLabelShared } from '@/u
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { showApiError } from '@/api/request'
 
 interface Props {
   visible: boolean
@@ -217,7 +218,7 @@ const handleSubmit = async () => {
     handleClose()
   } catch (error: any) {
     console.error('创建任务失败:', error)
-    ElMessage.error(error.message || '创建任务失败')
+    showApiError(error, '创建任务失败')
   } finally {
     submitting.value = false
   }

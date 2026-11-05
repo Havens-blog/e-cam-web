@@ -11,6 +11,7 @@ import { deleteQuery, listSavedQueries, saveQuery } from './saved-queries'
 import type { SavedQuery, SavedQueryState } from './saved-queries'
 import { clampWindow } from './url-state'
 import { METRIC_OPTS } from './useLogFilters'
+import { showApiError } from '@/api/request'
 
 export interface UseSavedQueriesOptions {
     activeType: Ref<LogType>
@@ -78,7 +79,7 @@ export function useSavedQueries(opts: UseSavedQueriesOptions) {
             ElMessage.success(`已保存查询「${name.trim()}」`)
             return true
         } catch (e) {
-            ElMessage.error(e instanceof Error ? e.message : '保存失败')
+            showApiError(e, '保存失败')
             return false
         }
     }

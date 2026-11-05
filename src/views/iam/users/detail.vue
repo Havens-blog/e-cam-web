@@ -120,6 +120,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserDetail from './components/UserDetail.vue'
 import UserForm from './components/UserForm.vue'
+import { showApiError } from '@/api/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -168,7 +169,7 @@ const handleSubmitEdit = async () => {
     handleRefresh()
   } catch (error: any) {
     console.error('更新用户失败:', error)
-    ElMessage.error(error.message || '更新用户失败')
+    showApiError(error, '更新用户失败')
   } finally {
     submitting.value = false
   }
@@ -193,7 +194,7 @@ const handleDelete = async () => {
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('删除用户失败:', error)
-      ElMessage.error(error.message || '删除用户失败')
+      showApiError(error, '删除用户失败')
     }
   }
 }
@@ -219,7 +220,7 @@ const handleSubmitStatus = async () => {
     handleRefresh()
   } catch (error: any) {
     console.error('修改状态失败:', error)
-    ElMessage.error(error.message || '修改状态失败')
+    showApiError(error, '修改状态失败')
   } finally {
     submitting.value = false
   }
@@ -258,7 +259,7 @@ const handleSubmitGroups = async () => {
     handleRefresh()
   } catch (error: any) {
     console.error('修改权限组失败:', error)
-    ElMessage.error(error.message || '修改权限组失败')
+    showApiError(error, '修改权限组失败')
   } finally {
     submitting.value = false
   }

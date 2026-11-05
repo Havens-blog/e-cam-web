@@ -334,6 +334,7 @@ import ExportGroupsDialog from './components/ExportGroupsDialog.vue'
 import GroupDetailDrawer from './components/GroupDetailDrawer.vue'
 import GroupForm from './components/GroupForm.vue'
 import SyncGroupsDialog from './components/SyncGroupsDialog.vue'
+import { showApiError } from '@/api/request'
 
 const loading = ref(false)
 const groups = ref<PermissionGroup[]>([])
@@ -577,7 +578,7 @@ const handleDelete = async (group: PermissionGroup) => {
     fetchGroups()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      showApiError(error, '删除失败')
     }
   }
 }
@@ -591,7 +592,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchGroups()
   } catch (error: any) {
-    ElMessage.error(error.message || '操作失败')
+    showApiError(error, '操作失败')
   } finally {
     submitting.value = false
   }

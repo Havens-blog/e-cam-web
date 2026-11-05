@@ -66,6 +66,7 @@ import {
 import ForwardReferences from './ForwardReferences.vue'
 import ResourceDrawer from './ResourceDrawer.vue'
 import ReverseQuery from './ReverseQuery.vue'
+import { showApiError } from '@/api/request'
 
 const props = defineProps<{
     certId: string
@@ -99,7 +100,7 @@ async function loadReferences() {
     } catch (err) {
         // 已有数据的静默刷新失败不塌陷视图，Toast 提示（同台账页口径）
         if (view.value) {
-            ElMessage.error(err instanceof Error ? err.message : '引用视图刷新失败')
+            showApiError(err, '引用视图刷新失败')
         } else {
             refsError.value = true
         }
