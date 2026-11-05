@@ -50,7 +50,7 @@
             <div class="comparison-body" v-if="yoyComparison">
               <div class="comparison-row">
                 <span class="period">{{ yoyComparison.current_period }}</span>
-                <span class="amount">¥{{ yoyComparison.current_amount.toFixed(2) }}</span>
+                <span class="amount">{{ formatCost(yoyComparison.current_amount) }}</span>
               </div>
               <div class="comparison-row muted">
                 <span class="period">{{ yoyComparison.previous_period }}</span>
@@ -104,6 +104,7 @@ import type { CostFilterValues } from './components/CostFilters.vue'
 import CostFilters from './components/CostFilters.vue'
 import CostSummaryCards from './components/CostSummaryCards.vue'
 import CostTrendChart from './components/CostTrendChart.vue'
+import { formatCost } from '@/utils/formatters'
 
 // ==================== 筛选状态 ====================
 

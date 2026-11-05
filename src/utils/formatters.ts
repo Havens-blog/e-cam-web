@@ -28,8 +28,23 @@ export function maskAccessKey(accessKey: string): string {
     return `${start}****${end}`
 }
 
+/**
+ * 成本金额格式化（iter200 统一）。
+ *
+ * 原来只 `cost.toFixed(2)` → `¥3703710.19`：**7 位数没有千分位**，用户很难一眼读出量级。
+ * 而图表 tooltip 用的是 `toLocaleString('zh-CN')`（`¥3,703,710.19`）、
+ * `CdnCostPanel` 用的是 `formatNumber`（`¥3,703,710` —— **还丢了小数**）。
+ * 同一个金额在同一个产品里有 3 种写法。现统一到本函数：**千分位 + 固定 2 位小数**。
+ *
+ * 注意：本文件不在 `shared-hashes.json` 的 drift 锁内（锁的是 constants/error-handler/exportAll 等），
+ * 可安全修改。
+ */
 export function formatCost(cost: number, currency = '¥'): string {
-    return `${currency}${cost.toFixed(2)}`
+    if (!Number.isFinite(cost)) return `${currency}0.00`
+    return `${currency}${cost.toLocaleString('zh-CN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`
 }
 
 export function formatNumber(num: number): string {
