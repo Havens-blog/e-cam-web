@@ -62,7 +62,7 @@
     <div v-else class="table-card">
       <!-- 加载中把 el-table 自带空态文案清掉：否则「暂无数据」会与 loading 圈同时出现，
            用户会误读成「确实没有审计日志」（iter114 实测截图已确认） -->
-      <el-table :data="logList" :default-sort="defaultSort" :empty-text="loading ? ' ' : '暂无数据'" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @sort-change="handleSortChange" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
+      <el-table :data="logList" :default-sort="defaultSort" :empty-text="loading ? ' ' : emptyText" v-loading="loading" style="width: 100%" row-key="id" :row-class-name="rowClassName" @sort-change="handleSortChange" @row-click="handleRowClick" :header-cell-style="{ background: 'var(--bg-elevated)', fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }">
         <el-table-column prop="ctime" label="时间" width="170" sortable="custom">
           <template #default="{ row }"><span class="cell-time">{{ formatAuditTime(row.ctime) }}</span></template>
         </el-table-column>
@@ -192,6 +192,23 @@ const filters = reactive<AuditLogParams>({
   http_method: '',
   operation_type: '',
 })
+
+/**
+ * 是否处于「有筛选」状态（iter227）。
+ * 筛选分两处：filters（api_path / http_method / operation_type）与 urlState 里的
+ * result / start / end（时间范围与结果由筛选栏直接写 URL 状态）。
+ * 此前空态固定「暂无数据」，用户筛了条件没命中也看到「暂无数据」，会以为一条审计日志都没有。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters).some((v) => String(v ?? '').trim() !== '')
+    || Boolean(urlState.result)
+    || (Boolean(urlState.start) && Boolean(urlState.end)),
+)
+
+/** 空态文案：区分「筛选无结果」与「本来无数据」 */
+const emptyText = computed<string>(() =>
+    hasFilters.value ? '没有符合条件的审计日志，试试调整筛选或清空搜索' : '暂无审计日志',
+)
 
 // 筛选/排序/页码同步 URL（沿用项目既有 useUrlFilters，alert/* 与 audit/changes 已采用）：
 // 此前它们只存在内存里，刷新页面、分享链接、从详情返回都会丢，运维得重输一遍。
