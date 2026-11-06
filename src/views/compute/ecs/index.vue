@@ -42,6 +42,7 @@
     <InstanceTable
       v-else
       :instances="instances"
+      :has-filters="hasFilters"
       :loading="loading"
       :visible-columns="visibleColumns"
       @row-click="handleRowClick"
@@ -228,6 +229,17 @@ const tagFilterVisible = ref(false)
 // 已生效的搜索条件：与搜索栏子组件 v-model 双向绑定
 // （统计卡片点击 handleStatBadgeClick 也会增删 status 条件，故仍留在页面层）
 const searchConditions = ref<SearchCondition[]>([])
+
+/**
+ * 是否处于「有筛选」状态（iter226）。
+ * 三个筛选来源都要算上：filters 表单、searchConditions 搜索条件标签、activeStatFilter 统计卡片点击。
+ * 此前三者都不看，空态一律显示「暂无数据」——用户会以为整个账号没有主机。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters).some((v) => String(v ?? '').trim() !== '')
+    || searchConditions.value.length > 0
+    || Boolean(activeStatFilter.value),
+)
 
 /**
  * URL 状态（iter193）。
