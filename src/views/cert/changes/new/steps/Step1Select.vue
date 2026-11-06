@@ -306,10 +306,19 @@ const sanOverlapNewOptions = computed<CertListItem[]>(() =>
 )
 
 /** 新证书候选：匹配度降序（同名 → SAN 交集 → 无关），同级按到期晚优先 */
-const sortedNewOptions = computed<CertListItem[]>(() =>
-    [...newOptions.value]
-        .sort((a, b) => matchScore(props.oldCert, b) - matchScore(props.oldCert, a) || b.daysLeft - a.daysLeft),
-)
+const sortedNewOptions = computed<CertListItem[]>(() => {
+    const list = [...newOptions.value]
+    // iter222：已选中的新证书必须始终在选项里。
+    // 否则回退到 Step1 时 watch(oldCert.id) 会按旧证书域名重检索候选，
+    // 已选证书一旦不在结果内，el-select 就会把原始 id（UUID）显示给用户。
+    const picked = props.newCert
+    if (picked && !list.some((c) => c.id === picked.id)) {
+        list.push(picked)
+    }
+    return list.sort(
+        (a, b) => matchScore(props.oldCert, b) - matchScore(props.oldCert, a) || b.daysLeft - a.daysLeft,
+    )
+})
 
 /** 当前选中新证书是否为自动匹配的同名证书（回显"已自动匹配"标记） */
 const newCertIsAutoMatch = computed<boolean>(
