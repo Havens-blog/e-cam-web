@@ -157,7 +157,7 @@
       <!-- 空状态 -->
       <div v-if="!loading && instances.length === 0" class="empty-state">
         <el-icon :size="48"><Box /></el-icon>
-        <p>暂无数据</p>
+        <p>{{ hasFilters ? '没有符合条件的主机，试试调整筛选或清空搜索' : '暂无主机' }}</p>
       </div>
     </div>
   </div>
@@ -206,6 +206,8 @@ defineProps<{
   loading: boolean
   /** 可见列配置（由页面层的自定义列对话框维护） */
   visibleColumns: ColumnConfig[]
+  /** 是否处于「有筛选」状态（iter226）：用于区分「筛选无结果」与「本来无数据」 */
+  hasFilters?: boolean
 }>()
 
 const emit = defineEmits<{
