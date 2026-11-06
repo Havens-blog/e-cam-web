@@ -24,17 +24,15 @@
         </div>
       </el-form-item>
 
-      <!-- 打标后果说明（iter243）：会写云平台，且同名标签键会被覆盖 -->
+      <!-- 后果说明（iter243 打标 / iter244 解绑）：两个写云平台的操作都要说清副作用 -->
       <el-alert
-        v-if="isBindScenario"
+        v-if="scenarioHint"
         class="batch-bind-hint"
         type="info"
         :closable="false"
         show-icon
       >
-        <template #title>
-          打标会同步到云平台；若资源上已存在同名的标签键，其值将被本次填写的值覆盖。
-        </template>
+        <template #title>{{ scenarioHint }}</template>
       </el-alert>
 
       <!-- Remediation mode -->
@@ -229,14 +227,24 @@ const removeTagPair = (idx: number) => { if (tagPairs.value.length > 1) tagPairs
 const removeUnbindKey = (idx: number) => { if (unbindKeys.value.length > 1) unbindKeys.value.splice(idx, 1) }
 
 /**
- * 当前弹窗是否处于「打标」场景（iter243）。
- * 两个入口都会调 bindTagsApi（写云平台、且同名标签键会被覆盖），
- * 但此前 UI 上没有任何说明 —— 与「批量解绑」的后果提示不对称。
+ * 当前弹窗的后果提示（iter243 打标 / iter244 解绑）。
+ *
+ * 三个入口都会调写云平台的接口（bindTagsApi / unbindTagsApi），
+ * 但 UI 上此前只有部分场景有说明，与抽屉内的同类操作不一致：
+ *   · 打标 —— 会写云平台，且**同名标签键会被覆盖**；
+ *   · 解绑 —— 会写云平台，但**只移除填写的键**，其他标签不受影响，且能重新绑定加回。
+ * remediate 是补缺失标签，有自己的说明，这里返回 null。
  */
-const isBindScenario = computed<boolean>(() => {
-    if (props.mode === 'resourceBind') return true
-    if (props.mode === 'normal') return batchType.value === 'bind'
-    return false // remediate 是补标签，有独立说明
+const scenarioHint = computed<string | null>(() => {
+    if (props.mode === 'resourceBind') {
+        return '打标会同步到云平台；若资源上已存在同名的标签键，其值将被本次填写的值覆盖。'
+    }
+    if (props.mode === 'normal') {
+        return batchType.value === 'bind'
+            ? '打标会同步到云平台；若资源上已存在同名的标签键，其值将被本次填写的值覆盖。'
+            : '解绑会同步到云平台；只移除下面填写的标签键，资源上的其他标签不受影响，之后可用「绑定」重新加回。'
+    }
+    return null // remediate
 })
 
 const handleSubmit = async () => {
