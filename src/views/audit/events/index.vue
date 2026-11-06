@@ -72,7 +72,7 @@
     <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="fetchEvents" />
 
     <div v-else class="table-wrapper">
-      <el-table :data="events" v-loading="loading" empty-text="暂无审计事件">
+      <el-table :data="events" v-loading="loading" :empty-text="emptyText">
         <el-table-column label="时间" width="170">
           <template #default="{ row }">{{ formatMs(row.at) }}</template>
         </el-table-column>
@@ -128,7 +128,7 @@ import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useStatText } from '@/composables/useStatText'
 import { Refresh } from '@element-plus/icons-vue'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch, computed } from 'vue'
 
 // 筛选与页码同步 URL（沿用项目既有 useUrlFilters；本页从第一版就接入）
 const urlState = reactive<Record<string, string | undefined>>({
@@ -160,6 +160,21 @@ const filters = reactive({
 })
 // 时间范围在 URL 里是 start/end 毫秒字符串；dateRange 是控件态
 const dateRange = ref<[string, string] | null>(null)
+
+/**
+ * 是否处于「有筛选」状态（iter227）。
+ * 此前空态固定「暂无审计事件」，用户筛了时间/服务/结果没命中也看到同一句，
+ * 会以为整条审计链路没有任何事件。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters).some((v) => String(v ?? '').trim() !== '')
+    || Boolean(dateRange.value),
+)
+
+/** 空态文案：区分「筛选无结果」与「本来无数据」 */
+const emptyText = computed<string>(() =>
+    hasFilters.value ? '没有符合条件的审计事件，试试调整筛选或清空搜索' : '暂无审计事件',
+)
 
 // URL 回填 → 控件态（dateRange 从 start/end 重建）
 if (urlState.service) filters.service = urlState.service
