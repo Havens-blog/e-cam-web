@@ -110,6 +110,7 @@
       <el-card v-else class="table-card" shadow="never">
         <el-table
           v-loading="loading"
+          :empty-text="emptyText"
           :data="taskList"
           stripe
           style="width: 100%"
@@ -230,7 +231,7 @@ import {
 } from '@/utils/constants'
 import { Plus, Refresh, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
 import { watch } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import TaskDetailDrawer from './components/TaskDetailDrawer.vue'
@@ -246,6 +247,20 @@ const filters = reactive({
   cloud_account_id: '',
   provider: ''
 })
+
+/**
+ * 是否处于「有筛选」状态（iter236）。
+ * 四个筛选字段（任务类型 / 任务状态 / 云账号 / 云平台）任一个非空即视为「有筛选」——
+ * 它们都是 @change 立即触发搜索，所以用户很容易筛出 0 条。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters).some((v) => String(v ?? '').trim() !== ''),
+)
+
+/** 空态文案：区分「筛选无结果」与「本来无任务」 */
+const emptyText = computed<string>(() =>
+    hasFilters.value ? '没有符合条件的同步任务，试试调整筛选或清空搜索' : '暂无同步任务',
+)
 
 // 分页
 const pagination = reactive({
