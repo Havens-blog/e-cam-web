@@ -56,8 +56,8 @@
             {{ getAvatarText(user) }}
           </div>
           <div class="user-info">
-            <div class="user-name">{{ user.username }}</div>
-            <div class="user-email">{{ user.email || user.display_name || '-' }}</div>
+            <div class="user-name" :title="user.username">{{ user.username }}</div>
+            <div class="user-email" :title="user.email || user.display_name || '-'">{{ user.email || user.display_name || '-' }}</div>
           </div>
         </div>
         <div class="col-type">
@@ -72,7 +72,7 @@
         <div class="col-platform">
           <div class="platform-info">
             <ProviderIcon :provider="user.provider" size="small" />
-            <span>{{ user.cloud_account_name || getProviderLabel(user.provider) }}</span>
+            <span :title="user.cloud_account_name || getProviderLabel(user.provider)">{{ user.cloud_account_name || getProviderLabel(user.provider) }}</span>
           </div>
         </div>
         <div class="col-groups">
