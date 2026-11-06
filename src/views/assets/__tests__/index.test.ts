@@ -454,11 +454,25 @@ describe('AC1 DataTable 三态（组件内置承载）', () => {
         expect(wrapper.findAll('.el-table__body tbody tr')).toHaveLength(3)
     })
 
-    it('空数据呈现空态文案「暂无数据」且不渲染表格行', async () => {
+    it('无筛选时空数据呈现「本来无数据」文案且不渲染表格行', async () => {
         vi.mocked(listAssetsApi).mockResolvedValue({ data: { items: [], total: 0 } } as never)
         const { wrapper } = await mountPage()
         expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-        expect(wrapper.text()).toContain('暂无数据')
+        // iter225：空态文案改为区分筛选态 —— 无筛选时不应说「没有符合条件的」
+        expect(wrapper.text()).toContain('暂无资产')
+        expect(wrapper.text()).not.toContain('没有符合条件的资产')
+        expect(wrapper.findAll('.el-table__body tbody tr')).toHaveLength(0)
+    })
+
+    it('有筛选时空数据呈现「筛选无结果」文案（区分于本来无数据）', async () => {
+        vi.mocked(listAssetsApi).mockResolvedValue({ data: { items: [], total: 0 } } as never)
+        const { wrapper } = await mountPage()
+        // 往筛选条件里填一个值，模拟「筛选后无结果」
+        const vm = wrapper.vm as unknown as { filters: Record<string, unknown> }
+        vm.filters.asset_name = 'zzz-不存在'
+        await flushPromises()
+        expect(wrapper.text()).toContain('没有符合条件的资产')
+        expect(wrapper.text()).not.toContain('暂无资产，可先同步')
         expect(wrapper.findAll('.el-table__body tbody tr')).toHaveLength(0)
     })
 })
