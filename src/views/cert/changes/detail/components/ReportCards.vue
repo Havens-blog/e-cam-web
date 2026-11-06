@@ -161,7 +161,7 @@
         </el-table-column>
         <el-table-column label="预期终态" min-width="140">
           <template #default>
-            <span class="mono">{{ expectedShort }}</span>
+            <span class="mono" :title="expectedFingerprint">{{ expectedShort }}</span>
           </template>
         </el-table-column>
         <el-table-column label="实际" min-width="140">
