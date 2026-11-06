@@ -119,6 +119,7 @@
         <el-table
           v-loading="loading"
           :data="logList"
+          :empty-text="emptyText"
           stripe
           style="width: 100%"
         >
@@ -207,7 +208,7 @@ import PageContainer from '@/components/PageContainer/index.vue'
 import { CLOUD_PROVIDERS, OPERATION_TYPES, TARGET_TYPES, safeTagType, getProviderLabel as getProviderLabelShared } from '@/utils/constants'
 import { Document, Download, RefreshLeft, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import ExportDialog from './components/ExportDialog.vue'
 import LogDetailDialog from './components/LogDetailDialog.vue'
 import ReportDialog from './components/ReportDialog.vue'
@@ -224,6 +225,21 @@ const filters = reactive({
   start_time: '',
   end_time: ''
 })
+
+/**
+ * 是否处于「有筛选」状态（iter228）。
+ * 六个筛选字段含时间范围（start_time / end_time），任一个非空即视为「有筛选」。
+ * 此前空态用 el-table 默认的「暂无数据」，用户筛了操作人/时间窗没命中也看到同一句，
+ * 会以为整条 IAM 审计日志一条都没有。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters).some((v) => String(v ?? '').trim() !== ''),
+)
+
+/** 空态文案：区分「筛选无结果」与「本来无数据」 */
+const emptyText = computed<string>(() =>
+    hasFilters.value ? '没有符合条件的审计记录，试试调整筛选或清空搜索' : '暂无审计记录',
+)
 
 // 筛选同步 URL（iter151）：六个字段此前只存在内存里，刷新页面、分享链接、
 // 或从审计详情返回时全部丢失（实测：设了操作人关键词后行数变化，URL 一个字都不变）。
