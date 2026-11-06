@@ -45,7 +45,7 @@
           >
             <div class="option-row">
               <span class="option-name">{{ c.commonName }}</span>
-              <span class="mono option-fp">{{ truncateMiddle(c.fingerprint) }}</span>
+              <span class="mono option-fp" :title="c.fingerprint">{{ truncateMiddle(c.fingerprint) }}</span>
               <span class="option-days">{{ daysLeftBadge(c.daysLeft).text }}</span>
             </div>
           </el-option>
@@ -72,7 +72,7 @@
             <span class="chg-badge tone-accent">{{ hostingStatusMeta(oldCert.hostingStatus).label }}</span>
             <span class="chg-badge tone-success">{{ daysLeftBadge(oldCert.daysLeft).text }}</span>
           </div>
-          <div class="text-secondary text-sm mono selected-fp">
+          <div class="text-secondary text-sm mono selected-fp" :title="oldCert.fingerprint">
             {{ truncateMiddle(oldCert.fingerprint) }} · 引用 {{ oldCert.refCount }}
           </div>
         </div>
@@ -103,7 +103,7 @@
           >
             <div class="option-row">
               <span class="option-name">{{ c.commonName }}</span>
-              <span class="mono option-fp">{{ truncateMiddle(c.fingerprint) }}</span>
+              <span class="mono option-fp" :title="c.fingerprint">{{ truncateMiddle(c.fingerprint) }}</span>
               <span class="option-days">{{ daysLeftBadge(c.daysLeft).text }}</span>
             </div>
           </el-option>
@@ -141,7 +141,7 @@
             <span class="chg-badge tone-accent">{{ hostingStatusMeta(newCert.hostingStatus).label }}</span>
             <span class="chg-badge tone-success">{{ daysLeftBadge(newCert.daysLeft).text }}</span>
           </div>
-          <div class="text-secondary text-sm mono selected-fp">{{ truncateMiddle(newCert.fingerprint) }}</div>
+          <div class="text-secondary text-sm mono selected-fp" :title="newCert.fingerprint">{{ truncateMiddle(newCert.fingerprint) }}</div>
         </div>
 
         <!-- 检索失败错误态：优先于空态展示（newEmpty 已排除检索失败） -->
