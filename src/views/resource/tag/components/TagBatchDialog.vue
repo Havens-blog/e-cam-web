@@ -24,6 +24,19 @@
         </div>
       </el-form-item>
 
+      <!-- 打标后果说明（iter243）：会写云平台，且同名标签键会被覆盖 -->
+      <el-alert
+        v-if="isBindScenario"
+        class="batch-bind-hint"
+        type="info"
+        :closable="false"
+        show-icon
+      >
+        <template #title>
+          打标会同步到云平台；若资源上已存在同名的标签键，其值将被本次填写的值覆盖。
+        </template>
+      </el-alert>
+
       <!-- Remediation mode -->
       <template v-if="mode === 'remediate'">
         <el-form-item label="补充标签（填写缺失的标签键值）" required>
@@ -215,6 +228,17 @@ const addTagPair = () => { tagPairs.value.push({ key: '', value: '' }) }
 const removeTagPair = (idx: number) => { if (tagPairs.value.length > 1) tagPairs.value.splice(idx, 1) }
 const removeUnbindKey = (idx: number) => { if (unbindKeys.value.length > 1) unbindKeys.value.splice(idx, 1) }
 
+/**
+ * 当前弹窗是否处于「打标」场景（iter243）。
+ * 两个入口都会调 bindTagsApi（写云平台、且同名标签键会被覆盖），
+ * 但此前 UI 上没有任何说明 —— 与「批量解绑」的后果提示不对称。
+ */
+const isBindScenario = computed<boolean>(() => {
+    if (props.mode === 'resourceBind') return true
+    if (props.mode === 'normal') return batchType.value === 'bind'
+    return false // remediate 是补标签，有独立说明
+})
+
 const handleSubmit = async () => {
   if (props.mode === 'remediate') {
     await handleRemediateSubmit()
@@ -347,6 +371,11 @@ const handleClose = () => {
 </script>
 
 <style scoped lang="scss">
+/* iter243：打标后果说明与「目标资源」拉开一点距离 */
+.batch-bind-hint {
+  margin: -4px 0 16px;
+}
+
 .target-summary {
   background: var(--el-fill-color-light);
   border-radius: 8px;
