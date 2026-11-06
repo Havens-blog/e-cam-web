@@ -56,6 +56,7 @@
       :batch-actions="batchActions"
       :density="density"
       error-text="获取资产列表失败"
+      :empty-text="emptyText"
       max-height="calc(100vh - 24rem)"
       stripe
       @row-click="handleRowClick"
@@ -384,6 +385,20 @@ const filterFields: FilterField[] = [
 
 /** 筛选值对象（FilterBar v-model：字段变更以新对象整体替换） */
 const filters = ref<Record<string, unknown>>({})
+
+/**
+ * 是否处于「有筛选」状态（iter225）。
+ * 背景：此前筛选成 0 条时，空态固定显示「暂无数据」，用户会以为整个账号一张资产都没有；
+ * 实际只是当前筛选条件没命中。域名列表 / 标签列表已按此思路修过（iter203），这里对齐。
+ */
+const hasFilters = computed<boolean>(() =>
+    Object.values(filters.value).some((v) => String(v ?? '').trim() !== ''),
+)
+
+/** 空态文案：区分「筛选无结果」与「本来无数据」 */
+const emptyText = computed<string>(() =>
+    hasFilters.value ? '没有符合条件的资产，试试调整筛选或清空搜索' : '暂无资产，可先同步云账号资产',
+)
 
 /** 筛选值取字符串（空值归一 undefined，等价旧页 `x || undefined` 传参） */
 const filterString = (key: string): string => String(filters.value[key] ?? '')
