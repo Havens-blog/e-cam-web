@@ -141,10 +141,16 @@ const handleClose = () => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-
+  // 同步守卫（iter261）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入。
+  // 下面有 await validate()，若等它返回再置位，守卫形同虚设（S168）。
+  if (submitting.value) return
   submitting.value = true
+
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) {
+    submitting.value = false
+    return
+  }
   try {
     if (isEdit.value && props.record) {
       await updateDnsRecordApi(props.domain, props.record.record_id, {
