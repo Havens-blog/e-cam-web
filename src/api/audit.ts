@@ -190,7 +190,7 @@ export interface AuditEventParams {
 
 /** 跨域查询统一审计事件（GET /cam/audit/events） */
 export function listAuditEventsApi(params?: AuditEventParams) {
-	return instance.get<{ items: AuditEvent[]; total: number }>({
+	return instance.get<{ items: AuditEvent[]; total: number; /** 联邦降级标记：e-iam 不可达时本侧单源返回（F2） */ federation_degraded?: boolean }>({
 		url: `${API_SERVICE.CAM}/audit/events`,
 		params,
 	})

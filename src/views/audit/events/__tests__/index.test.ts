@@ -120,4 +120,16 @@ describe('统一审计事件页', () => {
         expect(listAuditEventsApi).toHaveBeenCalledTimes(2)
         expect(wrapper.findAll('tbody tr')).toHaveLength(2)
     })
+
+    it('联邦降级：federation_degraded=true 时渲染 IAM 侧暂不可用提示', async () => {
+        vi.mocked(listAuditEventsApi).mockResolvedValue({
+            data: { items: eventRows, total: 2, federation_degraded: true },
+        } as never)
+        const wrapper = await mountPage()
+        await flushPromises()
+        await nextTick()
+        expect(wrapper.text()).toContain('IAM 侧事件暂不可用，当前仅显示云管侧事件')
+        // 降级时本侧数据仍完整渲染
+        expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    })
 })
