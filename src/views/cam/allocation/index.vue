@@ -397,19 +397,24 @@ const removeDimension = (comboIdx: number, dimIdx: number) => {
 
 const handleSubmitRule = async () => {
   if (!ruleFormRef.value) return
+  // 同步守卫（iter260）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入。
+  // 下面有 await validate()，若等它返回再置位，守卫形同虚设（S168）。
+  if (submitting.value) return
+  submitting.value = true
   try {
     await ruleFormRef.value.validate()
   } catch {
+    submitting.value = false
     return
   }
 
   const totalRatio = ruleForm.dimension_combos.reduce((s, c) => s + c.ratio, 0)
   if (Math.abs(totalRatio - 100) > 0.01) {
+    submitting.value = false
     ElMessage.warning('所有维度组合的分摊比例之和必须为 100%')
     return
   }
 
-  submitting.value = true
   try {
     const payload = { ...ruleForm, dimension_combos: ruleForm.dimension_combos.map(c => ({ ...c })) }
     if (isEdit.value) {
