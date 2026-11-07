@@ -4,7 +4,9 @@
       <div style="font-size: 15px; color: var(--text-secondary)">定义自动打标规则，根据资源属性自动匹配并打标</div>
       <el-button type="primary" @click="openCreateDialog">+ 创建规则</el-button>
     </div>
-    <div v-loading="loading">
+        <!-- 错误态（iter247）：请求失败给持久说明 + 重试，而不是渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="loadRules" />
+<div v-loading="loading">
       <div v-for="rule in rules" :key="rule.id" class="rule-card">
         <div class="rule-header">
           <div style="display: flex; align-items: center; gap: 10px">
@@ -31,7 +33,7 @@
         </div>
         <div v-if="previewResults[rule.id] !== undefined" style="margin-top: 8px; font-size: 13px; color: var(--el-color-primary)">预览：匹配 <strong>{{ previewResults[rule.id] }}</strong> 个资源</div>
       </div>
-      <el-empty v-if="rules.length === 0 && !loading" description="暂无自动打标规则" />
+      <el-empty v-if="!errorInfo && rules.length === 0 && !loading" description="暂无自动打标规则" />
     </div>
     <el-dialog v-model="showDialog" :title="editingRule ? '编辑自动打标规则' : '创建自动打标规则'" width="650px" :destroy-on-close="true" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-position="top">
@@ -109,7 +111,7 @@
           <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px">共匹配 <strong style="color: var(--el-color-primary)">{{ previewTotal }}</strong> 个资源（显示前 100 条）</div>
         </div>
       </template>
-      <el-table :data="previewResourceList" v-loading="previewLoading" style="width: 100%">
+<el-table :data="previewResourceList" v-loading="previewLoading" style="width: 100%">
         <el-table-column prop="asset_id" label="资源ID" min-width="140" show-overflow-tooltip>
           <template #default="{ row }"><span style="font-family: var(--font-mono); font-size: 13px">{{ row?.asset_id }}</span></template>
         </el-table-column>
@@ -133,6 +135,8 @@ import { DeleteFilled, WarningFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 const loading = ref(false)
 const rules = ref<TagRule[]>([])
@@ -182,13 +186,18 @@ const formRules = reactive<FormRules>({
     },
   ],
 })
+  /** 加载失败的错误态（iter247）：失败时保留 ErrorDisplay，而不是把列表清空成「暂无数据」 */
+  const { errorInfo, run } = useListError()
+
 const loadRules = async () => {
   loading.value = true
   try {
     const res = await listRulesApi({ offset: 0, limit: 100 })
     rules.value = (res.data?.items || []).filter(r => r != null)
-  } catch {
-    ElMessage.error('获取自动打标规则失败')
+  } catch (err) {
+    // 失败时不再静默置空（iter247）：交给 ErrorDisplay 显示持久说明 + 重试
+    errorInfo.value = null
+    await run(async () => { throw err }, '获取自动打标规则失败')
     rules.value = []
   } finally { loading.value = false }
 }
