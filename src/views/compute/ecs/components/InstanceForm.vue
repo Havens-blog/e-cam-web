@@ -90,6 +90,23 @@ const form = reactive({
 
 const attributeList = ref<{ key: string; value: string }[]>([])
 
+/**
+ * 表单基线快照 + 是否改动过（iter254）。
+ *
+ * 判据是「与基线不同」，**不是「字段有没有值」**（S160）：
+ * 本组件被「创建 / 编辑」共用，编辑模式下 watch 会把实例数据填进来，
+ * 那些值不是用户的改动。
+ */
+const formBaseline = ref('')
+function snapshotForm(): string {
+  return JSON.stringify({ form, attributes: attributeList.value })
+}
+
+/** 供父组件的 el-dialog :before-close 判断是否需要确认（iter254） */
+function isDirty(): boolean {
+  return snapshotForm() !== formBaseline.value
+}
+
 const rules: FormRules = {
   uid: [{ required: true, message: '请选择模型', trigger: 'change' }],
   asset_id: [{ required: true, message: '请输入资产ID', trigger: 'blur' }],
@@ -119,6 +136,8 @@ watch(
     } else {
       reset()
     }
+    // 填充完成后重置基线（iter254）：实例原值不算用户改动
+    formBaseline.value = snapshotForm()
   },
   { immediate: true }
 )
@@ -172,7 +191,9 @@ const reset = () => {
   formRef.value?.resetFields()
 }
 
-defineExpose({ submit, reset })
+defineExpose({ submit, reset,
+  isDirty,
+})
 </script>
 
 <style scoped lang="scss">
