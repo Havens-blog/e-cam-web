@@ -503,7 +503,7 @@
 
           <div class="summary-actions">
             <template v-if="isTemplateMode">
-              <el-button style="flex:1" @click="$router.back()">返回</el-button>
+              <el-button style="flex:1" @click="handleBack">返回</el-button>
               <button class="btn-create" :disabled="saveTemplateLoading" @click="handleSaveTemplate">
                 <el-icon v-if="!saveTemplateLoading"><FolderAdd /></el-icon>
                 <el-icon v-else class="is-loading"><Loading /></el-icon>
@@ -586,9 +586,9 @@ import {
   Setting,
   UserFilled
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, reactive, ref, onUnmounted } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import InstanceTypeSelector from './components/InstanceTypeSelector.vue'
 
 const route = useRoute()
@@ -657,6 +657,68 @@ const form = reactive({
   tags: {} as Record<string, string>,
   description: ''
 })
+
+/**
+ * 用户是否已经填了会丢失的内容（iter250）。
+ *
+ * 判据：**只算「系统不会自动填」的字段**（即用户真实的输入劳动）。
+ * 实测进入本页时系统会自动预选一整套配置（云账号 / 规格 / VPC / 子网 / 安全组 / 地域 / 可用区），
+ * 把它们算进来会让「一进页面就判脏」，每次离开都弹确认 —— 反而更烦。
+ */
+const isDirty = computed<boolean>(() => {
+    const f = form
+    // ⚠️ 这里**只能**列「系统绝不会自动填」的字段。实测进入本页时，页面会自动带出
+    // cloud_account_id / provider / region / zone / instance_type / vpc_id / subnet_id /
+    // security_group_ids 一整套默认配置（智能预选），把它们算进来会导致一进页面就判脏、
+    // 每次离开都弹确认。真正代表「用户劳动」的是下面这几项。
+    return Boolean(
+        (f.instance_name_prefix || '').trim() ||
+            (f.host_name_prefix || '').trim() ||
+            f.key_pair_name ||
+            (f.description || '').trim() ||
+            (f.data_disks && f.data_disks.length > 0) ||
+            Object.keys(f.tags || {}).length > 0,
+    )
+})
+
+/**
+ * 离开确认（iter250）：配置了内容后离开，先把「会丢失」讲清楚。
+ * 文案对齐 cert/changes/new 的既有说法（那里写的是「未保存的选择将丢弃」）。
+ */
+async function confirmLeave(): Promise<boolean> {
+    if (!isDirty.value) return true
+    try {
+        await ElMessageBox.confirm(
+            '当前已填写的配置尚未保存，离开后将丢失。确定要离开吗？',
+            '离开确认',
+            { type: 'warning', confirmButtonText: '离开', cancelButtonText: '继续编辑' },
+        )
+        return true
+    } catch {
+        return false
+    }
+}
+
+// Ctrl/Cmd+R、关闭标签页等浏览器级离开：用原生钩子兜底
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+    if (!isDirty.value) return
+    e.preventDefault()
+    e.returnValue = ''
+}
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload))
+onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload))
+
+// 站内路由跳转（点侧边栏菜单、面包屑等）
+onBeforeRouteLeave(async () => {
+    const ok = await confirmLeave()
+    return ok
+})
+
+/** 「返回」按钮：先确认再退（$router.back() 直接调用会绕过上面的守卫文案） */
+async function handleBack() {
+    if (!(await confirmLeave())) return
+    router.back()
+}
 
 // ==================== 安全计算属性 ====================
 const safeAccounts = computed(() => (cloudAccounts.value || []).filter(item => item != null))
