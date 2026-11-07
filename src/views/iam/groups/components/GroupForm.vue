@@ -96,6 +96,9 @@ const initFormData = () => {
     formData.policies = props.group.policies ? [...props.group.policies] : []
     formData.tenant_id = props.group.tenant_id
   }
+
+  // 填充完成后重置基线（iter252）：记录原值不算用户改动
+  formBaseline.value = snapshotForm()
 }
 
 // 提交表单
@@ -135,10 +138,28 @@ const reset = () => {
 // 暴露方法
 defineExpose({
   submit,
-  reset
+  reset,
+  isDirty,
 })
 
 // 初始化：随 props.group 变化重建表单（父级 dialog 无 destroy-on-close，组件跨开合复用；
+/**
+ * 表单基线快照 + 是否改动过（iter252）。
+ *
+ * 判据是「与基线不同」，**不是「字段有没有值」**（S160）：
+ * 本组件被「新建 / 编辑」共用，编辑模式下 initFormData() 会把记录里的值填进来，
+ * 那些值不是用户的改动。
+ */
+const formBaseline = ref(JSON.stringify(formData))
+function snapshotForm(): string {
+    return JSON.stringify(formData)
+}
+
+/** 供父组件的 el-dialog :before-close 判断是否需要确认（iter252） */
+function isDirty(): boolean {
+    return snapshotForm() !== formBaseline.value
+}
+
 // 仅 onMounted 初始化会让第二次编辑别的组时表单仍是旧数据/空表单，保存即丢数据——审计 H1(25)）
 watch(() => props.group, () => initFormData(), { immediate: true })
 </script>

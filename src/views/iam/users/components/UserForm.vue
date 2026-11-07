@@ -101,7 +101,7 @@ import { getProviderLabel, USER_STATUS, USER_TYPES } from '@/utils/constants'
 import { userPermissionGroups } from '@/utils/display-fallbacks'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 
 interface Props {
   user?: CloudUser | null
@@ -123,6 +123,23 @@ const formData = reactive({
   status: 'active' as any,
   permission_groups: [] as number[],
 })
+
+/**
+ * 表单基线快照 + 是否改动过（iter252）。
+ *
+ * 判据是「与基线不同」，**不是「字段有没有值」**（S160）：
+ * 本组件被「新建 / 编辑」共用，编辑模式下 initFormData() 会把记录里的值填进来，
+ * 那些值不是用户的改动。
+ */
+const formBaseline = ref(JSON.stringify(formData))
+function snapshotForm(): string {
+    return JSON.stringify(formData)
+}
+
+/** 供父组件的 el-dialog :before-close 判断是否需要确认（iter252） */
+function isDirty(): boolean {
+    return snapshotForm() !== formBaseline.value
+}
 
 const rules: FormRules = {
   username: [
@@ -175,6 +192,9 @@ const initFormData = () => {
     formData.status = props.user.status
     formData.permission_groups = userPermissionGroups(props.user).map((g) => g.id)
   }
+
+  // 填充完成后重置基线（iter252）：记录原值不算用户改动
+  formBaseline.value = snapshotForm()
 }
 
 // 提交表单
@@ -218,14 +238,20 @@ const reset = () => {
 defineExpose({
   submit,
   reset,
+  isDirty,
 })
 
 // 初始化
 onMounted(() => {
   fetchCloudAccounts()
   fetchPermissionGroups()
-  initFormData()
 })
+
+// 初始化：随 props.user 变化重建表单（iter252）。
+// 原先只在 onMounted 里调一次，而父级 dialog 没有 destroy-on-close、组件跨开合复用，
+// 导致「编辑」时基线仍停在空表单状态 → 用户什么都没改也被判脏，关窗就弹确认。
+// 这里改成 watch，并在 initFormData 末尾重置基线，语义与 GroupForm 一致。
+watch(() => props.user, () => initFormData(), { immediate: true })
 </script>
 
 <style scoped lang="scss">
