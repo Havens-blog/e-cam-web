@@ -12,13 +12,23 @@
       </div>
     </div>
 
+    <!-- 联邦降级提示（后端 F2）：e-iam 不可达时单源返回，明示数据范围而非静默缺失 -->
+    <el-alert
+      v-if="federationDegraded && !errorInfo"
+      title="IAM 侧事件暂不可用，当前仅显示云管侧事件"
+      type="warning"
+      show-icon
+      :closable="false"
+      class="federation-alert"
+    />
+
     <div v-if="!errorInfo" class="filter-section">
       <div class="filter-row">
         <el-select v-model="filters.service" placeholder="全部服务" clearable class="filter-select" @change="handleFilterChange">
           <el-option label="云管服务" value="e-cam-service" />
-          <!-- IAM 事件落 e-iam 自有库（e-iam#5/#6），联邦检索未接入前该选项必空；
-               禁用以免运维误以为筛选失效。联邦方案定稿后移除 disabled。 -->
-          <el-option label="IAM 服务（联邦待接入）" value="e-iam" disabled />
+          <!-- IAM 事件经联邦读侧并入（e-iam#8 S2S 端点 + e-cam-service#485 归并），
+               e-iam 不可达时响应带 federation_degraded=true，页面顶部提示降级。 -->
+          <el-option label="IAM 服务" value="e-iam" />
         </el-select>
         <el-select v-model="filters.domain" placeholder="全部业务域" clearable class="filter-select" @change="handleFilterChange">
           <el-option label="操作审计" value="audit" />
@@ -147,6 +157,8 @@ useUrlFilters(urlState)
 const loading = ref(false)
 const events = ref<AuditEvent[]>([])
 const pagination = reactive({ page: 1, size: 20, total: 0 })
+// 联邦降级标记（后端 F2）：e-iam 不可达时本侧单源返回，页面顶部提示
+const federationDegraded = ref(false)
 const { errorInfo, run } = useListError()
 const { statText } = useStatText()
 
@@ -230,6 +242,8 @@ const fetchEvents = async () => {
     if (res === undefined) return
     events.value = res.data?.items || []
     pagination.total = res.data?.total || 0
+    // 联邦降级：e-iam 不可达（后端 F2 降级语义），本侧单源返回 —— 页面提示而非静默
+    federationDegraded.value = res.data?.federation_degraded === true
   } finally {
     loading.value = false
   }
@@ -312,6 +326,11 @@ onMounted(fetchEvents)
 
   .stat-label { font-size: 11px; color: var(--text-tertiary); }
   .stat-num { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+}
+
+.federation-alert {
+  margin: 0 20px;
+  border-radius: 8px;
 }
 
 .filter-section {
