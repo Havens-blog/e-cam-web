@@ -185,14 +185,17 @@ const getProviderLabel = (provider: string): string => getProviderLabelShared(pr
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
+  // 同步守卫（iter262）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入。
+  // 下面有 await validate()，若等它返回再置位，守卫形同虚设（S168）。
+  if (submitting.value) return
+  submitting.value = true
 
   try {
     await formRef.value.validate()
   } catch {
+    submitting.value = false
     return
   }
-
-  submitting.value = true
 
   try {
     // 构建任务数据
