@@ -449,12 +449,16 @@ const removeThreshold = (idx: number) => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
+  // 同步守卫（iter264）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入。
+  if (submitting.value) return
+  submitting.value = true
   try {
     await formRef.value.validate()
   } catch {
+    // 这个 return 在 try 之外，finally 覆盖不到，必须手动复位（S171）
+    submitting.value = false
     return
   }
-  submitting.value = true
   try {
     if (isEdit.value) {
       await updateBudgetApi(editingId.value, { ...form })

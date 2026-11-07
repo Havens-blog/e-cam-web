@@ -766,11 +766,18 @@ const handleSync = () => {
 }
 
 const submitSync = async () => {
+  // 同步守卫（iter264）：按钮的 :loading 要等重渲染才禁用，连点会在同一 tick 内多次进入；
+  // 下面 await validate() 会让出事件循环，若等它返回再置位，守卫形同虚设（S168）。
+  if (syncing.value) return
+  syncing.value = true
   // 字段级校验（iter158）：原来 required 只画星号、不触发校验，
   // 空提交时错误只以游离 toast 出现、字段不标红。改为标准 rules。
   const valid = await syncFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-  syncing.value = true
+  if (!valid) {
+    // 这个 return 在 try 之外，finally 覆盖不到，必须手动复位（S171）
+    syncing.value = false
+    return
+  }
   try {
     const { data } = await submitSyncAssetsTaskApi({
       provider: syncForm.provider,
