@@ -175,6 +175,7 @@ import type { CloudUser } from '@/api/types/iam'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
+import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import {
   getProviderLabel,
   getUserStatus,
@@ -411,6 +412,19 @@ const fetchUsers = async () => {
       users.value = []
       pagination.total = 0
     }
+
+    // 页码收敛（iter266）：删除当前页最后一条 / 筛选后结果变少 / 全部删空时，
+    // page 会停在已不存在的页上 → 用户看到「暂无用户 · 点击上方按钮创建第一个用户」，
+    // 但实际前面还有数据（甚至 total 仍 > 0）。
+    // 复用 @/utils/clampPage 的共享实现（iter166 引入、有单测锁定契约），不在此处另写一份。
+    const fixedPage = clampPageAfterTotalChange(pagination.page, pagination.total, pagination.size)
+    if (fixedPage !== pagination.page) {
+      pagination.page = fixedPage
+      users.value = []
+      // 用修正后的页码重取，避免先渲染一帧空列表
+      await fetchUsers()
+      return
+    }
   } catch (error: any) {
     logError(error, 'fetchUsers')
     errorInfo.value = handleApiError(error, '获取用户列表失败')
@@ -420,16 +434,6 @@ const fetchUsers = async () => {
     loading.value = false
   }
 
-  // 页码越界收敛（iter265）：删除末页最后一条后，page 会停在已不存在的页上，
-  // 表现为「暂无用户 / 点击上方按钮创建第一个用户」，但总数 > 0 —— 用户会以为数据没了。
-  // 放在 fetchUsers 里而不是删除函数里：批量删除、筛选等任何让总数减少的路径都一并受益。
-  if (!errorInfo.value && pagination.total > 0) {
-    const lastPage = Math.max(1, Math.ceil(pagination.total / pagination.size))
-    if (pagination.page > lastPage) {
-      pagination.page = lastPage
-      await fetchUsers()
-    }
-  }
 }
 
 /** 导出「全部」：按当前筛选分页拉取全量（iam-2 IAM2-009），供 ExportDialog 调用 */
