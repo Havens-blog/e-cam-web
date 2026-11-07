@@ -68,6 +68,7 @@
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
+      :before-close="handleFormBeforeClose"
       v-model="dialogVisible"
       :title="dialogTitle"
       width="640px"
@@ -117,7 +118,7 @@ import { handleApiError, type ErrorInfo } from '@/utils/error-handler'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { CHARGE_TYPE_LABELS, ECS_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { getProviderLabel } from '@/utils/constants'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUrlFilters } from '@/composables/useUrlFilters'
@@ -145,6 +146,30 @@ const loading = ref(false)
 const errorInfo = ref<ErrorInfo | null>(null)
 const submitting = ref(false)
 const dialogVisible = ref(false)
+
+/**
+ * 表单弹窗关闭前守卫（iter254）。
+ *
+ * 该弹窗已有 :close-on-click-modal="false"（iter211），但那只防「点遮罩」——
+ * **Esc 和右上角 × 仍会直接关闭**（S161）。实测「编辑实例」弹窗有 91 个输入框，
+ * 改完按 Esc 会静默丢光。这里补一道：子组件用基线快照判断是否真改过（S160）。
+ */
+async function handleFormBeforeClose(done: () => void) {
+  if (!formRef.value?.isDirty?.()) {
+    done()
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      '表单内容尚未保存，关闭后将丢失。确定要关闭吗？',
+      '关闭确认',
+      { type: 'warning', confirmButtonText: '关闭', cancelButtonText: '继续编辑' },
+    )
+    done()
+  } catch {
+    // 选择继续编辑：保持弹窗打开
+  }
+}
 const isEdit = ref(false)
 const formRef = ref()
 const currentInstance = ref<Asset | null>(null)
