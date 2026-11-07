@@ -272,6 +272,7 @@
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
+      :before-close="handleFormBeforeClose"
       v-model="dialogVisible"
       :title="dialogTitle"
       width="800px"
@@ -342,6 +343,30 @@ const errorInfo = ref<ErrorInfo | null>(null)
 const apiUrl = ref('/api/v1/cam/iam/groups')
 
 const dialogVisible = ref(false)
+
+/**
+ * 表单弹窗关闭前守卫（iter252）。
+ *
+ * 该弹窗已有 :close-on-click-modal="false"（iter211），但那只防「点遮罩」——
+ * **Esc 和右上角 × 仍会直接关闭**，把已填内容静默丢掉（实测确认）。
+ * 这里统一拦一道：子组件用基线快照判断是否真的改过（S160），没改就直接关。
+ */
+async function handleFormBeforeClose(done: () => void) {
+  if (!formRef.value?.isDirty?.()) {
+    done()
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      '表单内容尚未保存，关闭后将丢失。确定要关闭吗？',
+      '关闭确认',
+      { type: 'warning', confirmButtonText: '关闭', cancelButtonText: '继续编辑' },
+    )
+    done()
+  } catch {
+    // 选择继续编辑：保持弹窗打开
+  }
+}
 const isEdit = ref(false)
 const currentGroup = ref<PermissionGroup | null>(null)
 const submitting = ref(false)
