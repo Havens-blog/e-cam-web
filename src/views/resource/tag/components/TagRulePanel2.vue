@@ -217,14 +217,20 @@ const removeCondition = (idx: number) => { if (form.conditions.length > 1) form.
 const addTagPair = () => { form.tagPairs.push({ key: '', value: '' }) }
 const removeTagPair = (idx: number) => { if (form.tagPairs.length > 1) form.tagPairs.splice(idx, 1) }
 const handleSubmit = async () => {
+  // 同步守卫（iter263）：按钮的 :loading 要等重渲染才禁用，连点会在同一 tick 内多次进入；
+  // 下面 await validate() 会让出事件循环，若等它返回再置位，守卫形同虚设（S168）。
+  if (submitting.value) return
+  submitting.value = true
   // 字段级校验（iter160）：错误标红并显示在对应字段下方
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {
+    submitting.value = false
+    return
+  }
   const vc = form.conditions.filter(c => c.field && c.operator && c.value.trim())
   const vt = form.tagPairs.filter(t => t.key.trim() && t.value.trim())
   const tags: Record<string, string> = {}
   vt.forEach(t => { tags[t.key.trim()] = t.value.trim() })
-  submitting.value = true
   try {
     if (editingRule.value) {
       await updateRuleApi(editingRule.value.id, { name: form.name, description: form.description, logic: form.logic, conditions: vc, tags, priority: form.priority })
