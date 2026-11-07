@@ -610,6 +610,8 @@ const handleDelete = async (group: PermissionGroup) => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
+  // 同步守卫（iter258）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入这里。
+  if (submitting.value) return
   try {
     submitting.value = true
     await formRef.value.submit()
