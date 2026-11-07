@@ -665,21 +665,36 @@ const form = reactive({
  * 实测进入本页时系统会自动预选一整套配置（云账号 / 规格 / VPC / 子网 / 安全组 / 地域 / 可用区），
  * 把它们算进来会让「一进页面就判脏」，每次离开都弹确认 —— 反而更烦。
  */
-const isDirty = computed<boolean>(() => {
+/**
+ * 参与「是否改动过」判断的字段快照（iter251）。
+ *
+ * 只取**系统不会自动填、且代表用户劳动**的字段：
+ *   · 页面会自动预选 云账号/规格/地域/可用区/VPC/子网/安全组 一整套默认配置，那些不能算；
+ *   · 编辑模式（?edit=<id>）下，这 6 个字段的值来自模板，是**模板原有值**而不是用户改动，
+ *     所以要用「与基线对比」而不是「有没有值」。
+ */
+function dirtySnapshot() {
     const f = form
-    // ⚠️ 这里**只能**列「系统绝不会自动填」的字段。实测进入本页时，页面会自动带出
-    // cloud_account_id / provider / region / zone / instance_type / vpc_id / subnet_id /
-    // security_group_ids 一整套默认配置（智能预选），把它们算进来会导致一进页面就判脏、
-    // 每次离开都弹确认。真正代表「用户劳动」的是下面这几项。
-    return Boolean(
-        (f.instance_name_prefix || '').trim() ||
-            (f.host_name_prefix || '').trim() ||
-            f.key_pair_name ||
-            (f.description || '').trim() ||
-            (f.data_disks && f.data_disks.length > 0) ||
-            Object.keys(f.tags || {}).length > 0,
-    )
-})
+    return JSON.stringify({
+        instance_name_prefix: (f.instance_name_prefix || '').trim(),
+        host_name_prefix: (f.host_name_prefix || '').trim(),
+        key_pair_name: f.key_pair_name || '',
+        description: (f.description || '').trim(),
+        data_disks: (f.data_disks || []).map((d) => [d?.category || '', d?.size || 0]),
+        tags: Object.keys(f.tags || {}).sort().map((k) => [k, f.tags[k]]),
+    })
+}
+
+/** 基线：进入页面（或模板回填完成）那一刻的快照。创建模式是全空，编辑模式是模板原值 */
+const dirtyBaseline = ref(dirtySnapshot())
+
+/**
+ * 用户是否已经改了会丢失的内容（iter250 加，iter251 修正）。
+ *
+ * 判据是「**当前快照 ≠ 基线快照**」，不是「字段有没有值」——
+ * 否则编辑模式下模板原有值会被当成用户改动，一进页面就判脏、每次离开都弹确认。
+ */
+const isDirty = computed<boolean>(() => dirtySnapshot() !== dirtyBaseline.value)
 
 /**
  * 离开确认（iter250）：配置了内容后离开，先把「会丢失」讲清楚。
@@ -1119,6 +1134,9 @@ function applyTemplate(tpl: VMTemplate | null) {
   form.key_pair_name = tpl.key_pair_name || ''
   form.tags = tpl.tags || {}
 
+  // 切换模板后同样重置基线（iter251）：模板原值不该算用户改动
+  dirtyBaseline.value = dirtySnapshot()
+
   if (form.cloud_account_id) {
     loadResourcesForTemplate(form.cloud_account_id, form.region, form.vpc_id)
   }
@@ -1363,6 +1381,9 @@ async function loadEditTemplate() {
     form.charge_type = tpl.charge_type || ''
     form.key_pair_name = tpl.key_pair_name || ''
     form.tags = tpl.tags || {}
+
+    // 模板回填完成 → 以此为基线，之后只有真的改动才算脏（iter251）
+    dirtyBaseline.value = dirtySnapshot()
 
     if (form.cloud_account_id) {
       await loadResourcesForTemplate(form.cloud_account_id, form.region, form.vpc_id)
