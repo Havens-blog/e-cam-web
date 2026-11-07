@@ -7,7 +7,9 @@
         <el-button type="primary" @click="openCreateDialog">＋ 创建策略</el-button>
       </div>
 
-      <div v-loading="loading">
+          <!-- 错误态（iter247）：请求失败给持久说明 + 重试，而不是渲染成「暂无数据」 -->
+    <ErrorDisplay v-if="errorInfo" :error-info="errorInfo" @retry="loadPolicies" />
+<div v-loading="loading">
         <div v-for="policy in policies.filter(p => p != null)" :key="policy.id" class="policy-card">
           <div class="policy-header">
             <div style="display: flex; align-items: center; gap: 10px">
@@ -38,7 +40,7 @@
             </div>
           </div>
         </div>
-        <el-empty v-if="policies.length === 0 && !loading" description="暂无标签策略" />
+        <el-empty v-if="!errorInfo && policies.length === 0 && !loading" description="暂无标签策略" />
       </div>
     </div>
 
@@ -98,8 +100,7 @@
         :closable="false"
         style="margin-bottom: 12px"
       />
-
-      <el-table
+<el-table
         ref="complianceTableRef"
         :data="complianceResults"
         v-loading="complianceLoading"
@@ -271,6 +272,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
 import { AssetExportDialog, type ExportFieldConfig } from '@haven/ui/AssetExportDialog'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import { useListError } from '@/composables/useListError'
 
 const props = defineProps<{
   activeView: 'policies' | 'compliance'
@@ -323,6 +326,9 @@ const complianceFilter = reactive({ policy_id: undefined as number | undefined, 
 const compliancePage = ref(1)
 const compliancePageSize = ref(50)
 
+  /** 加载失败的错误态（iter247）：失败时保留 ErrorDisplay，而不是把列表清空成「暂无数据」 */
+  const { errorInfo, run } = useListError()
+
 const loadPolicies = async () => {
   loading.value = true
   try {
@@ -332,8 +338,10 @@ const loadPolicies = async () => {
     if (policies.value.length > 0 && !complianceFilter.policy_id) {
       complianceFilter.policy_id = policies.value[0]?.id
     }
-  } catch {
-    ElMessage.error('获取标签策略失败')
+  } catch (err) {
+    // 失败时不再静默置空（iter247）：交给 ErrorDisplay 显示持久说明 + 重试
+    errorInfo.value = null
+    await run(async () => { throw err }, '获取标签策略失败')
     policies.value = []
   } finally {
     loading.value = false
