@@ -167,11 +167,17 @@ const buildConfig = () => {
 }
 
 const handleSubmit = async () => {
+  // 同步守卫（iter259）：:loading 要等重渲染才禁用按钮，连点会在同一 tick 内多次进入；
+  // 且下面 await validate() 会让出事件循环，更挡不住。必须放在最开头。
+  if (submitting.value) return
+  // 立刻置位（iter259）：validate() 是 async，若等它返回再置位，连点会全部穿过守卫。
+  submitting.value = true
   try {
     await formRef.value?.validate()
-  } catch { return }
-
-  submitting.value = true
+  } catch {
+    submitting.value = false
+    return
+  }
   try {
     const payload = { name: form.name, type: form.type, config: buildConfig() }
     if (isEdit.value && props.editData) {
