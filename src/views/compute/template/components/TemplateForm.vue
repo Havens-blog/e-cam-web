@@ -179,6 +179,43 @@ watch(() => props.templateData, (val) => {
   // 填充完成后重置基线（iter255）：模板原值不算用户改动
   formBaseline.value = snapshotForm()
 }, { immediate: true })
+/**
+ * 抽屉关闭时重置表单（iter267）。
+ *
+ * el-drawer 未开 destroy-on-close，组件跨开合复用；而表单只在
+ * watch(() => props.templateData) 里重置 —— 创建模式下 templateData 恒为 null，
+ * 再次打开时该 watch 不触发，于是上一次填的内容会残留（实测：取消后重开，名称还在）。
+ * 用户若没注意直接提交，会误创建一条沿用旧数据的模板。
+ *
+ * 放在「关闭时」而不是「打开时」：避免打开瞬间先闪一帧旧值。
+ */
+watch(() => props.visible, (visible) => {
+  if (visible) return
+  form.name = ''
+  form.description = ''
+  form.instance_name_prefix = ''
+  form.host_name_prefix = ''
+  form.system_disk_type = ''
+  form.system_disk_size = 40
+  form.bandwidth_out = 0
+  form.charge_type = ''
+  form.key_pair_name = ''
+  cascadeForm.value = {
+    cloud_account_id: undefined,
+    provider: '',
+    region: '',
+    zone: '',
+    instance_type: '',
+    image_id: '',
+    vpc_id: '',
+    subnet_id: '',
+    security_group_ids: [],
+  }
+  formRef.value?.clearValidate()
+  // 基线同步归零，避免下一次打开「关闭确认」用旧的脏判断
+  formBaseline.value = snapshotForm()
+})
+
 
 
 function handleClose() {
