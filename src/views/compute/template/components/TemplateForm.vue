@@ -1,5 +1,6 @@
 <template>
   <el-drawer
+:before-close="handleBeforeClose"
     :model-value="visible"
     :title="templateData ? '编辑模板' : '创建模板'"
     size="600px"
@@ -60,7 +61,7 @@
 import { createTemplateApi, updateTemplateApi } from '@/api/template'
 import type { VMTemplate } from '@/api/types/template'
 import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import CascadeSelectors from './CascadeSelectors.vue'
 
@@ -117,6 +118,41 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }]
 }
 
+/**
+ * 表单基线快照 + 是否改动过（iter255）。
+ *
+ * 判据是「与基线不同」，**不是「字段有没有值」**（S160）：
+ * 本抽屉被「创建 / 编辑」共用，watch(() => props.templateData) 会把模板值填进来，
+ * 那些值不是用户的改动。
+ */
+const formBaseline = ref('')
+function snapshotForm(): string {
+  return JSON.stringify({ form, cascade: cascadeForm.value })
+}
+
+/**
+ * 关闭前守卫（iter255）。
+ *
+ * 本抽屉此前**只有 @close**（那只是 emit visible=false），
+ * Esc 与右上角 × 会直接关闭并把已填内容丢掉（实测确认）。
+ */
+async function handleBeforeClose(done: () => void) {
+  if (snapshotForm() === formBaseline.value) {
+    done()
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      '表单内容尚未保存，关闭后将丢失。确定要关闭吗？',
+      '关闭确认',
+      { type: 'warning', confirmButtonText: '关闭', cancelButtonText: '继续编辑' },
+    )
+    done()
+  } catch {
+    // 选择继续编辑：保持抽屉打开
+  }
+}
+
 watch(() => props.templateData, (val) => {
   if (val) {
     form.name = val.name || ''
@@ -140,7 +176,10 @@ watch(() => props.templateData, (val) => {
       security_group_ids: val.security_group_ids || []
     }
   }
+  // 填充完成后重置基线（iter255）：模板原值不算用户改动
+  formBaseline.value = snapshotForm()
 }, { immediate: true })
+
 
 function handleClose() {
   emit('update:visible', false)
