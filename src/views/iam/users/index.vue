@@ -419,6 +419,17 @@ const fetchUsers = async () => {
   } finally {
     loading.value = false
   }
+
+  // 页码越界收敛（iter265）：删除末页最后一条后，page 会停在已不存在的页上，
+  // 表现为「暂无用户 / 点击上方按钮创建第一个用户」，但总数 > 0 —— 用户会以为数据没了。
+  // 放在 fetchUsers 里而不是删除函数里：批量删除、筛选等任何让总数减少的路径都一并受益。
+  if (!errorInfo.value && pagination.total > 0) {
+    const lastPage = Math.max(1, Math.ceil(pagination.total / pagination.size))
+    if (pagination.page > lastPage) {
+      pagination.page = lastPage
+      await fetchUsers()
+    }
+  }
 }
 
 /** 导出「全部」：按当前筛选分页拉取全量（iam-2 IAM2-009），供 ExportDialog 调用 */
