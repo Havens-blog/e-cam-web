@@ -87,9 +87,14 @@
     <div v-else-if="safeTemplates.length === 0" class="empty-state">
       <div class="empty-icon">📋</div>
       <div class="empty-text">暂无模板</div>
-      <div class="empty-hint">点击右上角「创建模板」开始配置您的第一个主机模板</div>
-      <button class="btn btn-primary" style="margin-top: 16px" @click="handleCreate">
-        <el-icon><Plus /></el-icon> 创建模板
+      <div class="empty-hint">点右上角「创建模板」进入完整配置页；也可点下方按钮在当前页快速创建</div>
+      <button
+        class="btn btn-primary"
+        style="margin-top: 16px"
+        title="在本页以抽屉快速创建（字段较少）；需要完整配置请用右上角「创建模板」"
+        @click="handleCreate"
+      >
+        <el-icon><Plus /></el-icon> 快速创建
       </button>
     </div>
 
