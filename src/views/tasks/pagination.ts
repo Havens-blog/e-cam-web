@@ -8,6 +8,7 @@
  * small + 5 页码 + total/prev/pager/next，保持单行。
  */
 import type { LocationQueryRaw } from 'vue-router'
+import { clampPageAfterTotalChange } from '@/utils/clampPage'
 
 export interface PaginationUi {
     small: boolean
@@ -99,11 +100,16 @@ export function buildPageQuery(
     return next
 }
 
-/** 页码超出总页数时收敛到最后一页 */
+/**
+ * 页码超出总页数时收敛到最后一页。
+ *
+ * iter283：改为**转发**到 `@/utils/clampPage` 的共享实现 —— 此前本文件与
+ * `utils/clampPage.ts` 各有一份同逻辑实现，且**两份各有缺陷**：
+ *   · 本文件对 `page <= 0` 不修正（会返回 0 或负数）；
+ *   · `clampPageAfterTotalChange` 对 `total = NaN` 会算出 NaN。
+ * 合并后统一到共享实现（页码下限恒为 1、`total` 非有限数不产生 NaN）。
+ * 保留本函数名与签名，避免改动 `tasks/index.vue` 的 import 与既有单测。
+ */
 export function clampPageToTotal(page: number, total: number, size: number): number {
-    // 空结果且不在第一页：回第 1 页，避免分页控件被隐藏后 URL 卡在越界页码
-    if (Number.isFinite(total) && total <= 0) return page > 1 ? 1 : page
-    if (!Number.isFinite(total) || size <= 0) return page
-    const lastPage = Math.max(1, Math.ceil(total / size))
-    return page > lastPage ? lastPage : page
+    return clampPageAfterTotalChange(page, total, size)
 }
