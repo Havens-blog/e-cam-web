@@ -98,7 +98,8 @@ import { listTagResourcesApi, unbindTagsApi } from '@/api/tag'
 import type { TagResource } from '@/api/types/tag'
 import { getProviderLabel } from '@/utils/constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { reactive, ref, watch } from 'vue'
+import { onUnmounted, reactive, ref, watch } from 'vue'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 
 const props = defineProps<{
   modelValue: boolean
@@ -118,12 +119,18 @@ const resources = ref<TagResource[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
+
+// 列表请求竞态守卫（iter279）：翻页连点时只认最后一次请求的结果
+const latestRequest = useLatestRequest()
 const selectedRows = ref<TagResource[]>([])
 
 const drawerFilter = reactive({ resource_type: '', provider: '' })
 
 watch(() => props.modelValue, (val) => { visible.value = val })
 watch(visible, (val) => { emit('update:modelValue', val) })
+
+// 卸载时作废在途请求，避免组件已销毁还写状态
+onUnmounted(() => latestRequest.reset())
 
 watch(() => props.modelValue, (val) => {
   if (val && props.tagKey) {
@@ -135,6 +142,9 @@ watch(() => props.modelValue, (val) => {
 })
 
 const loadResources = async () => {
+  // 竞态守卫（iter279）：翻页连点时，第 2 页的慢响应会晚于第 3 页返回，
+  // 若不判断就会把列表覆盖回第 2 页的数据 —— 表现为「页码是 3、数据是第 2 页」。
+  const seq = latestRequest.begin()
   loading.value = true
   try {
     const res = await listTagResourcesApi({
@@ -145,13 +155,16 @@ const loadResources = async () => {
       offset: (currentPage.value - 1) * pageSize,
       limit: pageSize,
     })
+    // 已有更新的请求发出：本次结果作废，不写任何状态（含 loading，交给最新那次收尾）
+    if (!latestRequest.isCurrent(seq)) return
     resources.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch {
+    if (!latestRequest.isCurrent(seq)) return
     ElMessage.error('获取关联资源失败')
     resources.value = []
   } finally {
-    loading.value = false
+    if (latestRequest.isCurrent(seq)) loading.value = false
   }
 }
 
