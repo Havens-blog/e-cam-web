@@ -98,7 +98,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
@@ -125,6 +126,9 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(TEMPLATE_PAGE_SIZE)
 
+// 列表请求竞态守卫（iter280）：翻页连点时只认最后一次请求的结果
+const latestRequest = useLatestRequest()
+
 const filters = reactive<TemplateListFilters>({ keyword: '', category: '', isBuiltIn: '' })
 const hasFilters = computed(() => Boolean((filters.keyword || '').trim() || filters.category || filters.isBuiltIn !== ''))
 
@@ -146,20 +150,26 @@ const categoryLabel = (value?: string) => (value ? getDictLabel('template_catego
 const emptyText = computed(() => (hasFilters.value ? '没有符合条件的模板' : '暂无策略模板'))
 
 async function fetchList() {
+  // 竞态守卫（iter280）：翻页连点时，第 2 页的慢响应会晚于第 3 页返回，
+  // 若不判断就会把列表覆盖回第 2 页的数据 —— 表现为「页码是 3、数据是第 2 页」。
+  const seq = latestRequest.begin()
   loading.value = true
   loadError.value = ''
   try {
     const res = await listTemplatesApi(buildTemplateListParams(filters, page.value, pageSize.value))
     const { rows: list, total: count } = unpackTemplateList(res)
+    // 已有更新的请求发出：本次结果作废，不写任何状态（含 loading，交给最新那次收尾）
+    if (!latestRequest.isCurrent(seq)) return
     rows.value = list
     total.value = count
   } catch (e) {
+    if (!latestRequest.isCurrent(seq)) return
     // 失败必须显式呈现并允许重试，不能静默留空表
     rows.value = []
     total.value = 0
     loadError.value = `策略模板加载失败：${e instanceof Error ? e.message : String(e)}`
   } finally {
-    loading.value = false
+    if (latestRequest.isCurrent(seq)) loading.value = false
   }
 }
 
@@ -196,6 +206,9 @@ onMounted(async () => {
   await loadDict('template_category').catch(() => {})
   await fetchList()
 })
+// 卸载时作废在途请求，避免组件已销毁还写状态
+onUnmounted(() => latestRequest.reset())
+
 </script>
 
 <style scoped lang="scss">
