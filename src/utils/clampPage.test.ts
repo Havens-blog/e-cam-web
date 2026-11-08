@@ -33,4 +33,35 @@ describe('clampPageAfterTotalChange', () => {
   it('总数为负（异常数据）时不崩，返回 1', () => {
     expect(clampPageAfterTotalChange(2, -5, 20)).toBe(1)
   })
+
+  // ── iter283：与 views/tasks/pagination.ts 的重复实现合并后新增的边界 ──
+
+  it('页码小于 1（0 / 负数）一律落到第 1 页', () => {
+    // 合并前两侧行为不一：clampPageToTotal 会原样返回 0 / -2
+    expect(clampPageAfterTotalChange(0, 100, 20)).toBe(1)
+    expect(clampPageAfterTotalChange(-2, 100, 20)).toBe(1)
+  })
+
+  it('total 为 NaN 时不产生 NaN（合并前会算出 NaN，导致 offset=NaN 发给后端）', () => {
+    const r = clampPageAfterTotalChange(3, Number.NaN, 20)
+    expect(Number.isNaN(r)).toBe(false)
+    expect(r).toBe(3) // 算不出总页数时不臆测上限，只保证页码合法
+  })
+
+  it('total 为 NaN 且页码非法时，仍落到第 1 页', () => {
+    expect(clampPageAfterTotalChange(0, Number.NaN, 20)).toBe(1)
+    expect(clampPageAfterTotalChange(-5, Number.NaN, 20)).toBe(1)
+  })
+
+  it('total 为 Infinity 时不臆测上限，保留合法页码', () => {
+    expect(clampPageAfterTotalChange(99, Number.POSITIVE_INFINITY, 20)).toBe(99)
+  })
+
+  it('页码为非整数时向下取整（避免 offset = 小数）', () => {
+    expect(clampPageAfterTotalChange(2.7, 100, 20)).toBe(2)
+  })
+
+  it('页码为 NaN 时落到第 1 页', () => {
+    expect(clampPageAfterTotalChange(Number.NaN, 100, 20)).toBe(1)
+  })
 })
