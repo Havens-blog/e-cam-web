@@ -233,7 +233,8 @@ import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import { CHARGE_TYPE_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { Loading, Monitor, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { useRouter } from 'vue-router'
 import { formatTemplateTime } from './format'
@@ -249,6 +250,9 @@ const templates = ref<VMTemplate[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(12)
+
+// 列表请求竞态守卫（iter281）：翻页连点时只认最后一次请求的结果
+const latestRequest = useLatestRequest()
 const searchName = ref('')
 const filterProvider = ref('')
 const activeTab = ref('all')
@@ -351,6 +355,9 @@ const formatTime = (ts: number) => formatTemplateTime(ts)
 // ==================== 数据加载 ====================
 
 async function loadTemplates() {
+  // 竞态守卫（iter281）：翻页连点时，第 2 页的慢响应会晚于第 3 页返回，
+  // 若不判断就会把列表覆盖回第 2 页的数据 —— 表现为「页码是 3、数据是第 2 页」。
+  const seq = latestRequest.begin()
   loading.value = true
   try {
     const res = await listTemplatesApi({
@@ -360,6 +367,8 @@ async function loadTemplates() {
       limit: pageSize.value
     })
     const data = res?.data
+    // 已有更新的请求发出：本次结果作废，不写任何状态（含 loading，交给最新那次收尾）
+    if (!latestRequest.isCurrent(seq)) return
     const newTotal = data?.total || 0
     // 页码收敛（iter168）：删除当前页最后一条时，currentPage 不变 → 请求到空页。
     // 搜索/筛选已各自重置到第 1 页（handleSearch/handleFilterChange），这里只需处理删除场景。
@@ -374,9 +383,11 @@ async function loadTemplates() {
     templates.value = data?.items || []
     total.value = newTotal
   } catch {
+    // 旧请求的失败不该弹提示（新请求可能已成功）
+    if (!latestRequest.isCurrent(seq)) return
     ElMessage.error('加载模板列表失败')
   } finally {
-    loading.value = false
+    if (latestRequest.isCurrent(seq)) loading.value = false
   }
 }
 
@@ -494,6 +505,9 @@ onMounted(() => {
   loadTemplates()
   loadAccounts()
 })
+// 卸载时作废在途请求，避免组件已销毁还写状态
+onUnmounted(() => latestRequest.reset())
+
 </script>
 
 <style scoped>
