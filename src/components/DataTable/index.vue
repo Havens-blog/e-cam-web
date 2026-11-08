@@ -105,7 +105,8 @@ import StateBlock from '@/components/StateBlock/index.vue'
 import type { StateBlockStatus } from '@/components/StateBlock/index.vue'
 import { parseError } from '@/utils/error-handler'
 import type { TableInstance } from 'element-plus'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import type { Ref } from 'vue'
 import type { DataTableBatchAction, DataTableColumn, DataTableDensity, DataTableFetcher } from './types'
 import { looksTechnical, TECHNICAL_ERROR_FALLBACK } from '@/utils/technicalError'
@@ -232,20 +233,29 @@ const showBatchBar = computed<boolean>(
 )
 
 /** 执行 fetch 拉取（仅 fetch 模式）：成功落数据，失败落错误信息并清空数据 */
+// 列表请求竞态守卫（iter276）：翻页/筛选连点时只认最后一次请求的结果
+const latestRequest = useLatestRequest()
+
 const load = async (): Promise<void> => {
   if (!props.fetch) {
     return
   }
+  // 竞态守卫（iter276）：翻页连点时，第 2 页的慢响应会晚于第 3 页返回，
+  // 若不判断就会把表格覆盖回第 2 页的数据 —— 表现为「页码是 3、数据是第 2 页」。
+  const seq = latestRequest.begin()
   fetchLoading.value = true
   fetchError.value = null
   try {
     const rows = await props.fetch()
+    // 已有更新的请求发出：本次结果作废，不写任何状态（含 loading，交给最新那次收尾）
+    if (!latestRequest.isCurrent(seq)) return
     fetchRows.value = rows ?? []
   } catch (error) {
+    if (!latestRequest.isCurrent(seq)) return
     fetchError.value = resolveErrorMessage(error, props.errorText) || '加载失败'
     fetchRows.value = []
   } finally {
-    fetchLoading.value = false
+    if (latestRequest.isCurrent(seq)) fetchLoading.value = false
   }
 }
 
@@ -285,6 +295,9 @@ const clearSelection = (): void => {
   tableRef.value?.clearSelection()
   selectedRows.value = []
 }
+
+// 卸载时作废在途请求，避免组件已销毁还写状态
+onUnmounted(() => latestRequest.reset())
 
 defineExpose({
   /** 重新触发 fetch 加载（fetch 模式），见 {@link refresh} */
