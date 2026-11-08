@@ -83,11 +83,12 @@ import type { AlertChannel, ChannelType } from '@/api/alert'
 import { deleteChannelApi, getChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, ref, reactive, watch} from 'vue'
+import { onMounted, onUnmounted, ref, reactive, watch } from 'vue'
 import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import ChannelFormDialog from './components/ChannelFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { formatTime } from '@/utils/formatters'
 import { showApiError } from '@/api/request'
@@ -96,6 +97,9 @@ const list = ref<AlertChannel[]>([])
 const loading = ref(false)
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
+
+// 列表请求竞态守卫（iter274）：翻页连点时，只认最后一次请求的结果
+const latestRequest = useLatestRequest()
 const total = ref(0)
 const page = ref(1)
 const pageSize = 20
@@ -122,11 +126,16 @@ const channelTagType = (t: string) => {
 }
 
 const fetchData = async () => {
+  // 竞态守卫（iter274）：翻页连点时，第 2 页的慢响应会晚于第 3 页返回，
+  // 若不判断就会把列表覆盖回第 2 页的数据 —— 表现为「页码是 3、数据是第 2 页」。
+  const seq = latestRequest.begin()
   loading.value = true
   try {
     const params: any = { offset: (page.value - 1) * pageSize, limit: pageSize }
     if (filterType.value) params.type = filterType.value
     const res = await run(() => listChannelsApi(params), '加载失败')
+    // 已有更新的请求发出：本次结果作废，不写任何状态（含 loading，交给最新那次收尾）
+    if (!latestRequest.isCurrent(seq)) return
     if (res === undefined) {
       list.value = []
       total.value = 0
@@ -148,9 +157,12 @@ const fetchData = async () => {
     list.value = items
     total.value = newTotal
   } finally {
-    loading.value = false
+    if (latestRequest.isCurrent(seq)) loading.value = false
   }
 }
+
+// 卸载时作废在途请求，避免组件已销毁还写状态
+onUnmounted(() => latestRequest.reset())
 
 const handleEdit = async (row: AlertChannel) => {
   // 列表接口已对 webhook 回调凭据脱敏（key 显示为 ***），
