@@ -391,12 +391,55 @@ async function loadTemplates() {
   }
 }
 
+/**
+ * 搜索框输入（iter296）。
+ *
+ * 缺陷（实测）：`@input` 直接调 `loadTemplates()`，**没有任何防抖** ——
+ * 用中文输入法输入「阿里云」时，拼音阶段的每个按键都会发一次请求，
+ * 实测一次输入产生 **7 次** `GET /templates`（应为 1 次）。
+ * 既浪费后端，也会让列表在输入过程中反复闪烁。
+ *
+ * 处理：与仓内既有做法对齐（`cert/ledger/CertTable`、`cert/detail/ForwardReferences`、
+ * `cert/probes` 均为 300ms 防抖），这里同样用 300ms。
+ *
+ * 关于「清空立即生效」：照 `cert/probes` 的做法，清空时不等待防抖。
+ * **但必须只认「从有值变为空」那一次** —— 我第一版写成 `if (!searchName.value)`，
+ * 结果踩到坑：中文输入法组合期间 `v-model` 不更新，`searchName` 恰好也是空串，
+ * 于是拼音的每个按键都走进「清空」分支立即发请求（实测仍发出 4 次无参请求）。
+ * 因此这里用 `wasNonEmpty` 记住上一次是否非空，只有真正「删空」才立即搜索。
+ */
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+// 上一次输入后的非空状态；用于区分「用户删空」与「输入法组合期间的空值」
+let wasNonEmpty = false
+
 function handleSearch() {
-  currentPage.value = 1
-  loadTemplates()
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
+  const nowEmpty = !searchName.value
+  if (nowEmpty && wasNonEmpty) {
+    // 真正的清空动作（点 clearable 的 ×，或手动删掉最后一个字）：立即搜索
+    wasNonEmpty = false
+    currentPage.value = 1
+    loadTemplates()
+    return
+  }
+  if (!nowEmpty) wasNonEmpty = true
+  // 其余情况（包括输入法组合期间的空值）一律走防抖，避免拼音逐键发请求
+  searchTimer = setTimeout(() => {
+    searchTimer = null
+    currentPage.value = 1
+    loadTemplates()
+  }, 300)
 }
 
 function handleFilterChange() {
+  // 筛选是离散选择（下拉），不存在连打，直接触发；但要取消可能待发的搜索
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
   currentPage.value = 1
   loadTemplates()
 }
@@ -506,7 +549,14 @@ onMounted(() => {
   loadAccounts()
 })
 // 卸载时作废在途请求，避免组件已销毁还写状态
-onUnmounted(() => latestRequest.reset())
+onUnmounted(() => {
+  latestRequest.reset()
+  // 卸载时清掉待发的搜索防抖（iter296），避免组件已销毁还发请求
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
+})
 
 </script>
 
