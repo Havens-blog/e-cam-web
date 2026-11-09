@@ -280,6 +280,31 @@ const handleSelectionChange = (rows: T[]): void => {
   emit('selection-change', rows)
 }
 
+/**
+ * 换页/换数据时清空多选（iter295）。
+ *
+ * 缺陷（真实浏览器实测）：在第 1 页勾选 2 行 →「已选 2 项」；翻到第 2 页后，
+ * `el-table` 内部已把选中清空（表格里 0 行有勾），但**没有触发 selection-change**，
+ * 于是 `selectedRows` 仍留着第 1 页那 2 行 —— 批次栏继续显示「已选 2 项」，
+ * 「批量删除」仍可点，确认框写「确定要删除选中的 2 个资产吗？」。
+ *
+ * 用户此刻在第 2 页看到的是另外 3 条完全不同的资产，
+ * **却会删掉第 1 页那 2 条已经看不见的资产** —— 属误删风险。
+ *
+ * 处理：数据源变了就一并清掉内部选中态与 `selectedRows`，
+ * 让「已选 N 项」归零、批次栏收起。不保留跨页选择是有意的 ——
+ * 跨页累积会让「已选」与实际可见内容脱节，运维场景下代价过高。
+ */
+watch(
+  () => displayRows.value,
+  () => {
+    if (!selectedRows.value.length) return
+    tableRef.value?.clearSelection()
+    selectedRows.value = []
+    emit('selection-change', [])
+  },
+)
+
 /** 批量动作按钮点击：以 key + 当前选中行快照（不可变拷贝）透传父级 */
 const handleBatchAction = (action: DataTableBatchAction): void => {
   emit('batch-action', action.key, [...selectedRows.value])
