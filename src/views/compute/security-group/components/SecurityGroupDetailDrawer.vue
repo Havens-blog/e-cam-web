@@ -103,15 +103,29 @@ import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { Close, Document, Lock } from '@element-plus/icons-vue';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { formatTime } from '@/utils/formatters'
 import { placeholderFor } from '@/composables/tabPlaceholders'
 
-defineProps<{ visible: boolean; instance: Asset | null }>()
+const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
+
+/**
+ * 切换查看对象时把 tab 复位到「详情」（iter298）。
+ *
+ * 缺陷：本抽屉被 3 处复用（安全组列表、ECS 详情、VPC 详情）；打开安全组 A → 切到「入站规则」→
+ * 关闭 → 打开安全组 B 时**仍停在「入站规则」**。虽非数据错误，但与同为详情抽屉的
+ * `DiskDetailDrawer`（已有 `watch(() => props.instance)` 复位）行为不一致。
+ */
+watch(
+  () => props.instance,
+  () => {
+    activeTab.value = 'detail'
+  },
+)
 
 /** 占位标签页的文案（iter212）：原先直接渲染 {{ activeTab }}，会把内部 key 漏给用户 */
 const tabPlaceholder = computed(() => placeholderFor(activeTab.value))

@@ -65,16 +65,31 @@ import type { Asset } from '@/api/types/asset';
 import { IconFont } from '@haven/ui/IconFont';
 import { getProviderLabel } from '@/utils/constants';
 import { Camera, Close, Document } from '@element-plus/icons-vue';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { getProviderIcon } from '@/utils/icon-mapping'
 import { SNAPSHOT_STATUS_LABELS, labelOfLenient } from '@/utils/fieldLabels'
 import { formatTime } from '@/utils/formatters'
 import { placeholderFor } from '@/composables/tabPlaceholders'
 
-defineProps<{ visible: boolean; instance: Asset | null }>()
+const props = defineProps<{ visible: boolean; instance: Asset | null }>()
 defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const activeTab = ref('detail')
+
+/**
+ * 切换查看对象时把 tab 复位到「详情」（iter298）。
+ *
+ * 缺陷（实测）：本抽屉被列表页与 ECS 详情页复用；打开快照 A → 切到「操作日志」→ 关闭 →
+ * 打开快照 B 时**仍停在「操作日志」**，而 B 的操作日志是空占位，用户会误以为 B 没有操作记录。
+ * 同为详情抽屉的 `DiskDetailDrawer` 已有 `watch(() => props.instance)` 做复位，
+ * 这里补齐以保持同类组件行为一致。
+ */
+watch(
+  () => props.instance,
+  () => {
+    activeTab.value = 'detail'
+  },
+)
 
 /** 占位标签页的文案（iter212）：原先直接渲染 {{ activeTab }}，会把内部 key 漏给用户 */
 const tabPlaceholder = computed(() => placeholderFor(activeTab.value))
