@@ -49,6 +49,7 @@
           type="text"
           placeholder="搜索模板名称、描述..."
           @input="handleSearch"
+          @change="commitSearchToUrl"
         />
       </div>
       <select v-model="filterProvider" class="filter-select" @change="handleFilterChange">
@@ -266,7 +267,16 @@ const urlFilters = reactive<Record<string, string | undefined>>({
   tab: activeTab.value || undefined,
 })
 useUrlFilters(urlFilters)
-watch(searchName, (v) => { urlFilters.search = v || undefined })
+// 文本搜索**不在每次按键时写 URL**（iter315 实测的 P1 缺陷）：
+// `MainLayout` 的 `<router-view :key="route.fullPath" />` 意味着 query 一变就**重挂载整页**，
+// 于是「输入第 1 个字符 → 写 URL → 页面重挂载 → 输入框被销毁重建 → 焦点丢失」，
+// 实测搜索框**只能输入 1 个字符**（打 x 后再打 y/z 全部丢失，`document.activeElement` 不再是输入框，
+// 且新旧输入框不是同一个 DOM 节点）。
+// 因此改为**提交时机**才写 URL（原生 `change`：失焦或回车，值有变时触发），
+// 既保留 iter149 的「刷新 / 分享链接 / 返回后筛选不丢」，又不会打断输入过程。
+function commitSearchToUrl(): void {
+  urlFilters.search = searchName.value || undefined
+}
 watch(filterProvider, (v) => { urlFilters.provider = v || undefined })
 watch(activeTab, (v) => { urlFilters.tab = v || undefined })
 // URL 回填后同步到各自的 ref（setup 阶段完成，早于 onMounted 的 loadTemplates）
