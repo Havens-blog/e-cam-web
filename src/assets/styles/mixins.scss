@@ -1,26 +1,24 @@
-// 清除浮动
-@mixin clearfix {
-  &::after {
-    content: '';
-    display: table;
-    clear: both;
-  }
-}
+// ============================================
+// SCSS 混入（仅保留实际被 @include 的部分）
+//
+// 2026-11-10 清理（iter327）：原文件定义了 27 个混入，其中 18 个**从未被任何文件 @include**，
+// 另 3 个（glass-card / scrollbar-dark / scrollbar）仅在文件内部互相 include、外部零调用 ——
+// 合计 21 个是死代码，已删除。
+//
+// 删除清单：clearfix、multi-ellipsis、glass-card、glass-effect、card、btn-primary、btn-secondary、
+// btn-ghost、input-dark、status-badge、stat-number、stat-label、hover-lift、scrollbar-dark、
+// scrollbar、no-select、transition、box-shadow、gradient、absolute-center、aspect-ratio
+//
+// 保留的 6 个是唯一有实际调用点的（全部经 `assets/styles/index.scss` 的工具类使用）：
+//   ellipsis / flex-center / flex-between / flex-start / flex-end / respond-to
+// 若将来需要被删的某个混入，可从 git 历史取回（本文件在 2026-11-10 之前的版本）。
+// ============================================
 
 // 文本溢出省略
 @mixin ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-// 多行文本溢出省略
-@mixin multi-ellipsis($lines: 2) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: $lines;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 // Flex布局
@@ -48,156 +46,6 @@
   justify-content: flex-end;
 }
 
-// ==================== 玻璃拟态卡片 ====================
-@mixin glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  box-shadow: 
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 4px 24px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: all 200ms ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 8px 32px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-}
-
-// 简单玻璃效果
-@mixin glass-effect($opacity: 0.05, $blur: 12px) {
-  background: rgba(255, 255, 255, $opacity);
-  backdrop-filter: blur($blur);
-  -webkit-backdrop-filter: blur($blur);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-// 旧版卡片样式 (保持兼容)
-@mixin card {
-  @include glass-card;
-  padding: 20px;
-}
-
-// ==================== 深色主题按钮 ====================
-@mixin btn-primary {
-  background: #fafafa;
-  color: #0a0a0a;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 200ms ease;
-  
-  &:hover {
-    background: #e4e4e7;
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-@mixin btn-secondary {
-  background: transparent;
-  color: #fafafa;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  transition: all 200ms ease;
-  
-  &:hover {
-    background: #262626;
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-}
-
-@mixin btn-ghost {
-  background: transparent;
-  color: #a1a1aa;
-  border: none;
-  border-radius: 8px;
-  transition: all 200ms ease;
-  
-  &:hover {
-    background: #262626;
-    color: #fafafa;
-  }
-}
-
-// ==================== 深色主题输入框 ====================
-@mixin input-dark {
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #fafafa;
-  transition: all 200ms ease;
-  
-  &::placeholder {
-    color: #52525b;
-  }
-  
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-  
-  &:focus {
-    border-color: #fafafa;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-  }
-}
-
-// ==================== 状态标签 ====================
-@mixin status-badge($color) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba($color, 0.15);
-  color: $color;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 500;
-  
-  &::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    background: $color;
-    border-radius: 50%;
-  }
-}
-
-// ==================== 数据展示 ====================
-@mixin stat-number {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #fafafa;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-@mixin stat-label {
-  font-size: 0.875rem;
-  color: #71717a;
-  font-weight: 500;
-}
-
-// ==================== 悬停提升效果 ====================
-@mixin hover-lift {
-  transition: transform 200ms ease, box-shadow 200ms ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-  }
-}
-
 // 响应式断点
 @mixin respond-to($breakpoint) {
   @if $breakpoint == 'mobile' {
@@ -212,81 +60,5 @@
     @media (min-width: 1025px) {
       @content;
     }
-  }
-}
-
-// ==================== 深色主题滚动条 ====================
-@mixin scrollbar-dark {
-  &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 9999px;
-    
-    &:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-  }
-}
-
-// 滚动条样式 (保持兼容)
-@mixin scrollbar {
-  @include scrollbar-dark;
-}
-
-// 禁用选择
-@mixin no-select {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-// 过渡动画
-@mixin transition($property: all, $duration: 0.2s, $timing: ease) {
-  transition: $property $duration $timing;
-}
-
-// 阴影效果
-@mixin box-shadow($shadow...) {
-  box-shadow: $shadow;
-}
-
-// 渐变背景
-@mixin gradient($start-color, $end-color, $direction: to right) {
-  background: linear-gradient($direction, $start-color, $end-color);
-}
-
-// 绝对居中
-@mixin absolute-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-// 固定宽高比
-@mixin aspect-ratio($width, $height) {
-  position: relative;
-
-  &::before {
-    content: '';
-    display: block;
-    padding-top: calc($height / $width * 100%);
-  }
-
-  > * {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
   }
 }
