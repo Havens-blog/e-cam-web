@@ -340,7 +340,9 @@ async function onManualAdd() {
 async function onDelete(name: string) {
     try {
         await deleteK8sCredentialApi(name)
-        ElMessage.success('已删除')
+        // 文案统一（iter334 / T13）：全站 21 处纯泛型删除成功提示都用「删除成功」，
+        // 此处原为「已删除」，是三站唯一的纯风格分歧（零信息差异）。改齐以保持一致。
+        ElMessage.success('删除成功')
         await load()
         emit('changed')
     } catch (err) {
