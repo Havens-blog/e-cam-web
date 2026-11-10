@@ -72,6 +72,26 @@ button {
   font-family: inherit;
 }
 
+/**
+ * 键盘焦点环（iter320 / WCAG 2.4.7「焦点可见」）。
+ *
+ * 缺陷：上面的 `button { outline: none }` 把**所有按钮**的默认焦点环都清掉了，
+ * 而全仓只有 `cert/*` 若干页面各自补了 `:focus-visible`，其余页面（如 `compute/template`）没有 ——
+ * 实测：聚焦 ✏️ / 🚀 图标按钮与「直接创建云主机」文字按钮时，**截图与失焦状态像素完全相同**，
+ * 键盘用户 Tab 到按钮上完全看不出焦点在哪（输入框反而是有指示的，因为 el-input 走的是边框变色）。
+ *
+ * 修法：在这里统一补一条 `:focus-visible`（只对键盘生效，鼠标点击不出现），
+ * 样式取自仓内既有范例（`cert/changes/components/StatusTabs.vue`）：2px 实线 + 2px 外扩。
+ * 每个页面不必再各写一遍，也不会与已有的 `:focus-visible` 冲突（同值覆盖）。
+ */
+button:focus-visible,
+[role='button']:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 // ==================== 输入框重置 ====================
 input, textarea {
   outline: none;
