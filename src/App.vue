@@ -8,8 +8,6 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
   <el-config-provider :locale="zhCn">
     <div id="app">
     <router-view />
-    <!-- 错误监控组件（仅开发环境） -->
-      <!-- <ErrorMonitor v-if="isDev" /> -->
     </div>
   </el-config-provider>
 </template>
