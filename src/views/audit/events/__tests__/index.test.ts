@@ -11,6 +11,7 @@ import type { AuditEvent } from '@/api/audit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import EventsPage from '../index.vue'
+import LiveStatus from '@/components/LiveStatus.vue'
 
 vi.mock('@/api/audit', () => ({
     listAuditEventsApi: vi.fn(),
@@ -58,6 +59,12 @@ async function mountPage(): Promise<VueWrapper> {
         global: {
             plugins: [ElementPlus],
             stubs: { teleport: true },
+            // iter360：页面在 PR #350 接入 <LiveStatus> 后，本测试未注册该组件，
+            // 每次挂载都会打一条 `[Vue warn]: Failed to resolve component: LiveStatus`。
+            // 测试仍然通过（LiveStatus 只收 text、不访问 router），但**警告会淹没真实问题** ——
+            // iter354 就是「警告里藏着 unhandled error」导致 CI 红了而本地看不出。
+            // 显式注册，让日志保持干净。
+            components: { LiveStatus },
         },
     })
     wrappers.push(wrapper)

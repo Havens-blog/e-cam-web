@@ -86,13 +86,12 @@ const KNOWN_GAPS: string[] = [
   'views/cam/allocation/index.vue',
   'views/cam/cost/anomaly.vue',
   // ── cert 流程内页（1，非独立列表页，由向导整体播报）──
+  // 向导内页，由向导整体播报（父级 index.vue 已有 live region），**不该单独播报**：
+  // 已核实 `cert/changes/new/index.vue` 有 live region、本页自身也用 role="alert" 展示错误态。
   'views/cert/changes/new/steps/Step3List.vue',
   // ── compute（4）──
   // ── databases（3）──
   // ── iam（6）──
-  'views/iam/audit/index.vue',
-  'views/iam/groups/detail.vue',
-  'views/iam/sync/index.vue',
   // ── middleware（2）──
   // ── resource / storage（2）──
   'views/resource/tag/index.vue',
