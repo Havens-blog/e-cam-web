@@ -1,5 +1,8 @@
 <template>
   <div class="iam-templates-page">
+    <!-- 读屏播报（iter359）：本页此前无 live region（v-loading 只渲染视觉遮罩）。
+         文案里的中英混排空格由 cjk-spacing-guard.test.ts 自动校验。 -->
+    <LiveStatus :text="liveStatusText" />
     <div class="page-header">
       <div>
         <h1>策略模板管理</h1>
@@ -120,6 +123,13 @@ const router = useRouter()
 const { loadDict, getDictOptions, getDictLabel } = useDictionary()
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter359）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载权限模板…'
+  if (total.value === 0) return '暂无权限模板数据'
+  return `共 ${total.value} 条权限模板记录`
+})
 const loadError = ref('')
 const rows = ref<PolicyTemplate[]>([])
 const total = ref(0)

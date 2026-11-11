@@ -82,8 +82,6 @@ for (const [key, src] of Object.entries(sources)) {
 const KNOWN_GAPS: string[] = [
   // ── audit（3）──
   'views/audit/changes/index.vue',
-  'views/audit/events/index.vue',
-  'views/audit/logs/index.vue',
   // ── cam / finops（2）──
   'views/cam/allocation/index.vue',
   'views/cam/cost/anomaly.vue',
@@ -93,15 +91,11 @@ const KNOWN_GAPS: string[] = [
   // ── databases（3）──
   // ── iam（6）──
   'views/iam/audit/index.vue',
-  'views/iam/compare/index.vue',
   'views/iam/groups/detail.vue',
   'views/iam/sync/index.vue',
-  'views/iam/templates/detail.vue',
-  'views/iam/templates/index.vue',
   // ── middleware（2）──
   // ── resource / storage（2）──
   'views/resource/tag/index.vue',
-  'views/storage/oss/index.vue',
 ]
 
 /** 判定一个页面源码是否已具备列表播报能力 */
