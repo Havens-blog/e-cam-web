@@ -1,5 +1,8 @@
 <template>
   <div class="kafka-page">
+    <!-- 读屏播报（iter357）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡） -->
     <div class="page-top">
       <div class="page-title-row">
@@ -311,6 +314,13 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter357）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载Kafka 实例…'
+  if (pagination.total === 0) return '暂无 Kafka 实例资源'
+  return `共 ${pagination.total} 个 Kafka 实例资源`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
 const instances = ref<Asset[]>([])
