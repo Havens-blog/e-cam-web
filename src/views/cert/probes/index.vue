@@ -165,7 +165,9 @@ import { getCertProbesApi, triggerCertProbeScanApi } from '@/api/cert'
 import { CertRequestError } from '@/api/cert'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, reactive } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { probeBadge, relativeTimeDash } from '../dashboard/format'
 import { copyText, truncateFingerprint } from '../ledger/format'
 import {
@@ -234,6 +236,61 @@ const groups = computed<ProbeResultGroup[]>(() => groupProbeResults(filtered.val
 
 /** 搜索/状态/链路任一筛选激活 → 全部展开（否则命中组被折叠看不见） */
 const filterActive = computed(() => isProbeFilterActive(keyword.value, statusFilter.value, linkFilter.value))
+
+// ---- URL 同步（iter355，T12）----
+//
+// 为什么需要它：本页有「关键词 + 状态 + 链路」三种筛选，此前**只存在组件内 ref 里**。
+// 实测后果：筛好「某域名 + 某状态」后，切走再回来 / 刷新 → 全部归零，且无法把该视图分享给同事。
+// 探测页尤其吃亏：排查证书问题往往要把「同一个筛选视图」发给别人复现。
+//
+// 用本仓既有的 `useUrlFilters`（自带 `if (!route || !router) return` 空值防御，
+// 单元测试无 router 时静默降级 —— 这正是 console 在 iter354 踩过的坑，本仓已提前防住）。
+//
+// **同步的是防抖后的 `keyword` 而非 `keywordInput`**：本页输入有 250ms 防抖
+// （2600+ 行每次按键全量重过滤代价高）。若绑 `keywordInput`，每按一键都会
+// `router.replace` 一次，反而把防抖的意义抵消掉，还会往历史栈/浏览器地址栏灌一堆中间态。
+const route = useRoute()
+const router = useRouter()
+void route
+void router
+
+/** URL 只承载这三个筛选；`page` 本页无分页（全量渲染 + 渲染上限），故不给 */
+const urlState = reactive<Record<string, string | undefined>>({
+    keyword: undefined,
+    status: undefined,
+    link: undefined,
+})
+useUrlFilters(urlState)
+
+/** URL → 实际筛选（useUrlFilters 已在本行之前同步回填 urlState） */
+function applyUrlStateToFilters(): void {
+    if (urlState.keyword) {
+        // 输入框与生效关键词都要填：只填 keyword 会让输入框显示为空，用户以为没筛
+        keywordInput.value = urlState.keyword
+        keyword.value = urlState.keyword
+    }
+    if (urlState.status) statusFilter.value = urlState.status
+    if (urlState.link) linkFilter.value = urlState.link
+}
+
+/**
+ * 实际筛选 → URL（空值写 undefined 即从 query 删除，保持链接干净）。
+ *
+ * **刻意不用 `immediate: true`**（iter355 踩过）：immediate 会让它在 setup 阶段
+ * **立即执行一次**，而那时 `applyUrlStateToFilters()` 还没跑、三个实际筛选都是空值，
+ * 于是它把 `urlState` 全写成 `undefined` —— `useUrlFilters` 的 watch 随即把
+ * URL 里的 `?keyword=example&status=fail` **整条洗掉**。
+ * 实测症状：带 query 打开页面，地址栏变回干净的 `/cam/certs/probes`，筛选也没恢复。
+ *
+ * 正确顺序是：`useUrlFilters` 先回填 `urlState` → `applyUrlStateToFilters()` 灌进实际状态
+ * → 这里的 watch 在状态**真正变化**时才把值写回 URL。
+ */
+watch([keyword, statusFilter, linkFilter], () => {
+    urlState.keyword = keyword.value.trim() || undefined
+    urlState.status = statusFilter.value || undefined
+    urlState.link = linkFilter.value || undefined
+})
+
 
 /** 筛选态：预算内逐组截断（短关键词全量命中时保住渲染上限）；浏览态：仅展开组 */
 const renderPlan = computed<Record<string, GroupRenderPlan>>(() => {
@@ -399,7 +456,11 @@ function stopPolling() {
     }
 }
 
-onMounted(load)
+onMounted(() => {
+    // 先把 URL 里的筛选灌进实际状态，再 load —— 否则会先渲染未筛选的全量、再跳成筛选态（闪一下）
+    applyUrlStateToFilters()
+    void load()
+})
 onUnmounted(() => {
     stopPolling()
     if (keywordTimer) clearTimeout(keywordTimer)
