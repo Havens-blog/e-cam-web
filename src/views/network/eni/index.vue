@@ -1,5 +1,8 @@
 <template>
   <div class="eni-page">
+    <!-- 读屏播报（iter350）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡；
          原「使用中/绑定率」StatCard 内联统计并入 5 状态标：使用中计数 + 绑定率百分比） -->
     <div class="page-top">
@@ -366,6 +369,13 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+
+/** 读屏播报文案（iter350）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载弹性网卡…'
+  if (pagination.total === 0) return '暂无弹性网卡资源'
+  return `共 ${pagination.total} 个弹性网卡资源`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
 
