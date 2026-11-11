@@ -1,5 +1,7 @@
 <template>
   <div class="vm-page">
+    <!-- 读屏播报（iter361）：本页此前无 live region（v-loading 只渲染视觉遮罩）。 -->
+    <LiveStatus :text="liveStatusText" />
     <div class="page-top">
       <div class="page-title-row">
         <h1 class="page-title">资产变更历史</h1>
@@ -175,6 +177,13 @@ import { showApiError } from '@/api/request'
 const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
 const changesLoading = ref(false)
+
+/** 读屏播报文案（iter361）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (changesLoading.value) return '正在加载资产变更历史…'
+  if (changesTotal.value === 0) return '暂无资产变更历史数据'
+  return `共 ${changesTotal.value} 条资产变更历史记录`
+})
 // 列表请求失败：呈现持久错误态 + 重试（此前仅弹 toast，失败会被渲染成「暂无数据」）
 const { errorInfo, run } = useListError()
 const changesTotal = ref(0)

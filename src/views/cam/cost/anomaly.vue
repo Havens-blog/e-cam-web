@@ -8,6 +8,9 @@
       @refresh="refreshCurrentTab"
     />
 
+    <!-- 读屏播报（iter361）：两个 loading（anomalyLoading/recLoading），取异常事件那个 -->
+    <LiveStatus :text="liveStatusText" />
+
     <div class="anomaly-page">
       <el-tabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 异常事件 Tab -->
@@ -152,7 +155,7 @@ import { getProviderLabel } from '@/utils/constants'
 import { formatCost } from '@/utils/formatters'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch, computed } from 'vue'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import { showApiError } from '@/api/request'
 
@@ -175,6 +178,13 @@ useUrlFilters(anomalyFilter, {})
 
 const anomalies = ref<CostAnomaly[]>([])
 const anomalyLoading = ref(false)
+
+/** 读屏播报文案（iter361）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (anomalyLoading.value) return '正在加载成本异常…'
+  if (anomalies.value.length === 0) return '暂无成本异常数据'
+  return `共 ${anomalies.value.length} 条成本异常记录`
+})
 /**
  * 异常事件的加载错误（iter198）。
  *

@@ -8,6 +8,9 @@
       @refresh="handleRefresh"
     />
 
+    <!-- 读屏播报（iter361）：两个 loading（treeLoading/rulesLoading），取规则列表那个播报 -->
+    <LiveStatus :text="liveStatusText" />
+
     <el-tabs v-model="activeTab" class="allocation-tabs">
       <!-- 分摊视图 Tab -->
       <el-tab-pane label="分摊视图" name="tree">
@@ -274,7 +277,7 @@ import echarts from '@/utils/echarts'
  
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, reactive, ref, watch, computed } from 'vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { useUrlFilters } from '@/composables/useUrlFilters'
@@ -292,6 +295,13 @@ const handleRefresh = () => {
 // ==================== 规则列表 ====================
 
 const rulesLoading = ref(false)
+
+/** 读屏播报文案（iter361）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (rulesLoading.value) return '正在加载成本分摊规则…'
+  if (ruleList.value.length === 0) return '暂无成本分摊规则数据'
+  return `共 ${ruleList.value.length} 条成本分摊规则记录`
+})
 const ruleList = ref<AllocationRule[]>([])
 
 const fetchRules = async () => {
