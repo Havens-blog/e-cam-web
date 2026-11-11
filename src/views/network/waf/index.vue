@@ -1,5 +1,8 @@
 <template>
   <div class="waf-page">
+    <!-- 读屏播报（iter350）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面顶部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡）；
          原「正常运行」StatCard 口径并入「正常」状态标（全局计数）；
          tab 保留原页 4 视图（实例列表/防护域名/安全报表/攻击日志，攻击日志入口 2e65651 接线保留） -->
@@ -442,6 +445,13 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+
+/** 读屏播报文案（iter350）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载Web 应用防火墙…'
+  if (pagination.total === 0) return '暂无 Web 应用防火墙资源'
+  return `共 ${pagination.total} 个 Web 应用防火墙资源`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
 const activeTab = ref('instances')

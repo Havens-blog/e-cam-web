@@ -1,5 +1,8 @@
 <template>
   <div class="lb-page">
+    <!-- 读屏播报（iter350）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡） -->
     <div class="page-top">
       <div class="page-title-row">
@@ -407,6 +410,13 @@ const router = useRouter()
 
 // 状态
 const loading = ref(false)
+
+/** 读屏播报文案（iter350）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载负载均衡…'
+  if (pagination.total === 0) return '暂无负载均衡资源'
+  return `共 ${pagination.total} 个负载均衡资源`
+})
 // 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）
 const errorInfo = ref<ErrorInfo | null>(null)
 

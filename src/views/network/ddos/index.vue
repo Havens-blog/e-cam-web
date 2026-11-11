@@ -1,5 +1,8 @@
 <template>
   <div class="ddos-page">
+    <!-- 读屏播报（iter350）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面顶部：标题 + 内联状态标（WAF 页紧凑标准，无大统计卡）。
          DDoS 单视图（无 WAF 的 4 tab：实例列表/防护域名/安全报表/攻击日志），
          仅「实例列表」一体页；状态标为全局口径（全量分页计数，不受当前筛选影响） -->
@@ -407,6 +410,13 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+
+/** 读屏播报文案（iter350）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载 DDoS 防护…'
+  if (pagination.total === 0) return '暂无 DDoS 防护资源'
+  return `共 ${pagination.total} 个 DDoS 防护资源`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示「暂无数据」）
 const { errorInfo, run } = useListError()
 
