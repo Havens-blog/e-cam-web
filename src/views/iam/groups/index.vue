@@ -1,5 +1,7 @@
 <template>
   <div class="groups-page">
+    <!-- 读屏播报（iter347）：本页此前无 live region（v-loading 只渲染视觉遮罩） -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
@@ -339,6 +341,14 @@ import { showApiError } from '@/api/request'
 
 const loading = ref(false)
 const groups = ref<PermissionGroup[]>([])
+
+/** 读屏播报文案（iter347）：加载中 → 失败 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载用户组…'
+  if (errorInfo.value) return '用户组加载失败，请重试'
+  if (groups.value.length === 0) return '暂无用户组'
+  return `共 ${pagination.total} 个用户组`
+})
 const errorInfo = ref<ErrorInfo | null>(null)
 const apiUrl = ref('/api/v1/cam/iam/groups')
 
