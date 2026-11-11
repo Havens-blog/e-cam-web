@@ -1,5 +1,8 @@
 <template>
   <div class="vm-page">
+    <!-- 读屏播报（iter347）：本页此前无 live region（v-loading 只渲染视觉遮罩） -->
+    <LiveStatus :text="liveStatusText" />
+
     <div class="page-top">
       <div class="page-title-row">
         <h1 class="page-title">告警规则</h1>
@@ -99,7 +102,7 @@ import { deleteRuleApi, listRulesApi, toggleRuleApi } from '@/api/alert'
 import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { onMounted, ref, reactive, watch} from 'vue'
+import { onMounted, ref, reactive, watch, computed } from 'vue'
 import RuleFormDialog from './components/RuleFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
@@ -116,6 +119,13 @@ const { errorInfo, run } = useListError()
 // 列表请求竞态守卫（iter270）：翻页/筛选连点时，只认最后一次请求的结果
 const latestRequest = useLatestRequest()
 const total = ref(0)
+
+/** 读屏播报文案（iter347）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载告警规则…'
+  if (total.value === 0) return '暂无告警规则'
+  return `共 ${total.value} 条告警规则`
+})
 const page = ref(1)
 const pageSize = 20
 const filterType = ref<AlertRuleType | ''>('')

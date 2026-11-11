@@ -3,6 +3,10 @@
     <!-- 页面头部 -->
     <UserPageHeader @export="handleExport" @sync="handleSync" @add="handleAdd" />
 
+    <!-- 读屏播报（iter347）：本页此前无 live region。UserTable 的 loadingMessage 只传给
+         v-loading 的 element-loading-text —— 那是视觉遮罩上的文字，读屏不播报。 -->
+    <LiveStatus :text="liveStatusText" />
+
     <!-- 统计卡片 -->
     <UserStatsCards
       :total="pagination.total"
@@ -241,6 +245,14 @@ const loadingMessage = ref('')
 
 // 数据
 const users = ref<CloudUser[]>([])
+
+/** 读屏播报文案（iter347）：加载中 → 失败 → 空/条数，与 cmdb 各页同口径 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载云账号用户…'
+  if (errorInfo.value) return '云账号用户加载失败，请重试'
+  if (users.value.length === 0) return '暂无云账号用户'
+  return `共 ${pagination.total} 个云账号用户`
+})
 const selectedUsers = ref<CloudUser[]>([])
 const permissionGroups = ref<any[]>([])
 const selectedGroupIds = ref<number[]>([])
