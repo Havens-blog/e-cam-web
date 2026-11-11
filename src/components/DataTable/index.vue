@@ -1,5 +1,18 @@
 <template>
   <div class="data-table">
+    <!--
+      读屏播报（iter348）：**只播 StateBlock 没覆盖的那两块** —— 空态与结果条数。
+
+      为什么不能整段播：
+        · `StateBlock` 的 loading 分支已有 `role="status"`（其第 11 行），
+        · 其 error 分支已有 `role="alert"`（其第 25 行）。
+      若这里再把 loading / error 也播一遍，读屏会把同一句话念两次。
+
+      补的正是缺口：加载完成后，屏幕上出现了表格或「暂无数据」，
+      但 StateBlock 的这两种分支**都没有 live region** —— 读屏到此为止是静默的。
+    -->
+    <LiveStatus :text="liveStatusText" />
+
     <StateBlock
       :status="status"
       :empty-text="emptyText"
@@ -103,6 +116,7 @@
  */
 import StateBlock from '@/components/StateBlock/index.vue'
 import type { StateBlockStatus } from '@/components/StateBlock/index.vue'
+import LiveStatus from '@/components/LiveStatus.vue'
 import { parseError } from '@/utils/error-handler'
 import type { TableInstance } from 'element-plus'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -190,6 +204,26 @@ const status = computed<StateBlockStatus>(() => {
     return 'error'
   }
   return displayRows.value.length === 0 ? 'empty' : 'success'
+})
+
+/**
+ * 读屏播报文案（iter348）：**故意只覆盖 empty / success 两种状态**。
+ *
+ * loading 与 error 返回空字符串（静默），因为 `StateBlock` 已经用
+ * `role="status"`（loading）与 `role="alert"`（error）播过了 —— 这里再播一次
+ * 会让读屏把同一句话念两遍，是比「不播」更糟的体验。
+ *
+ * 所以本组件补的是 StateBlock 的空缺：**加载结束后**屏幕上有内容了，
+ * 但那时既没有 live region、也没有 alert —— 读屏完全不知道结果是什么。
+ *
+ * 措辞用「显示 N 条」而非「共 N 条」：`DataTable` 的 fetch 模式只拿到
+ * `T[]`（**没有 total**），分页总数在页面手里。对当前页说「共」是错的。
+ * 需要播总数的页面仍可自行在上层放 `<LiveStatus>`，两者不冲突（不同 DOM 节点）。
+ */
+const liveStatusText = computed<string>(() => {
+  if (status.value === 'empty') return props.emptyText ?? '暂无数据'
+  if (status.value === 'success') return `显示 ${displayRows.value.length} 条记录`
+  return ''
 })
 
 /** 错误态文案：fetch 抛出的错误信息优先，兜底 errorText prop */

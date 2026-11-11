@@ -405,3 +405,66 @@ describe('DataTable expose', () => {
         expect(wrapper.find('.data-table__batch-bar').exists()).toBe(false)
     })
 })
+
+// iter348：读屏播报（LiveStatus 集成）
+//
+// 背景：StateBlock 的 loading 分支有 role="status"、error 分支有 role="alert"，
+// 但 empty / success 两种状态**没有任何 live region** —— 加载结束后读屏是静默的。
+// DataTable 因此内嵌 LiveStatus，**只补这两块**。
+//
+// 关键负例：loading 与 error 必须**静默**（空字符串），否则与 StateBlock 的
+// role=status / role=alert 重复播报，读屏会把同一句话念两遍。
+describe('DataTable 读屏播报（iter348）', () => {
+    const liveText = (wrapper: VueWrapper) => {
+        const el = wrapper.find('.live-status')
+        return el.exists() ? (el.text() || '').trim() : null
+    }
+
+    it('success：播报「显示 N 条记录」（fetch 模式无 total，不能说「共」）', async () => {
+        const wrapper = await mountTable({ fetch: async () => ROWS.slice(0, 3) })
+        await flushPromises()
+        await nextTick()
+        expect(liveText(wrapper)).toBe('显示 3 条记录')
+    })
+
+    it('empty：播报空态文案（缺省「暂无数据」）', async () => {
+        const wrapper = await mountTable({ fetch: async () => [] })
+        await flushPromises()
+        await nextTick()
+        expect(liveText(wrapper)).toBe('暂无数据')
+    })
+
+    it('empty：父组件传 emptyText 时播报该文案（如「没有符合条件的资产」）', async () => {
+        const wrapper = await mountTable({ fetch: async () => [], emptyText: '没有符合条件的资产' })
+        await flushPromises()
+        await nextTick()
+        expect(liveText(wrapper)).toBe('没有符合条件的资产')
+    })
+
+    it('loading：**静默**（StateBlock 的 loading 分支已有 role=status，不得重复播报）', async () => {
+        // fetch 永不 resolve → 一直停在 loading
+        const wrapper = await mountTable({ fetch: () => new Promise<AssetRow[]>(() => {}) })
+        await nextTick()
+        expect(liveText(wrapper)).toBe('')
+        // 同时确认 StateBlock 那个 role=status 确实存在（不是两边都没播）
+        expect(wrapper.find('[role="status"]').exists()).toBe(true)
+    })
+
+    it('error：**静默**（StateBlock 的 error 分支已有 role=alert，不得重复播报）', async () => {
+        const wrapper = await mountTable({ fetch: async () => { throw new Error('boom') } })
+        await flushPromises()
+        await nextTick()
+        expect(liveText(wrapper)).toBe('')
+        // 错误态由 StateBlock 的 role=alert 承担
+        expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    })
+
+    it('LiveStatus 元素只有一个 live region（不与 StateBlock 的重复堆叠）', async () => {
+        const wrapper = await mountTable({ fetch: async () => ROWS })
+        await flushPromises()
+        await nextTick()
+        // success 态下 StateBlock 的 loading/error 分支都不渲染，只剩 LiveStatus 这一个
+        expect(wrapper.findAll('[role="status"]').length).toBe(1)
+        expect(wrapper.findAll('.live-status').length).toBe(1)
+    })
+})
