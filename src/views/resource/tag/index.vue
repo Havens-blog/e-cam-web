@@ -1,5 +1,7 @@
 <template>
   <div class="tag-management-page">
+    <!-- 读屏播报（iter361）：本页此前无 live region（v-loading 只渲染视觉遮罩）。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- Page Header -->
     <div class="page-header">
       <div class="page-header-left">
@@ -218,6 +220,13 @@ const coverageTrendText = computed(() => {
 // State
 const activeTab = ref<'tagList' | 'policies' | 'compliance' | 'autoTag'>('tagList')
 const tableLoading = ref(false)
+
+/** 读屏播报文案（iter361）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (tableLoading.value) return '正在加载标签…'
+  if (tagTotal.value === 0) return '暂无标签数据'
+  return `共 ${tagTotal.value} 条标签记录`
+})
 const tagList = ref<TagSummary[]>([])
 const tagTotal = ref(0)
 const currentPage = ref(1)

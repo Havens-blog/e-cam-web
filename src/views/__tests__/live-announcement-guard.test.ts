@@ -81,10 +81,7 @@ for (const [key, src] of Object.entries(sources)) {
  */
 const KNOWN_GAPS: string[] = [
   // ── audit（3）──
-  'views/audit/changes/index.vue',
   // ── cam / finops（2）──
-  'views/cam/allocation/index.vue',
-  'views/cam/cost/anomaly.vue',
   // ── cert 流程内页（1，非独立列表页，由向导整体播报）──
   // 向导内页，由向导整体播报（父级 index.vue 已有 live region），**不该单独播报**：
   // 已核实 `cert/changes/new/index.vue` 有 live region、本页自身也用 role="alert" 展示错误态。
@@ -94,7 +91,6 @@ const KNOWN_GAPS: string[] = [
   // ── iam（6）──
   // ── middleware（2）──
   // ── resource / storage（2）──
-  'views/resource/tag/index.vue',
 ]
 
 /** 判定一个页面源码是否已具备列表播报能力 */
