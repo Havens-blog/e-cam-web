@@ -1,5 +1,8 @@
 <template>
   <div class="vm-page">
+    <!-- 读屏播报（iter349）：本页不用 DataTable（原生 el-table），拿不到 iter348 的共享收益 -->
+    <LiveStatus :text="liveStatusText" />
+
     <div class="page-top">
       <div class="page-title-row">
         <h1 class="page-title">通知渠道</h1>
@@ -83,7 +86,7 @@ import type { AlertChannel, ChannelType } from '@/api/alert'
 import { deleteChannelApi, getChannelApi, listChannelsApi, testChannelApi } from '@/api/alert'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, onUnmounted, ref, reactive, watch } from 'vue'
+import { onMounted, onUnmounted, ref, reactive, watch, computed } from 'vue'
 import { clampPageAfterTotalChange } from '@/utils/clampPage'
 import ChannelFormDialog from './components/ChannelFormDialog.vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
@@ -101,6 +104,13 @@ const { errorInfo, run } = useListError()
 // 列表请求竞态守卫（iter274）：翻页连点时，只认最后一次请求的结果
 const latestRequest = useLatestRequest()
 const total = ref(0)
+
+/** 读屏播报文案（iter349）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载通知渠道…'
+  if (total.value === 0) return '暂无通知渠道'
+  return `共 ${total.value} 个通知渠道`
+})
 const page = ref(1)
 const pageSize = 20
 const filterType = ref<ChannelType | ''>('')
