@@ -90,14 +90,7 @@ const KNOWN_GAPS: string[] = [
   // ── cert 流程内页（1，非独立列表页，由向导整体播报）──
   'views/cert/changes/new/steps/Step3List.vue',
   // ── compute（4）──
-  'views/compute/disk/index.vue',
-  'views/compute/image/index.vue',
-  'views/compute/security-group/index.vue',
-  'views/compute/snapshot/index.vue',
   // ── databases（3）──
-  'views/databases/mongodb/index.vue',
-  'views/databases/rds/index.vue',
-  'views/databases/redis/index.vue',
   // ── iam（6）──
   'views/iam/audit/index.vue',
   'views/iam/compare/index.vue',
@@ -106,8 +99,6 @@ const KNOWN_GAPS: string[] = [
   'views/iam/templates/detail.vue',
   'views/iam/templates/index.vue',
   // ── middleware（2）──
-  'views/middleware/elasticsearch/index.vue',
-  'views/middleware/kafka/index.vue',
   // ── resource / storage（2）──
   'views/resource/tag/index.vue',
   'views/storage/oss/index.vue',

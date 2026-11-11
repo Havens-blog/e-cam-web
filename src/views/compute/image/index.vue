@@ -1,5 +1,8 @@
 <template>
   <div class="image-page">
+    <!-- 读屏播报（iter357）：本页不用 DataTable（自绘 el-table），此前无任何 live region。
+         由 views/__tests__/live-announcement-guard.test.ts 守卫，新增页面漏写会变红。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面顶部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡）；
          tab 沿用原侧栏「镜像类型」域（image_owner_alias: 全部/公共/自定义/共享/市场）；
          5 状态标 总数/公共/自定义/共享（stats 接口口径）/导入中（创建族派生计数） -->
@@ -394,6 +397,13 @@ const route = useRoute()
 
 // 状态
 const loading = ref(false)
+
+/** 读屏播报文案（iter357）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载镜像…'
+  if (pagination.total === 0) return '暂无镜像资源'
+  return `共 ${pagination.total} 个镜像资源`
+})
 // 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（useListError 统一封装）
 const { errorInfo, run } = useListError()
 const activeTab = ref('all')
