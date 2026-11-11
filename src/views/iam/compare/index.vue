@@ -1,5 +1,8 @@
 <template>
   <div class="permission-compare-page">
+    <!-- 读屏播报（iter359）：本页此前无 live region（v-loading 只渲染视觉遮罩）。
+         文案里的中英混排空格由 cjk-spacing-guard.test.ts 自动校验。 -->
+    <LiveStatus :text="liveStatusText" />
     <PageHeader
       title="权限对比"
       description="对比不同云账号的 IAM 用户与权限组差异"
@@ -287,14 +290,22 @@ import CloudPlatformTag from '@/components/CloudPlatformTag.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { Download, RefreshLeft, View } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 
 // 每账号拉取的用户/组行数上限：计数取响应 total，对比行只取首屏行
 const COMPARE_FETCH_SIZE = 200
 
 // 数据
 const loading = ref(false)
+
 const cloudAccounts = ref<CloudAccount[]>([])
+
+/** 读屏播报文案（iter359）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载权限对比…'
+  if (cloudAccounts.value.length === 0) return '暂无权限对比数据'
+  return `共 ${cloudAccounts.value.length} 条权限对比记录`
+})
 const selectedAccounts = ref<string[]>([])
 const activeTab = ref('users')
 // 查询失败的账号名（单账号失败降级「—」，不阻塞其它账号）

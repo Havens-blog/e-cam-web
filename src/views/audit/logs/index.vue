@@ -1,5 +1,8 @@
 <template>
   <div class="audit-page">
+    <!-- 读屏播报（iter359）：本页此前无 live region（v-loading 只渲染视觉遮罩）。
+         文案里的中英混排空格由 cjk-spacing-guard.test.ts 自动校验。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + 内联状态标（主机页紧凑标准，无大统计卡） -->
     <div class="page-top">
       <div class="page-title-row">
@@ -151,6 +154,13 @@ import { opTypeLabel as presentOpTypeLabel, opTypeTag as presentOpTypeTag, resul
 const { loadDict, getDictOptions } = useDictionary()
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter359）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载操作审计日志…'
+  if (total.value === 0) return '暂无操作审计日志数据'
+  return `共 ${total.value} 条操作审计日志记录`
+})
 // 导出是长操作（实测 7582 行约 1MB）：无加载态时连点会重复拉全量，
 // 实测三次点击 = 三个 export 请求。故加独立状态并在在途时忽略重复点击。
 const exporting = ref(false)

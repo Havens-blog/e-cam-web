@@ -1,5 +1,8 @@
 <template>
   <div class="oss-page">
+    <!-- 读屏播报（iter359）：本页此前无 live region（v-loading 只渲染视觉遮罩）。
+         文案里的中英混排空格由 cjk-spacing-guard.test.ts 自动校验。 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡）；
          OSS 资产无 status 属性（ListOSSParams 亦无 status 参数），状态标按领域以存储类型分布派生 -->
     <div class="page-top">
@@ -373,6 +376,13 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter359）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载对象存储…'
+  if (pagination.total === 0) return '暂无对象存储数据'
+  return `共 ${pagination.total} 条对象存储记录`
+})
 // 列表请求失败时置 ErrorInfo，由 <ErrorDisplay> 渲染持久错误态 + 重试（BACKLOG §二 T1）
 const errorInfo = ref<ErrorInfo | null>(null)
 const instances = ref<Asset[]>([])

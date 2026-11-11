@@ -1,5 +1,8 @@
 <template>
   <div class="events-page">
+    <!-- 读屏播报（iter359）：本页此前无 live region（v-loading 只渲染视觉遮罩）。
+         文案里的中英混排空格由 cjk-spacing-guard.test.ts 自动校验。 -->
+    <LiveStatus :text="liveStatusText" />
     <div class="page-top">
       <div class="page-title-row">
         <h1 class="page-title">统一审计事件</h1>
@@ -155,6 +158,13 @@ const urlState = reactive<Record<string, string | undefined>>({
 useUrlFilters(urlState)
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter359）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载审计事件…'
+  if (pagination.total === 0) return '暂无审计事件数据'
+  return `共 ${pagination.total} 条审计事件记录`
+})
 const events = ref<AuditEvent[]>([])
 const pagination = reactive({ page: 1, size: 20, total: 0 })
 // 联邦降级标记（后端 F2）：e-iam 不可达时本侧单源返回，页面顶部提示
