@@ -1,5 +1,8 @@
 <template>
   <div class="template-manage-page">
+    <!-- 读屏播报（iter349）：本页不用 DataTable，拿不到 iter348 的共享收益 -->
+    <LiveStatus :text="liveStatusText" />
+
     <!-- 页面标题 -->
     <div class="page-header">
       <div>
@@ -249,6 +252,13 @@ const deleteLoading = ref(false)
 const copying = ref(false)
 const templates = ref<VMTemplate[]>([])
 const total = ref(0)
+
+/** 读屏播报文案（iter349）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载主机模板…'
+  if (total.value === 0) return '暂无主机模板'
+  return `共 ${total.value} 个主机模板`
+})
 const currentPage = ref(1)
 const pageSize = ref(12)
 

@@ -1,5 +1,7 @@
 <template>
   <div class="nas-page">
+    <!-- 读屏播报（iter349）：本页不用 DataTable（原生 el-table），拿不到 iter348 的共享收益 -->
+    <LiveStatus :text="liveStatusText" />
     <!-- 页面头部：标题 + tab + 内联状态标（主机页紧凑标准，无大统计卡） -->
     <div class="page-top">
       <div class="page-title-row">
@@ -370,6 +372,13 @@ const exportConfig: ExportFieldConfig = {
 }
 
 const loading = ref(false)
+
+/** 读屏播报文案（iter349）：加载中 → 空/条数（本页有 pagination.total）*/
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载文件存储 NAS…'
+  if (pagination.total === 0) return '暂无 NAS 文件系统'
+  return `共 ${pagination.total} 个 NAS 文件系统`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
 const instances = ref<Asset[]>([])

@@ -1,5 +1,8 @@
 <template>
   <PageContainer>
+    <!-- 读屏播报（iter349）：本页不用 DataTable，拿不到 iter348 的共享收益 -->
+    <LiveStatus :text="liveStatusText" />
+
     <ManagerHeader
       title="预算管理"
       subtitle="设置预算规则，监控成本消耗进度"
@@ -267,7 +270,7 @@ import {
 } from './progress'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { useListError } from '@/composables/useListError'
 import { showApiError } from '@/api/request'
@@ -275,9 +278,26 @@ import { showApiError } from '@/api/request'
 // ==================== 列表状态 ====================
 
 const loading = ref(false)
+
 // 预算列表请求失败：呈现持久错误态 + 重试（含金额，误导性更强）
 const { errorInfo, run } = useListError()
 const budgetList = ref<BudgetRule[]>([])
+
+/**
+ * 读屏播报文案（iter349）：加载中 → 失败（优先）→ 空 → 条数。
+ *
+ * 第一版只写了 `loading ? '正在加载预算数据…' : ''`，实测页面播报**恒为空**
+ * （`budgetList` 有数据时也是 `""`）—— 这正是 iter345/346 在 `organizations`
+ * 与 `impact` 上踩过的坑：**非加载态返回空字符串，live region 就等于不存在**。
+ * 失败优先也是同样的道理：若失败时播「暂无预算」，与页面上同时显示的错误态自相矛盾。
+ */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载预算数据…'
+  if (errorInfo.value) return '预算数据加载失败，可点击重试'
+  if (budgetList.value.length === 0) return '暂无预算规则'
+  return `共 ${budgetList.value.length} 条预算规则`
+})
+
 /** 预算 id -> 消耗进度（列表直接展示，避免必须点开抽屉才发现超支） */
 const progressMap = ref<Record<number, BudgetProgress>>({})
 const progressFailed = ref<Record<number, boolean>>({})
