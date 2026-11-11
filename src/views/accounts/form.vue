@@ -47,7 +47,7 @@
     <el-form-item label="Access Key ID" prop="access_key_id">
       <el-input
         v-model="formData.access_key_id"
-        placeholder="请输入Access Key ID"
+        placeholder="请输入 Access Key ID"
         maxlength="128"
       >
         <template v-if="isEdit" #suffix>
@@ -60,7 +60,7 @@
       <el-input
         v-model="formData.access_key_secret"
         type="password"
-        :placeholder="isEdit ? '留空表示不修改' : '请输入Access Key Secret'"
+        :placeholder="isEdit ? '留空表示不修改' : '请输入 Access Key Secret'"
         show-password
         maxlength="128"
       >

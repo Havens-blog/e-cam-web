@@ -305,7 +305,7 @@ const exportConfig: ExportFieldConfig = {
     { key: 'provider', label: '云平台' },
   ],
   getValue: getExportValue,
-  filename: 'Elasticsearch实例',
+  filename: 'Elasticsearch 实例',
   defaultFields: ['asset_name', 'asset_id', 'status', 'version', 'region'],
 }
 
@@ -313,7 +313,7 @@ const loading = ref(false)
 
 /** 读屏播报文案（iter357）：加载中 → 空/条数（口径同 LiveStatus 头注释三条约束）*/
 const liveStatusText = computed(() => {
-  if (loading.value) return '正在加载Elasticsearch 实例…'
+  if (loading.value) return '正在加载 Elasticsearch 实例…'
   if (pagination.total === 0) return '暂无 Elasticsearch 实例资源'
   return `共 ${pagination.total} 个 Elasticsearch 实例资源`
 })
@@ -591,7 +591,7 @@ const fetchStatusCounts = async () => {
   } catch {
     markStatsFailed()
     // 统计请求失败不影响主流程，但需向用户明示（避免误导为真实为 0）
-    ElMessage.error('获取Elasticsearch状态统计失败')
+    ElMessage.error('获取 Elasticsearch 状态统计失败')
   }
 }
 
