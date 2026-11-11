@@ -1,6 +1,8 @@
 <template>
   <PageContainer>
     <div class="audit-logs-page">
+      <!-- 读屏播报（iter360）：本页此前无 live region（v-loading 只渲染视觉遮罩）。 -->
+      <LiveStatus :text="liveStatusText" />
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-left">
@@ -287,6 +289,13 @@ watch(
 // 日志列表
 const logList = ref<AuditLog[]>([])
 const loading = ref(false)
+
+/** 读屏播报文案（iter360）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载权限审计日志…'
+  if (pagination.total === 0) return '暂无权限审计日志数据'
+  return `共 ${pagination.total} 条权限审计日志记录`
+})
 // 列表请求失败：呈现持久错误态 + 重试（不再只弹 toast 后显示空表）
 const { errorInfo, run } = useListError()
 

@@ -19,6 +19,9 @@
       </template>
     </ManagerHeader>
 
+    <!-- 读屏播报（iter360）：本页此前无 live region（v-loading 只渲染视觉遮罩）。 -->
+    <LiveStatus :text="liveStatusText" />
+
     <div v-loading="loading" class="detail-content">
       <!-- 基本信息 -->
       <el-card class="info-card" shadow="never">
@@ -182,6 +185,13 @@ const router = useRouter()
 
 const groupId = computed(() => Number(route.params.id))
 const loading = ref(false)
+
+/** 读屏播报文案（iter360）：加载中 → 空/条数 */
+const liveStatusText = computed(() => {
+  if (loading.value) return '正在加载权限组成员…'
+  if (members.value.length === 0) return '暂无权限组成员数据'
+  return `共 ${members.value.length} 名权限组成员`
+})
 const group = ref<PermissionGroup | null>(null)
 const members = ref<CloudUser[]>([])
 
