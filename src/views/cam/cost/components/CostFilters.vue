@@ -87,7 +87,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button @click="handleReset">
+          <el-button @click="handleReset" aria-label="重置筛选条件">
             <el-icon><RefreshLeft /></el-icon>
           </el-button>
         </el-form-item>

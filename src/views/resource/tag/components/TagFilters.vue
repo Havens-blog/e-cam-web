@@ -30,7 +30,7 @@
         <el-option label="OSS" value="oss" />
         <el-option label="NAS" value="nas" />
       </el-select>
-      <el-button @click="handleReset" circle>
+      <el-button @click="handleReset" circle aria-label="重置筛选条件">
         <el-icon><RefreshLeft /></el-icon>
       </el-button>
     </div>

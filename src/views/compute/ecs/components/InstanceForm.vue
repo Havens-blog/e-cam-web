@@ -53,7 +53,7 @@
       <div v-for="(attr, index) in attributeList" :key="index" class="attr-row">
         <el-input v-model="attr.key" placeholder="属性名" class="attr-key" />
         <el-input v-model="attr.value" placeholder="属性值" class="attr-value" />
-        <el-button type="danger" text @click="removeAttribute(index)">
+        <el-button type="danger" text @click="removeAttribute(index)" aria-label="删除该磁盘">
           <el-icon><Delete /></el-icon>
         </el-button>
       </div>

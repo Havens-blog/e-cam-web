@@ -99,12 +99,12 @@
         <template #default="{ row }">
           <div class="action-group">
             <el-tooltip content="编辑" placement="top">
-              <el-button type="primary" link size="small" @click="$emit('edit', row)">
+              <el-button type="primary" link size="small" @click="$emit('edit', row)" aria-label="编辑记录">
                 <el-icon><Edit /></el-icon>
               </el-button>
             </el-tooltip>
             <el-tooltip content="删除" placement="top">
-              <el-button type="danger" link size="small" @click="$emit('delete', row)">
+              <el-button type="danger" link size="small" @click="$emit('delete', row)" aria-label="删除记录">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </el-tooltip>
