@@ -23,6 +23,7 @@
     </div>
     <div class="pagination-controls">
       <button
+      aria-label="上一页"
         class="page-btn"
         :disabled="page === 1"
         @click="emit('current-change', page - 1)"
@@ -42,6 +43,7 @@
         </button>
       </div>
       <button
+      aria-label="下一页"
         class="page-btn"
         :disabled="page === totalPages"
         @click="emit('current-change', page + 1)"

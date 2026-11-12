@@ -66,11 +66,13 @@
             <div class="action-btns">
               <el-tooltip content="编辑" placement="top">
                 <button class="icon-btn" @click="$emit('edit', row)">
+                aria-label="编辑"
                   <el-icon :size="14"><Edit /></el-icon>
                 </button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top">
                 <button class="icon-btn danger" @click="$emit('delete', row)">
+                aria-label="删除"
                   <el-icon :size="14"><Delete /></el-icon>
                 </button>
               </el-tooltip>
