@@ -780,7 +780,9 @@ const currentSubnetLabel = computed(() => {
 
 // ==================== 工具函数 ====================
 function getProviderColor(provider: string | undefined): string {
-  if (!provider) return 'var(--text-tertiary)'
+  // iter384: 兜底原为 var(--text-tertiary)（#868b94），白字压在上只有 3.51:1。
+  // 改用固定深灰 #5f6673（5.78:1）—— 兜底块本来就不该跟随主题令牌，它承载的是白色缩写。
+  if (!provider) return '#5f6673'
   // 对比度修正（iter378 / WCAG AA 4.5）：
   //   .account-icon / .account-card-icon 的文字是固定 #fff，背景取这里的品牌色。
   //   实测（真实浏览器，/cam/compute/template/create）：
@@ -802,7 +804,7 @@ function getProviderColor(provider: string | undefined): string {
     volcano: '#d53737', // 原 #f53f3f（3.71）→ 4.74
     azure: '#0078d4', // 4.53，已达标，未改
   }
-  return colors[provider] || 'var(--text-tertiary)'
+  return colors[provider] || '#5f6673'
 }
 
 function getProviderShort(provider: string | undefined): string {
