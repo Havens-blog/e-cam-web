@@ -40,7 +40,13 @@ const sources = import.meta.glob('../../**/*.vue', {
  * 保留空数组的理由同 iter373：**登记机制必须比清单本身活得更久** ——
  * 第二条用例会拦「清单条目已修好却没删」，防止清单只增不减。
  */
-const KNOWN_GAPS: readonly string[] = []
+const KNOWN_GAPS: readonly string[] = [
+  // iter374：accounts/index.vue 有 3 个纯图标按钮（ArrowLeft / ArrowRight / 关闭 svg）未修 ——
+  // **该文件在「他人改动，绝不 stage」清单里**，同一条约束也让它那条 Esc 丢数据的缺陷长期 BLOCKED。
+  // 我一度把它的改动纳入了本 PR，随即撤回（见本次 revert 提交）。
+  // 归属确认后再处理，届时从本清单删除。
+  'views/accounts/index.vue',
+]
 
 /** 提取模板并剥离注释 */
 function templateOf(src: string): string {
