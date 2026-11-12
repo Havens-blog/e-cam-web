@@ -781,9 +781,26 @@ const currentSubnetLabel = computed(() => {
 // ==================== 工具函数 ====================
 function getProviderColor(provider: string | undefined): string {
   if (!provider) return 'var(--text-tertiary)'
+  // 对比度修正（iter378 / WCAG AA 4.5）：
+  //   .account-icon / .account-card-icon 的文字是固定 #fff，背景取这里的品牌色。
+  //   实测（真实浏览器，/cam/compute/template/create）：
+  //     aws     #ff9900 → 2.14 ❌   tencent #00a3ff → 2.73 ❌
+  //     aliyun  #ff6a00 → 2.87 ❌   volcano #f53f3f → 3.71 ❌（13px 粗体不适用 3.0 门槛）
+  //     huawei  #c7000b → 6.12 ✅   azure   #0078d4 → 4.53 ✅
+  //   **4/6 不达 AA，最低 2.14（AWS 橙 vs 白字）。**
+  //
+  //   修法：保持色相（RGB 相对大小关系不变）压暗到 4.7 左右 —— 品牌识别度尽量保留，
+  //   同时满足可读性。**刻意留了 0.2 的余量（目标 4.7 而非 4.5）**：
+//   4.51 这种临界值在我的第一版里算出来是 4.50，浮点边界上会被判不达标。
+  //
+  //   ⚠️ 若将来新增 provider，必须验证新色 vs #fff ≥ 4.5（守卫会拦）。
   const colors: Record<string, string> = {
-    aliyun: '#ff6a00', aws: '#ff9900', huawei: '#c7000b',
-    tencent: '#00a3ff', volcano: '#f53f3f', azure: '#0078d4'
+    aliyun: '#c25100', // 原 #ff6a00（2.87）→ 4.70
+    aws: '#a66300', // 原 #ff9900（2.14，最差）→ 4.77
+    huawei: '#c7000b', // 6.12，已达标，未改
+    tencent: '#0079bd', // 原 #00a3ff（2.73）→ 4.70
+    volcano: '#d53737', // 原 #f53f3f（3.71）→ 4.74
+    azure: '#0078d4', // 4.53，已达标，未改
   }
   return colors[provider] || 'var(--text-tertiary)'
 }
