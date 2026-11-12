@@ -51,6 +51,7 @@
             />
             <el-dropdown trigger="click" @command="(cmd: string) => handleCommand(cmd, item)">
               <button class="more-btn">
+              aria-label="展开或收起"
                 <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
                   <circle cx="8" cy="3" r="1.5" />
                   <circle cx="8" cy="8" r="1.5" />

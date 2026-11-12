@@ -175,6 +175,7 @@
           <div class="col-actions" @click.stop>
             <el-dropdown trigger="click" @command="(cmd: string) => handleAction(cmd, group)">
               <button class="action-trigger">
+              aria-label="更多操作"
                 <el-icon><MoreFilled /></el-icon>
               </button>
               <template #dropdown>
@@ -222,6 +223,7 @@
       </div>
       <div class="pagination-controls">
         <button
+        aria-label="上一页"
           class="page-btn"
           :disabled="pagination.page === 1"
           @click="handlePageChange(pagination.page - 1)"
@@ -241,6 +243,7 @@
           </button>
         </div>
         <button
+        aria-label="下一页"
           class="page-btn"
           :disabled="pagination.page === totalPages"
           @click="handlePageChange(pagination.page + 1)"

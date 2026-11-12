@@ -169,6 +169,7 @@
       </div>
       <div class="pagination-controls">
         <button
+        aria-label="上一页"
           class="page-btn"
           :disabled="pagination.page === 1"
           @click="handlePageChange(pagination.page - 1)"
@@ -188,6 +189,7 @@
           </button>
         </div>
         <button
+        aria-label="下一页"
           class="page-btn"
           :disabled="pagination.page === totalPages"
           @click="handlePageChange(pagination.page + 1)"
@@ -233,6 +235,7 @@
           <h2 class="hero-title">{{ isEdit ? '编辑云账号' : '添加云账号' }}</h2>
           <p class="hero-subtitle">{{ isEdit ? '修改云账号的配置信息和凭证' : '接入云平台账号，开始管理多云资源' }}</p>
           <button v-if="true" class="dialog-close-btn" @click="dialogVisible = false">
+          aria-label="关闭对话框"
             <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
               <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
