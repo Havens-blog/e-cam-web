@@ -260,8 +260,8 @@
 //   secondary(#8a8f98) 混入 8% 黑 ≈ rgb(127,132,140)
 // 只覆盖 tertiary 一个 token，不动 primary/secondary/regular，视觉层次不变。
 // 注意：theme-variables.scss 用 :root(0,1,0) 定义，这里用 :root:root(0,2,0) 且更晚引入。
-:root:root {
-  --text-tertiary: color-mix(in srgb, var(--text-secondary) 92%, #000);
+:root:root:not(.light) {
+  --text-tertiary: color-mix(in srgb, var(--text-secondary) 96%, #000);
 }
 
 // ==================== 语义色浅底（light-9/8）深色主题适配 ====================
