@@ -178,9 +178,16 @@ const assetId = ref('')
 const changeList = ref<AssetChange[]>([])
 const changesLoading = ref(false)
 
-/** 读屏播报文案（iter361）：加载中 → 空/条数 */
+/** 读屏播报文案（iter361，iter363 补降级分支）：加载中 → 降级/空/条数 */
 const liveStatusText = computed(() => {
   if (changesLoading.value) return '正在加载资产变更历史…'
+  // **降级分支（iter363 修）**：后端 Count 超时时 total = -1，页面隐藏数字总数与页码、
+  // 只保留前后翻页（见下方 totalUnknown 与模板注释）。
+  // iter361 我漏了这个分支，播报出去是「共 -1 条资产变更历史记录」——
+  // **一个不存在于界面任何地方的荒谬数字，只出现在读屏输出里**。
+  // 这个缺陷被掩盖了两轮：测试没注册 LiveStatus → 组件不渲染 → 播报文本根本不存在。
+  // iter363 注册组件后才暴露出来。
+  if (changesTotal.value < 0) return '资产变更历史已加载，总数暂不可用（统计超时）'
   if (changesTotal.value === 0) return '暂无资产变更历史数据'
   return `共 ${changesTotal.value} 条资产变更历史记录`
 })

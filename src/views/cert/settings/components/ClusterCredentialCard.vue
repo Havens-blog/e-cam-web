@@ -465,14 +465,6 @@ onMounted(load)
   padding: 18px 0;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-
 .fetch-step {
   display: flex;
   align-items: center;

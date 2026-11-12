@@ -11,6 +11,7 @@
  * 私有字段报错），统一以 no-op 桩替换；勾选交互走真实 DOM click 链路。
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import LiveStatus from '@/components/LiveStatus.vue'
 import { ElButton, ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, type Component } from 'vue'
@@ -97,7 +98,7 @@ async function mountTable(opts: MountOptions = {}) {
         attrs,
         slots,
         global: {
-            components: { ElTable, ElTableColumn, ElButton, ElSkeleton, ElEmpty, ElIcon },
+            components: { ElTable, ElTableColumn, ElButton, ElSkeleton, ElEmpty, ElIcon, LiveStatus },
         },
     })
     await flushPromises()

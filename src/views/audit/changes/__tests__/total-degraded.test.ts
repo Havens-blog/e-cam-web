@@ -6,6 +6,7 @@
  * 隐藏数字总数与页码、保留按需翻页 + 提示文案；正常 total 走标准分页。
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import LiveStatus from '@/components/LiveStatus.vue'
 import ElementPlus from 'element-plus'
 import { getChangeSummaryApi, listAssetChangesApi } from '@/api/audit'
 import type { AssetChange } from '@/api/audit'
@@ -54,6 +55,9 @@ async function mountWithAsset(assetId: string): Promise<VueWrapper> {
         global: {
             plugins: [ElementPlus],
             stubs: { teleport: true },
+            // iter363：本页在 iter361（PR #352）接入 <LiveStatus>，测试未注册会打
+            // Failed to resolve 警告。警告会淹没真实问题（iter354 的 unhandled error 就藏在里面）。
+            components: { LiveStatus },
         },
     })
     wrappers.push(wrapper)

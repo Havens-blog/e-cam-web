@@ -6,6 +6,7 @@
  * 搜索失效。修复前本用例应失败，修复（v-model → :model-value + Object.assign）后通过。
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import LiveStatus from '@/components/LiveStatus.vue'
 import ElementPlus from 'element-plus'
 import {
     getTagStatsApi,
@@ -57,6 +58,9 @@ async function mountPage(): Promise<{ wrapper: VueWrapper }> {
         attachTo: document.body,
         global: {
             plugins: [router, ElementPlus],
+            // iter363：本页在 iter361（PR #352）接入 <LiveStatus>，测试未注册会打
+            // Failed to resolve 警告。警告会淹没真实问题。
+            components: { LiveStatus },
             stubs: {
                 teleport: true,
                 // 与待测契约无关的重型子组件全部打桩，聚焦 TagFilters 的 v-model 链路

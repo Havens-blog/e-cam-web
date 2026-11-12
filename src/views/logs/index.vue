@@ -1413,18 +1413,6 @@ onMounted(async () => {
     color: var(--text-secondary);
 }
 
-/* U+23F9 默认是文本呈现，但字体回退可能给彩色 emoji；强制文本变体以保持中性灰表达 */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
 .state-icon-glyph {
     font-variant-emoji: text;
 }
