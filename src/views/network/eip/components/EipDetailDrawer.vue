@@ -18,7 +18,7 @@
               {{ instance?.asset_name || instance?.asset_id }}
               <!-- F-EIP-03：handleRefresh 为空实现（单实例刷新未接线），按主题 B 决策禁用 + tooltip -->
               <el-tooltip content="功能开发中" placement="top">
-                <el-button text size="small" disabled @click="handleRefresh">
+                <el-button text size="small" disabled @click="handleRefresh" aria-label="刷新弹性公网IP详情">
                   <el-icon><Refresh /></el-icon>
                 </el-button>
               </el-tooltip>

@@ -303,7 +303,7 @@
                 <el-input-number v-model="disk.size" :min="20" :max="2000" :step="10" size="small" />
                 <span class="size-unit">GB</span>
               </div>
-              <el-button size="small" type="danger" link @click="form.data_disks.splice(idx, 1)">
+              <el-button size="small" type="danger" link @click="form.data_disks.splice(idx, 1)" aria-label="删除该磁盘">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>

@@ -14,7 +14,7 @@
         <!-- 原为 <div>，该路由（/network/dns/:domain/records）缺 <h1>；
              .page-title 已显式定义 20px/700，改为 h1 视觉不变 -->
         <h1 class="page-title">
-          <el-button text @click="router.push('/network/dns')">
+          <el-button text @click="router.push('/network/dns')" aria-label="返回域名列表">
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
           {{ domain }} — 解析记录

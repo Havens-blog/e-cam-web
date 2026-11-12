@@ -25,7 +25,7 @@
                 <div class="instance-type">虚拟机</div>
                 <div class="instance-name">
                   {{ instance.asset_name || instance.asset_id }}
-                  <el-button text size="small" @click="handleRefresh">
+                  <el-button text size="small" @click="handleRefresh" aria-label="刷新实例详情">
                     <el-icon><Refresh /></el-icon>
                   </el-button>
                 </div>

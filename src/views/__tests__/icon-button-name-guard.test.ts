@@ -72,24 +72,63 @@ function normalizeKey(p: string): string | null {
 }
 
 /** 找出「纯图标且无可访问名」的按钮，返回其图标名或片段（便于定位） */
+/**
+ * 找出所有「纯图标且无可访问名」的按钮。
+ *
+ * **iter376 扩展：必须覆盖 Element Plus 的三种写法**（S213 —— 只查一种会系统性漏报）：
+ *   ① `<el-button :icon="X" circle />`（属性式，自闭合）
+ *   ② `<el-button ...><el-icon><X /></el-icon></el-button>`（子标签式）
+ *   ③ `<button ...><el-icon><X /></el-icon></button>`（原生 button）
+ *
+ * iter374 只查了 ③，结论是「CAM 14 个」；本轮补扫 ①② 后又发现 14 个 ——
+ * **上一轮那个数字只覆盖了三分之一的情况。**
+ *
+ * ⚠️ 一个已修的误报：`<el-button ...><el-icon><Delete /></el-icon>批量删除</el-button>`
+ * 有可见文字「批量删除」，**不是**纯图标按钮。判据里「去标签后无可见文字」这一条挡住了它 ——
+ * 之前手工写的扫描脚本因非贪婪匹配跨行出错，把它误报了一次（已在最终判据里修正）。
+ */
 function findUnnamedIconButtons(tpl: string): string[] {
   const out: string[] = []
-  const btnRe = /<button\b([^>]*)>([\s\S]*?)<\/button>/g
+
+  // ---- ① ② el-button（属性式 + 子标签式）----
+  const reEl = /<el-button\b([^>]*?)(\/>|>([\s\S]*?)<\/el-button>)/g
   let m: RegExpExecArray | null
+  while ((m = reEl.exec(tpl))) {
+    const attrs = m[1] ?? ''
+    const inner = m[2] === '/>' ? '' : (m[3] ?? '')
+    const hasIconAttr = /(:icon=|icon=")/.test(attrs)
+    const hasIconChild = /<el-icon|<svg/.test(inner)
+    if (!hasIconAttr && !hasIconChild) continue
+
+    // 有可见文字 → 不是纯图标（例如「<el-icon/>批量删除」）
+    if (inner.replace(/<[^>]+>/g, '').replace(/\s/g, '').length > 0) continue
+
+    // 可访问名来源。注意：外层 <el-tooltip content="..."> **不算** ——
+    // 实测（iter376）tooltip 的 content 只渲染成浮层，不会成为按钮的可访问名
+    // （它既不设 aria-label 也不设 aria-describedby）。
+    if (/aria-label|aria-labelledby|title=/.test(attrs)) continue
+    if (/sr-only|visually-hidden/.test(inner)) continue
+
+    const icon =
+      (attrs.match(/:icon="([^"]+)"/) ?? attrs.match(/icon="([^"]+)"/) ?? [])[1] ??
+      (inner.match(/<([A-Z]\w+)\s*\/>/) ?? [])[1] ??
+      'svg'
+    out.push('el-button:' + icon)
+  }
+
+  // ---- ③ 原生 button ----
+  const btnRe = /<button\b([^>]*)>([\s\S]*?)<\/button>/g
   while ((m = btnRe.exec(tpl))) {
     const attrs = m[1] ?? ''
     const inner = (m[2] ?? '').trim()
     if (!inner) continue
 
-    // 必须有图标
     const hasIcon = /<el-icon|<svg|<i\s+class="[^"]*icon|<ElIcon/.test(inner)
     if (!hasIcon) continue
 
-    // 去标签后必须没有可见文字（纯图标）
     const textOnly = inner.replace(/<[^>]+>/g, '').replace(/\s/g, '')
     if (textOnly.length > 0) continue
 
-    // 可访问名来源
     if (/aria-label|aria-labelledby|title=/.test(attrs)) continue
     if (/sr-only|visually-hidden/.test(inner)) continue
 
@@ -97,8 +136,9 @@ function findUnnamedIconButtons(tpl: string): string[] {
       (inner.match(/<([A-Z]\w+)\s*\/>/) ?? [])[1] ??
       (inner.match(/class="([^"]*icon[^"]*)"/) ?? [])[1] ??
       'svg'
-    out.push(iconName)
+    out.push('button:' + iconName)
   }
+
   return out
 }
 

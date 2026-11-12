@@ -74,12 +74,12 @@
         <template #default="{ row }">
           <div class="action-group">
             <el-tooltip content="查看拓扑" placement="top">
-              <el-button type="primary" link size="small" @click="handleViewTopo(row)">
+              <el-button type="primary" link size="small" @click="handleViewTopo(row)" aria-label="查看拓扑">
                 <el-icon><Share /></el-icon>
               </el-button>
             </el-tooltip>
             <el-tooltip content="查看记录" placement="top">
-              <el-button type="primary" link size="small" @click="handleViewRecords(row)">
+              <el-button type="primary" link size="small" @click="handleViewRecords(row)" aria-label="查看解析记录">
                 <el-icon><List /></el-icon>
               </el-button>
             </el-tooltip>
