@@ -131,6 +131,11 @@ input, textarea {
 
 .ellipsis { @include ellipsis; }
 
+
+// 仅供读屏的隐藏类（iter363）：此前在 8 个文件里各有副本、已分化成 4 种形态，
+// 现统一到 utilities.scss。若要新增同类工具类，请加在那里而不是页面 scoped 里。
+@import './utilities.scss';
+
 // ==================== 间距工具类 ====================
 @each $size in (xs, sm, md, lg, xl) {
   .m-#{$size} { margin: var(--spacing-#{$size}); }

@@ -306,18 +306,6 @@ defineExpose({ open })
   display: none;
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .cert-file-input {
   width: 100%;
   font-size: 13px;

@@ -331,18 +331,6 @@ onUnmounted(() => {
 }
 
 // ===== 视觉隐藏（aria-live 通告区） =====
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 // ===== 骨架屏（loading 态：5+2 卡 + 5 行） =====
 .cards-skeleton {
   display: grid;

@@ -1,0 +1,48 @@
+/**
+ * 全局工具类（iter363）
+ *
+ * 与 console 仓 `src/assets/styles/utilities.scss` 对齐（iter362 在那里做了同样的事）。
+ *
+ * 背景：`.sr-only` 这段标准隐藏样式在本仓被复制了 **8 份**，分布在 8 个文件里，
+ * 而且**已经分化成 4 种形态**：
+ *
+ * | 形态 | 处数 | 差异 |
+ * | --- | --- | --- |
+ * | 1 | 5 | `clip: rect(0, 0, 0, 0)`（带逗号）|
+ * | 2 | 1 | `clip: rect(0 0 0 0)`（不带逗号）|
+ * | 3 | 1 | `padding` / `margin` 顺序颠倒 |
+ * | 4 | 1 | **只有 5 个属性**，缺 `padding` / `margin` / `white-space` / `border` |
+ *
+ * 形态 4 缺的两个属性是**保护性**的：
+ *   · 缺 `border: 0` → 元素若有边框，`1px` 尺寸会被撑开，可能露出来；
+ *   · 缺 `white-space: nowrap` → 长文本换行会撑开高度。
+ * 本次统一采用**完整版**，对形态 4 是「收紧」（更可靠），对其余三种是「零行为变化」。
+ *
+ * 另外 `ImportCertModal.vue` 里那份的类名是 **`.visually-hidden`** 而不是 `.sr-only`
+ * —— 连命名都开始分了。这正是「副本必然漂移」的实证：**不是某天突然全都不同，
+ * 而是每一次有人只改其中一份。**
+ *
+ * 为什么不放 `scoped`：`.sr-only` 是给本页元素用的独占类名，不同页面之间不存在冲突；
+ * 放全局后新增页面直接用，不必再复制第 9 份。
+ */
+
+/**
+ * 仅供读屏的隐藏文本（视觉不可见但保留在无障碍树中）。
+ *
+ * 为什么不是 `display: none` / `visibility: hidden`：
+ * 两者都会把元素**从无障碍树里移除**，读屏软件读不到 —— 而本类的目的恰恰是给读屏用。
+ *
+ * `clip: rect(0 0 0 0)` 是历史写法（`clip-path: inset(50%)` 是现代等价）。
+ * 保留原样是为了让本次提取**零行为变化**；现代化应另开一轮并全站验证。
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
