@@ -87,6 +87,25 @@ function normalizeKey(p: string): string | null {
  * 有可见文字「批量删除」，**不是**纯图标按钮。判据里「去标签后无可见文字」这一条挡住了它 ——
  * 之前手工写的扫描脚本因非贪婪匹配跨行出错，把它误报了一次（已在最终判据里修正）。
  */
+function stripPseudoAttrText(inner: string): string {
+  // 剥离「本应是属性、却被误写成子文本节点」的 aria-label / aria-labelledby / title。
+  //
+  // **这是 iter379 补上的 —— 因为 iter376 的一次批量改动静默地绕过了本守卫。**
+  //
+  // 事故：iter376 我给 14 个纯图标按钮补 aria-label，方式是「在 <button> 行之后插入一行」。
+  // 对**单行闭合**的 <button ...> 而言，这会把属性插到 `>` **之后**，变成子文本节点：
+  //
+  //     <button class="more-btn">
+  //     aria-label="展开或收起"          ← 不是属性，是可见文本！
+  //       <svg ...>
+  //
+  // 后果：页面上真的显示出 `aria-label="展开或收起"` 这串字（实测 20 处），
+  // 而按钮依然没有可访问名（0 个）—— 比修之前更糟。
+  // 而本守卫当时**通过了**，原因是那段伪文本让 textOnly.length > 0，
+  // 于是按钮被判定为「有可见文字的按钮」而 continue 跳过 —— **判据被伪文本骗了**。
+  return inner.replace(/^\s*(?:aria-label|aria-labelledby|title)\s*=\s*"[^"]*"\s*/gm, '')
+}
+
 function findUnnamedIconButtons(tpl: string): string[] {
   const out: string[] = []
 
@@ -100,8 +119,9 @@ function findUnnamedIconButtons(tpl: string): string[] {
     const hasIconChild = /<el-icon|<svg/.test(inner)
     if (!hasIconAttr && !hasIconChild) continue
 
-    // 有可见文字 → 不是纯图标（例如「<el-icon/>批量删除」）
-    if (inner.replace(/<[^>]+>/g, '').replace(/\s/g, '').length > 0) continue
+    // 有可见文字 → 不是纯图标（例如「<el-icon/>批量删除」）。
+    // 先剥离被误写成子文本节点的 aria-label/title，否则它会把纯图标按钮"伪装"成有文字的按钮。
+    if (stripPseudoAttrText(inner).replace(/<[^>]+>/g, '').replace(/\s/g, '').length > 0) continue
 
     // 可访问名来源。注意：外层 <el-tooltip content="..."> **不算** ——
     // 实测（iter376）tooltip 的 content 只渲染成浮层，不会成为按钮的可访问名
@@ -126,7 +146,8 @@ function findUnnamedIconButtons(tpl: string): string[] {
     const hasIcon = /<el-icon|<svg|<i\s+class="[^"]*icon|<ElIcon/.test(inner)
     if (!hasIcon) continue
 
-    const textOnly = inner.replace(/<[^>]+>/g, '').replace(/\s/g, '')
+    // 同样先剥离伪文本（iter379）—— 这正是 DictItemTable / DictTypeList 栽的地方
+    const textOnly = stripPseudoAttrText(inner).replace(/<[^>]+>/g, '').replace(/\s/g, '')
     if (textOnly.length > 0) continue
 
     if (/aria-label|aria-labelledby|title=/.test(attrs)) continue

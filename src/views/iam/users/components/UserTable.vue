@@ -97,8 +97,7 @@
         </div>
         <div class="col-actions" @click.stop>
           <el-dropdown trigger="click" @command="(cmd: string) => emit('action', cmd, user)">
-            <button class="action-trigger">
-            aria-label="更多操作"
+            <button class="action-trigger" aria-label="更多操作">
               <el-icon><MoreFilled /></el-icon>
             </button>
             <template #dropdown>
