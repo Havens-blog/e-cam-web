@@ -1066,7 +1066,8 @@ html.dark .template-card-footer {
 }
 html.dark .template-action-btn {
   background: rgba(148, 163, 184, 0.1);
-  color: #64748b;
+  /* iter383: #64748b(slate-600) 在 rgba(148,163,184,.1) 底上只有 3.05:1，提到 #94a3b8(slate-400) = 5.64 */
+  color: #94a3b8;
 }
 html.dark .template-action-btn:hover {
   background: rgba(139, 92, 246, 0.2);

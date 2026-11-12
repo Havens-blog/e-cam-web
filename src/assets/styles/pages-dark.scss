@@ -393,3 +393,18 @@
   --el-button-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
 }
+
+
+// ==================== 下拉选中项文字（iter383）====================
+// 问题：element-theme.scss 里 .el-select-dropdown__item.is-selected 用 --accent-blue(#7170ff)
+// 作文字色，而它的底色是 rgba(94,106,210,0.12)。深色主题下这两层合成后背景 ≈ #212431，
+// 对比度只有 4.01（AA 需 4.5）。实测这一处影响 **114 个下拉选中项**（全站 61 路由，凡是选过值的
+// select 都会中招）—— 是整轮 AA 普查里最大的一簇。
+//
+// 修法：只把**文字**提亮到 #9ca3ff（5.5:1），底色与选中态语义不变。
+// 必须限定在深色主题：浅色主题下选中项底色是浅淡紫，这个亮蓝反而看不清。
+// 颜色取自仓内既有色系（#818cf8 / #a78bfa 同族，见 template-tag 与 template-action-btn）。
+:root:root:not(.light) .el-select-dropdown__item.is-selected,
+:root:root:not(.light) .el-select-dropdown__item.selected {
+  color: #9ca3ff;
+}
