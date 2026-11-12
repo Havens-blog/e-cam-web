@@ -327,8 +327,8 @@
 // 其它语义色的**实底按钮**同理：白字压在语义色原色上都不到 AA
 // （实测 warning #f59e0b + 白字仅 2.15:1）。统一压暗 18%，色相不变。
 .el-button--warning:not(.is-text):not(.is-link):not(.is-plain) {
-  background-color: color-mix(in srgb, var(--el-color-warning) 65%, #000);
-  border-color: color-mix(in srgb, var(--el-color-warning) 65%, #000);
+  background-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
+  border-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
 }
 
 .el-button--success:not(.is-text):not(.is-link):not(.is-plain) {
@@ -346,8 +346,8 @@
 }
 
 .el-tag.el-tag--warning.el-tag--dark {
-  --el-tag-bg-color: color-mix(in srgb, var(--el-color-warning) 65%, #000);
-  --el-tag-border-color: color-mix(in srgb, var(--el-color-warning) 65%, #000);
+  --el-tag-bg-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
+  --el-tag-border-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
 }
 
 .el-tag.el-tag--danger.el-tag--dark {
