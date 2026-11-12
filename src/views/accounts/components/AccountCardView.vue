@@ -65,8 +65,7 @@
             </div>
             <div class="card-footer-right" @click.stop>
               <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => emit('action', cmd, account)">
-                <button class="card-action-btn">
-                aria-label="更多操作"
+                <button class="card-action-btn" aria-label="更多操作">
                   <el-icon><MoreFilled /></el-icon>
                 </button>
                 <template #dropdown>
