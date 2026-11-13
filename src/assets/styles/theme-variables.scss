@@ -92,7 +92,7 @@
   //   --color-warning / --accent-yellow  #f59e0b → #9c6400（2.02 → 4.66）
   //   --color-info                       保持不变 —— 它同时是标签文字色与标签底色的来源，压暗后底色也变暗，实测净效果更差。
   //   --accent-purple                    #8b5cf6 → #7c3aed（3.98 → 5.36）
-  //   --accent-primary                   #5e6ad2 → #5762c6（4.42 → 4.97，与深色对齐）
+  //   --accent-primary                   保持不变 —— 它是**规格锚定值**（theme-tokens.test.ts 断言 #5e6ad2 必须存在），且主按钮白字 4.70 已由按钮文字色修复。
   //   --text-placeholder                 #999999 → #707070（2.68 → 4.65）
   // iter386: 浅色主题的「品牌色当文字色」对比度修正（原值都按深色底设计）。
   //   --accent-blue #7170ff → #5b5be0：白底 3.84→5.23、页面底 3.61→4.91（全站按钮/链接文字色）
@@ -110,7 +110,7 @@
   --color-info: #8a8f98;
 
   // 强调色 (两主题一致)
-  --accent-primary: #5762c6;
+  --accent-primary: #5e6ad2;
   --accent-blue: #5b5be0;
   --accent-cyan: #06b6d4;
   --accent-green: #087050;
