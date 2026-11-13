@@ -837,30 +837,16 @@ function getTemplateIcon(tpl: VMTemplate | null): string {
   return '📋'
 }
 
-/**
- * 模板图标底渐变（iter393）。
- *
- * 为什么需要它：这 8 个渐变都配**白色 emoji/文字**，而它们的浅端最亮到 #94a3b8（白字 2.56:1）、
- * #22c55e（2.28:1）、#f472b6 —— 全部不达 WCAG AA 4.5。
- * 与其在 8 处各写一遍 color-mix，不如把「白字压彩色底必须压暗」这个假设收敛成一个函数（S225）。
- * 压暗 57% 的依据：文字是 #f7f8f8（不是纯白），14 个端点逐个算「需压到多少」，
- * 最吃紧的是暖黄 #fbbf24（≤57%）与绿 #4ade80（≤58%），取它们的下限才能一次覆盖全部。
- * 两次修正记录：先按纯白算得 72% → green 实测 3.12；改 66% → 浅端 3.65；57% 才全过。
- */
-function tplGradient(from: string, to: string): string {
-  return `linear-gradient(135deg, color-mix(in srgb, ${from} 57%, #000), color-mix(in srgb, ${to} 57%, #000))`
-}
-
 function getTemplateIconBg(tpl: VMTemplate | null): string {
-  if (!tpl) return tplGradient('#64748b', '#94a3b8')
+  if (!tpl) return 'linear-gradient(135deg, #64748b, #94a3b8)'
   const name = (tpl.name || '').toLowerCase()
-  if (name.includes('web') || name.includes('nginx')) return tplGradient('#7170ff', '#818cf8')
-  if (name.includes('mysql') || name.includes('数据库') || name.includes('db')) return tplGradient('#f59e0b', '#fbbf24')
-  if (name.includes('gpu') || name.includes('训练') || name.includes('ai')) return tplGradient('#8b5cf6', '#a78bfa')
-  if (name.includes('k8s') || name.includes('kubernetes') || name.includes('容器')) return tplGradient('#06b6d4', '#22d3ee')
-  if (name.includes('测试') || name.includes('test') || name.includes('dev')) return tplGradient('#22c55e', '#4ade80')
-  if (name.includes('海外') || name.includes('overseas')) return tplGradient('#ec4899', '#f472b6')
-  return tplGradient('#64748b', '#94a3b8')
+  if (name.includes('web') || name.includes('nginx')) return 'linear-gradient(135deg, #7170ff, #818cf8)'
+  if (name.includes('mysql') || name.includes('数据库') || name.includes('db')) return 'linear-gradient(135deg, #f59e0b, #fbbf24)'
+  if (name.includes('gpu') || name.includes('训练') || name.includes('ai')) return 'linear-gradient(135deg, #8b5cf6, #a78bfa)'
+  if (name.includes('k8s') || name.includes('kubernetes') || name.includes('容器')) return 'linear-gradient(135deg, #06b6d4, #22d3ee)'
+  if (name.includes('测试') || name.includes('test') || name.includes('dev')) return 'linear-gradient(135deg, #22c55e, #4ade80)'
+  if (name.includes('海外') || name.includes('overseas')) return 'linear-gradient(135deg, #ec4899, #f472b6)'
+  return 'linear-gradient(135deg, #64748b, #94a3b8)'
 }
 
 // ==================== 资产数据映射工具 ====================
