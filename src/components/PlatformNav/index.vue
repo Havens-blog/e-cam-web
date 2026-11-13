@@ -184,8 +184,8 @@ const ic = (k: string): string => icMap[k] ?? 'caise-public_cloud'
   & > i {
     opacity: 0; color: var(--text-muted); font-size: 11px; cursor: pointer; flex-shrink: 0;
     transition: all .12s; font-style: normal;
-    &:hover { opacity: 1 !important; color: #fbbf24; }
-    &.on { opacity: 1; color: #fbbf24; }
+    &:hover { opacity: 1 !important; color: var(--accent-yellow); }
+    &.on { opacity: 1; color: var(--accent-yellow); }
   }
 }
 

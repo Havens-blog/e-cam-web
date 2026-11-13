@@ -289,9 +289,9 @@ onUnmounted(() => {
       color: var(--text-tertiary);
       background: var(--border-subtle);
 
-      &.rank-1 { color: #fbbf24; background: rgba(217, 119, 6, 0.16); }
+      &.rank-1 { color: var(--accent-yellow); background: rgba(217, 119, 6, 0.16); }
       &.rank-2 { color: #d4d4d8; background: rgba(255, 255, 255, 0.08); }
-      &.rank-3 { color: #fbbf24; background: rgba(217, 119, 6, 0.08); }
+      &.rank-3 { color: var(--accent-yellow); background: rgba(217, 119, 6, 0.08); }
     }
 
     .domain-name {

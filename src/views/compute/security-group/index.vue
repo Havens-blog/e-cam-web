@@ -1024,7 +1024,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-.env-tag { padding: 2px 8px; background: var(--bg-hover); border-radius: 4px; font-size: 12px; color: var(--text-secondary); &.warning { background: rgba(230, 162, 60, 0.1); color: #e6a23c; } }
+.env-tag { padding: 2px 8px; background: var(--bg-hover); border-radius: 4px; font-size: 12px; color: var(--text-secondary); &.warning { background: rgba(230, 162, 60, 0.1); color: var(--color-warning); } }
 .platform-icon { font-size: 20px; }
 .text-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: inline-block; }
 
