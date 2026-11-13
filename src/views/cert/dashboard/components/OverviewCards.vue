@@ -40,6 +40,29 @@
         <div class="stat-sub">域名计数；人工排除，不参与告警</div>
       </button>
     </div>
+    <!-- 探测口径行（T3 新口径 + T1 跳过分项）：分母已剔除内网域/协议记录，
+         因此「拨通率」高于旧口径（旧口径含约 25% 永不达的内网域）。 -->
+    <div class="probe-grid" role="group" aria-label="探测口径统计">
+      <div class="stat-card static">
+        <div class="stat-label">可拨测域数</div>
+        <div class="stat-value">{{ summary?.probeableCount ?? '—' }}</div>
+        <div class="stat-sub">
+          探测总数 {{ summary?.probeTotalCount ?? '—' }}；已剔除内网域
+          {{ summary?.internalCount ?? '—' }} / 协议记录 {{ summary?.protocolSkippedCount ?? '—' }}
+          / 通配符 {{ summary?.wildcardSkippedCount ?? '—' }}
+        </div>
+      </div>
+      <div class="stat-card static">
+        <div class="stat-label">拨通率（可拨测域分母）</div>
+        <div class="stat-value">{{ percent(summary?.reachableRateOnProbeable) }}</div>
+        <div class="stat-sub">判定完成域 / 可拨测域；内网域不再稀释</div>
+      </div>
+      <div class="stat-card static">
+        <div class="stat-label">差异率（可拨测域分母）</div>
+        <div class="stat-value tone-error">{{ percent(summary?.diffRateOnProbeable) }}</div>
+        <div class="stat-sub">常规差异域 / 可拨测域</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -68,6 +91,12 @@ const emit = defineEmits<{
     (e: 'select-level', tier: DaysLeftTier): void
     (e: 'select-special', kind: 'diff' | 'exempt'): void
 }>()
+
+/** 比率 → 百分比文本（保留 1 位；null/undefined 显示「—」，不显示 NaN%）。 */
+function percent(rate: number | null | undefined): string {
+    if (rate === null || rate === undefined || Number.isNaN(rate)) return '—'
+    return `${(rate * 100).toFixed(1)}%`
+}
 </script>
 
 <style lang="scss" scoped>
@@ -102,6 +131,16 @@ const emit = defineEmits<{
   }
 }
 
+.probe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 .stat-card {
   display: flex;
   flex-direction: column;
@@ -123,6 +162,11 @@ const emit = defineEmits<{
 
   &.hoverable:hover {
     border-color: var(--cert-accent-hover);
+  }
+
+  // 探测口径卡为纯展示（无筛选语义）：默认光标，无 hover 高亮
+  &.static {
+    cursor: default;
   }
 
   // 选中卡 Accent 高亮（ui-design Interactions）
