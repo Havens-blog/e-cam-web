@@ -990,7 +990,7 @@ onMounted(() => {
       user-select: none;
       text-decoration: underline;
 
-      &:hover { color: color-mix(in srgb, #d97706 80%, #fff); }
+      &:hover { color: color-mix(in srgb, #d97706 80%, var(--mix-tint)); }
       &:focus-visible { outline: 2px solid #d97706; outline-offset: 2px; }
     }
 
