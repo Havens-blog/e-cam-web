@@ -692,44 +692,44 @@ function toggleGroup(key: string) {
 }
 
 /* ==================== 深色模式 ==================== */
-html.dark .selected-instance-banner {
+html.dark:not(.light) .selected-instance-banner {
   background: linear-gradient(135deg, rgba(64, 158, 255, 0.12), rgba(124, 58, 237, 0.12));
   border-color: rgba(64, 158, 255, 0.3);
 }
 
-html.dark .spec-card {
+html.dark:not(.light) .spec-card {
   background: rgba(30, 41, 59, 0.5);
   border-color: rgba(148, 163, 184, 0.12);
 }
 
-html.dark .spec-card:hover {
+html.dark:not(.light) .spec-card:hover {
   border-color: rgba(64, 158, 255, 0.4);
   background: rgba(113, 112, 255, 0.06);
 }
 
-html.dark .spec-card.active {
+html.dark:not(.light) .spec-card.active {
   border-color: var(--el-color-primary);
   background: rgba(113, 112, 255, 0.1);
 }
 
-html.dark .group-header {
+html.dark:not(.light) .group-header {
   background: rgba(15, 23, 42, 0.5);
 }
 
-html.dark .group-header:hover {
+html.dark:not(.light) .group-header:hover {
   background: rgba(113, 112, 255, 0.06);
 }
 
-html.dark .category-tab {
+html.dark:not(.light) .category-tab {
   background: rgba(148, 163, 184, 0.08);
   color: var(--el-text-color-secondary);
 }
 
-html.dark .category-tab:hover {
+html.dark:not(.light) .category-tab:hover {
   background: rgba(148, 163, 184, 0.15);
 }
 
-html.dark .badge-hot {
+html.dark:not(.light) .badge-hot {
   background: rgba(245, 108, 108, 0.2);
 }
 
