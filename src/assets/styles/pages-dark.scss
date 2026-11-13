@@ -511,3 +511,22 @@
     color-mix(in srgb, var(--accent-purple) 90%, #000)
   );
 }
+
+
+// ==================== 浅色主题：主按钮的文字色（iter395）====================
+// 问题：element-theme.scss 里 `.el-button--primary` 只设了底色和边框，**没有设文字色**，
+// 于是文字继承 `.el-button { color: var(--text-primary) }` ——
+// 深色下 `--text-primary` 是 #f7f8f8（近白），没问题；
+// 浅色下 `--text-primary` 是 #111111（近黑），**深色文字压在品牌蓝上只有 4.02:1**，实测 44 处。
+//
+// 修法：浅色下把这层文字色显式设为 #fff —— #5e6ad2 配纯白是 **4.70:1**，
+// 所以**连底色都不用改**（此前我按 #f7f8f8 算得 4.42、差点又去压暗底色）。
+//
+// 为什么只限定浅色：深色主题下 `--text-primary` = #f7f8f8 已达 4.97，是健康的，不动（S227）。
+//
+// 结构性备注：真正的根因是 `.el-button--primary` 没声明文字色、靠继承。
+// 更彻底的做法是在 element-theme.scss 里补 `color`，但那是与 console 共享的逐字节拷贝面，
+// 需要跨仓同步 + 更新哈希，而浅色这一侧单独覆盖已足够。
+:root.light .el-button--primary:not(.is-text):not(.is-link):not(.is-plain) {
+  color: #fff;
+}
