@@ -1,0 +1,43 @@
+// ============================================
+// cert 模块：浅色主题的 --cert-* 令牌覆盖（iter388）
+// ============================================
+// 为什么需要这个文件：
+//   cert 各页面（changes / wizard / dashboard / detail / ledger / settings / change-report）
+//   都在自己的**页面根类**上各定义一套 `--cert-*` 令牌，取值照搬 Vercel 深色设计稿：
+//     --cert-accent    #338df5   白底 3.35:1
+//     --cert-success   #50e3c2   白底 1.60:1   ← 几乎看不见
+//     --cert-warning   #f5a623   白底 2.03:1
+//     --cert-error     #f45959   白底 3.27:1
+//     --cert-verifying #8b5cf6   白底 4.23:1
+//   这些值在深色底上是合适的（mint 绿在近黑背景上很跳），压在白底上全线不达标。
+//
+// 为什么不在各页面里就地改：
+//   同一套令牌被**复制在 7 个页面根类**里。就地改就是改 7 处同样的数值，
+//   下次再抄第 8 遍时仍然会错 —— 这是 S225 的场景（同一个假设被复制 N 份，
+//   该命名/收敛的是假设本身，不是那 N 份拷贝）。
+//   这里用一个集中覆盖块，靠 **属性选择器 + :root.light** 把特异性提到 (0,3,0)，
+//   压过页面根类自己的 (0,1,0) 定义，从而**不改动各页面文件**。
+//
+// 取值纪律（同 iter386）：每个候选都按「白底 / 页面底」两种背景取**最差**值 ≥4.5 才接受，
+//   色相不变、只压明度，视觉上仍是同一族语义色。
+//     --cert-accent    #338df5 → #2670c4   3.35 → 5.00（页面底 4.70）
+//     --cert-success   #50e3c2 → #0d7a66   1.60 → 5.26（页面底 4.94）
+//     --cert-warning   #f5a623 → #9c6400   2.03 → 4.96（页面底 4.66）
+//     --cert-error     #f45959 → #cc2b2b   3.27 → 5.32（页面底 5.00）
+//     --cert-verifying #8b5cf6 → #7c3aed   4.23 → 5.70（页面底 5.36）
+//
+// 深色主题不受影响：本文件全部限定在 `:root.light` 下。
+
+$cert-light-roots: '.cert-changes-page', '.cert-wizard-page', '.cert-dashboard-page',
+  '.cert-detail-page', '.cert-ledger-page', '.cert-settings-page', '.cert-change-report-page';
+
+@each $root in $cert-light-roots {
+  :root.light #{$root} {
+    --cert-accent: #2670c4;
+    --cert-accent-hover: #1f66b5;
+    --cert-success: #0d7a66;
+    --cert-warning: #9c6400;
+    --cert-error: #cc2b2b;
+    --cert-verifying: #7c3aed;
+  }
+}

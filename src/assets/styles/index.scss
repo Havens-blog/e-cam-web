@@ -200,6 +200,8 @@ input, textarea {
 
 // 导入页面级主题样式
 @import './pages-dark.scss';
+// cert 模块的浅色主题 --cert-* 令牌覆盖（S225：7 个页面根类里重复的同一套深色取值 → 收敛为 1 处）
+@import './cert-light.scss';
 
 /* 统计卡行（.stats-badges）在窄屏允许换行。
  *
