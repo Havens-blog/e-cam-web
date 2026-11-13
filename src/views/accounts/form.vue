@@ -44,6 +44,13 @@
       </el-select>
     </el-form-item>
 
+    <el-form-item label-width="0">
+      <el-alert type="info" :closable="false" show-icon class="ak-alert">
+        <!-- 阿里云主账号 AK 会被后端拒绝接入，提前说明接入约束 -->
+        <span>请使用 <strong>RAM 子账号</strong> 的 AccessKey，并授予只读策略（如 AliyunReadOnlyAccess）。<strong>主账号 AK 会被拒绝接入</strong>。</span>
+      </el-alert>
+    </el-form-item>
+
     <el-form-item label="Access Key ID" prop="access_key_id">
       <el-input
         v-model="formData.access_key_id"
@@ -427,6 +434,17 @@ defineExpose({
   margin-left: calc(0.5rem + 0.1vw);
   font-size: calc(0.65rem + 0.1vw);
   color: #9ca3af;
+}
+
+// AK 接入提示：占满表单内容宽度，窄屏下自然换行
+.ak-alert {
+  width: 100%;
+
+  :deep(.el-alert__description) {
+    margin: 0;
+    line-height: 1.6;
+    word-break: break-word;
+  }
 }
 
 :deep(.el-divider__text) {

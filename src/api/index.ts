@@ -95,6 +95,18 @@ export function getCloudAccountApi(id: number) {
     })
 }
 
+/**
+ * 权限体检：探测该账号对各资源类型是否有列举权限。
+ * 契约要求返回业务载荷（data），故解包 envelope 后直接返回 PermissionCheck。
+ */
+export async function checkAccountPermissions(id: number): Promise<account.PermissionCheck> {
+    const res = await instance.post<account.PermissionCheck>({
+        url: `${API_SERVICE.CAM}/cloud-accounts/${id}/permission-check`,
+        interceptorsToOnce: createCamApiInterceptor()
+    })
+    return res.data
+}
+
 /** 测试云账号连接 */
 export function testConnectionApi(id: number) {
     return instance.post<account.TestConnectionResponse>({

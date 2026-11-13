@@ -122,6 +122,71 @@
                 <span class="info-value">{{ formatDateTime(account?.update_time) }}</span>
               </div>
             </div>
+
+            <!-- 权限体检 -->
+            <section class="permission-check">
+              <div class="pc-header">
+                <div class="pc-heading">
+                  <span class="pc-title">权限体检</span>
+                  <span v-if="permissionCheck" class="pc-time">
+                    体检时间：{{ formatDateTime(permissionCheck.checked_at) }}
+                  </span>
+                </div>
+                <el-button
+                  type="primary"
+                  size="small"
+                  :loading="checking"
+                  :disabled="checking || !account"
+                  @click="handlePermissionCheck"
+                >
+                  {{ checking ? '体检中...' : '开始体检' }}
+                </el-button>
+              </div>
+
+              <el-alert
+                v-if="permissionCheck?.is_primary_account"
+                type="error"
+                :closable="false"
+                show-icon
+                class="pc-alert"
+                title="当前为主账号 AK，存在越权风险，请改用 RAM 子账号"
+              />
+
+              <template v-if="permissionCheck">
+                <div class="pc-summary">
+                  <span class="pc-summary-item is-ok">通过 {{ permissionCheck.summary.ok }} 项</span>
+                  <span class="pc-summary-item is-denied">权限不足 {{ permissionCheck.summary.denied }} 项</span>
+                  <span class="pc-summary-item is-error">异常 {{ permissionCheck.summary.error }} 项</span>
+                  <span v-if="permissionCheck.summary.unsupported > 0" class="pc-summary-item is-unsupported">
+                    未支持 {{ permissionCheck.summary.unsupported }} 项
+                  </span>
+                </div>
+
+                <el-table
+                  :data="permissionCheck.items"
+                  size="small"
+                  border
+                  max-height="320"
+                  class="pc-table"
+                >
+                  <el-table-column prop="asset_name" label="资源类型" min-width="130" show-overflow-tooltip />
+                  <el-table-column label="状态" width="96">
+                    <template #default="{ row }">
+                      <el-tag :type="getPermissionStatusTagType(row.status)" size="small">
+                        {{ getPermissionStatusLabel(row.status) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="说明" min-width="150" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.message || '-' }}</template>
+                  </el-table-column>
+                </el-table>
+              </template>
+
+              <p v-else class="pc-empty">
+                尚未进行体检。点击「开始体检」探测该账号对各资源类型的列举权限。
+              </p>
+            </section>
           </div>
 
           <!-- 配置信息 -->
@@ -178,11 +243,13 @@
 </template>
 
 <script setup lang="ts">
-import type { CloudAccount } from '@/api/types/account'
+import { checkAccountPermissions } from '@/api'
+import type { CloudAccount, PermissionCheck, PermissionCheckStatus } from '@/api/types/account'
+import { showApiError } from '@/api/request'
 import { ProviderIcon } from '@haven/ui/ProviderIcon'
 import { getProviderLabel } from '@/utils/constants'
 import { Box, Connection, Delete, Edit, Refresh } from '@element-plus/icons-vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { formatTime as formatDateTime } from '@/utils/formatters'
 
 const props = defineProps<{
@@ -210,6 +277,59 @@ const activeTab = ref('basic')
 const actionPending = computed(
   () => !!(props.deleting || props.testing || props.toggling)
 )
+
+// ==================== 权限体检 ====================
+const checking = ref(false)
+const permissionCheck = ref<PermissionCheck | null>(null)
+
+/** 打开抽屉 / 切换账号时，详情接口已返回的体检结果直接渲染，无需再点按钮 */
+watch(
+  () => [props.visible, props.account?.id] as const,
+  ([visible]) => {
+    if (!visible) return
+    permissionCheck.value = props.account?.permission_check ?? null
+  },
+  { immediate: true }
+)
+
+/** 详情接口在抽屉打开后异步返回时补渲染；本地已有结果则不覆盖，避免冲掉刚完成的体检 */
+watch(
+  () => props.account?.permission_check,
+  (check) => {
+    if (props.visible && permissionCheck.value === null && check) {
+      permissionCheck.value = check
+    }
+  }
+)
+
+const handlePermissionCheck = async () => {
+  if (!props.account || checking.value) return
+  const accountId = props.account.id
+  checking.value = true
+  try {
+    const result = await checkAccountPermissions(accountId)
+    // 体检期间切换了账号/关闭了抽屉：丢弃过期结果，避免渲染到别的账号上
+    if (props.account?.id === accountId) permissionCheck.value = result
+  } catch (error) {
+    // 请求层已弹过业务错误提示，showApiError 只在未提示时补一条，避免重复 toast
+    showApiError(error, '权限体检失败')
+  } finally {
+    checking.value = false
+  }
+}
+
+const PERMISSION_STATUS_META: Record<PermissionCheckStatus, {
+  label: string
+  type: 'success' | 'warning' | 'danger' | 'info'
+}> = {
+  ok: { label: '通过', type: 'success' },
+  denied: { label: '权限不足', type: 'warning' },
+  error: { label: '异常', type: 'danger' },
+  unsupported: { label: '未支持', type: 'info' }
+}
+
+const getPermissionStatusLabel = (status: PermissionCheckStatus) => PERMISSION_STATUS_META[status]?.label || status || '-'
+const getPermissionStatusTagType = (status: PermissionCheckStatus) => PERMISSION_STATUS_META[status]?.type || 'info'
 
 const tabs = [
   { key: 'basic', label: '基本信息' },
@@ -269,6 +389,9 @@ const getEnvironmentLabel = (env: string) => {
 
 <style scoped lang="scss">
 .account-detail-drawer {
+  // 窄屏（≤768px）下 560px 固定宽度会超出视口，这里兜底限制占满可用宽度
+  max-width: 100vw;
+
   :deep(.el-drawer__header) {
     padding: 0;
     margin-bottom: 0;
@@ -509,6 +632,81 @@ const getEnvironmentLabel = (env: string) => {
         font-family: var(--font-mono);
         font-size: 13px;
       }
+    }
+  }
+}
+
+.permission-check {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+
+  .pc-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .pc-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .pc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .pc-time {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .pc-alert {
+    margin-bottom: 12px;
+  }
+
+  .pc-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+
+    .is-ok { color: var(--accent-green); }
+    .is-denied { color: var(--accent-yellow); }
+    .is-error { color: var(--accent-red); }
+    .is-unsupported { color: var(--text-tertiary); }
+  }
+
+  .pc-table {
+    width: 100%;
+  }
+
+  .pc-empty {
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-tertiary);
+  }
+}
+
+@media (max-width: 768px) {
+  .permission-check {
+    .pc-header {
+      flex-direction: column;
+      align-items: stretch;
+
+      .el-button { width: 100%; }
     }
   }
 }

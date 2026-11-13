@@ -345,10 +345,12 @@ import {
   deleteCloudAccountApi,
   disableCloudAccountApi,
   enableCloudAccountApi,
+  getCloudAccountApi,
   listCloudAccountsApi,
   syncCloudAccountApi,
   testConnectionApi,
 } from '@/api'
+import { showApiError } from '@/api/request'
 import type { CloudAccount } from '@/api/types/account'
 import ErrorDisplay from '@/components/ErrorDisplay.vue'
 import { getFullApiUrl } from '@/utils/api-validator'
@@ -686,9 +688,19 @@ const handleEdit = (account: CloudAccount) => {
   dialogVisible.value = true
 }
 
-const handleViewDetail = (account: CloudAccount) => {
+const handleViewDetail = async (account: CloudAccount) => {
   detailAccount.value = account
   detailDrawerVisible.value = true
+  // 详情接口才返回 permission_check：打开抽屉时拉一次，进入即可直接渲染已有的体检结果。
+  // 拉取失败时静默保留列表数据（错误提示由请求层统一处理）。
+  try {
+    const { data } = await getCloudAccountApi(account.id)
+    if (data && detailAccount.value?.id === account.id) {
+      detailAccount.value = { ...account, ...data }
+    }
+  } catch (error) {
+    logError('fetchAccountDetail', error)
+  }
 }
 
 const handleAction = (command: string, account: CloudAccount) => {
@@ -831,7 +843,9 @@ const handleSubmit = async () => {
     fetchAccounts()
   } catch (error: any) {
     logError(error, 'submitForm')
-    handleApiError(error, '操作失败')
+    // 业务拒绝（如「禁止接入主账号 AK，请使用 RAM 子账号…」）的 msg 已由请求层原样弹出；
+    // 这里用 showApiError 仅在未提示时兜底，避免再用「操作失败」盖掉后端原因。
+    showApiError(error, '操作失败')
   } finally {
     submitting.value = false
   }

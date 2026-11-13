@@ -62,6 +62,13 @@
           <div class="card-footer">
             <div class="card-footer-left">
               <span class="card-asset-tag">资产 <strong>{{ account.asset_count || 0 }}</strong></span>
+              <el-tag
+                v-if="getPermissionDeniedCount(account) > 0"
+                type="warning"
+                size="small"
+              >
+                权限不足 {{ getPermissionDeniedCount(account) }} 项
+              </el-tag>
             </div>
             <div class="card-footer-right" @click.stop>
               <el-dropdown trigger="click" :disabled="accountActionPending" @command="(cmd: string) => emit('action', cmd, account)">
@@ -113,6 +120,7 @@ import {
   formatSyncTime,
   getEnvClass,
   getEnvironmentLabel,
+  getPermissionDeniedCount,
   getProviderAccentClass,
   getProviderClass,
   getProviderName,
@@ -317,6 +325,8 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .card-asset-tag {

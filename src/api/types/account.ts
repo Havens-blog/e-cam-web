@@ -2,6 +2,38 @@
  * 云账号相关类型定义
  */
 
+/** 权限体检查单项状态：ok=通过；denied=明确权限不足（403/AccessDenied/NoPermission）；error=其他失败；unsupported=云厂商暂不支持探测 */
+export type PermissionCheckStatus = 'ok' | 'denied' | 'error' | 'unsupported'
+
+/** 单类资源的列举权限探测结果 */
+export interface PermissionCheckItem {
+    asset_type: string
+    asset_name: string
+    status: PermissionCheckStatus
+    code: string
+    message: string
+}
+
+/** 权限体检汇总（按状态统计项数） */
+export interface PermissionSummary {
+    ok: number
+    denied: number
+    error: number
+    unsupported: number
+}
+
+/** 一次权限体检的完整结果（详情接口 permission_check 字段同构） */
+export interface PermissionCheck {
+    account_id: number
+    provider: string
+    /** AK 身份类型，如 RAMUser / PrimaryAccount */
+    identity_type: string
+    is_primary_account: boolean
+    checked_at: string
+    summary: PermissionSummary
+    items: PermissionCheckItem[]
+}
+
 export interface CloudAccount {
     id: number
     name: string
@@ -28,6 +60,8 @@ export interface CloudAccount {
     is_default?: boolean
     create_time: string
     update_time: string
+    /** 最近一次权限体检结果；详情接口在未体检过时返回 null，也可能整个字段缺失 */
+    permission_check?: PermissionCheck | null
 }
 
 export interface AccountConfig {
