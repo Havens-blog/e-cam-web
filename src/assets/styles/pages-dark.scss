@@ -329,6 +329,7 @@
 .el-button--danger:not(.is-text):not(.is-link):not(.is-plain) {
   background-color: color-mix(in srgb, var(--el-color-danger) 82%, #000);
   border-color: color-mix(in srgb, var(--el-color-danger) 82%, #000);
+  color: #fff;
 }
 
 // 其它语义色的**实底按钮**同理：白字压在语义色原色上都不到 AA
@@ -336,11 +337,13 @@
 .el-button--warning:not(.is-text):not(.is-link):not(.is-plain) {
   background-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
   border-color: color-mix(in srgb, var(--el-color-warning) 62%, #000);
+  color: #fff;
 }
 
 .el-button--success:not(.is-text):not(.is-link):not(.is-plain) {
   background-color: color-mix(in srgb, var(--el-color-success) 82%, #000);
   border-color: color-mix(in srgb, var(--el-color-success) 82%, #000);
+  color: #fff;
 }
 
 // EP 标签的**深色实底**变体（el-tag--dark）：文字固定为白，背景取语义色原值
@@ -476,13 +479,13 @@
 // 特异性 (0,3,0) 压过 element-theme.scss 的 (0,1,0)。
 // 放在本仓（不写进 element-theme.scss）是刻意的：那是与 console 共享的逐字节拷贝面，
 // 改它需要跨仓同步 + 更新哈希；而这条修法只对 CAM 的浅色主题有意义。
-:root.light .el-tag--success {
+:root.light .el-tag--success:not(.el-tag--dark) {
   --el-tag-text-color: color-mix(in srgb, var(--color-success) 70%, #000);
 }
-:root.light .el-tag--warning {
+:root.light .el-tag--warning:not(.el-tag--dark) {
   --el-tag-text-color: color-mix(in srgb, var(--color-warning) 60%, #000);
 }
-:root.light .el-tag--danger {
+:root.light .el-tag--danger:not(.el-tag--dark) {
   --el-tag-text-color: color-mix(in srgb, var(--color-danger) 85%, #000);
 }
 
