@@ -250,7 +250,9 @@ function formatDateTime(iso: string): string {
 }
 
 .btn-link {
-  color: color-mix(in srgb, var(--cert-accent) 72%, #fff);
+  /* iter405: 「与白混」是深色取向；浅色下它把 #2670c4 提亮成 #6398d5（白底 3.01）。*/
+  /* 该用 --mix-tint（深色 #fff / 浅色 #000），一处覆盖两主题。*/
+  color: color-mix(in srgb, var(--cert-accent) 72%, var(--mix-tint));
   font-size: 13px;
   text-decoration: none;
 
