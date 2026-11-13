@@ -435,7 +435,9 @@
 }
 :root.light {
   // 90% 混黑：#5e6ad2 → 4.97:1（白底 5.59），与侧栏/plain 按钮的修法一致
-  --accent-text: color-mix(in srgb, var(--el-color-primary) 90%, #000);
+  /* iter409: 90% 时最差 4.50（压在 /finops/collect 的米色底 #ece6da 上）、当时实测 4.49，差 0.01。*/
+  /* 收到 86% → #515bb5：白底 5.98 / 页面底 5.62 / 米色底 4.81，三档都留出余量。*/
+  --accent-text: color-mix(in srgb, var(--el-color-primary) 86%, #000);
 }
 
 // 浅色主题下 plain / link / text 三种按钮的文字色也跟着走向正确方向
