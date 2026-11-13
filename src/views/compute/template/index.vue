@@ -777,9 +777,14 @@ onUnmounted(() => {
   color: var(--el-text-color-placeholder);
   cursor: not-allowed;
 }
+/* iter407: #a78bfa 硬编码 —— 深色实测 4.31（#a78bfa on #2f2d5b）、浅色 2.09（on #e7ddfc），两边都不够。*/
+/* 底色是 rg/ba(...,.2) 半透明紫，两主题合成后深浅相反，所以文字色必须分开取（S230：以实测为准）。*/
 .filter-tab.active {
   background: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
+  color: #c4b5fd;
+}
+:root.light .filter-tab.active {
+  color: #6d28d9;
 }
 
 /* 加载 & 空状态 */
