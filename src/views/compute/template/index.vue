@@ -992,6 +992,12 @@ onUnmounted(() => {
 .template-tag.type { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
 .template-tag.billing { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
 
+/* iter408: 这两枚标签的底是 0.15 透明色叠出的浅底纹，比白底更深，*/
+/* 令牌在白/页底达标（--accent-yellow 4.66、--accent-purple 5.36），在这层底纹上不够。*/
+/* 只覆盖浅色：深色侧沿用原值（实测已达标）。*/
+:root.light .template-tag.billing { color: #8a5700; }   /* 4.17 → 5.13 */
+:root.light .template-tag.type { color: #6d28d9; }      /* 2.14 → 5.59 */
+
 /* 卡片底部 */
 .template-card-footer {
   padding: 14px 20px;
