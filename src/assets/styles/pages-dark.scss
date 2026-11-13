@@ -485,3 +485,29 @@
 :root.light .el-tag--danger {
   --el-tag-text-color: color-mix(in srgb, var(--color-danger) 85%, #000);
 }
+
+
+// ==================== 用户头像块（iter393）====================
+// 问题：头像块是「白字 + accent-blue→accent-purple 渐变」，白字压在 #7170ff 上只有 3.84、
+// 在 #8b5cf6 上 4.23，两端都不达 AA。实测 40 处（/iam 用户表格，每行一个）。
+//
+// 为什么不逐个改组件：这三处的样式**完全一样、被复制在三份 scoped style 里** ——
+//   layouts/components/TopNavBar.vue        .user-avatar { background: linear-gradient(…) }
+//   iam/users/components/UserDetailDrawer.vue 同上
+//   iam/users/components/UserTable.vue        同上
+// 改三处就是修三份拷贝，下次抄第四份时照样错（S226）。这里用一条**全局**规则覆盖全部，
+// 组件文件一行不动。
+//
+// 特异性必须取到 (0,4,0)：三份 scoped 规则的编译结果不一样 ——
+//   TopNavBar / UserDetailDrawer：`.user-avatar[data-v-x]`          = (0,2,0)
+//   UserTable：`.col-user .user-avatar[data-v-x]`（嵌套在 .col-user 里）= (0,3,0)
+// 第一版用 (0,3,0) 只压过了前两者，UserTable 后者与它同分且组件样式后注入 → 仍是原色。
+// 实测确认：导航栏头像已变（color(srgb .399 .395 .9)），表格里 40 个仍是 rgb(113,112,255)。
+// 压暗 10% 的依据：#7170ff→4.60、#8b5cf6→5.06，两端都过 4.5，色相不变。
+.user-avatar.user-avatar.user-avatar.user-avatar {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-blue) 90%, #000),
+    color-mix(in srgb, var(--accent-purple) 90%, #000)
+  );
+}

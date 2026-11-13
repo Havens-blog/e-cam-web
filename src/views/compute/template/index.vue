@@ -631,7 +631,8 @@ onUnmounted(() => {
   color: var(--el-text-color-primary);
 }
 .btn-primary {
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  /* iter393: 白字压在 #8b5cf6→#ec4899 上只有 4.23 / 3.53，压暗 15% 后 5.55 / 4.69。*/
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 85%, #000), color-mix(in srgb, #ec4899 85%, #000));
   color: #fff;
   box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 }
@@ -999,7 +1000,8 @@ onUnmounted(() => {
 .template-use-btn {
   padding: 8px 18px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  /* iter393: 白字压在 #8b5cf6→#ec4899 上只有 4.23 / 3.53，压暗 15% 后 5.55 / 4.69。*/
+  background: linear-gradient(135deg, color-mix(in srgb, #8b5cf6 85%, #000), color-mix(in srgb, #ec4899 85%, #000));
   color: #fff;
   font-size: 12px;
   font-weight: 600;
