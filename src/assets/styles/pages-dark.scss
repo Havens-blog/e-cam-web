@@ -455,3 +455,33 @@
 :root.light .el-tag.el-tag--primary {
   --el-tag-text-color: var(--accent-text);
 }
+
+
+// ==================== 浅色主题：语义色标签文字（iter392）====================
+// 问题：element-theme.scss 里语义标签是「文字 = 语义色令牌」+「底 = 写死的 rgba(…,.15)」：
+//   .el-tag--success { --el-tag-bg-color: rgba(16,185,129,.15); --el-tag-text-color: var(--color-success); }
+// 深色主题下文字够亮、底是深 tint，没问题；**浅色主题下底色是很浅的 tint，
+// 而语义色令牌本身也是「为深底选的亮色」，两者叠在一起就不达标**：
+//   success #27a644 on #d8ecdd = 2.55（55 处）；danger #dc2626 on #f3d9d9 = 3.61（49 处）
+//
+// 为什么「把底纹调浅」解决不了：alpha 从 .15 降到 .06，success 只从 2.76 升到 3.00 ——
+// 底纹再怎么浅也趋近于白，而「亮色令牌压白」本身就不够。**必须压暗文字。**
+//
+// ⚠️ 取值必须用**实测底色**，不能用公式推：
+//   我第一版按「rgba(16,185,129,.15) 叠白 = #dbf5ec」算出混黑 75% → 4.53 应该够，
+//   但浏览器实测底色是 **#d8ecdd**（比推算值深），同一组值只有 4.21 → 仍然失败。
+//   改用实测底 #d8ecdd / #f3d9d9 重算：success 70% → 4.73；danger 85% → 4.71。
+//
+// 只改**文字**，不动底纹与边框：底纹是「这枚标签属于哪个语义」的视觉标识，不该为对比度弱化。
+// 特异性 (0,3,0) 压过 element-theme.scss 的 (0,1,0)。
+// 放在本仓（不写进 element-theme.scss）是刻意的：那是与 console 共享的逐字节拷贝面，
+// 改它需要跨仓同步 + 更新哈希；而这条修法只对 CAM 的浅色主题有意义。
+:root.light .el-tag--success {
+  --el-tag-text-color: color-mix(in srgb, var(--color-success) 70%, #000);
+}
+:root.light .el-tag--warning {
+  --el-tag-text-color: color-mix(in srgb, var(--color-warning) 60%, #000);
+}
+:root.light .el-tag--danger {
+  --el-tag-text-color: color-mix(in srgb, var(--color-danger) 85%, #000);
+}
