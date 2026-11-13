@@ -210,7 +210,7 @@ onUnmounted(stopPolling)
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #a1a1a1;
+  color: var(--cert-text-secondary);
   border: 1px solid var(--border-base);
   border-radius: 999px;
   padding: 2px 8px;

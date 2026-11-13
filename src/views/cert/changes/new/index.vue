@@ -761,7 +761,7 @@ function detailToChangeList(d: Awaited<ReturnType<typeof getChangeApi>>): Change
   border: 1px solid var(--border-base);
 
   &.tone-secondary {
-    color: #a1a1a1;
+    color: var(--cert-text-secondary);
   }
 }
 

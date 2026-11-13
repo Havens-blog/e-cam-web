@@ -420,7 +420,7 @@ function verifyActualText(row: ChangeDetailItem): string {
   }
 
   &.tone-secondary {
-    color: #a1a1a1;
+    color: var(--cert-text-secondary);
     border-color: var(--border-base);
   }
 }

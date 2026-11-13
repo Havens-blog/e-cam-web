@@ -258,7 +258,7 @@ defineExpose({ notifyAddResult, notifyRemoveResult })
   }
 
   th {
-    color: #a1a1a1;
+    color: var(--cert-text-secondary);
     font-weight: 500;
     background: var(--cert-surface-alt);
     position: sticky;

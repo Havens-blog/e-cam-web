@@ -167,7 +167,7 @@ function formatDateTime(iso: string): string {
   align-items: center;
   gap: 3px;
   font-size: 12px;
-  color: #a1a1a1; // 表体/hover 行�� Text Secondary 对比度提升（无障碍规范）
+  color: var(--cert-text-secondary); // 表体/hover 行�� Text Secondary 对比度提升（无障碍规范）
   border: 1px solid var(--border-base);
   border-radius: 999px;
   padding: 0 8px;
@@ -218,7 +218,7 @@ function formatDateTime(iso: string): string {
   }
 
   &.tone-secondary {
-    color: #a1a1a1;
+    color: var(--cert-text-secondary);
     border-color: var(--border-base);
   }
 }
