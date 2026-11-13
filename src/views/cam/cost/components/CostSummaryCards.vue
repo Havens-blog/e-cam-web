@@ -29,7 +29,7 @@
         </div>
         <div class="card-info">
           <div class="card-title">环比变化（同期对比）</div>
-          <div class="card-value" :style="{ color: changeColor }">
+          <div class="card-value" :style="{ color: changeTextColor }">
             <template v-if="failed">—</template>
             <template v-else>
               <span v-if="summary.mom_change_percent > 0">+</span>
@@ -62,6 +62,17 @@ const moneyText = (v: number) => (props.failed ? '—' : formatCost(v))
 const changeColor = computed(() => {
   if (props.summary.mom_change_percent > 0) return '#EF4444'
   if (props.summary.mom_change_percent < 0) return '#10B981'
+  return 'var(--text-secondary)'
+})
+
+// iter404: 上面这三个颜色是在 JS 里写死的，**完全绕过主题** —— 深色下 #10B981 恰好合适，
+//        浅色下它压白底只有 2.54:1（#EF4444 也只有 3.76）。
+//        文字色改走令牌（深色 #10b981 / 浅色 #087050、深色 #ef4444 / 浅色 #dc2626），
+//        深色取值与原来完全相同 → 深色像素零变化；浅色自动变可达。
+//        图标底色仍用 changeColor：那是白图标压在色块上，不是文字对比问题，保持原状。
+const changeTextColor = computed(() => {
+  if (props.summary.mom_change_percent > 0) return 'var(--color-danger)'
+  if (props.summary.mom_change_percent < 0) return 'var(--accent-green)'
   return 'var(--text-secondary)'
 })
 </script>

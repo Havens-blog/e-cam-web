@@ -747,7 +747,7 @@ onUnmounted(() => {
   border-radius: 999px;
   border: 1px solid var(--border-base);
 
-  &.tone-success { color: #10b981; border-color: color-mix(in srgb, #10b981 40%, transparent); }
+  &.tone-success { color: var(--accent-green); border-color: color-mix(in srgb, #10b981 40%, transparent); }
   &.tone-error { color: #ef4444; border-color: color-mix(in srgb, #ef4444 40%, transparent); }
   &.tone-warning { color: #f5a623; border-color: color-mix(in srgb, #f5a623 40%, transparent); }
   &.tone-secondary { color: var(--text-secondary); }

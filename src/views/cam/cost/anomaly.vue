@@ -349,7 +349,7 @@ onMounted(() => {
 }
 
 .text-success {
-  color: #10b981;
+  color: var(--accent-green);
   font-weight: 500;
 }
 </style>
