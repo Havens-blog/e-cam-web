@@ -344,7 +344,7 @@ defineExpose({ loadRules })
 
   &.warning {
     background: rgba(230, 162, 60, 0.12);
-    color: #e6a23c;
+    color: var(--color-warning);
   }
 
   &.danger {

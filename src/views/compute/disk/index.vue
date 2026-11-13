@@ -1357,7 +1357,7 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 12px;
   color: var(--text-secondary);
-  &.warning { background: rgba(230, 162, 60, 0.1); color: #e6a23c; }
+  &.warning { background: rgba(230, 162, 60, 0.1); color: var(--color-warning); }
 }
 
 .action-link {

@@ -337,7 +337,7 @@ defineExpose({ refresh: fetchData })
 
   &.paused {
     background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
+    color: var(--accent-yellow);
 
     .status-dot { background: #fbbf24; }
   }
