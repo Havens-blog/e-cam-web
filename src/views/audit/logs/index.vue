@@ -577,7 +577,7 @@ onMounted(() => {
 .cell-operator { display: flex; align-items: center; gap: 6px; }
 .operator-avatar {
   width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(113, 112, 255, 0.12); color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
+  background: rgba(113, 112, 255, 0.12); color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint));
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 600; flex-shrink: 0;
 }
@@ -589,11 +589,11 @@ onMounted(() => {
 .method-badge {
   display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
   font-family: var(--font-mono); flex-shrink: 0;
-  &.get { background: rgba(16, 185, 129, 0.15); color: color-mix(in srgb, var(--accent-green) 72%, #fff); }
-  &.post { background: rgba(113, 112, 255, 0.15); color: color-mix(in srgb, var(--accent-blue) 72%, #fff); }
-  &.put { background: rgba(245, 158, 11, 0.15); color: color-mix(in srgb, var(--accent-yellow) 72%, #fff); }
-  &.delete { background: rgba(239, 68, 68, 0.15); color: color-mix(in srgb, var(--accent-red) 72%, #fff); }
-  &.patch { background: rgba(139, 92, 246, 0.15); color: color-mix(in srgb, var(--accent-purple) 72%, #fff); }
+  &.get { background: rgba(16, 185, 129, 0.15); color: color-mix(in srgb, var(--accent-green) 72%, var(--mix-tint)); }
+  &.post { background: rgba(113, 112, 255, 0.15); color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint)); }
+  &.put { background: rgba(245, 158, 11, 0.15); color: color-mix(in srgb, var(--accent-yellow) 72%, var(--mix-tint)); }
+  &.delete { background: rgba(239, 68, 68, 0.15); color: color-mix(in srgb, var(--accent-red) 72%, var(--mix-tint)); }
+  &.patch { background: rgba(139, 92, 246, 0.15); color: color-mix(in srgb, var(--accent-purple) 72%, var(--mix-tint)); }
 }
 .status-dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px;
