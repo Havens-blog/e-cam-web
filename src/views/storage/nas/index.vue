@@ -977,7 +977,7 @@ onMounted(() => {
     gap: 12px;
     border-color: rgba(217, 119, 6, 0.45);
 
-    .ops-warn-icon { color: #d97706; }
+    .ops-warn-icon { color: var(--color-warning); }
     .ops-warn-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
     .ops-warn-detail { font-size: 12px; color: var(--text-tertiary); word-break: break-all; }
 
@@ -985,7 +985,7 @@ onMounted(() => {
     .ops-warn-toggle {
       margin-left: 8px;
       font-size: 12px;
-      color: #d97706;
+      color: var(--color-warning);
       cursor: pointer;
       user-select: none;
       text-decoration: underline;
@@ -1397,6 +1397,6 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  color: #d97706;
+  color: var(--color-warning);
 }
 </style>
