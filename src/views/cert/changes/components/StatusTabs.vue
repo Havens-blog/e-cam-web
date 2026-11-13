@@ -98,7 +98,7 @@ function onKeydown(e: KeyboardEvent) {
 
 .tab-count {
   font-size: 12px;
-  color: #a1a1a1; // Surface 上 Text Secondary 提升对比度（无障碍规范）
+  color: var(--cert-text-secondary); // Surface 上 Text Secondary 提升对比度（无障碍规范）
   font-variant-numeric: tabular-nums;
 }
 </style>

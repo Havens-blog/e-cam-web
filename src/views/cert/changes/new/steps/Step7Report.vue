@@ -156,7 +156,7 @@ const finalDesc = computed(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #a1a1a1;
+  color: var(--cert-text-secondary);
   border: 1px solid var(--border-base);
   border-radius: 999px;
   padding: 2px 8px;
@@ -202,7 +202,7 @@ const finalDesc = computed(() => {
   }
 
   &.tone-secondary {
-    color: #a1a1a1;
+    color: var(--cert-text-secondary);
     border-color: var(--border-base);
   }
 }

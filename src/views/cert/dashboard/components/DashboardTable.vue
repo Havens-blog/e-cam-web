@@ -447,7 +447,7 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
   }
 
   &.tone-secondary {
-    color: #a1a1a1; // Text Secondary 对 Surface Alt #171717 提升对比度（无障碍规范）
+    color: var(--cert-text-secondary); // Text Secondary 对 Surface Alt #171717 提升对比度（无障碍规范）
     border-color: var(--border-base);
   }
 }

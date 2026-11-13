@@ -445,7 +445,7 @@ void searchNew('')
 
 .option-days {
   margin-left: auto;
-  color: #a1a1a1;
+  color: var(--cert-text-secondary);
   font-size: 12px;
   white-space: nowrap;
 }

@@ -26,7 +26,7 @@
 //     --cert-error     #f45959 → #cc2b2b   3.27 → 5.32（页面底 5.00）
 //     --cert-verifying #8b5cf6 → #7c3aed   4.23 → 5.70（页面底 5.36）
 //
-// 深色主题不受影响：本文件全部限定在 `:root.light` 下。
+// 深色主题不受影响：`:root.light` 段落只作用于浅色。
 
 $cert-light-roots: '.cert-changes-page', '.cert-wizard-page', '.cert-dashboard-page',
   '.cert-detail-page', '.cert-ledger-page', '.cert-settings-page', '.cert-change-report-page';
@@ -40,4 +40,27 @@ $cert-light-roots: '.cert-changes-page', '.cert-wizard-page', '.cert-dashboard-p
     --cert-error: #cc2b2b;
     --cert-verifying: #7c3aed;
   }
+}
+
+// ============================================
+// cert 模块的「次要文字色」令牌（iter389）
+// ============================================
+// 问题：`#a1a1a1` 这个字面量在 cert 的 **16 个组件、18 处** 被直接写死，
+//   其中几处还带着注释「Text Secondary 对比度提升（无障碍规范）」——
+//   说明它是有人**专门为深色底调过**的值（在 #171717 上 6.94:1，很好）。
+//   但在浅色主题下它压在白底上只有 **2.58:1**，是浅色里第二大的单一簇（72 处）。
+//
+// 为什么不直接改成 `var(--text-secondary)`：
+//   那样深色会从 #a1a1a1 变成 #8a8f98（#171717 上 6.94 → 5.52）。
+//   虽然仍达标，但这是**在没人要求的情况下改变默认主题的观感**。
+//   本轮的缺陷只在浅色侧，所以深色保持像素不变 —— 只把「字面量」提升成「令牌」。
+//
+// 取值：深色 #a1a1a1（与今天完全一致）/ 浅色 #666666（白底 5.74、页面底 5.40）。
+// `--cert-text-secondary` 定义在 `:root` 上，一次定义覆盖全部 18 个使用点。
+:root {
+  --cert-text-secondary: #a1a1a1;
+}
+
+:root.light {
+  --cert-text-secondary: #666666;
 }
