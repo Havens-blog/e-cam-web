@@ -70,7 +70,7 @@ const estimatedTime = computed(() => {
     color: var(--el-text-color-secondary);
 
     .estimated-time {
-      color: color-mix(in srgb, var(--el-color-primary) 72%, #fff);
+      color: color-mix(in srgb, var(--el-color-primary) 72%, var(--mix-tint));
     }
   }
 }
