@@ -7,6 +7,7 @@
 // 查不到配置就回退原值 ⇒ 列表/卡片视图显示裸英文 `volcengine`，
 // 而同页其他云（腾讯云等）与详情抽屉（走 getProviderLabel）都是中文名，前后不一致。
 import { ACCOUNT_STATUS, ENVIRONMENTS, getProviderLabel } from '@/utils/constants'
+import type { CloudAccount } from '@/api/types/account'
 
 export const getProviderName = (provider: string) => {
   return provider ? getProviderLabel(provider) : '-'
@@ -91,4 +92,13 @@ export const formatSyncTime = (time: string | undefined) => {
   if (hours < 24) return `${hours}小时前`
   if (days < 7) return `${days}天前`
   return date.toLocaleDateString('zh-CN')
+}
+
+/**
+ * 权限体检「权限不足」项数，供列表/卡片角标使用。
+ * 未体检（permission_check 缺失或为 null）或字段缺失时返回 0，角标仅在 > 0 时展示。
+ */
+export const getPermissionDeniedCount = (account: CloudAccount): number => {
+  const denied = account.permission_check?.summary?.denied
+  return typeof denied === 'number' && denied > 0 ? denied : 0
 }

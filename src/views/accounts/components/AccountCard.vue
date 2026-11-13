@@ -9,6 +9,9 @@
         <el-tag :type="safeTagType(getEnvironmentType(account.environment))" size="small">
           {{ getEnvironmentLabel(account.environment) }}
         </el-tag>
+        <el-tag v-if="getPermissionDeniedCount(account) > 0" type="warning" size="small">
+          权限不足 {{ getPermissionDeniedCount(account) }} 项
+        </el-tag>
       </div>
       <div class="account-actions">
         <el-button link size="small" @click="$emit('view', account)">
@@ -71,6 +74,7 @@
 import type { CloudAccount } from '@/api/types/account'
 import { getEnvironmentLabel, getProviderLabel, safeTagType } from '@/utils/constants'
 import { accountRegionLabel } from '@/utils/display-fallbacks'
+import { getPermissionDeniedCount } from '../utils'
 import { Setting, User, UserFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 
@@ -133,6 +137,7 @@ const getEnvironmentType = (environment: string) => {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
       
       .account-name {
         font-size: 16px;

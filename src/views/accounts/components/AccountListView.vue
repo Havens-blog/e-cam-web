@@ -23,7 +23,17 @@
             <ProviderIcon :provider="account.provider || ''" size="small" />
           </div>
           <div class="account-info">
-            <div class="account-name">{{ account.name }}</div>
+            <div class="account-name-row">
+              <div class="account-name">{{ account.name }}</div>
+              <el-tag
+                v-if="getPermissionDeniedCount(account) > 0"
+                type="warning"
+                size="small"
+                class="permission-badge"
+              >
+                权限不足 {{ getPermissionDeniedCount(account) }} 项
+              </el-tag>
+            </div>
             <div class="account-key">{{ maskAccessKey(account.access_key_id) }}</div>
           </div>
         </div>
@@ -135,6 +145,7 @@ import {
   formatSyncTime,
   getEnvClass,
   getEnvironmentLabel,
+  getPermissionDeniedCount,
   getProviderClass,
   getProviderName,
   getStatusClass,
@@ -238,14 +249,24 @@ const emit = defineEmits<{
   .account-info {
     min-width: 0;
 
+    .account-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      margin-bottom: 2px;
+
+      .permission-badge { flex-shrink: 0; }
+    }
+
     .account-name {
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .account-key {
