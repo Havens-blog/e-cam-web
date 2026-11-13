@@ -321,7 +321,7 @@ const getStatusClass = (status: string | undefined) => {
     font-weight: 500;
     background: rgba(113, 112, 255, 0.15);
     /* 品牌蓝作文字叠在品牌蓝 15% 浅底上仅 3.19:1（AA 需 4.5）→ 与白混 28% 提亮，色相不变 */
-    color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
+    color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint));
   }
 }
 
