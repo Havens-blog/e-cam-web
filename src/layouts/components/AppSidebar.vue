@@ -545,7 +545,7 @@ $sidebar-collapsed-width: 64px;
 
     .menu-title {
       /* 激活项文字取 --accent-blue，在侧栏底上仅 4.31:1（AA 需 4.5）→ 与白混 70% 提亮至约 6.7:1，保留品牌色相 */
-      color: color-mix(in srgb, var(--accent-blue) 70%, #fff);
+      color: var(--accent-text);
       font-weight: 600;
     }
   }

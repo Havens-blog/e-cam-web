@@ -226,7 +226,7 @@ const getProviderTag = (provider?: string): 'primary' | 'success' | 'warning' | 
 
 <style scoped lang="scss">
 .cell-link {
-  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+  color: var(--accent-text);
   cursor: pointer;
   &:hover { text-decoration: underline; }
 }

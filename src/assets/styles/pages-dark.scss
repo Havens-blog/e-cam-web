@@ -298,8 +298,15 @@
 // 标签文字：primary 变体用的是 --el-color-primary(#5e6ad2)，在深色 tint 上仅 3.65:1。
 // 只对标签内部提亮（与白混 30% → 6.41:1），不动全局 --el-color-primary，避免影响主按钮等。
 // 特异性取到 (0,3,0)：EP 自带的 .el-tag.el-tag--primary 是 (0,2,0) 且后加载，需高一级才能胜出。
-.el-tag.el-tag--primary.el-tag--light,
-.el-tag.el-tag--primary {
+//
+// ⚠️ iter387：本块及后面 3 处「文字色混白」必须限定深色主题（见 S224）。
+// 本文件名为 pages-dark，但它是被 index.scss **全局 import** 的 —— 在没有 :not(.light)
+// 限定时，这些「为深色底提亮文字」的规则在浅色主题下同样生效，把文字**提亮到 #8e97e0**，
+// 压在白色上只有 2.75:1。实测这一条影响 CAM 浅色主题 **386 处**（全站最大的单一簇）。
+// 与白混的方向本来就只对深色底成立，浅色底必须混黑或不混 —— 所以正确做法是**限定主题**，
+// 而不是把数值改成两边都能用（那会牺牲深色）。
+:root:not(.light) .el-tag.el-tag--primary.el-tag--light,
+:root:not(.light) .el-tag.el-tag--primary {
   --el-tag-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
 }
 
@@ -367,8 +374,11 @@
 // 为什么不能直接提亮 --el-color-primary：实测「文字达标」与「白字压它达标」两个方向
 // 无法同时满足（混白 10% 时文字刚 4.46，白字已掉到 3.90）。同一个 token 既要当亮的文字色、
 // 又要当暗的按钮底色，只能分开处理——这里只改「文字型」用法。
-.el-button.is-link.is-link,
-.el-button.is-text.is-text {
+//
+// ⚠️ iter387：同上一处，这四块必须限定深色主题。理由同 S224 ——
+// 「与白混」是为了让文字在**深色底**上更亮；浅色底下同样的式子会让文字变浅到看不清。
+:root:not(.light) .el-button.is-link.is-link,
+:root:not(.light) .el-button.is-text.is-text {
   --el-button-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   --el-button-hover-text-color: color-mix(in srgb, var(--el-color-primary) 55%, #fff);
   /* EP 对这两个变体是直接写 color: var(--el-button-text-color)，且其规则 (0,2,0) 后加载，
@@ -376,20 +386,20 @@
   color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
 }
 
-.el-button.is-link.is-link > span,
-.el-button.is-text.is-text > span {
+:root:not(.light) .el-button.is-link.is-link > span,
+:root:not(.light) .el-button.is-text.is-text > span {
   color: inherit;
 }
 
-.el-button.is-link.is-link:hover,
-.el-button.is-text.is-text:hover {
+:root:not(.light) .el-button.is-link.is-link:hover,
+:root:not(.light) .el-button.is-text.is-text:hover {
   color: color-mix(in srgb, var(--el-color-primary) 55%, #fff);
 }
 
 // EP 的 plain 变体同理：文字用语义色、背景是语义色的浅底，
 // 语义色原值当文字色在深色底上不达标（实测 primary plain 3.65:1）。
 // 仅提亮「文字」，不动背景与边框（那两处是浅底/描边，不承载正文对比度）。
-.el-button--primary.is-plain.is-plain {
+:root:not(.light) .el-button--primary.is-plain.is-plain {
   --el-button-text-color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
   color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
 }
@@ -407,4 +417,41 @@
 :root:root:not(.light) .el-select-dropdown__item.is-selected,
 :root:root:not(.light) .el-select-dropdown__item.selected {
   color: #9ca3ff;
+}
+
+// ==================== --accent-text：按主题定义的「强调色文字」====================
+// iter387（S224）：仓内有 **15 处** 用 `color-mix(in srgb, var(--el-color-primary) 70%, #fff)`
+// 来「把强调色文字提亮到可读」—— 这个写法的前提是**背景是深的**。
+// 在浅色主题下同一个式子把文字提亮到 #8e97e0，压在白色上只有 2.75:1。
+// 这些位置分散在 10 个组件里，逐个打补丁既漏又难维护，所以收敛成一个语义令牌：
+//   深色：与白混（提亮）—— 原行为不变
+//   浅色：与黑混（压暗）—— 方向正确
+// 以后凡是「强调色当文字」，一律用 var(--accent-text)，不要再写 color-mix(..., #fff)。
+:root:not(.light) {
+  --accent-text: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+}
+:root.light {
+  // 90% 混黑：#5e6ad2 → 4.97:1（白底 5.59），与侧栏/plain 按钮的修法一致
+  --accent-text: color-mix(in srgb, var(--el-color-primary) 90%, #000);
+}
+
+// 浅色主题下 plain / link / text 三种按钮的文字色也跟着走向正确方向
+// （深色主题的提亮规则在上面已用 :root:not(.light) 限定，这里补浅色侧）。
+:root.light .el-button--primary.is-plain.is-plain {
+  --el-button-text-color: var(--accent-text);
+  color: var(--accent-text);
+}
+:root.light .el-button.is-link.is-link,
+:root.light .el-button.is-text.is-text {
+  --el-button-text-color: var(--accent-text);
+  --el-button-hover-text-color: color-mix(in srgb, var(--el-color-primary) 80%, #000);
+  color: var(--accent-text);
+}
+:root.light .el-button.is-link.is-link:hover,
+:root.light .el-button.is-text.is-text:hover {
+  color: color-mix(in srgb, var(--el-color-primary) 80%, #000);
+}
+:root.light .el-tag.el-tag--primary.el-tag--light,
+:root.light .el-tag.el-tag--primary {
+  --el-tag-text-color: var(--accent-text);
 }
