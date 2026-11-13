@@ -121,6 +121,12 @@
                         <span class="badge-icon" aria-hidden="true">{{ probeBadge(r.status as ProbeStatus).icon }}</span>
                         {{ probeBadge(r.status as ProbeStatus).label }}
                       </span>
+                      <!-- T4 僵尸记录：连续 ≥3 轮 NXDOMAIN（云上已删、平台仍有记录） -->
+                      <span
+                        v-if="r.staleMarked"
+                        class="stale-tag"
+                        :title="`连续 ${r.nxDomainCount ?? 0} 轮 DNS 解析失败（NXDOMAIN），疑似僵尸记录，建议核对企业 DNS 后清理平台记录`"
+                      >疑似僵尸</span>
                     </td>
                     <td class="cell-mono">{{ r.tlsVersion || '—' }}</td>
                     <td class="cell-mono">{{ certExpiryDate(r.onlineNotAfter) || '—' }}</td>
@@ -736,6 +742,20 @@ onUnmounted(() => {
   font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   word-break: break-all;
+}
+
+// T4 疑似僵尸标签：与状态徽标并列，独立色调（警示但非错误态）
+.stale-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #b45309 45%, transparent);
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  cursor: help;
 }
 
 .probe-badge {

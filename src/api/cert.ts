@@ -358,6 +358,18 @@ export interface DashboardSummary {
     diffAlertCount: number
     exemptCount: number
     wildcardSkippedCount: number
+    /** 探测新口径（T3）：内网域/协议记录已从拨通率分母剔除；旧字段保留一版 */
+    probeTotalCount: number
+    /** 解析到内网地址的域名数（已降频到周轮） */
+    internalCount: number
+    /** 下划线协议记录（ACME/DKIM 等）数，不拨测 */
+    protocolSkippedCount: number
+    /** 可拨测域数 = 总数 − internal − protocol_skipped − wildcard_skipped */
+    probeableCount: number
+    /** 拨通率 = 判定完成域 / 可拨测域（0~1） */
+    reachableRateOnProbeable: number
+    /** 差异率 = 常规差异域 / 可拨测域（0~1） */
+    diffRateOnProbeable: number
     registrationRate: number
     replaceableRate: number
     fingerprintOnlyRate: number
@@ -856,6 +868,10 @@ export interface CertProbeResult {
     recordValue?: string
     /** 协商 TLS 版本（如 TLS 1.3；unreachable 缺省） */
     tlsVersion?: string
+    /** 连续 NXDOMAIN 轮次（T4 僵尸记录判定；0/缺省 = 非僵尸） */
+    nxDomainCount?: number
+    /** 疑似僵尸记录（连续 ≥3 轮 NXDOMAIN，云上已删但平台仍有记录） */
+    staleMarked?: boolean
 }
 
 /** 探测结果列表（每域最近一次；含 DNS 源探测的子域名行） */
