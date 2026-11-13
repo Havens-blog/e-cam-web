@@ -96,7 +96,7 @@
           <el-table-column prop="key" label="标签键" min-width="120">
             <template #default="{ row }">
               <!-- 内联样式，故直接在此提亮：--el-color-primary 作文字在深色底仅 4.05:1（AA 需 4.5） -->
-              <span style="font-weight: 600; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff)">{{ row?.key }}</span>
+              <span style="font-weight: 600; color: var(--accent-text)">{{ row?.key }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="value" label="标签值" min-width="120">
@@ -582,7 +582,7 @@ watch(() => policyPanelRef.value?.complianceData?.non_compliant_count, (val) => 
 }
 
 .cell-link {
-  color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+  color: var(--accent-text);
   cursor: pointer;
   text-decoration: none;
 

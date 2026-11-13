@@ -1476,11 +1476,11 @@ onMounted(async () => {
 .disk-size { display: flex; align-items: center; gap: 6px; }
 .size-unit { font-size: 12px; color: var(--text-tertiary); }
 
-.sg-count-badge { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); background: var(--el-color-primary-light-9); padding: 1px 8px; border-radius: 10px; }
+.sg-count-badge { font-size: 11px; font-weight: 500; color: var(--accent-text); background: var(--el-color-primary-light-9); padding: 1px 8px; border-radius: 10px; }
 
 .sg-selector { display: flex; flex-direction: column; gap: 10px; }
 .sg-selected-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); }
+.sg-selected-tag { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 6px; border-radius: 6px; background: var(--el-color-primary-light-9); border: 1px solid var(--el-color-primary-light-8); font-size: 12px; color: var(--accent-text); }
 .sg-tag-icon { font-size: 12px; color: #a0cfff; }
 .sg-tag-name { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sg-tag-remove { font-size: 12px; cursor: pointer; color: #a0cfff; transition: color 0.2s; }
@@ -1531,7 +1531,7 @@ onMounted(async () => {
 .summary-label { color: var(--text-tertiary); }
 .summary-value { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .summary-item.highlight { padding: 10px 0; }
-.summary-item.highlight .summary-value { font-size: 18px; font-weight: 700; color: color-mix(in srgb, var(--el-color-primary) 70%, #fff); }
+.summary-item.highlight .summary-value { font-size: 18px; font-weight: 700; color: var(--accent-text); }
 .summary-actions { display: flex; gap: 12px; margin-top: 16px; }
 .summary-actions :deep(.el-button) { height: 44px; border-radius: 10px; font-size: 14px; font-weight: 600; }
 

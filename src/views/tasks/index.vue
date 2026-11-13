@@ -565,7 +565,7 @@ onUnmounted(() => {
     &.active {
       /* 原用 --el-color-primary(#5e6ad2)，叠在品牌色 12% 浅底(合成 rgb(18,21,34))上仅 3.87:1，
          AA 需 4.5 → 与白混 30% 提亮到约 5.3:1，色相不变 */
-      color: color-mix(in srgb, var(--el-color-primary) 70%, #fff);
+      color: var(--accent-text);
       border-color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
     }
