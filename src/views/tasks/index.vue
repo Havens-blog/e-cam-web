@@ -586,9 +586,9 @@ onUnmounted(() => {
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
-    /* 原用 --el-color-warning(#f59e0b) 叠在 warning 浅底上实测仅 2.00:1（AA 需 4.5）；
-       与白混 55% 提亮到约 6:1，仍是橙色语义 */
-    color: color-mix(in srgb, var(--el-color-warning) 45%, #fff);
+    /* iter407：「与白混 55% 提亮」只对深色底成立。浅色下它把文字混成 #d2b98c，压在 #e9e2d3 上仅 1.47。*/
+    /* 改用 --mix-tint（深色 #fff / 浅色 #000）：深色行为不变，浅色自动压暗。*/
+    color: color-mix(in srgb, var(--el-color-warning) 45%, var(--mix-tint));
     background: var(--el-color-warning-light-9);
   }
 }
