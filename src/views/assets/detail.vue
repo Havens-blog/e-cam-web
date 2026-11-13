@@ -369,7 +369,7 @@ onMounted(() => {
           text-align: right;
 
           &.cost {
-            color: #10b981;
+            color: var(--accent-green);
             font-weight: 600;
             font-size: calc(0.85rem + 0.1vw);
           }

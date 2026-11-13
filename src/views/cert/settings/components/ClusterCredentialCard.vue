@@ -527,7 +527,7 @@ onMounted(load)
   font-size: 12px;
   padding: 3px 0;
 
-  &.tone-registered { color: #10b981; }
+  &.tone-registered { color: var(--accent-green); }
   &.tone-duplicate { color: var(--text-secondary); }
   &.tone-failed { color: #ef4444; }
 }
