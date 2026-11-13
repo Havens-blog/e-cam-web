@@ -1020,65 +1020,65 @@ onUnmounted(() => {
 }
 
 /* ==================== 深色模式适配 ==================== */
-html.dark .template-manage-page {
+html.dark:not(.light) .template-manage-page {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
-html.dark .stat-card {
+html.dark:not(.light) .stat-card {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(148, 163, 184, 0.1);
 }
-html.dark .search-box input {
+html.dark:not(.light) .search-box input {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(148, 163, 184, 0.15);
   color: #e2e8f0;
 }
-html.dark .search-box input:focus {
+html.dark:not(.light) .search-box input:focus {
   border-color: #8b5cf6;
   background: rgba(30, 41, 59, 0.9);
 }
-html.dark .filter-select {
+html.dark:not(.light) .filter-select {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(148, 163, 184, 0.15);
   color: #e2e8f0;
 }
-html.dark .filter-select option {
+html.dark:not(.light) .filter-select option {
   background: #1e293b;
 }
-html.dark .filter-tabs {
+html.dark:not(.light) .filter-tabs {
   background: rgba(30, 41, 59, 0.6);
 }
-html.dark .template-card {
+html.dark:not(.light) .template-card {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(148, 163, 184, 0.1);
 }
-html.dark .template-card:hover {
+html.dark:not(.light) .template-card:hover {
   border-color: rgba(139, 92, 246, 0.3);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
-html.dark .template-card-header {
+html.dark:not(.light) .template-card-header {
   border-bottom-color: rgba(148, 163, 184, 0.1);
 }
-html.dark .template-tags {
+html.dark:not(.light) .template-tags {
   border-top-color: rgba(148, 163, 184, 0.1);
 }
-html.dark .template-card-footer {
+html.dark:not(.light) .template-card-footer {
   background: rgba(15, 23, 42, 0.3);
 }
-html.dark .template-action-btn {
+html.dark:not(.light) .template-action-btn {
   background: rgba(148, 163, 184, 0.1);
   /* iter383: #64748b(slate-600) 在 rgba(148,163,184,.1) 底上只有 3.05:1，提到 #94a3b8(slate-400) = 5.64 */
   color: #94a3b8;
 }
-html.dark .template-action-btn:hover {
+html.dark:not(.light) .template-action-btn:hover {
   background: rgba(139, 92, 246, 0.2);
   color: #a78bfa;
 }
-html.dark .btn-secondary {
+html.dark:not(.light) .btn-secondary {
   background: rgba(30, 41, 59, 0.8);
   color: #94a3b8;
   border-color: rgba(148, 163, 184, 0.2);
 }
-html.dark .btn-secondary:hover {
+html.dark:not(.light) .btn-secondary:hover {
   background: rgba(30, 41, 59, 1);
   color: #e2e8f0;
 }
