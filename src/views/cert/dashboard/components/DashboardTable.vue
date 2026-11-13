@@ -442,7 +442,9 @@ defineExpose({ cloudOptions, viewState, hiddenExpanded })
 
   &.tone-error {
     /* --cert-error(#ee0000) 在深色底上作文字仅 3.85:1（AA 需 4.5）→ 与白混 28% 提亮，色相不变 */
-    color: color-mix(in srgb, var(--cert-error) 72%, #fff);
+    /* iter400: 「与白混」是深色主题的取向；浅色下它把 #cc2b2b 提亮成 #da6666（白底 3.44）。*/
+    /* 改用 --mix-tint（深色 #fff / 浅色 #000），一处覆盖两主题。 */
+    color: color-mix(in srgb, var(--cert-error) 72%, var(--mix-tint));
     border-color: color-mix(in srgb, var(--cert-error) 40%, transparent);
   }
 
