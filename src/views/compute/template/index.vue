@@ -689,7 +689,7 @@ onUnmounted(() => {
 .stat-card.purple .stat-value { color: #a78bfa; }
 .stat-card.pink .stat-value { color: #f472b6; }
 .stat-card.cyan .stat-value { color: #22d3ee; }
-.stat-card.green .stat-value { color: #34d399; }
+.stat-card.green .stat-value { color: var(--accent-green); }
 
 .stat-label {
   font-size: 13px;
@@ -980,8 +980,10 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 500;
 }
+/* iter398: 这几枚标签原本写死深色主题的粉彩色（#34d399 等），压在自己的浅底纹上只有 1.7~2.6。*/
+/* env 这枚改用主题感知的 --accent-green（深色 #10b981 / 浅色 #087050），一次覆盖两个主题。*/
 .template-tag.os { background: rgba(113, 112, 255, 0.15); color: #818cf8; }
-.template-tag.env { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.template-tag.env { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
 .template-tag.type { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
 .template-tag.billing { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 

@@ -330,7 +330,7 @@ defineExpose({ refresh: fetchData })
 
   &.normal {
     background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
+    color: var(--accent-green);
 
     .status-dot { background: #34d399; }
   }
