@@ -915,7 +915,7 @@ onMounted(() => {
     }
 
     &.active {
-      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
+      color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint));
       background: rgba(113, 112, 255, 0.1);
     }
   }

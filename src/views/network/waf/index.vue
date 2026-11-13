@@ -982,7 +982,7 @@ const syncRules = reactive<FormRules>({
     }
 
     &.active {
-      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
+      color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint));
       background: rgba(113, 112, 255, 0.1);
     }
 
@@ -990,7 +990,7 @@ const syncRules = reactive<FormRules>({
       margin-left: 6px;
       font-size: 10px;
       background: rgba(113, 112, 255, 0.12);
-      color: color-mix(in srgb, var(--accent-blue) 72%, #fff);
+      color: color-mix(in srgb, var(--accent-blue) 72%, var(--mix-tint));
       padding: 1px 6px;
       border-radius: 8px;
       font-weight: 600;
