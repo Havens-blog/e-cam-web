@@ -98,7 +98,10 @@ button {
 /* iter422：`.ops-warn-toggle`（/storage/oss、/storage/nas 的「查看详情」）实测 48×16。 */
 /* iter423：`.row-link`（/certs、/certs/ledger 的「详情」按钮）实测 34×21，高度不足。 */
 .ops-warn-toggle,
-.row-link {
+.row-link,
+/* iter424：`.hidden-toggle`（/certs、/certs/ledger 的「已隐藏 19 张无引用过期证书 · 查看全部」）
+ * 在 1440px 下实测 234×21 —— 高度不足。390px 下因为文字换行反而变高，所以只在宽屏暴露。 */
+.hidden-toggle {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
