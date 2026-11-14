@@ -27,6 +27,7 @@ const SUMMARY: DashboardSummary = {
     internalCount: 755,
     protocolSkippedCount: 32,
     verificationSkippedCount: 34,
+    onlineExpiredCount: 17,
     probeableCount: 2213,
     reachableRateOnProbeable: 0.728,
     diffRateOnProbeable: 0.085,

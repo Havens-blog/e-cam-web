@@ -39,6 +39,12 @@
         <div class="stat-value">{{ summary?.exemptCount ?? '—' }}</div>
         <div class="stat-sub">域名计数；人工排除，不参与告警</div>
       </button>
+      <!-- 线上证书已过期（安全事件级）：纯展示（无筛选语义），Critical 红突出 -->
+      <div class="stat-card static" data-test="online-expired-card">
+        <div class="stat-label">线上证书已过期</div>
+        <div class="stat-value tone-error">{{ summary?.onlineExpiredCount ?? '—' }}</div>
+        <div class="stat-sub">域名计数；浏览器会直接拒绝这些域名，按 Critical 告警</div>
+      </div>
     </div>
     <!-- 探测口径行（T3 新口径 + T1 跳过分项）：分母已剔除内网域/协议记录，
          因此「拨通率」高于旧口径（旧口径含约 25% 永不达的内网域）。 -->
@@ -124,7 +130,7 @@ function percent(rate: number | null | undefined): string {
 
 .special-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 
   @media (max-width: 1023px) {
