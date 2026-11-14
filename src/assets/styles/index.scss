@@ -90,6 +90,14 @@ button {
  * 键盘 Tab 进去时 wrapper 不获得任何焦点样式（实测 /iam/users 三个筛选器 box-shadow: none、无 outline）。
  * 上面的 button/a 规则覆盖不到它（它不是 button 也不是 a），所以单独补一条：
  * 用 :has(:focus-visible) 而不是 :focus-within —— 后者在鼠标点开下拉时也会亮环，不符合「只在键盘导航时显示」。*/
+/* iter412：分页器的「跳至第 N 页」输入框（.el-pagination__jump > .el-input__wrapper）*/
+/* 是页面上唯一一个「聚焦后 wrapper 样式完全不变」的 el-input —— EP 在分页变体上没给 is-focus 样式。*/
+/* 其余 el-input 靠 wrapper 的边框变色表达焦点，这里单独补一条，避免给所有输入框叠加 outline。*/
+.el-pagination__jump .el-input__wrapper:has(input:focus-visible) {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .el-select__wrapper:has(.el-select__input:focus-visible) {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
