@@ -94,9 +94,19 @@ button {
  * 用 inline-flex + align-items 让文字垂直居中：不改字号、不改行距，视觉几乎无变化。
  * 触控区域从 14~17px 提升到 24px，达到 AA 要求。 */
 .action-link,
-.btn-link {
+.btn-link,
+/* iter422：`.ops-warn-toggle`（/storage/oss、/storage/nas 的「查看详情」）实测 48×16。 */
+.ops-warn-toggle {
   display: inline-flex;
   align-items: center;
+  min-height: 24px;
+}
+
+/* iter422：Element Plus 的 small 链接按钮实测 30×18（/assets 的「查看/编辑/删除」27 个、
+ * /finops/collect 的「只看运行中」66×18），同样不达 2.5.8 的 24px。
+ * 只对 is-link / is-text 变体加最小高度 —— 它们是文字样按钮；实底按钮本来就 ≥32px，不受影响。 */
+.el-button.is-link,
+.el-button.is-text {
   min-height: 24px;
 }
 /* iter411：Element Plus 的 el-select 把可聚焦的 <input class="el-select__input"> 藏在 wrapper 里，
