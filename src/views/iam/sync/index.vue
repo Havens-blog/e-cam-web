@@ -418,7 +418,9 @@ const handleRetry = async (task: SyncTask) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        // iter428：重试不是破坏性操作，原来的 warning 会让确认键变红（iter427 的全局规则
+        // 把「带 warning 图标的确认框」统一改成 danger 色）。改成 info 保持主色，避免过度警告。
+        type: 'info'
       }
     )
 
