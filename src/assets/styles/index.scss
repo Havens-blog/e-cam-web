@@ -84,10 +84,24 @@ button {
  * 样式取自仓内既有范例（`cert/changes/components/StatusTabs.vue`）：2px 实线 + 2px 外扩。
  * 每个页面不必再各写一遍，也不会与已有的 `:focus-visible` 冲突（同值覆盖）。
  */
+
+
+/* iter411：Element Plus 的 el-select 把可聚焦的 <input class="el-select__input"> 藏在 wrapper 里，
+ * 键盘 Tab 进去时 wrapper 不获得任何焦点样式（实测 /iam/users 三个筛选器 box-shadow: none、无 outline）。
+ * 上面的 button/a 规则覆盖不到它（它不是 button 也不是 a），所以单独补一条：
+ * 用 :has(:focus-visible) 而不是 :focus-within —— 后者在鼠标点开下拉时也会亮环，不符合「只在键盘导航时显示」。*/
+.el-select__wrapper:has(.el-select__input:focus-visible) {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+/* iter411：原生 <select> 也在这一组里 —— /compute/template 的 .filter-select 自己写了 outline: none，*/
+/* 而它既不是 button 也不是 a，原生 select 的默认焦点环又被组件清掉了，键盘用户完全看不到焦点。*/
+/* select:focus-visible 特异性 (0,1,1) 高于 .filter-select (0,1,0)，可以稳定覆盖。*/
 button:focus-visible,
 [role='button']:focus-visible,
 a:focus-visible,
-summary:focus-visible {
+summary:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
