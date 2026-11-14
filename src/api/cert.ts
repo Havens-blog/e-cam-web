@@ -366,6 +366,8 @@ export interface DashboardSummary {
     protocolSkippedCount: number
     /** 站点验证类别名数（CNAME 指向 Google/Bing/QQ 等验证服务），不拨测 */
     verificationSkippedCount: number
+    /** 线上证书已过期的域名数（安全事件级：浏览器直接拒绝；与普通 diff 区分） */
+    onlineExpiredCount: number
     /** 可拨测域数 = 总数 − internal − protocol_skipped − wildcard_skipped */
     probeableCount: number
     /** 拨通率 = 判定完成域 / 可拨测域（0~1） */
