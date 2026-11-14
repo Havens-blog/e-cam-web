@@ -561,6 +561,33 @@ $navbar-height: 56px;
    - 用户名（70px）：头像已能表达当前用户；
    - 面包屑（88px）：当前页标题在正文 h1 里已有。
    保留折叠钮、平台导航、3 个图标按钮与用户头像这些随时需要点的操作。 */
+/* iter418：768~1024 这一段没有任何断点覆盖，而 .navbar-right 是 flex-shrink:0、宽约 494px，
+ * 实测 768/800/860/900 分别溢出 5/129/69/29px（800 最差）。
+ * 修法：让左右两侧都可收缩（min-width:0），并把租户选择器收窄 —— 它的 .tenant-current
+ * 本来就有 overflow:hidden + text-overflow:ellipsis，收窄后会自己截断，不会切字。
+ * 1200px 以上保持原宽度，不改变宽屏观感。 */
+@media (max-width: 1024px) {
+  .navbar-left {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .navbar-right {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .navbar-right .tenant-selector {
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 150px;
+  }
+
+  /* 组件用内联 :style 设了 200px，这里只能 !important 覆盖 */
+  .navbar-right .tenant-selector :deep(.el-select) {
+    width: 150px !important;
+  }
+}
 @media (max-width: 560px) {
   .tenant-selector,
   .user-name,
