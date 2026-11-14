@@ -121,6 +121,14 @@ button {
  * （EP 给 dialog 加了 max-width: calc(100% - 32px)，没给 message-box 加）。
  * 768/1440 下确认框 420 居中、边距充足，无需处理，故只在窄屏补一条上限。
  * 用 440px 作断点：EP 的 message-box 默认宽 420，视口宽于 440 时不会贴边。 */
+/* iter431：prompt 型确认框的校验提示（.el-message-box__errormsg）用的是 EP 固定的
+ * rgb(245,108,108)（#f56c6c），实测 light 模式下对比度只有 **2.90:1**（AA 要求 4.5），
+ * 而且它连自己的 --el-color-danger（本仓 light 为 #dc2626）都没用。
+ * 改成 var(--color-danger)：light #dc2626 → 4.83:1 ✅，dark 仍是 #ef4444 → 6.01:1 ✅，
+ * 也与表单校验错误（.el-form-item__error，同样是 #dc2626）保持一致。 */
+.el-message-box__errormsg {
+  color: var(--color-danger);
+}
 @media (max-width: 440px) {
   .el-message-box {
     max-width: calc(100vw - 32px);
