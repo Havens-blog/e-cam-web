@@ -308,6 +308,9 @@ defineExpose({ open })
 
 .cert-file-input {
   width: 100%;
+  /* iter426：原生 <input type="file"> 的高度由 UA 决定，实测 277×21 —— 不足 WCAG 2.5.8 的 24px。
+   * 只加最小高度，不改字号与外观；文件选择按钮本身也会随之变高，更好点。 */
+  min-height: 24px;
   font-size: 13px;
   color: var(--text-secondary);
 }
