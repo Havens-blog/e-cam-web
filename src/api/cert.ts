@@ -364,6 +364,8 @@ export interface DashboardSummary {
     internalCount: number
     /** 下划线协议记录（ACME/DKIM 等）数，不拨测 */
     protocolSkippedCount: number
+    /** 站点验证类别名数（CNAME 指向 Google/Bing/QQ 等验证服务），不拨测 */
+    verificationSkippedCount: number
     /** 可拨测域数 = 总数 − internal − protocol_skipped − wildcard_skipped */
     probeableCount: number
     /** 拨通率 = 判定完成域 / 可拨测域（0~1） */
