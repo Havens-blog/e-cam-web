@@ -148,6 +148,32 @@ nav.breadcrumb a {
   align-items: center;
   min-height: 24px;
 }
+/* iter427：Element Plus 的 ElMessageBox 用 `type: 'warning'` **只改图标，不改按钮颜色** ——
+ * 全仓 29 处危险操作（删除/移除/重置/退出登录）的「确定」按钮因此仍是主色蓝（实测 rgb(75,85,174)），
+ * 而真正加了 danger 按钮样式的只有 2 处。危险操作的确认键是蓝色，等于在鼓励误点。
+ * 这里对「带 warning / error 图标的确认框」把主按钮改成 danger；用 :has() 精确限定，
+ * 不影响普通确认框（如「确认提交」）。已显式指定 confirmButtonClass 的 2 处本来就是 danger，无变化。 */
+/* 颜色与站内实底 danger 按钮保持一致：pages-dark.scss 里 .el-button--danger 用的是
+ * color-mix(in srgb, var(--el-color-danger) 82%, #000)（light #b41f1f / dark #c43838）。
+ * 直接用 --el-color-danger 会比站内其它危险按钮更亮（#dc2626 / #ef4444），且对比度更低。
+ *
+ * 注意：只改 CSS 变量不够 —— 实测按钮上的 --el-button-bg-color 已变成 #dc2626，
+ * 但 background-color 仍是主色蓝（EP 自身有更具体的规则直接写背景），所以这里直接写属性。 */
+.el-message-box:has(.el-message-box-icon--warning) .el-message-box__btns .el-button--primary,
+.el-message-box:has(.el-message-box-icon--error) .el-message-box__btns .el-button--primary {
+  background-color: color-mix(in srgb, var(--el-color-danger) 82%, #000) !important;
+  border-color: color-mix(in srgb, var(--el-color-danger) 82%, #000) !important;
+  color: #fff !important;
+}
+
+.el-message-box:has(.el-message-box-icon--warning) .el-message-box__btns .el-button--primary:hover,
+.el-message-box:has(.el-message-box-icon--warning) .el-message-box__btns .el-button--primary:focus-visible,
+.el-message-box:has(.el-message-box-icon--error) .el-message-box__btns .el-button--primary:hover,
+.el-message-box:has(.el-message-box-icon--error) .el-message-box__btns .el-button--primary:focus-visible {
+  background-color: color-mix(in srgb, var(--el-color-danger) 82%, #000) !important;
+  border-color: color-mix(in srgb, var(--el-color-danger) 82%, #000) !important;
+  color: #fff !important;
+}
 /* iter411：Element Plus 的 el-select 把可聚焦的 <input class="el-select__input"> 藏在 wrapper 里，
  * 键盘 Tab 进去时 wrapper 不获得任何焦点样式（实测 /iam/users 三个筛选器 box-shadow: none、无 outline）。
  * 上面的 button/a 规则覆盖不到它（它不是 button 也不是 a），所以单独补一条：
