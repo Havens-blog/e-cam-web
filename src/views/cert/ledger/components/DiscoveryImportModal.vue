@@ -975,6 +975,19 @@ defineExpose({ open })
   display: inline-flex;
 }
 
+/* iter426：这个「从云端导入」弹窗里每行一个复选框，实测 **label.el-checkbox 只有 14×32** ——
+ * 宽度不足 WCAG 2.5.8 的 24px，且**点整行空白处不会切换勾选**（已实测），
+ * 所以真实触控面就是这个 14px 宽的 label。把它补到 24×24，文字与间距不动。
+ * 注意要打在 label 上（外层 span 改大没用），EP 内部元素需 :deep；
+ * 且这些 label 绝大多数直接挂在 .ds-row 下（只有分组行在 .ds-group-check 里），
+ * 所以选择器要同时覆盖 .ds-row（行内）与 .ds-group-check（分组头的全选，共 4 个）。 */
+.ds-row :deep(.el-checkbox),
+.ds-group-check :deep(.el-checkbox) {
+  min-width: 24px;
+  min-height: 24px;
+  margin-right: 0;
+}
+
 .ds-group-lock {
   font-size: 13px;
 }
