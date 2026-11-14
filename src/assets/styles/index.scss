@@ -96,7 +96,9 @@ button {
 .action-link,
 .btn-link,
 /* iter422：`.ops-warn-toggle`（/storage/oss、/storage/nas 的「查看详情」）实测 48×16。 */
-.ops-warn-toggle {
+/* iter423：`.row-link`（/certs、/certs/ledger 的「详情」按钮）实测 34×21，高度不足。 */
+.ops-warn-toggle,
+.row-link {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
@@ -105,8 +107,33 @@ button {
 /* iter422：Element Plus 的 small 链接按钮实测 30×18（/assets 的「查看/编辑/删除」27 个、
  * /finops/collect 的「只看运行中」66×18），同样不达 2.5.8 的 24px。
  * 只对 is-link / is-text 变体加最小高度 —— 它们是文字样按钮；实底按钮本来就 ≥32px，不受影响。 */
+/* iter423：/network/dns 的图标按钮（内部只有 12×12 el-icon、无文字）实测 18×24 —— */
+/* 高度已被 min-height 修好，但**宽度只有 18px**，仍不达 2.5.8。补 min-width 并让内容居中；
+/* 对文字按钮是空操作（它们本来就远超 24px）。 */
 .el-button.is-link,
 .el-button.is-text {
+  min-height: 24px;
+  min-width: 24px;
+  justify-content: center;
+}
+
+/* iter423：`.copy-btn`（证书台账/看板的「复制指纹」图标按钮）在多个组件里都写死 22×22，
+ * 实测 `/certs` 与 `/certs/ledger` 各有 49 个 —— 全站最大的一组触控目标缺口。
+ * 组件用的是 scoped 样式，`.copy-btn[data-v-x]` 特异性 (0,2,0) 高于全局 `.copy-btn` (0,1,0)，
+ * 所以这里用三重类 (0,3,0) 覆盖（同 iter393 处理 .user-avatar 的做法）。 */
+.copy-btn.copy-btn.copy-btn {
+  width: 24px;
+  height: 24px;
+}
+
+/* iter423：剩下两处 —— `.meta-item`（/certs/dashboard 的「通配符跳过拨测 69」）实测 109×21；
+ * 面包屑里的 `<a>`（/certs/settings 的「变更管理」）实测 52×20。都只差高度。 */
+.meta-item,
+.el-breadcrumb a,
+/* iter423：/certs/settings 用的是自定义面包屑 nav.breadcrumb，不是 EP 的 .el-breadcrumb。 */
+nav.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
   min-height: 24px;
 }
 /* iter411：Element Plus 的 el-select 把可聚焦的 <input class="el-select__input"> 藏在 wrapper 里，
