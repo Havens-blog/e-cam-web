@@ -86,6 +86,19 @@ button {
  */
 
 
+/* iter421：WCAG 2.5.8（AA, 2.2）要求交互目标至少 24×24 CSS px。
+ * 实测 390px 下 26 个目标不足：`/compute/ecs` 的 .action-link「更多」只有 28×14（22 个）、
+ * `/certs/changes` 的 .btn-link「详情/继续编辑」26×17 / 52×17（4 个）。
+ * 这两个类在全仓多处文件里各自定义过（disk / InstanceTable / image / security-group / snapshot …），
+ * 所以在这里统一给最小高度，而不是逐个文件补（同一条假设只改一处）。
+ * 用 inline-flex + align-items 让文字垂直居中：不改字号、不改行距，视觉几乎无变化。
+ * 触控区域从 14~17px 提升到 24px，达到 AA 要求。 */
+.action-link,
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 /* iter411：Element Plus 的 el-select 把可聚焦的 <input class="el-select__input"> 藏在 wrapper 里，
  * 键盘 Tab 进去时 wrapper 不获得任何焦点样式（实测 /iam/users 三个筛选器 box-shadow: none、无 outline）。
  * 上面的 button/a 规则覆盖不到它（它不是 button 也不是 a），所以单独补一条：
