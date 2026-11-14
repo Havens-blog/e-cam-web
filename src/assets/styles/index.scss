@@ -93,6 +93,13 @@ button {
 /* iter412：分页器的「跳至第 N 页」输入框（.el-pagination__jump > .el-input__wrapper）*/
 /* 是页面上唯一一个「聚焦后 wrapper 样式完全不变」的 el-input —— EP 在分页变体上没给 is-focus 样式。*/
 /* 其余 el-input 靠 wrapper 的边框变色表达焦点，这里单独补一条，避免给所有输入框叠加 outline。*/
+/* iter413：el-slider 的 .el-slider__button-wrapper 是可聚焦的（tabindex），*/
+/* 但键盘聚焦时 Element Plus 不给任何样式 —— 实测聚焦前后元素/祖先/后代三处全无变化。*/
+/* 环画在圆形滑块按钮上，与滑块的可拖拽语义一致（而不是在 wrapper 上画方框）。*/
+.el-slider__button-wrapper:focus-visible .el-slider__button {
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
 .el-pagination__jump .el-input__wrapper:has(input:focus-visible) {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
