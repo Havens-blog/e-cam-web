@@ -49,6 +49,7 @@
         <div class="stat-sub">
           探测总数 {{ summary?.probeTotalCount ?? '—' }}；已剔除内网域
           {{ summary?.internalCount ?? '—' }} / 协议记录 {{ summary?.protocolSkippedCount ?? '—' }}
+          / 验证别名 {{ summary?.verificationSkippedCount ?? '—' }}
           / 通配符 {{ summary?.wildcardSkippedCount ?? '—' }}
         </div>
       </div>
