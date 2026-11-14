@@ -113,7 +113,10 @@ router.onError((error) => {
     ElMessageBox.confirm('页面资源已更新或网络异常，需要刷新后继续访问。', '需要刷新页面', {
         confirmButtonText: '立即刷新',
         cancelButtonText: '返回上一页',
-        type: 'warning',
+        // iter428：刷新不是破坏性操作，原来的 warning 会让「立即刷新」变红
+        // （iter427 的全局规则把「带 warning 图标的确认框」统一改成 danger 色）。
+        // 改成 info 保持主色，避免过度警告；文案与行为不变。
+        type: 'info',
         distinguishCancelAndClose: true,
     })
         .then(() => window.location.reload())
