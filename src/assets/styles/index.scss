@@ -101,10 +101,19 @@ button {
 .row-link,
 /* iter424：`.hidden-toggle`（/certs、/certs/ledger 的「已隐藏 19 张无引用过期证书 · 查看全部」）
  * 在 1440px 下实测 234×21 —— 高度不足。390px 下因为文字换行反而变高，所以只在宽屏暴露。 */
-.hidden-toggle {
+.hidden-toggle,
+/* iter425：抽屉右上角的关闭按钮实测 20×20（/audit/logs 的审计详情抽屉）。
+ * 弹窗（.el-dialog__headerbtn）实测已达标，故只补抽屉这一处。 */
+.el-drawer__close-btn {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
+}
+
+/* 上面那组只给了 min-height，关闭按钮是纯图标、宽度仍只有 20px，需要单独补 min-width。 */
+.el-drawer__close-btn {
+  min-width: 24px;
+  justify-content: center;
 }
 
 /* iter422：Element Plus 的 small 链接按钮实测 30×18（/assets 的「查看/编辑/删除」27 个、
